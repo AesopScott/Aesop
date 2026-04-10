@@ -15,11 +15,13 @@
 // 3. FTP this file to public_html/aesop-academy/report-mailer.php
 // ─────────────────────────────────────────────────────────────────────────────
 
+require_once __DIR__ . '/secrets.php';
+
 // ── CREDENTIALS — edit these ──────────────────────────────────────────────────
 define('SMTP_HOST',     'smtpout.secureserver.net'); // GoDaddy outgoing SMTP
 define('SMTP_PORT',     465);                         // SSL port
 define('SMTP_USER',     'scott@aesopacademy.org');
-define('SMTP_PASSWORD', 'Jt5SkpyBTAk3!Lae2'); // ← fill this in
+define('SMTP_PASSWORD', aesop_secret('AESOP_REPORT_SMTP_PASSWORD', ''));
 define('MAIL_TO',       'scott@aesopacademy.org');
 define('MAIL_FROM',     'scott@aesopacademy.org');
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,6 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
+    exit;
+}
+
+if (SMTP_PASSWORD === '') {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Server is missing AESOP_REPORT_SMTP_PASSWORD']);
     exit;
 }
 

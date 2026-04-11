@@ -1,0 +1,39 @@
+name: AIP Research Agent
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Every Monday at 9am UTC
+  workflow_dispatch:        # Manual trigger anytime
+
+jobs:
+  generate-drafts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AIP_COMMIT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic pinecone requests
+
+      - name: Run AIP Research Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.anthropic }}
+          PINECONE_API_KEY: ${{ secrets.pinecone }}
+          PINECONE_HOST: https://aesop-academy-sqe0vz2.svc.aped-4627-b74a.pinecone.io
+        run: python .github/scripts/aip_research_agent.py
+
+      - name: Commit draft proposals
+        run: |
+          git config user.name "AIP Research Agent"
+          git config user.email "aip-agent@aesopacademy.org"
+          git add aip/drafts/
+          git diff --staged --quiet || git commit -m "AIP: $(date '+%Y-%m-%d') weekly draft proposals"
+          git push

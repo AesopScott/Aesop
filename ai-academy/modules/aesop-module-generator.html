@@ -135,7 +135,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="card">
       <div class="output-header">
         <span class="output-filename" id="outputFilename"></span>
-        <button class="btn-download" onclick="downloadFile()">Download File</button>
+        <button class="btn-download" id="saveBtn" onclick="downloadFile()">Save to Repo</button>
       </div>
       <div class="output-preview" id="outputPreview"></div>
     </div>
@@ -1093,18 +1093,27 @@ async function downloadFile() {
   const mn = parseInt(document.getElementById('moduleSelect').value);
 
   if (repoFolderHandle) {
+    const saveBtn = document.getElementById('saveBtn');
     try {
-      // Folder handle IS the modules folder — just navigate [course-id]/module-[n]/
-      const dirs = [cid, 'module-' + mn];
-      let dir = repoFolderHandle;
-      for (const d of dirs) {
-        dir = await dir.getDirectoryHandle(d, { create: true });
-      }
-      const file = await dir.getFileHandle(generatedFilename, { create: true });
+      // Folder handle IS the modules folder — navigate to [course-id]/ only
+      const courseDir = await repoFolderHandle.getDirectoryHandle(cid, { create: true });
+      const file = await courseDir.getFileHandle(generatedFilename, { create: true });
       const writable = await file.createWritable();
       await writable.write(generatedContent);
       await writable.close();
-      showStatus('info', 'Saved: ' + cid + '/module-' + mn + '/' + generatedFilename);
+      // Visual confirmation
+      if (saveBtn) {
+        const orig = saveBtn.textContent;
+        saveBtn.textContent = 'Saved!';
+        saveBtn.style.background = '#1D9E75';
+        saveBtn.style.color = '#fff';
+        setTimeout(() => {
+          saveBtn.textContent = orig;
+          saveBtn.style.background = '';
+          saveBtn.style.color = '';
+        }, 2500);
+      }
+      showStatus('info', 'Saved: ' + cid + '/' + generatedFilename);
     } catch(e) {
       showStatus('error', 'Save failed: ' + e.message + ' — falling back to download');
       fallbackDownload();

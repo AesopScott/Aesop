@@ -1419,6 +1419,26 @@ async function updateCoursesFile() {
       }
     }
 
+    // Also handle "Preview" ghost links (some panels have preview CTAs instead of ghost spans)
+    if (!replaced) {
+      const previewGhost = '<a href="' ;
+      // Find panel by title, then look for core-panel__cta--ghost anchor within it
+      const titleIdx2 = content.indexOf('core-panel__title">' + courseTitle + '<');
+      if (titleIdx2 !== -1) {
+        const nextPanel = content.indexOf('core-panel__title">', titleIdx2 + courseTitle.length + 20);
+        const panelEnd = nextPanel !== -1 ? nextPanel : titleIdx2 + 15000;
+        const panelSection = content.substring(titleIdx2, panelEnd);
+        const ghostAnchorMatch = panelSection.match(/<a href="[^"]*" class="core-panel__cta core-panel__cta--ghost">[^<]*<\/a>/);
+        if (ghostAnchorMatch) {
+          const ghostAnchor = ghostAnchorMatch[0];
+          content = content.substring(0, titleIdx2) +
+            panelSection.replace(ghostAnchor, liveLink) +
+            content.substring(titleIdx2 + panelSection.length);
+          replaced = true;
+        }
+      }
+    }
+
     if (!replaced) {
       statusEl.textContent = 'Panel not found for ' + cid + '. Check course selection.';
       return;

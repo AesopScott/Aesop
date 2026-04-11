@@ -7,6 +7,7 @@ import requests
 from pinecone import Pinecone
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+VOYAGE_API_KEY    = os.environ["VOYAGE_API_KEY"]
 PINECONE_API_KEY  = os.environ["PINECONE_API_KEY"]
 PINECONE_HOST     = os.environ["PINECONE_HOST"]
 PINECONE_INDEX    = "aesop-academy"
@@ -26,7 +27,7 @@ print("2. Testing voyage-3 embedding...")
 res = requests.post(
     "https://api.voyageai.com/v1/embeddings",
     headers={
-        "Authorization": f"Bearer {ANTHROPIC_API_KEY}",
+        "Authorization": f"Bearer {VOYAGE_API_KEY}",
         "content-type": "application/json",
     },
     json={"model": "voyage-3", "input": ["AI and education"], "input_type": "query"},

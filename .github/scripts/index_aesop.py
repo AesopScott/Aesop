@@ -1,184 +1,187 @@
 """
-AIP Research Agent — AESOP Intelligence Pipeline
-Runs weekly via GitHub Actions.
-Queries Pinecone for corpus gaps, generates course draft proposals,
-saves them as JSON to aip/drafts/.
+AIP Corpus Indexer — AESOP Intelligence Pipeline
+Triggered by GitHub Actions on pushes to ai-academy/modules/**
+Parses HTML module files, chunks text, embeds via Voyage-3,
+and upserts vectors to Pinecone for RAG-based gap analysis.
 """
 
 import os
-import json
 import re
-from datetime import datetime
+import hashlib
 from pathlib import Path
-import anthropic
-from pinecone import Pinecone, ServerlessSpec
+import requests
+from pinecone import Pinecone
+from bs4 import BeautifulSoup
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+VOYAGE_API_KEY    = os.environ["VOYAGE_API_KEY"]
 PINECONE_API_KEY  = os.environ["PINECONE_API_KEY"]
 PINECONE_HOST     = os.environ["PINECONE_HOST"]
 PINECONE_INDEX    = "aesop-academy"
-DRAFTS_DIR        = Path("aip/drafts")
-DRAFTS_PER_RUN    = 3   # proposals generated per weekly run
 
-EDTECH_TOPICS = [
-    "AI in healthcare and medicine",
-    "AI and climate change",
-    "AI in criminal justice",
-    "AI for accessibility and disability",
-    "AI and misinformation / deepfakes",
-    "AI in financial systems",
-    "AI and surveillance",
-    "AI in education and personalized learning",
-    "AI and creative arts",
-    "AI ethics for beginners",
-    "Machine learning basics",
-    "AI and job automation",
-    "AI in government and policy",
-    "AI safety and alignment",
-    "AI and privacy",
-    "Robotics and physical AI",
-    "AI in agriculture",
-    "AI and mental health",
-    "Natural language processing",
-    "Computer vision in everyday life",
-]
+MODULES_DIR       = Path("ai-academy/modules")
+CHUNK_SIZE        = 500   # words per chunk
+CHUNK_OVERLAP     = 50    # word overlap between chunks
+EMBED_BATCH       = 5     # vectors per Voyage API call (keep small — chunks are large)
+UPSERT_BATCH      = 50    # vectors per Pinecone upsert
 
-# ── PINECONE: CHECK CORPUS COVERAGE ──────────────────────────────────────────
+# ── HTML PARSING ─────────────────────────────────────────────────────────────
 
-def check_corpus_coverage():
-    """Query Pinecone for each topic — return topics with thin coverage."""
-    print("Checking corpus coverage via Pinecone...")
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index(PINECONE_INDEX, host=PINECONE_HOST)
+def extract_text_from_html(filepath):
+    """Parse an HTML module file and return cleaned text + metadata."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        soup = BeautifulSoup(f.read(), "html.parser")
 
-    import requests
-    gap_topics = []
+    # Remove scripts, styles, nav elements
+    for tag in soup(["script", "style", "nav", "footer", "header"]):
+        tag.decompose()
 
-    for topic in EDTECH_TOPICS:
-        # Embed via Anthropic voyage-3 REST directly
-        embed_res = requests.post(
-            "https://api.anthropic.com/v1/messages",
+    # Extract title from first h1 or <title>
+    title_tag = soup.find("h1") or soup.find("title")
+    title = title_tag.get_text(strip=True) if title_tag else filepath.stem
+
+    # Get all visible text
+    text = soup.get_text(separator=" ", strip=True)
+    # Collapse whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return title, text
+
+
+def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+    """Split text into overlapping word-based chunks."""
+    words = text.split()
+    chunks = []
+    start = 0
+    while start < len(words):
+        end = start + chunk_size
+        chunk = " ".join(words[start:end])
+        if chunk.strip():
+            chunks.append(chunk)
+        start += chunk_size - overlap
+    return chunks
+
+# ── EMBEDDING ────────────────────────────────────────────────────────────────
+
+def embed_texts(texts, retries=3):
+    """Embed a batch of texts using Voyage-3 via VoyageAI REST API."""
+    import time
+
+    for attempt in range(retries):
+        resp = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
             headers={
-                "x-api-key": ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
+                "Authorization": f"Bearer {VOYAGE_API_KEY}",
                 "content-type": "application/json",
             },
             json={
                 "model": "voyage-3",
-                "input": [topic],
-                "input_type": "query",
-            }
+                "input": texts,
+                "input_type": "document",
+            },
+            timeout=120,
         )
 
-        # Fallback: if voyage endpoint unavailable, use zero vector + skip scoring
-        if embed_res.status_code != 200:
-            print(f"  {topic}: embedding unavailable, marking as gap")
-            gap_topics.append({"topic": topic, "score": 0.0})
+        if resp.status_code == 200:
+            data = resp.json()["data"]
+            return [item["embedding"] for item in data]
+
+        if resp.status_code == 429 and attempt < retries - 1:
+            wait = (attempt + 1) * 5
+            print(f"    Rate limited, waiting {wait}s...")
+            time.sleep(wait)
             continue
 
-        vector = embed_res.json()["embeddings"][0]["values"]
+        print(f"    Voyage API error ({resp.status_code}): {resp.text[:500]}")
+        raise RuntimeError(f"Voyage embedding failed ({resp.status_code}): {resp.text[:200]}")
 
-        # Query Pinecone
-        result = index.query(vector=vector, top_k=3, include_metadata=True)
-        matches = result.get("matches", [])
-        top_score = matches[0]["score"] if matches else 0.0
-        print(f"  {topic}: top score={top_score:.3f}")
+    raise RuntimeError("Voyage embedding failed after all retries")
 
-        if top_score < 0.75:
-            gap_topics.append({"topic": topic, "score": top_score})
-
-    gap_topics.sort(key=lambda x: x["score"])
-    print(f"\nFound {len(gap_topics)} gap topics.")
-    return gap_topics
-
-# ── ANTHROPIC: GENERATE DRAFT PROPOSALS ──────────────────────────────────────
-
-def generate_drafts(gap_topics):
-    """Generate course draft proposals for the top gap topics."""
-    if not gap_topics:
-        print("No gaps found — skipping generation.")
-        return []
-
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    topics_to_draft = gap_topics[:DRAFTS_PER_RUN]
-    topic_list = "\n".join(f"- {t['topic']}" for t in topics_to_draft)
-
-    print(f"\nGenerating {len(topics_to_draft)} draft proposals...")
-
-    prompt = f"""You are a curriculum designer for AESOP AI Academy — an AI literacy platform for learners of all ages.
-
-Generate {len(topics_to_draft)} course draft proposals for these underrepresented topics in our curriculum:
-
-{topic_list}
-
-For EACH topic, return a JSON object with exactly these fields:
-- "id": kebab-case slug (e.g. "ai-in-healthcare")
-- "title": short, compelling course title (max 6 words)
-- "modules": array of 4 module names (each max 5 words)
-- "synopsis": 2-sentence course description for a general audience
-
-Return ONLY a JSON array of objects. No preamble, no markdown fences."""
-
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1500,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    raw = response.content[0].text.strip()
-
-    # Strip markdown fences if present
-    raw = re.sub(r"^```json\s*", "", raw)
-    raw = re.sub(r"\s*```$", "", raw)
-
-    drafts = json.loads(raw)
-    print(f"Generated {len(drafts)} proposals.")
-    return drafts
-
-# ── SAVE DRAFTS ───────────────────────────────────────────────────────────────
-
-def save_drafts(drafts):
-    """Save each draft as a JSON file in aip/drafts/."""
-    DRAFTS_DIR.mkdir(parents=True, exist_ok=True)
-    date_str = datetime.utcnow().strftime("%Y-%m-%d")
-    saved = []
-
-    for draft in drafts:
-        draft["generated"] = date_str
-        draft["status"] = "pending"
-
-        filename = f"{date_str}-{draft['id']}.json"
-        filepath = DRAFTS_DIR / filename
-
-        # Don't overwrite an existing draft with same ID
-        if filepath.exists():
-            print(f"  Skipping (exists): {filename}")
-            continue
-
-        with open(filepath, "w") as f:
-            json.dump(draft, f, indent=2)
-
-        print(f"  Saved: {filename}")
-        saved.append(filename)
-
-    return saved
-
-# ── MAIN ──────────────────────────────────────────────────────────────────────
+# ── MAIN PIPELINE ────────────────────────────────────────────────────────────
 
 def main():
-    print("=== AIP Research Agent ===")
-    print(f"Run date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}\n")
+    print("=== AIP Corpus Indexer ===\n")
 
-    gap_topics = check_corpus_coverage()
-    drafts = generate_drafts(gap_topics)
+    # Connect to Pinecone
+    print("Connecting to Pinecone...")
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    index = pc.Index(PINECONE_INDEX, host=PINECONE_HOST)
+    stats = index.describe_index_stats()
+    print(f"  Current vectors: {stats['total_vector_count']}\n")
 
-    if drafts:
-        saved = save_drafts(drafts)
-        print(f"\nDone. {len(saved)} new draft(s) committed to aip/drafts/")
-    else:
-        print("\nNo new drafts generated this run.")
+    # Find all HTML module files
+    html_files = sorted(MODULES_DIR.glob("**/*.html"))
+    # Filter to actual module files (skip hubs, admin pages, etc.)
+    module_files = [
+        f for f in html_files
+        if re.search(r"-m\d+\.html$", f.name)
+    ]
+    print(f"Found {len(module_files)} module files.\n")
+
+    # Process each file
+    all_vectors = []
+    for filepath in module_files:
+        rel_path = str(filepath.relative_to("."))
+        title, text = extract_text_from_html(filepath)
+
+        if len(text.split()) < 20:
+            print(f"  Skipping (too short): {rel_path}")
+            continue
+
+        chunks = chunk_text(text)
+        print(f"  {rel_path}: {len(chunks)} chunks from '{title}'")
+
+        for i, chunk in enumerate(chunks):
+            # Deterministic ID based on file path + chunk index
+            vec_id = hashlib.md5(f"{rel_path}::{i}".encode()).hexdigest()
+            all_vectors.append({
+                "id": vec_id,
+                "text": chunk,
+                "metadata": {
+                    "source": rel_path,
+                    "title": title,
+                    "chunk_index": i,
+                    "total_chunks": len(chunks),
+                },
+            })
+
+    print(f"\nTotal chunks to index: {len(all_vectors)}")
+
+    if not all_vectors:
+        print("No content to index.")
+        return
+
+    # Embed in batches
+    print("\nEmbedding chunks...")
+    for batch_start in range(0, len(all_vectors), EMBED_BATCH):
+        batch = all_vectors[batch_start : batch_start + EMBED_BATCH]
+        texts = [v["text"] for v in batch]
+        embeddings = embed_texts(texts)
+
+        for vec, emb in zip(batch, embeddings):
+            vec["embedding"] = emb
+
+        done = min(batch_start + EMBED_BATCH, len(all_vectors))
+        print(f"  Embedded {done}/{len(all_vectors)}")
+
+    # Upsert to Pinecone in batches
+    print("\nUpserting to Pinecone...")
+    for batch_start in range(0, len(all_vectors), UPSERT_BATCH):
+        batch = all_vectors[batch_start : batch_start + UPSERT_BATCH]
+        upsert_data = [
+            (v["id"], v["embedding"], v["metadata"])
+            for v in batch
+        ]
+        index.upsert(vectors=upsert_data)
+        done = min(batch_start + UPSERT_BATCH, len(all_vectors))
+        print(f"  Upserted {done}/{len(all_vectors)}")
+
+    # Final stats
+    stats = index.describe_index_stats()
+    print(f"\nDone. Vectors now in index: {stats['total_vector_count']}")
+
 
 if __name__ == "__main__":
     main()

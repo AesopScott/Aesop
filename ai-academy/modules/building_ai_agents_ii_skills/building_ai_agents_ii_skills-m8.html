@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Benchmarking Agent Cognition — Advanced | AESOP AI Academy Module 8</title>
+<meta name="description" content="Advanced: How to measure reasoning and planning quality — practical eval methods. Module 8 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-8/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+</head><body>
+<div class="site-layout">
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">← Academy</a>
+    <div class="sb-mod-num">MODULE 8</div>
+    <div class="sb-mod-title">Benchmarking Agent Cognition</div>
+    <div class="sb-tier-chip">🎯 Advanced</div>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📖</span> Lesson 1</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">📖</span> Lesson 2</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">📖</span> Lesson 3</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">📖</span> Lesson 4</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">⚡ Module Test</button>
+</nav>
+
+<div class="main">
+
+<!-- ==================== LESSON 1 ==================== -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>Why Benchmarks Break — and What to Do About It</h1>
+    <p class="tagline">The hidden failure modes of standard AI evaluation and why your production agent needs something different.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In November 2023, a widely circulated paper from UC Berkeley and Stanford showed that GPT-4's performance on the MMLU benchmark—the dominant test of knowledge across 57 academic subjects—had measurably declined between March and June 2023. Specifically, on coding tasks, accuracy dropped from 50.6% to 2.4%. OpenAI disputed the interpretation but confirmed the model had changed. The episode exposed a deeper truth: benchmark scores are snapshots of a specific model checkpoint on a specific task framing. They are not durable measures of agent capability in deployment.</p>
+    <p class="story-text">The problem has a name in the research community: <strong>benchmark contamination</strong>. When training data includes benchmark questions, or when model updates are implicitly optimized toward benchmark performance, the score stops measuring what it claims to measure. For practitioners building production agents, this means standard leaderboard rankings are nearly useless as deployment guides.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Goodhart Trap in AI Evaluation</h2>
+    <div class="section-body">
+      <p>Goodhart's Law states: "When a measure becomes a target, it ceases to be a good measure." In AI benchmarking, this manifests in three specific ways that matter for agent builders.</p>
+      <p>First, <strong>distribution shift</strong>: benchmarks sample from a fixed distribution of questions. Production agents face queries with entirely different statistical properties—longer context, ambiguous phrasing, domain jargon, and adversarial inputs that benchmark designers never imagined. A model scoring 89% on HellaSwag (a commonsense reasoning benchmark) can still fail embarrassingly on a simple multi-step task in your product's specific domain.</p>
+      <p>Second, <strong>capability conflation</strong>: most benchmarks measure a mix of capabilities without isolating them. MMLU scores blend factual recall, reading comprehension, and domain reasoning into a single number. When an agent fails in production, you cannot diagnose the cause from a composite score. You need decomposed, task-specific measurements.</p>
+      <p>Third, <strong>static framing</strong>: benchmarks present single-turn questions. Agents operate in multi-turn, tool-using, stateful loops. An agent that answers a question correctly in isolation may still mis-sequence a five-step plan or fail to recover from a tool error. Standard benchmarks never test these properties.</p>
+    </div>
+    <div class="callout-box">
+      <div class="callout-label">Key Principle</div>
+      <p>The right question is not "what does this model score on MMLU?" but "what specific failure modes does this agent exhibit on tasks that look like my production workload?"</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Building Task-Specific Evaluation Sets</h2>
+    <div class="section-body">
+      <p>The practical alternative to off-the-shelf benchmarks is a <strong>golden dataset</strong>: a curated collection of real or realistic inputs from your actual use case, each paired with a ground-truth expected output or rubric. Building one requires three ingredients: input diversity (covering the range of things real users actually do), difficulty calibration (including easy, medium, and hard instances), and honest labeling (preferably by domain experts, not just the model that will be evaluated).</p>
+      <p>Anthropic's internal evals team, described in their 2023 model card, uses exactly this approach for Claude. They maintain domain-specific eval suites for coding, math, medical reasoning, legal analysis, and safety—each with carefully constructed examples that probe known failure modes rather than average competence. The key insight: a 50-question eval targeting your specific failure hypothesis beats a 10,000-question general benchmark every time for production decisions.</p>
+      <p>When constructing your golden dataset, document the <strong>provenance</strong> of every example: where did it come from, who labeled it, and what edge case does it probe? This documentation becomes essential when you need to update the eval after model changes.</p>
+    </div>
+    <ul class="ul-body">
+      <li>Pull 20–30% of eval examples directly from production logs (anonymized)</li>
+      <li>Construct adversarial examples targeting known model weaknesses</li>
+      <li>Include boundary cases: near-misses, ambiguous inputs, multi-step dependencies</li>
+      <li>Separate easy/medium/hard tiers to detect capability cliffs</li>
+      <li>Version-control your eval set as rigorously as your code</li>
+    </ul>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Behavioral Regression Testing</h2>
+    <div class="section-body">
+      <p>Once you have a golden dataset, the most valuable thing you can do with it is run it automatically every time your agent's prompt, model version, or toolchain changes. This is <strong>behavioral regression testing</strong>—treating agent cognition the same way software engineers treat code: any change must demonstrably not break existing expected behaviors before deployment.</p>
+      <p>The engineering team at Brex, the corporate card company, publicly described in 2023 how they implement this for their AI-powered finance assistant. They maintain a suite of example conversations with expected outputs. Before any prompt change ships, automated tests run the full suite and flag regressions. A prompt update that improves performance on one category but degrades another is caught before users see it. This approach reduced their unexpected behavior rate by over 60% in their first quarter of implementation.</p>
+    </div>
+    <div class="callout-box">
+      <div class="callout-label">Implementation Note</div>
+      <p>Regression tests for agents are harder than for code because outputs are probabilistic. Use temperature=0 or very low temperature during eval runs, and accept a ±3% tolerance on scores before flagging a regression. Anything larger is a real signal.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <a class="pnav-btn primary" onclick="goPage('p-l1-quiz')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 QUIZ ==================== -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Quiz: Why Benchmarks Break</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. The 2023 Berkeley/Stanford paper on GPT-4's MMLU decline best illustrates which evaluation problem?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Models are always getting worse over time</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Benchmark scores are snapshots that may not reflect durable capability</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">MMLU is too easy to be useful</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">OpenAI deliberately hides performance regressions</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. The episode showed that a score on a fixed benchmark reflects a specific checkpoint under specific conditions—not a stable measure of agent capability across versions or deployments.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The key lesson was about the fragility and snapshot nature of benchmark scores, not a general claim about model trajectories or benchmark difficulty.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. What does Goodhart's Law predict will happen when an AI lab optimizes hard toward a specific benchmark score?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">The model will become more capable across all tasks</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">The benchmark will become more accurate as a measure</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">The score will stop being a reliable indicator of the underlying capability it was meant to measure</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Researchers will stop using the benchmark</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Goodhart's Law: once a measure becomes a target, it ceases to be a good measure. Optimizing for the benchmark score decouples it from the underlying capability the score was designed to track.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Goodhart's Law specifically predicts that optimization pressure corrupts the measure's validity—the score inflates while the underlying capability it tracks may not improve proportionally.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. Which approach does Brex's engineering team use to catch agent regressions before they reach users?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Running the model on MMLU before every deployment</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Having human reviewers inspect every output manually</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Using a fixed temperature of 1.0 for consistency</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">Automated behavioral regression tests against a suite of example conversations with expected outputs</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Brex maintains a curated suite of example conversations. Any prompt or model change runs through this suite automatically before shipping, catching regressions that would otherwise reach production.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Brex uses automated regression testing against their own curated conversation suite—not generic benchmarks or manual review, which wouldn't scale.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l1-lab')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 LAB ==================== -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 1</div>
+    <h1>Lab: Designing Your Golden Dataset</h1>
+    <p class="tagline">Work with an AI to plan a task-specific evaluation set for a real agent scenario.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're building an agent that helps a legal team summarize contracts and flag unusual clauses. Standard benchmarks won't tell you if it actually works. You need a golden dataset.</p>
+    <p>In this lab, discuss with the AI how to design that evaluation set. Consider:</p>
+    <ol>
+      <li>What kinds of inputs should you include — routine contracts, edge cases, adversarial examples?</li>
+      <li>How should you structure expected outputs or rubrics for subjective tasks like "flagging unusual clauses"?</li>
+      <li>How many examples do you need, and how should they be split across difficulty tiers?</li>
+    </ol>
+    <div class="lab-prompt">Starter prompt: "I'm designing a golden dataset to evaluate a contract analysis agent. Help me think through what inputs to include, how to handle subjective outputs, and how to tier difficulty."</div>
+  </div>
+  <div class="lab-chat" id="lab-chat-l1">
+    <div class="lab-chat-header">
+      <span>🧪 Eval Design Lab</span>
+      <span class="chat-badge">AI Tutor Active</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="2" placeholder="Ask about golden dataset design..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1-quiz')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 ==================== -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Measuring Reasoning Quality — Beyond Right/Wrong</h1>
+    <p class="tagline">How to evaluate the quality of an agent's reasoning process, not just its final answer.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2022, Google DeepMind published research on their Sparrow model, which used reinforcement learning from human feedback. One critical finding: the model could produce correct final answers through flawed reasoning chains. In one documented category, the model arrived at the right conclusion for demonstrably wrong reasons—a pattern researchers called "reasoning shortcuts." This meant that answer-accuracy metrics alone were dangerously misleading: an agent scoring 85% correct could still be unreliable whenever its shortcut broke down in a novel situation.</p>
+    <p class="story-text">The same year, Wei et al.'s chain-of-thought prompting paper at Google Brain showed that making models show their intermediate reasoning steps dramatically improved final answer accuracy—but also revealed that models could produce plausible-sounding but factually incorrect reasoning steps while still reaching the right answer. Evaluating reasoning quality became a distinct and urgent problem.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Process Metrics vs. Outcome Metrics</h2>
+    <div class="section-body">
+      <p>In agent evaluation, there is a fundamental distinction between <strong>outcome metrics</strong> (did the agent produce the right final answer or action?) and <strong>process metrics</strong> (did the agent reason correctly along the way?). Both matter, but they catch different failure modes.</p>
+      <p>Outcome metrics are easier to collect and automate—you compare the agent's output to a known correct answer. They're essential for catching obvious failures. But they miss the class of errors where an agent gets lucky: it produces the right output for the wrong reason, or it happens to succeed on your eval set but fails in production on structurally similar problems where the shortcut doesn't work.</p>
+      <p>Process metrics require evaluating intermediate steps. For a planning agent, this means checking whether each sub-goal is correctly identified, whether the sequencing logic is valid, and whether the agent correctly updates its plan when a tool call returns unexpected results. These are harder to score automatically and often require rubric-based human or LLM-as-judge evaluation.</p>
+    </div>
+    <div class="callout-box">
+      <div class="callout-label">Practical Framework</div>
+      <p>Evaluate agents at three levels: (1) Final output correctness, (2) Intermediate step validity, (3) Error recovery behavior. A production-ready agent needs passing grades at all three levels, not just the first.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">LLM-as-Judge: Scalable Reasoning Evaluation</h2>
+    <div class="section-body">
+      <p>One of the most significant methodological advances in agent evaluation since 2023 is using a separate large language model to evaluate reasoning quality—sometimes called LLM-as-judge or model-graded evaluation. Rather than requiring a human to read every reasoning chain, you write a detailed rubric and instruct an evaluation model to score responses against it.</p>
+      <p>Zheng et al.'s 2023 paper "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena" (UC Berkeley) benchmarked this approach systematically. Their key finding: GPT-4 as a judge achieved over 80% agreement with human expert evaluators on open-ended question quality—comparable to inter-human agreement rates. The approach has known biases: LLM judges favor longer responses and can exhibit self-enhancement bias (preferring outputs similar to their own style). But with proper rubric design and calibration checks, it scales evaluation dramatically.</p>
+      <p>The correct workflow: write a detailed rubric with specific scoring criteria, provide the judge model with a few calibration examples (showing what a score-1, score-3, and score-5 response looks like), run your eval set, and then spot-check 10–15% of judgments against human labels to verify calibration. If the judge and humans diverge by more than 15%, revise the rubric before trusting the results.</p>
+    </div>
+    <ul class="ul-body">
+      <li>Use a different model family as judge to reduce self-enhancement bias</li>
+      <li>Provide 3–5 calibration examples with explicit scoring rationale</li>
+      <li>Request structured JSON output from the judge: score + one-sentence rationale</li>
+      <li>Always spot-check judge outputs against human labels before trusting at scale</li>
+      <li>Test for position bias: swap the order of compared responses and check for score flips</li>
+    </ul>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Measuring Planning Quality Specifically</h2>
+    <div class="section-body">
+      <p>Planning is a distinct cognitive capacity from question answering, and it requires its own evaluation apparatus. A planning agent must decompose a complex goal into sub-tasks, sequence those sub-tasks correctly, allocate resources or tool calls appropriately, and adapt when the environment changes. Each of these is separately measurable.</p>
+      <p>The AgentBench benchmark, released by researchers at Tsinghua University in 2023, was one of the first attempts to evaluate agents specifically on multi-step task completion across eight different environments—operating systems, databases, knowledge graphs, and more. Their results showed that while GPT-4 significantly outperformed other models on single-step tasks, the gap compressed on multi-step tasks requiring planning recovery. Several open-source models that ranked much lower on MMLU performed comparably to GPT-4 on specific planning sub-tasks. This confirmed that general benchmark scores are weak predictors of planning performance.</p>
+    </div>
+    <div class="callout-box">
+      <div class="callout-label">Planning Eval Checklist</div>
+      <p>For each planning task in your eval set, score: (1) Correct goal decomposition — are all necessary sub-tasks identified? (2) Valid sequencing — are dependencies respected? (3) Tool selection accuracy — are the right tools called? (4) Error recovery — when a tool fails, does the agent adapt or stall?</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1-lab')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2-quiz')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 QUIZ ==================== -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Quiz: Measuring Reasoning Quality</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. What did Google DeepMind's Sparrow research reveal about answer-accuracy metrics?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">They are the most reliable way to measure agent capability</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Models can achieve high accuracy through flawed reasoning that breaks down in novel situations</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Reinforcement learning always produces worse reasoning than supervised learning</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Answer accuracy and reasoning quality are always correlated</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Sparrow research showed models could reach correct answers via "reasoning shortcuts"—flawed logic that happened to work on the eval set but would fail on novel problems where the shortcut didn't apply.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The research specifically showed that answer accuracy can be dangerously misleading—correct outputs can mask incorrect reasoning that will fail in new contexts.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. According to the Zheng et al. 2023 paper on LLM-as-judge, what level of agreement with human experts did GPT-4 achieve as a judge?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Around 50%, making it marginally better than random</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Around 65%, making it useful but clearly inferior to humans</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Over 80%, comparable to inter-human agreement rates</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Over 95%, making it more reliable than human reviewers</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. The MT-Bench paper found GPT-4 as judge achieved over 80% agreement with human expert evaluators—comparable to how much humans agree with each other, making it a viable scaling strategy for evaluation.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The paper found GPT-4 as judge achieved over 80% agreement with human experts—high enough to be practically useful, though not without documented biases that require mitigation.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. What did AgentBench research from Tsinghua University find about GPT-4's planning performance relative to lower-ranked models?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">GPT-4 dominated all models on every planning sub-task</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">GPT-4's advantage over other models compressed significantly on multi-step planning tasks</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Open-source models universally outperformed GPT-4 on planning</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">MMLU scores were accurate predictors of planning performance</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. AgentBench found that while GPT-4 led on single-step tasks, its advantage compressed on multi-step planning. Some models ranking much lower on MMLU matched GPT-4 on specific planning sub-tasks—showing general benchmarks don't predict planning performance.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. AgentBench specifically showed that GPT-4's benchmark advantage compressed in multi-step planning scenarios, and MMLU rankings were weak predictors of planning capability.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2-lab')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 LAB ==================== -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 2</div>
+    <h1>Lab: Writing an LLM-as-Judge Rubric</h1>
+    <p class="tagline">Design a rubric that can evaluate the quality of reasoning chains in a multi-step agent.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're evaluating a research agent that searches the web, synthesizes sources, and produces structured reports. Answer accuracy alone isn't enough—you need to evaluate reasoning quality.</p>
+    <p>Work with the AI to design an LLM-as-judge rubric for this agent. Explore:</p>
+    <ol>
+      <li>What dimensions should the rubric score? (e.g., source quality, logical consistency, claim support)</li>
+      <li>How do you structure calibration examples to reduce judge bias?</li>
+      <li>How do you detect and correct for position bias or length bias in the judge's scores?</li>
+    </ol>
+    <div class="lab-prompt">Starter prompt: "I need to write an LLM-as-judge rubric to evaluate reasoning quality in a web research agent. Help me design dimensions, scoring criteria, and calibration examples."</div>
+  </div>
+  <div class="lab-chat" id="lab-chat-l2">
+    <div class="lab-chat-header">
+      <span>🧪 Rubric Design Lab</span>
+      <span class="chat-badge">AI Tutor Active</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="2" placeholder="Ask about rubric design or judge bias..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2-quiz')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 ==================== -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Calibration, Uncertainty, and Knowing What You Don't Know</h1>
+    <p class="tagline">How to measure whether an agent's confidence matches its actual accuracy — and why miscalibration is dangerous.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2023, researchers at Stanford Medical School published a study examining how well large language models calibrate their confidence on medical diagnosis questions. They found that GPT-4, when asked medical questions, expressed "very high confidence" on approximately 38% of questions where it was actually wrong. The model's expressed certainty bore little relationship to its actual accuracy on those questions. In a clinical support tool context, this miscalibration could directly harm patients—a doctor relying on high-confidence AI answers that are frequently wrong in exactly those high-confidence cases would receive systematically misleading guidance.</p>
+    <p class="story-text">The paper, published in npj Digital Medicine, used Expected Calibration Error (ECE) as its primary metric—a measure of how far a model's average stated confidence diverges from its actual accuracy across confidence buckets. GPT-4 had significantly better calibration than GPT-3.5, but both were measurably miscalibrated in ways that were invisible to standard accuracy metrics.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">What Calibration Means for Agents</h2>
+    <div class="section-body">
+      <p>A well-calibrated model means: when it says it's 80% confident, it's right about 80% of the time. A miscalibrated model might say it's 90% confident when it's actually right only 60% of the time—or it might under-express confidence, hedging excessively on questions it handles reliably. Both failure modes are costly in production agents.</p>
+      <p>For agent builders, calibration matters in three specific contexts. First, when an agent must decide whether to call a human for help versus proceeding autonomously—a miscalibrated confidence score will make this routing decision poorly. Second, when an agent outputs information that downstream systems or humans will act on—overconfident wrong answers propagate errors through the system. Third, when measuring agent improvement over time—if calibration degrades as you fine-tune for accuracy, you've created a more dangerous agent even if accuracy numbers look better.</p>
+      <p>The Expected Calibration Error (ECE) metric works by binning model outputs by their stated confidence (0–10%, 10–20%, etc.), computing actual accuracy within each bin, and averaging the gap between stated confidence and actual accuracy across bins. A perfect ECE is 0. Values below 0.05 are generally considered good. Values above 0.15 indicate serious miscalibration that should block production deployment.</p>
+    </div>
+    <div class="callout-box">
+      <div class="callout-label">Key Metric</div>
+      <p>Expected Calibration Error (ECE) is the primary measure of confidence calibration. Compute it by comparing stated confidence to actual accuracy across confidence buckets. ECE &lt; 0.05 is acceptable; ECE &gt; 0.15 is a red flag for production deployment.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Eliciting Calibrated Confidence from LLMs</h2>
+    <div class="section-body">
+      <p>Getting usable confidence estimates from LLMs is non-trivial because they don't natively output probability distributions—they output tokens. There are three main approaches used in production systems.</p>
+      <p>The first is <strong>verbalized confidence</strong>: prompting the model to state a numeric confidence score alongside its answer. This is the simplest approach but has a major flaw: verbalized confidence is itself generated by the model's language modeling objective and is often poorly correlated with actual accuracy. A 2023 paper from MIT showed that verbalized confidence from GPT-4 had only moderate correlation with actual accuracy on factual questions.</p>
+      <p>The second is <strong>token probability extraction</strong>: using the model's API to extract the log-probabilities of specific output tokens (typically the answer choice tokens in a multiple-choice format). This provides a direct measure of the model's distributional confidence. OpenAI's API, for example, supports returning log-probabilities for up to 20 tokens in a response. This method requires constrained output formats but produces better-calibrated confidence signals than verbalized confidence.</p>
+      <p>The third is <strong>consistency sampling</strong>: running the same prompt multiple times (with temperature > 0) and measuring how often the model gives the same answer. High answer consistency across 10–20 samples correlates reasonably well with actual accuracy. This approach is model-agnostic and requires no API modifications, but it multiplies inference cost by the number of samples.</p>
+    </div>
+    <ul class="ul-body">
+      <li>Verbalized confidence: easy to implement, but weakly correlated with actual accuracy</li>
+      <li>Token log-probabilities: better calibrated, but requires constrained output format and API support</li>
+      <li>Consistency sampling: model-agnostic and robust, but 10–20× more expensive per query</li>
+      <li>Calibration temperature scaling: a post-hoc technique to re-calibrate a model's probability outputs using a held-out validation set</li>
+    </ul>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Measuring and Monitoring Calibration in Production</h2>
+    <div class="section-body">
+      <p>Calibration is not a one-time eval—it must be monitored continuously because it can drift as your prompt changes, as the underlying model is updated, or as your user population's query distribution shifts. The practical implementation involves three components: a calibration eval set, a periodic batch evaluation job, and alerting thresholds.</p>
+      <p>Your calibration eval set should include questions with known ground-truth answers spanning the confidence range you care about—some that the model reliably answers correctly, some where it consistently fails, and plenty in the middle. Run this eval on a schedule (weekly at minimum, daily if your agent handles high-stakes decisions). Track ECE over time as a time-series metric alongside accuracy, and set alerts if ECE increases by more than 0.03 from its baseline in a rolling 7-day window. This pattern was publicly described by the machine learning engineering team at LinkedIn in a 2023 blog post about their AI reliability infrastructure.</p>
+    </div>
+    <div class="callout-box">
+      <div class="callout-label">Production Pattern</div>
+      <p>Treat calibration like latency: a metric you monitor continuously with alerting thresholds, not a one-time eval you run before launch. Calibration drift is often the first signal of a distribution shift problem that accuracy metrics will detect too late.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2-lab')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3-quiz')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 QUIZ ==================== -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Quiz: Calibration and Uncertainty</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. The 2023 Stanford Medical School study found that GPT-4 expressed "very high confidence" on approximately what percentage of medical questions where it was actually wrong?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">About 5% — a small but meaningful error rate</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">About 15% — concerning but manageable</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">About 38% — a large proportion of high-confidence wrong answers</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">About 60% — meaning high confidence was essentially random</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. The Stanford study found approximately 38% of GPT-4's very high confidence responses were actually wrong—a severe miscalibration that could cause real harm in a clinical support context.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The study found approximately 38% of high-confidence answers were wrong—a much higher rate than most practitioners assume, underscoring why calibration must be measured explicitly rather than assumed.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. What does an Expected Calibration Error (ECE) of 0.20 indicate about an agent?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The agent is well-calibrated and ready for high-stakes deployment</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The agent has acceptable calibration with minor adjustments needed</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">Serious miscalibration that should block production deployment</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The agent is under-confident and hedges too aggressively</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. ECE values above 0.15 indicate serious miscalibration. An ECE of 0.20 is above this threshold and should block production deployment until calibration is improved.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. ECE above 0.15 is the red-flag threshold for serious miscalibration. An ECE of 0.20 exceeds this and should block deployment—the agent's confidence statements are unreliable.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. Which confidence elicitation method is model-agnostic and requires no API modifications, but is significantly more expensive?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Verbalized confidence scoring</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Token log-probability extraction</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Consistency sampling across multiple runs</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Calibration temperature scaling</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Consistency sampling—running the same prompt 10–20 times and measuring answer agreement rate—works with any model and API but multiplies inference cost by the number of samples. It's the most portable approach at the highest cost.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Consistency sampling is the approach that requires no API modifications and works with any model, but it's expensive because it requires multiple inference calls per query to measure answer consistency.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3-lab')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 LAB ==================== -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 3</div>
+    <h1>Lab: Calibration Monitoring Design</h1>
+    <p class="tagline">Plan a calibration monitoring system for a production agent handling sensitive decisions.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're deploying an agent that helps insurance underwriters assess risk from submitted documents. Overconfident wrong answers could cause significant financial and customer harm.</p>
+    <p>Work with the AI to design a calibration monitoring system. Consider:</p>
+    <ol>
+      <li>Which confidence elicitation method is most appropriate for this high-stakes use case?</li>
+      <li>How would you design your calibration eval set for the insurance domain?</li>
+      <li>What alerting thresholds and monitoring cadence would you implement?</li>
+    </ol>
+    <div class="lab-prompt">Starter prompt: "I'm deploying an insurance underwriting agent and need to monitor its calibration continuously. Help me design the confidence elicitation method, eval set, and monitoring system."</div>
+  </div>
+  <div class="lab-chat" id="lab-chat-l3">
+    <div class="lab-chat-header">
+      <span>🧪 Calibration Monitoring Lab</span>
+      <span class="chat-badge">AI Tutor Active</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="2" placeholder="Ask about calibration monitoring design..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3-quiz')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l4')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 4</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 4 ==================== -->
+<div class="page"

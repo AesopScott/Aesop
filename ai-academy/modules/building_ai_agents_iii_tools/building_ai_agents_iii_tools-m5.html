@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Integration Patterns — Advanced | AESOP AI Academy Module 5</title>
+<meta name="description" content="Advanced: Connecting agents to third-party services — auth, rate limits, and error handling. Module 5 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-5/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+</head><body>
+<div class="site-layout">
+
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">← Academy</a>
+    <div class="sb-mod-num">Module 5</div>
+    <div class="sb-mod-title">API Integration Patterns</div>
+    <div class="sb-tier-chip">🎯 Advanced</div>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📖</span>L1: Auth Strategies</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">📖</span>L2: Rate Limits</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">📖</span>L3: Error Handling</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">📖</span>L4: Resilient Pipelines</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">⚡ Module Test</button>
+</nav>
+
+<div class="main">
+
+<!-- ==================== LESSON 1 ==================== -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>Authentication Strategies for Agent APIs</h1>
+    <div class="tagline">API keys, OAuth 2.0, and token lifecycle management — keeping agents securely credentialed at scale.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In March 2023, Samsung engineers discovered that internal source code and meeting notes had been leaked to OpenAI's servers after employees pasted confidential data directly into ChatGPT. The root cause was not malicious — it was a total absence of credential and data governance around an AI tool that had been adopted without a security framework. Samsung subsequently banned ChatGPT internally and began building private infrastructure. The incident forced the entire industry to confront a specific engineering question: when an AI agent calls external APIs on behalf of users, <em>how</em> those credentials are stored, scoped, and rotated is not an afterthought — it is the foundational design decision.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">API Keys: The Baseline and Its Limits</div>
+    <div class="section-body">
+      <p>API keys are strings — typically 32 to 64 random hex or base64 characters — that identify a calling application to a service. Every major third-party API (Stripe, Twilio, OpenWeatherMap, GitHub) issues them. They are simple to implement: include the key in an HTTP header (most commonly <code>Authorization: Bearer &lt;key&gt;</code> or a service-specific header like <code>X-API-Key</code>) and the request is authenticated.</p>
+      <p>For agents, the danger is that API keys are long-lived, service-wide credentials. A key stolen from an agent's environment variables grants the attacker full API access until the key is manually revoked. The 2022 Heroku breach demonstrated this: GitHub OAuth tokens stored in Heroku's infrastructure were exfiltrated, giving attackers access to thousands of private repositories before the compromise was detected. Heroku had to revoke all affected tokens en masse — a painful, manual recovery process that took weeks.</p>
+      <p>Best practices for key-based auth in agents: store keys in a secrets manager (AWS Secrets Manager, HashiCorp Vault, or GCP Secret Manager) rather than environment variables or code. Rotate keys on a schedule — 90-day rotation is a common baseline. Use the principle of least privilege: if the agent only needs to read data, provision a read-only key, not a full-access key. Log every key usage so anomalous call volumes surface immediately.</p>
+      <div class="callout-box">
+        <div class="callout-label">Critical Pattern</div>
+        <p>Never hardcode API keys in agent source code or include them in version control. GitHub's secret scanning feature automatically alerts repository owners when API keys from major providers are pushed — because this mistake is extraordinarily common. Treat every committed key as compromised the moment it is pushed.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">OAuth 2.0: Delegated Authority</div>
+    <div class="section-body">
+      <p>OAuth 2.0 is the dominant protocol for delegated authorization — scenarios where an agent acts on behalf of a specific user rather than as itself. The classic case: a scheduling agent that books calendar events needs a Google Calendar access token scoped specifically to that user's calendar. OAuth provides exactly this. The flow issues a short-lived access token (typically 1 hour) and a longer-lived refresh token. The agent presents the access token with each API call and uses the refresh token to obtain a new access token when it expires, without requiring the user to re-authenticate.</p>
+      <p>In 2021, Twitter's API v2 transition forced thousands of developer accounts to migrate from v1.1 OAuth 1.0a to OAuth 2.0. Applications that had been silently using long-lived OAuth 1.0a tokens suddenly had to implement token refresh logic. Many bots and agents broke during the transition — illustrating that token lifecycle management is not a set-and-forget concern. The agent must actively manage the refresh cycle, handle refresh token expiry (after which the user must re-authenticate entirely), and store tokens securely between sessions.</p>
+      <ul class="ul-body">
+        <li><strong>Authorization Code Flow</strong> — for agents with a human in the loop during initial setup; redirects through a browser for consent</li>
+        <li><strong>Client Credentials Flow</strong> — for machine-to-machine agents with no user context; the agent authenticates as itself</li>
+        <li><strong>Device Authorization Flow</strong> — for agents running on devices without browsers; user approves on a separate device</li>
+        <li><strong>Token Refresh</strong> — proactively refresh tokens before expiry (not after a 401 error) to avoid service interruption mid-task</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Scope Management</div>
+        <p>OAuth scopes are the permission lists attached to a token. Request only the scopes the agent actually needs. Google, Microsoft, and Salesforce all implement incremental authorization — you can request additional scopes as tasks require them rather than demanding every possible permission upfront. Overly broad scope requests increase both security risk and user trust erosion.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Service Accounts and Short-Lived Credentials</div>
+    <div class="section-body">
+      <p>For cloud-native agents — those running on AWS Lambda, GCP Cloud Run, or Azure Functions — the most secure authentication pattern avoids long-lived secrets entirely. Instead, the execution environment is granted an IAM role or service account. The cloud provider's metadata service issues short-lived credentials (often 15 minutes to 1 hour) that are automatically refreshed. The agent never stores a password or key; it simply assumes an identity the platform vouches for.</p>
+      <p>Google's Workload Identity Federation, introduced as GA in 2021, extended this model to non-Google workloads: an agent running on AWS can exchange an AWS IAM credential for a GCP access token without storing any GCP secrets at all. This federation approach is increasingly the standard for multi-cloud agent architectures. The engineering tradeoff is complexity during setup — the IAM role bindings, service account mappings, and trust configurations must be carefully defined — but the runtime security posture is significantly stronger than any stored-secret approach.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <div></div>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== QUIZ 1 ==================== -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Quiz: Auth Strategies</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. A developer accidentally commits an AWS API key to a public GitHub repository. What is the correct immediate response?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Delete the commit from git history and assume the key is safe</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Revoke the key immediately, then audit CloudTrail logs for unauthorized usage</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Make the repository private and monitor for suspicious charges</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Rotate the key on the next scheduled 90-day cycle</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The key must be treated as compromised the instant it is public. Revoking immediately and auditing logs is the only safe response — git history is often already scraped by automated bots within minutes of a push.</div>
+    <div class="quiz-feedback wrong">❌ A committed key is compromised the moment it is pushed. Automated scanning bots index GitHub continuously. Making the repo private or waiting for scheduled rotation leaves the key active and exploitable.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. Which OAuth 2.0 flow is most appropriate for an agent that runs as an autonomous background service with no user interaction during operation?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Authorization Code Flow</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Device Authorization Flow</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Client Credentials Flow</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Implicit Flow</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Client Credentials Flow is designed for machine-to-machine scenarios — the agent authenticates as itself using its own client ID and secret, with no user redirect required. Authorization Code requires a browser-based consent step intended for user delegation.</div>
+    <div class="quiz-feedback wrong">❌ Client Credentials Flow is the correct answer. It is specifically designed for server-to-server communication where no user is present. Authorization Code and Device Authorization both require human interaction at some point in the flow.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. What is the primary security advantage of cloud-native agents using IAM roles rather than stored API keys?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">IAM roles allow higher API rate limits than key-based auth</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">IAM role credentials never expire and require no management</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">IAM roles provide more detailed permission scoping than OAuth</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">The agent never stores a long-lived secret; credentials are auto-issued and short-lived</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. IAM role credentials are ephemeral — typically valid for 15 minutes to 1 hour — and issued dynamically by the cloud platform's metadata service. There is no stored secret to exfiltrate, which eliminates the most common credential compromise vector.</div>
+    <div class="quiz-feedback wrong">❌ The advantage is that no long-lived secret is ever stored. The platform issues short-lived credentials automatically. This removes the attack surface of stolen or leaked credentials entirely, which is the fundamental security improvement.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 1</span></button>
+  </div>
+</div>
+
+<!-- ==================== LAB 1 ==================== -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 1</div>
+    <h1>Lab: Designing Auth for a Multi-Service Agent</h1>
+    <div class="tagline">Practice choosing and structuring authentication strategies across real service types.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are designing authentication for an agent that integrates three services: a Stripe payment API, a Google Calendar API (acting on behalf of specific users), and an internal AWS-hosted analytics endpoint. Your AI coach will help you work through the auth strategy for each service.</p>
+    <div class="lab-prompt">Ask: "What auth pattern should I use for each of my three services, and what secrets management approach fits best for a production agent?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🔐 Auth Strategy Coach</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="2" placeholder="Ask about auth patterns, token management, or secrets storage..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 ==================== -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Rate Limits: Detection, Backoff, and Queuing</h1>
+    <div class="tagline">Every third-party API has a ceiling. Agents that hit it blindly break. Agents that anticipate it are production-grade.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In June 2021, Reddit's API infrastructure buckled under the load from third-party apps during a spike in traffic following a viral news cycle. Automated bots — many running without any rate-limit awareness — hammered endpoints until Reddit's systems began throttling indiscriminately, affecting legitimate users. Reddit subsequently introduced stricter API rate limits (100 calls per minute per OAuth client) and began enforcing them with hard 429 responses rather than silent drops. In 2023, when Reddit moved to a paid API model, the policy changes broke hundreds of bots overnight — those without robust retry and backoff logic simply died. The ones that survived were those whose developers had treated rate limits as a first-class engineering concern from the start.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Understanding Rate Limit Structures</div>
+    <div class="section-body">
+      <p>Rate limits exist in multiple dimensions simultaneously. A single API might enforce: requests per second (burst limit), requests per minute (sustained limit), requests per day (quota), and concurrent connections. Twitter's API v2, for example, uses a tiered system: the free tier allows 500,000 tweets per month read access; Basic tier allows 3,000 posts per month; and so on. Stripe enforces 100 read requests per second and 25 write requests per second per account in live mode. OpenAI's API uses tokens-per-minute limits that vary by model and tier — GPT-4 Turbo on tier 2 allows 450,000 TPM but only 5,000 RPM.</p>
+      <p>Agents must read and respect the rate limit headers returned by APIs. The standard headers, formalized in RFC 6585, include: <code>X-RateLimit-Limit</code> (the ceiling), <code>X-RateLimit-Remaining</code> (requests left in the current window), and <code>X-RateLimit-Reset</code> (Unix timestamp when the window resets). Some APIs use <code>Retry-After</code> on 429 responses instead. An agent that reads these headers and adjusts its call rate proactively will never hit a hard throttle; one that ignores them will eventually be blocked.</p>
+      <div class="callout-box">
+        <div class="callout-label">The 429 Response</div>
+        <p>HTTP 429 Too Many Requests is the standard throttle signal. The critical distinction is between a 429 with a <code>Retry-After</code> header (the server tells you exactly when to retry) and a 429 without one (you must back off exponentially). Never retry a 429 immediately — doing so compounds the problem and can get your API key banned entirely on some platforms.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Exponential Backoff with Jitter</div>
+    <div class="section-body">
+      <p>Exponential backoff is the standard algorithm for retrying after rate limit errors: wait 2^n seconds between retries, where n is the attempt number. After the first failure, wait 2 seconds. After the second, wait 4. After the third, 8. After the fourth, 16. Cap the backoff at a maximum (typically 64 or 128 seconds) and limit total retries (typically 5–7). This approach is mandated by Google's API client library guidelines and is the default behavior in AWS SDK retry logic.</p>
+      <p>Jitter is a critical addition. Without it, multiple agent instances that all hit the same rate limit at the same time will all retry at the same intervals — creating synchronized thundering herds that re-hit the ceiling in waves. AWS documented this problem in their 2015 "Exponential Backoff and Jitter" engineering post, demonstrating that adding random jitter (randomizing the wait time between 0 and the calculated backoff value) reduced retry collision rates by over 85%. The canonical implementation adds <code>random(0, min(cap, base * 2^attempt))</code> as the actual wait duration.</p>
+      <ul class="ul-body">
+        <li><strong>Full Jitter</strong> — sleep between 0 and the full calculated backoff; maximum spread, best for large distributed systems</li>
+        <li><strong>Equal Jitter</strong> — sleep for half the calculated backoff plus a random amount up to the other half; balances spread and minimum wait</li>
+        <li><strong>Decorrelated Jitter</strong> — sleep is <code>random(base, previous_sleep * 3)</code>; AWS's recommended variant for their SDK</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Request Queuing and Token Bucket Algorithms</div>
+    <div class="section-body">
+      <p>For agents that generate high API call volumes — a data pipeline agent processing thousands of records, for instance — reactive backoff is insufficient. The agent needs proactive rate management: a request queue with a built-in rate governor. The token bucket algorithm is the standard implementation. The bucket holds tokens equal to the rate limit. Each API call consumes one token. Tokens refill at the allowed rate (e.g., 10 per second for a 600 RPM limit). If the bucket is empty, the call waits rather than firing and failing.</p>
+      <p>In 2022, Notion's API team published their rate limit implementation details, noting that their 3 requests-per-second limit was enforced with a token bucket at their infrastructure layer. Third-party developers who implemented their own client-side token buckets saw dramatically lower 429 error rates than those relying on reactive retry. Libraries like <code>bottleneck</code> for Node.js and <code>ratelimit</code> for Python implement token bucket logic with minimal configuration overhead — wrapping an API client in a rate-limited wrapper takes fewer than ten lines of code and prevents the entire class of 429 failures.</p>
+      <div class="callout-box">
+        <div class="callout-label">Priority Queuing</div>
+        <p>Advanced agents often need priority queuing within their rate-limited pipeline: time-sensitive user-facing calls should preempt background batch operations. A priority queue (min-heap or tiered queue structure) sitting in front of the token bucket ensures that a user waiting for a response is never blocked behind a scheduled data sync that could run later.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== QUIZ 2 ==================== -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Quiz: Rate Limits</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. Your agent receives a 429 response with a <code>Retry-After: 45</code> header. What is the correct next action?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Immediately retry the request — 429s are sometimes transient</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Begin exponential backoff starting from 2 seconds</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Wait exactly 45 seconds, then retry once before resuming normal operation</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Log the error and terminate the agent process</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. When a <code>Retry-After</code> header is present, the server is telling you precisely when it will accept requests again. Honor it exactly. Exponential backoff is for cases where no <code>Retry-After</code> is provided.</div>
+    <div class="quiz-feedback wrong">❌ When <code>Retry-After</code> is present, use it directly — wait the specified time, then retry. Exponential backoff is the fallback when no header tells you when to retry. Immediate retry on a 429 worsens the situation.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. Why does adding jitter to exponential backoff improve performance in distributed agent systems?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Jitter increases the maximum backoff ceiling, giving the server more recovery time</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Jitter desynchronizes retry timing across multiple instances, preventing synchronized thundering herds</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Jitter reduces the total number of retry attempts by spreading them over a longer period</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Jitter makes retry delays unpredictable so the server cannot pre-block the agent</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Without jitter, all instances that hit the rate limit at the same time back off for the same duration and retry simultaneously — hitting the ceiling again in a synchronized wave. Jitter randomizes their retry times, spreading load and breaking the collision pattern.</div>
+    <div class="quiz-feedback wrong">❌ Jitter's purpose is desynchronization. Multiple agent instances backing off for identical durations will all retry at the same moment, recreating the original traffic spike. Random jitter spreads their retries across the backoff window, which AWS documented reduces retry collisions by over 85%.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. Which approach best handles high-volume API calls in a production agent that processes thousands of records per minute?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Fire all requests simultaneously and handle 429s with aggressive retries</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Add fixed 100ms delays between every API call regardless of rate limit headers</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Cache all results locally and batch API calls into a single nightly request</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">Implement a client-side token bucket that proactively governs call rate before requests are made</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. A token bucket algorithm proactively manages call rate — requests wait for tokens rather than firing and failing. This prevents 429s from occurring at all, which is far more efficient than any reactive retry strategy.</div>
+    <div class="quiz-feedback wrong">❌ The token bucket algorithm is the correct answer for high-volume scenarios. Reactive retry wastes requests and compounds throttling. Fixed delays are wasteful when the API could accept bursts. Proactive rate governance prevents failures before they happen.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 2</span></button>
+  </div>
+</div>
+
+<!-- ==================== LAB 2 ==================== -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 2</div>
+    <h1>Lab: Rate Limit Architecture Review</h1>
+    <div class="tagline">Design a rate-limit-aware API client for a high-throughput agent scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>Your agent needs to call the OpenAI Embeddings API at high volume — roughly 2,000 records per minute — but the API tier allows only 3,000 RPM. Design a rate management strategy that handles bursts, prioritizes urgent calls, and degrades gracefully under load.</p>
+    <div class="lab-prompt">Ask: "Walk me through designing a token bucket implementation for an embeddings pipeline, including how to handle priority calls and what happens when the bucket is empty."</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>⚡ Rate Limit Architecture Coach</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="2" placeholder="Ask about token buckets, backoff strategies, priority queues..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 ==================== -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Error Handling: Classification, Recovery, and Observability</h1>
+    <div class="tagline">Not all errors are equal. Agents that distinguish transient from permanent failures and surface them clearly are the ones that stay in production.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">On October 8, 2021, Facebook (now Meta) experienced a global outage that lasted approximately six hours. The root cause was a BGP configuration change that accidentally withdrew the routes for Facebook's DNS nameservers. From the perspective of any external system that depended on Facebook's APIs — login integrations, sharing buttons, Instagram Graph API consumers — every API call began returning DNS resolution failures rather than HTTP errors. Systems that classified all errors uniformly as "temporary API errors" retried indefinitely, creating self-inflicted load. Systems without proper timeout logic hung waiting for responses that would never come. The engineers and products that handled the outage best were those that had explicitly designed for the "dependency is completely unreachable" failure mode — not just HTTP-level errors, but network-level failures with cascading timeout logic and fallback behaviors.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Classifying API Errors by Recoverability</div>
+    <div class="section-body">
+      <p>The most important distinction in error handling is between errors the agent can recover from and errors it cannot. Retrying a 400 Bad Request is wasteful — the request is malformed and will fail every time until the agent fixes the input. Retrying a 503 Service Unavailable is correct — the service is temporarily overloaded and will likely recover. Getting this classification wrong causes either missed recoveries (giving up too early on transient failures) or retry storms (hammering a server with requests that were never going to succeed).</p>
+      <ul class="ul-body">
+        <li><strong>4xx Client Errors (except 429)</strong> — generally permanent; fix the request before retrying. 400: malformed request. 401: auth failure (refresh token, then retry once). 403: insufficient permissions (do not retry, escalate). 404: resource does not exist.</li>
+        <li><strong>429 Too Many Requests</strong> — transient; back off and retry with delay</li>
+        <li><strong>5xx Server Errors</strong> — generally transient; retry with exponential backoff. 500: server error. 502: bad gateway. 503: service unavailable. 504: gateway timeout.</li>
+        <li><strong>Network Errors</strong> — connection refused, DNS failure, timeout — may be transient or indicate full dependency outage; apply circuit breaker logic</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">The 401 Special Case</div>
+        <p>A 401 Unauthorized from an API that uses short-lived tokens is not necessarily a permanent auth failure — it may simply mean the token expired. The correct pattern: on receiving a 401, attempt one token refresh, then retry the original request exactly once. If the retry also 401s, treat it as a permanent auth failure and surface it for human attention. Never retry a 401 more than once without refreshing credentials first.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Circuit Breakers: Protecting Agents from Cascading Failures</div>
+    <div class="section-body">
+      <p>The circuit breaker pattern, popularized by Michael Nygard's 2007 book <em>Release It!</em> and subsequently implemented in Netflix's Hystrix library (open-sourced in 2012), protects an agent from repeatedly calling a dependency that is clearly failing. The circuit has three states: Closed (normal operation — calls pass through), Open (dependency is failing — calls are rejected immediately without attempting the network call), and Half-Open (testing recovery — a small number of calls are allowed through to check if the dependency has recovered).</p>
+      <p>Netflix engineering published extensively about Hystrix's role in their microservices architecture. During the 2012 AWS East Coast outage, services using Hystrix circuit breakers degraded gracefully while dependencies were unavailable. Services without circuit breaker logic attempted to wait for responses from down dependencies, exhausting thread pools and causing cascading failures across unrelated services. The pattern prevents one failing external API from taking down the entire agent. Threshold parameters typically look like: open the circuit after 5 failures in 60 seconds; test with one call every 30 seconds in half-open state.</p>
+      <div class="callout-box">
+        <div class="callout-label">Fallback Behavior</div>
+        <p>An open circuit breaker must have a fallback behavior — returning a cached result, a default value, a degraded response, or a user-facing error message. An agent that silently drops tasks when a circuit is open is worse than useless. Fallbacks should be explicit design decisions: "When the weather API circuit is open, return the last known forecast with a staleness warning" is a production-grade fallback. Returning null is not.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Observability: Logs, Metrics, and Traces</div>
+    <div class="section-body">
+      <p>Error handling without observability is incomplete. An agent can recover silently from a transient error, but if those recoveries are not logged and measured, patterns go undetected: an API that is failing 30% of the time and triggering retries on every third call might appear "working" from the outside while consuming 30% more resources than expected. Structured logging with severity levels (DEBUG, INFO, WARN, ERROR) and consistent error codes enables alerting systems to surface problems. Datadog, Grafana, and AWS CloudWatch all support alert rules based on error rate thresholds.</p>
+      <p>Distributed tracing — as implemented by OpenTelemetry, Jaeger, and AWS X-Ray — provides context across agent tool calls. A trace that spans from the agent's initial decision through multiple API calls shows exactly where latency or errors are occurring. When Stripe's API began experiencing elevated 500 error rates in November 2022, developers with distributed tracing immediately identified which specific API endpoints were failing and which were healthy, allowing them to route around affected endpoints while Stripe remediated.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== QUIZ 3 ==================== -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Quiz: Error Handling</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. Your agent receives a 403 Forbidden from a payment API when attempting to issue a refund. What is the correct response?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Retry with exponential backoff — server-side permission errors can be transient</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Refresh the OAuth token and retry once</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Do not retry; escalate to a human — the agent lacks the required permission scope</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Switch to the backup payment API and retry the refund</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. A 403 means the authenticated identity does not have permission for this action. This is not a transient condition — retrying will always fail. The correct action is to surface the problem for human attention so the appropriate permissions can be granted.</div>
+    <div class="quiz-feedback wrong">❌ 403 Forbidden is a permanent authorization failure — the agent is authenticated but not authorized. Retrying, refreshing tokens, or switching APIs will not resolve an insufficient-permissions error. Human escalation is required to change the permission configuration.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. A circuit breaker is in the Open state for an external translation API. What should the agent do when it receives a new translation request?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Queue the request and wait for the circuit to close before processing</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Retry the translation API once to confirm it is still failing before rejecting</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">Return the fallback response immediately without attempting the API call</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Log a warning and proceed with the API call anyway</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. An open circuit breaker rejects calls immediately without attempting the network request. This is the entire point — protecting the system from wasting resources on a known-failing dependency. The fallback behavior (cached result, error message, etc.) is returned immediately.</div>
+    <div class="quiz-feedback wrong">❌ An open circuit breaker rejects calls immediately — no network attempt is made. Queuing requests indefinitely while the circuit is open can exhaust memory. Making the call anyway defeats the circuit breaker's purpose. The fallback response must be returned immediately.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. What is the correct handling pattern when an agent receives a 401 Unauthorized from an API using short-lived OAuth tokens?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Attempt one token refresh, then retry the original request once; if still 401, escalate</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Retry up to five times with backoff — 401s from OAuth APIs are always transient</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Immediately treat as a permanent failure and halt all API calls for this service</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Re-run the full OAuth authorization flow from scratch on every 401</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The 401 may indicate an expired token — a transient condition fixable with a refresh. One refresh attempt, then one retry is the correct pattern. If the retry also fails, the auth problem is structural and requires human intervention, not more retries.</div>
+    <div class="quiz-feedback wrong">❌ The correct pattern is: refresh once, retry once, escalate if still failing. Multiple retries without refreshing are useless. Triggering a full OAuth flow on every 401 would require the user to re-consent repeatedly. Treating all 401s as permanent misses the expired-token case.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 3</span></button>
+  </div>
+</div>
+
+<!-- ==================== LAB 3 ==================== -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 3</div>
+    <h1>Lab: Error Classification and Circuit Breaker Design</h1>
+    <div class="tagline">Build an error handling decision tree and circuit breaker parameters for a real agent scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are building an agent that relies on three external APIs: a weather service, a maps/routing API, and a payment processor. Design a complete error handling strategy — classification, retry logic, circuit breaker thresholds, and fallback behaviors for each service.</p>
+    <div class="lab-prompt">Ask: "Help me design the error classification and circuit breaker parameters for each of my three APIs, including what fallback behaviors to use when circuits open."</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🔌 Error Handling Coach</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="2" placeholder="Ask about error classification, circuit breaker design, fallback patterns..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 4 ==================== -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 4 of 4</div>
+    <h1>Resilient API Pipelines: Idempotency, Caching, and Graceful Degradation</h1>
+    <div class="tagline">Building agent pipelines that complete reliably even when individual API calls fail, timeout, or produce stale results.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In August 2019, Cloudflare suffered a global outage caused by a bad firewall rule deployment. HTTP requests to Cloudflare-proxied services began receiving 502 errors for approximately 27 minutes. During that

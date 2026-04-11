@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Planning Strategies — Advanced | AESOP AI Academy Module 5</title>
+<meta name="description" content="Advanced: Task decomposition, subgoal generation, and backtracking. Module 5 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-5/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+</head><body>
+<div class="site-layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">← Academy</a>
+    <div class="sb-mod-num">MODULE 5</div>
+    <div class="sb-mod-title">Agent Planning Strategies</div>
+    <span class="sb-tier-chip">🎯 Advanced</span>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📖</span> Lesson 1</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">📖</span> Lesson 2</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">📖</span> Lesson 3</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">📖</span> Lesson 4</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">⚡ Module Test</button>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ==================== LESSON 1 ==================== -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>Hierarchical Task Decomposition</h1>
+    <div class="tagline">Breaking complex goals into structured trees of executable subgoals — how real AI systems tear apart hard problems.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2022, DeepMind's AlphaCode system tackled competitive programming problems by decomposing each problem into a hierarchy: first identify the problem class (sorting, graph traversal, dynamic programming), then generate candidate algorithms, then implement and verify each piece independently. On Codeforces competitions, it ranked in the top 54% of human participants — not by solving problems whole, but by breaking them into recognizable subtask categories and solving each layer in sequence. The hierarchical decomposition was not optional — it was the architecture.</p>
+    <p class="story-text">The same principle showed up in NASA's Mars Science Laboratory mission, where autonomous onboard planning software called AEGIS used a layered goal hierarchy: high-level science objectives decomposed into observation targets, then into specific instrument commands, then into power and timing constraints. When a lower-level step failed, the system could revise that layer without discarding the entire science plan.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">What Hierarchical Decomposition Actually Is</div>
+    <div class="section-body">
+      <p>Hierarchical task decomposition (HTD) is the process of taking a high-level goal and recursively breaking it into smaller subgoals until you reach atomic actions — steps the agent can execute directly. The result is a tree structure: the root is the goal, intermediate nodes are subgoals, and leaves are executable actions.</p>
+      <p>The formal version of this, Hierarchical Task Network (HTN) planning, has been used in AI systems since the 1990s. HTN planners like SHOP2 and SIPE-2 were deployed in real logistics operations and military mission planning. What makes the architecture powerful is that it encodes human expert knowledge about <em>how</em> to approach problems, not just <em>what</em> the goal is.</p>
+      <div class="callout-box">
+        <div class="callout-label">Key Distinction</div>
+        <p>Flat planners ask: "What sequence of actions leads from state A to state B?" Hierarchical planners ask: "What is the expert decomposition of this task class, and how do I instantiate it here?" The hierarchy carries domain knowledge that flat search cannot recover on its own.</p>
+      </div>
+      <p>Modern LLM-based agents rediscover this pattern. When GPT-4 is prompted with a complex task and chain-of-thought reasoning, it naturally generates hierarchical subgoal trees — not because it was explicitly told to, but because decomposition is the structure of competent human reasoning that it learned from training data.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Decomposition Strategies: Horizontal vs. Vertical</div>
+    <div class="section-body">
+      <p>There are two axes of decomposition. <strong>Horizontal decomposition</strong> splits a task into parallel or sequential subtasks at the same level of abstraction — like splitting "prepare a report" into "gather data," "analyze data," and "write findings." Each piece is independent or lightly coupled. <strong>Vertical decomposition</strong> drills down through abstraction levels — "gather data" becomes "identify sources," then "query each source," then "parse response format," then "handle pagination."</p>
+      <p>Real planning systems combine both. The DARPA Urban Challenge autonomous vehicle teams in 2007 used horizontal decomposition to split driving into perception, planning, and control modules running in parallel — and vertical decomposition within the planning module to go from route-level decisions down to steering commands. Sebastian Thrun's Stanford team, which won the 2005 DARPA Grand Challenge, published detailed accounts of this layered architecture in their 2006 Journal of Field Robotics paper.</p>
+      <ul class="ul-body">
+        <li>Horizontal: identify parallel or sequential subtasks at the same abstraction level</li>
+        <li>Vertical: drill each subtask into lower-level operations until actions are atomic</li>
+        <li>Dependency analysis: map which subgoals must complete before others can begin</li>
+        <li>Resource allocation: assign tools, APIs, or agents to each leaf task</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Failure Mode</div>
+        <p>Premature concreteness — decomposing too deep too fast, without confirming the high-level structure is correct. NASA's Mars Observer mission failure in 1993 was partly attributed to teams working detailed subsystem designs before the system-level architecture was validated. Fix the tree structure first, then fill in leaves.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Decomposition in LLM Agent Frameworks</div>
+    <div class="section-body">
+      <p>AutoGPT (2023), LangChain agents, and the BabyAGI architecture all implement implicit hierarchical decomposition. BabyAGI, released by Yohei Nakajima in March 2023, explicitly maintains a task list where an "executive" LLM generates subgoals, an "execution" LLM completes them, and a "prioritization" LLM reorders remaining tasks based on results. This three-layer structure is a direct implementation of HTN principles with language model components.</p>
+      <p>The key engineering decision in these systems is <strong>decomposition granularity</strong>: how many levels deep, and how specific each leaf node must be before handing to an executor. Too coarse and the executor fails on ambiguous instructions. Too fine and the planner spends more tokens on decomposition than on execution.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 QUIZ ==================== -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Quiz: Hierarchical Task Decomposition</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. What distinguishes an HTN (Hierarchical Task Network) planner from a flat planner?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Flat planners use more memory and are slower.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">HTN planners encode expert decomposition methods for task classes, not just goal-state search.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">HTN planners can only work with symbolic logic, not neural networks.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Flat planners require more domain knowledge to operate.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. HTN planners encode <em>how</em> experts approach a task class — decomposition methods — rather than blindly searching from initial to goal state. This is why they scale better on complex real-world tasks.</div>
+    <div class="quiz-feedback wrong">Not quite. The defining feature of HTN planners is that they carry domain expert knowledge in their decomposition methods, not just search heuristics or memory usage differences.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. In AlphaCode's approach to competitive programming, what role did hierarchical decomposition play?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">It was an optional optimization applied only to hard problems.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">It allowed the system to copy solutions from similar problems it had seen.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">It was the core architecture — classifying problem type, generating algorithms, then implementing and verifying each layer.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">It reduced compute cost by skipping verification on easy subproblems.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. AlphaCode's decomposition was architectural, not optional — classify the problem class first, then generate candidate algorithms, then implement and verify. Each layer informed the next.</div>
+    <div class="quiz-feedback wrong">Not quite. Decomposition was the architecture itself in AlphaCode, applied to every problem as the fundamental strategy, not a selective optimization.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. What is the primary failure mode called "premature concreteness" in hierarchical decomposition?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Adding too many abstraction layers so the agent loses track of the root goal.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">Drilling into detailed leaf-level actions before validating that the high-level tree structure is correct.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Using parallel subtasks when sequential execution would be safer.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Assigning too many tools to a single leaf node, causing resource conflicts.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Premature concreteness means working on detailed subproblems before confirming the high-level structure is sound — the same issue that affected NASA's Mars Observer mission design process.</div>
+    <div class="quiz-feedback wrong">Not quite. Premature concreteness means rushing to fill in the detailed leaves of the task tree before the top-level structure has been validated. Fix the tree first, then the leaves.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Lab</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 LAB ==================== -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Lab</div>
+    <h1>Lab: Build a Decomposition Tree</h1>
+    <div class="tagline">Practice hierarchical task decomposition with a real AI planning assistant.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You're going to practice hierarchical task decomposition by working with an AI planning assistant. Choose a complex goal — something like "build and deploy a machine learning model for customer churn prediction" or "design a disaster response plan for a city of 500,000." Then:</p>
+    <ol>
+      <li>Ask the assistant to decompose your goal into a two-level hierarchy (high-level subgoals, then one level of sub-subgoals).</li>
+      <li>Identify which subgoals are horizontally parallel vs. which must be sequential.</li>
+      <li>Ask the assistant to flag which leaf tasks are truly atomic vs. still need further decomposition.</li>
+    </ol>
+    <div class="lab-prompt">Suggested opener: "I want to practice hierarchical task decomposition. My goal is [your complex goal]. Can you help me build a two-level decomposition tree and identify which subtasks are parallel vs. sequential?"</div>
+  </div>
+  <div class="lab-chat" id="lab-l1">
+    <div class="lab-chat-header">
+      <span>🤖 Planning Assistant</span>
+      <span class="chat-badge">Lesson 1 Lab</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="2" placeholder="Describe your complex goal here..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 ==================== -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Subgoal Generation Techniques</h1>
+    <div class="tagline">How agents create intermediate objectives — from landmark detection to means-ends analysis and LLM-driven goal chaining.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2016, OpenAI's research into RL agent behavior on Montezuma's Revenge (an Atari game notorious for sparse rewards) revealed that standard reinforcement learning completely failed — the agent received no reward signal for thousands of steps and learned nothing. The breakthrough came from subgoal-based approaches: researchers used intrinsic motivation to generate intermediate objectives (reaching a new room, picking up a key) that served as stepping stones. When Uber AI Labs published their "Go-Explore" algorithm in 2018, it addressed the same problem by explicitly storing and returning to promising intermediate states, treating each as a subgoal. The game that defeated standard RL for years fell to subgoal generation.</p>
+    <p class="story-text">IBM's Watson system during its 2011 Jeopardy! victory used a different form of subgoal generation: decomposing each clue into evidence-gathering subgoals across 100+ algorithms running in parallel, then merging their confidence scores. The subgoals were dynamically generated per question — Watson didn't have a fixed decomposition for "what is a Jeopardy! answer," it generated the appropriate evidence subgoals based on the clue structure.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Landmark-Based Subgoal Generation</div>
+    <div class="section-body">
+      <p>In classical AI planning, <strong>landmarks</strong> are facts or states that must be true at some point in any valid solution to a planning problem. Automatically identifying landmarks gives a planner a set of necessary subgoals — not hypothetical intermediates, but provably required ones. The Fast Downward planning system (used extensively in academic and competition planning) includes landmark detection as a core component of its heuristic evaluation.</p>
+      <p>The landmark approach is powerful because it's <em>deductive</em> — subgoals are derived from the problem structure, not guessed. In a logistics planning domain, "the truck must visit the warehouse" might be a landmark because no valid solution exists without it. The planner can then focus search effort on achieving landmarks in a sensible order.</p>
+      <div class="callout-box">
+        <div class="callout-label">Technical Insight</div>
+        <p>Landmark detection algorithms work by analyzing the causal structure of the planning domain: if achieving goal G requires action A, and action A requires precondition P, then P is a landmark. Disjunctive landmarks capture "at least one of these must hold" — more complex but more complete coverage of necessary intermediate states.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Means-Ends Analysis and Goal Regression</div>
+    <div class="section-body">
+      <p>Means-ends analysis (MEA), introduced in the General Problem Solver (GPS) by Newell and Simon in 1961, generates subgoals by working backwards from the goal: "What is the difference between the current state and the goal? What operator reduces that difference? What preconditions must hold for that operator?" Each precondition becomes a new subgoal.</p>
+      <p>This backward chaining creates a subgoal chain that, when executed forward, achieves the original goal. STRIPS-style planners use a version of this called <strong>goal regression</strong>. When NASA's Remote Agent Experiment ran aboard Deep Space 1 in 1999 — the first time an AI planning system controlled a spacecraft autonomously — it used a goal-regression planner to generate the sequence of intermediate states needed to achieve mission objectives. For 11 hours in May 1999, the spacecraft flew itself.</p>
+      <ul class="ul-body">
+        <li>Identify the gap between current state and goal state</li>
+        <li>Select an operator that reduces the most significant gap</li>
+        <li>Add operator preconditions as new subgoals to achieve first</li>
+        <li>Repeat recursively until all subgoals are directly achievable</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">LLM-Driven Dynamic Subgoal Generation</div>
+    <div class="section-body">
+      <p>Modern LLM-based agents generate subgoals through prompted reasoning rather than formal analysis. The ReAct framework (Yao et al., 2022) interleaves Reasoning and Acting: the model generates a "thought" that identifies the next subgoal, then takes an action to pursue it, then reasons about the result to identify the next subgoal. This creates a dynamic subgoal chain that adapts to observed results rather than following a pre-committed plan.</p>
+      <p>The Reflexion paper (Shinn et al., 2023) added a memory layer: after each failed attempt, the agent generates a verbal reflection on what went wrong, which is stored and prepended to future prompts. This means the subgoal generation process learns from failure within a session — not through gradient updates but through language-mediated self-critique.</p>
+      <div class="callout-box">
+        <div class="callout-label">Critical Limitation</div>
+        <p>LLM-generated subgoals are <em>plausible</em> but not <em>provably necessary</em>. Unlike landmark detection, there's no guarantee that a language model's suggested intermediate steps are actually required — or even sufficient. Hallucinated subgoals that seem reasonable can lead agents confidently down paths that cannot produce the goal. Verification layers are essential.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 1 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 QUIZ ==================== -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Quiz: Subgoal Generation Techniques</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. What makes landmark-based subgoal generation stronger than guessing intermediate steps?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Landmarks are generated faster using neural network approximations.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Landmarks are chosen by human experts and encoded in the planning domain.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Landmarks are provably necessary intermediate states — any valid solution must pass through them.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Landmarks reduce search space by eliminating all invalid action sequences up front.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Landmarks are deductively derived from the problem's causal structure — they are not guessed. Any solution that avoids a landmark is by definition not a valid solution.</div>
+    <div class="quiz-feedback wrong">Not quite. The strength of landmarks is their deductive necessity: they are mathematically derived states that must appear in any valid plan, not heuristic guesses or human annotations.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. How did the "Go-Explore" algorithm address the sparse reward problem in Montezuma's Revenge?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">By increasing the reward signal artificially at each step using reward shaping.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">By storing and returning to promising intermediate states, treating each as an explicit subgoal to explore from.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">By using human demonstrations to pre-train the agent on each room of the game.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">By simplifying the game environment to remove the sparse reward problem entirely.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Go-Explore maintained an archive of promising states and explicitly returned to them to explore further — treating each interesting intermediate state as a subgoal rather than hoping random exploration would rediscover it.</div>
+    <div class="quiz-feedback wrong">Not quite. Go-Explore's key insight was archiving and returning to promising intermediate states as explicit subgoals, rather than relying on reward signals that were too sparse to guide exploration.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. What is the critical limitation of LLM-generated subgoals compared to formal landmark detection?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">LLMs generate too many subgoals, making plans computationally intractable.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">LLMs cannot generate subgoals for domains they have not been trained on.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">LLM subgoals are too abstract and cannot be converted into executable actions.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">LLM subgoals are plausible but not provably necessary — hallucinated steps can confidently lead agents down dead-end paths.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. LLM-generated subgoals lack the deductive guarantee of landmarks. They may seem reasonable while being incorrect or irrelevant — and without verification layers, agents can pursue them confidently into failure.</div>
+    <div class="quiz-feedback wrong">Not quite. The core limitation is epistemological: LLMs produce plausible-sounding subgoals that lack mathematical necessity. Hallucinated intermediate steps can look convincing while being dead ends.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Lab</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 LAB ==================== -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Lab</div>
+    <h1>Lab: Subgoal Chain Analysis</h1>
+    <div class="tagline">Examine how an AI agent generates and evaluates intermediate objectives for a real planning challenge.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You'll practice identifying and critiquing subgoal chains using the ReAct-style reasoning approach. Pick a goal that requires multiple intermediate steps in an uncertain domain — for example, "identify the root cause of a production system outage" or "design a clinical trial protocol for a new drug candidate."</p>
+    <ol>
+      <li>Ask the assistant to generate a subgoal chain using means-ends analysis: work backwards from the goal to identify necessary intermediate states.</li>
+      <li>For each subgoal generated, ask: "Is this provably necessary, or just plausible?"</li>
+      <li>Identify at least one subgoal in the chain that might be a "hallucinated" step — one that seems reasonable but isn't actually required.</li>
+    </ol>
+    <div class="lab-prompt">Suggested opener: "I want to analyze subgoal generation. My goal is [your goal]. Can you apply means-ends analysis — working backwards from the goal — and generate a subgoal chain? Then flag which subgoals are provably necessary vs. just plausible."</div>
+  </div>
+  <div class="lab-chat" id="lab-l2">
+    <div class="lab-chat-header">
+      <span>🤖 Planning Assistant</span>
+      <span class="chat-badge">Lesson 2 Lab</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="2" placeholder="Describe your planning goal here..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 ==================== -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Backtracking and Plan Revision</h1>
+    <div class="tagline">When plans fail mid-execution: detection, diagnosis, and structured recovery without losing all prior progress.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">On July 4, 1997, the Pathfinder lander's onboard computer suffered repeated resets on the Martian surface due to a priority inversion bug. The software used VxWorks, a real-time operating system with a preemptive scheduler. A low-priority task held a shared resource that a high-priority task needed, but a medium-priority task kept preempting the low-priority task, preventing resource release. The system's watchdog timer detected that high-priority operations weren't completing and triggered a full reset — effectively "backtracking" to a safe initial state. Engineers on Earth diagnosed the issue remotely, enabled priority inheritance in the scheduler over a radio link, and the lander resumed normal operation. The backtracking was costly but correct: the system chose a known-safe state over an unknown-corrupted one.</p>
+    <p class="story-text">DeepMind's AlphaGo, in its famous 2016 match against Lee Sedol, exhibited a form of plan revision in Game 4. After Lee Sedol played the unexpected "divine move" (Move 78), AlphaGo's evaluation function initially assigned it low value — a misestimation. The system continued executing its prior plan for several moves before its lookahead detected that the board position had shifted significantly. It then revised its strategy mid-game, a form of online replanning that ultimately failed — Lee Sedol won that game — but demonstrated that even state-of-the-art game AI faces the challenge of timely plan revision when unexpected moves occur.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Failure Detection: Knowing When a Plan Has Broken</div>
+    <div class="section-body">
+      <p>Backtracking begins with detection. An agent cannot revise a plan it doesn't know has failed. There are three categories of failure detection in planning systems:</p>
+      <ul class="ul-body">
+        <li><strong>Precondition violation:</strong> An action's preconditions are no longer satisfied when it's time to execute — the world changed since the plan was generated.</li>
+        <li><strong>Execution monitoring:</strong> The observed result of an action differs from the predicted result by more than an acceptable threshold.</li>
+        <li><strong>Goal regression failure:</strong> A subsequent planning step detects that the current state cannot lead to the goal even with remaining planned actions.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Real-World Timing</div>
+        <p>The Mars Pathfinder case illustrates a critical timing challenge: failure detection must be fast enough to prevent cascading damage, but the "backtrack to safe state" response must not be triggered so aggressively that normal operations are disrupted. This threshold calibration is an active research area in fault-tolerant systems, distinct from the planning problem itself.</p>
+      </div>
+      <p>In LLM-based agents, failure detection is harder because outputs are text, not formal state transitions. The Voyager system (Wang et al., 2023) for Minecraft used a code execution environment to detect failures precisely: if generated JavaScript code raised an exception or produced wrong game state, the agent knew definitively that the subtask had failed and triggered replanning.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Backtracking Strategies: How Far to Rewind</div>
+    <div class="section-body">
+      <p>Once failure is detected, the agent must decide <em>where</em> to rewind. The three main strategies are:</p>
+      <p><strong>Chronological backtracking:</strong> Undo the most recent decision and try an alternative. Simple and cheap, but can lead to "thrashing" — repeatedly undoing and retrying the same level when the real problem is deeper in the decision tree. PROLOG's default search uses chronological backtracking.</p>
+      <p><strong>Dependency-directed backtracking (DBT):</strong> Analyze the <em>cause</em> of the failure — which earlier decision created the constraint that is now violated — and jump back to that specific decision point, skipping irrelevant intermediate steps. The ATMS (Assumption-based Truth Maintenance System) developed by Johan de Kleer at Xerox PARC in the 1980s formalized this approach. DBT can recover in O(n) steps what chronological backtracking might need O(2^n) steps to find.</p>
+      <p><strong>Partial plan preservation:</strong> Rather than discarding the entire plan, identify which subgoals have already been validly achieved and preserve them as fixed points, replanning only the failed portion. This is the approach used in CPEF (Continuous Planning and Execution Framework) and is essential in long-horizon tasks where early subgoal achievements are expensive to reproduce.</p>
+      <div class="callout-box">
+        <div class="callout-label">Advanced Pattern</div>
+        <p>Commitment levels: an agent can hold plans at three levels of commitment — "committed" (will execute), "tentative" (preferred but revisable), and "open" (not yet decided). When failure occurs, only tentative and open commitments need revision. This is formalized in Bratman's theory of Practical Reasoning and implemented in BDI (Belief-Desire-Intention) agent architectures used in industrial autonomous systems.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Online Replanning vs. Plan Repair</div>
+    <div class="section-body">
+      <p>When a plan fails, the agent has two broad options: <strong>replan from scratch</strong> (generate a new plan from the current state to the goal) or <strong>repair the existing plan</strong> (make minimal edits to the failed plan to make it valid again). Replanning from scratch is simpler to implement but computationally expensive and discards potentially valid plan segments. Plan repair is cheaper but requires formal analysis of which parts of the plan remain valid.</p>
+      <p>Research by Koenig and Sun (2009) on "D*-Lite" — an incremental replanning algorithm for robot navigation — showed that incremental repair can be orders of magnitude faster than full replanning when the plan changes are localized. D*-Lite was used in DARPA Urban Challenge vehicles that needed to replan routes when unexpected obstacles appeared. When a parked car blocked a planned route, the system updated only the affected portion of the navigation plan rather than recomputing from scratch.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 2 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 QUIZ ==================== -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Quiz: Backtracking and Plan Revision</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. Why is dependency-directed backtracking (DBT) more efficient than chronological backtracking in many cases?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">DBT identifies the actual decision that caused the failure and jumps to it, skipping irrelevant intermediate steps.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">DBT avoids backtracking entirely by predicting failures before they occur.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">DBT uses parallel search threads to find alternatives faster than sequential backtracking.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">DBT only applies to logic programming languages like Prolog, where it is a built-in feature.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. DBT analyzes the causal source of the failure — which earlier commitment created the violated constraint — and jumps directly to that decision point, avoiding the exponential thrashing of chronological backtracking.</div>
+    <div class="quiz-feedback wrong">Not quite. DBT's advantage is causal diagnosis: it traces the failure to its source decision and backtracks specifically to that point, rather than undoing decisions in reverse chronological order regardless of their relevance to the failure.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. In the Mars Pathfinder priority inversion incident, what was the system's backtracking response?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The system rescheduled failed tasks to lower-priority slots and continued execution.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The system waited for human instruction before taking any recovery action.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">The watchdog timer triggered a full reset to a known-safe initial state when high-priority operations didn't complete.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The system disabled the low-priority task causing the inversion and replanned without it.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. The watchdog timer detected that high-priority operations weren't completing and triggered a full system reset — a form of aggressive backtracking to a safe initial state, accepting the cost of lost progress over the risk of continued operation in a corrupted state.</div>
+    <div class="quiz-feedback wrong">Not quite. The Pathfinder's recovery was a full reset to a known-safe state, triggered by the watchdog timer. It prioritized safety over preserving execution progress — a valid but costly form of backtracking.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. What advantage does plan repair offer over full replanning from scratch?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Plan repair always produces a globally optimal plan, whereas replanning may find only a local optimum.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Plan repair eliminates the need for failure detection since it is applied continuously.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Plan repair preserves valid portions of the existing plan, making it computationally cheaper especially when failures are localized.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Plan repair works without needing a model of the domain, unlike full replanning.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Plan repair identifies which parts of the existing plan remain valid after a failure and edits only the broken portion — this is far cheaper than regenerating the entire plan from scratch, as demonstrated by D*-Lite in robot navigation.</div>
+    <div class="quiz-feedback wrong">Not quite. The advantage of plan repair is computational efficiency through preservation: valid plan segments are kept intact, and only the failed portion is fixed. D*-Lite's success in DARPA Urban Challenge vehicles showed the practical value of this approach.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 3</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Lab</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 LAB ==================== -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Lab</div>
+    <h1>Lab: Failure Detection and Recovery</h1>
+    <div class="tagline">Simulate plan failures and practice structured backtracking with an AI planning partner.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You'll practice diagnosing plan failures and choosing the right backtracking strategy. Start with a multi-step plan in any domain, then introduce a mid-plan failure scenario. Your goal is to identify which type of backtracking is most appropriate.</p>
+    <ol>
+      <li>Present a 5-7 step plan to accomplish a goal, then describe a failure that occurs at step 3 or 4.</li>
+      <li>Ask the assistant to diagnose what type of failure it is (precondition violation, execution monitoring failure, or goal regression failure).</li>
+      <li>Ask whether chronological backtracking, dependency-directed backtracking, or partial plan preservation is most appropriate — and why.</li>
+      <li>Ask the assistant to produce the repaired plan.</li>
+    </ol>
+    <div class="lab-prompt">Suggested opener: "I have a plan with a mid-execution failure. Here's the original plan: [list 5-7 steps]. At step [N], this happened: [describe failure]. Can you diagnose the failure type and recommend the right backtracking strategy?"</div>
+  </div>
+  <div class="lab-chat" id="lab-l3">
+    <div class="lab-chat-header">
+      <span>🤖 Planning Assistant</span>
+      <span class="chat-badge">Lesson 3 Lab</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="2" placeholder="Describe your plan and where it fails..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 4 ==================== -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 4 of 4</div>
+    <h1>Multi-Agent Planning and Coordination</h1>
+    <div class="tagline">When planning is distributed: task allocation, shared world models, and resolving conflicts between autonomous agents.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">During the 2

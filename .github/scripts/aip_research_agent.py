@@ -35,7 +35,7 @@ PINECONE_API_KEY  = os.environ["PINECONE_API_KEY"]
 PINECONE_HOST     = os.environ["PINECONE_HOST"]
 PINECONE_INDEX    = "aesop-academy"
 DRAFTS_DIR        = Path("aip/drafts")
-DRAFTS_PER_RUN    = 3
+DRAFTS_PER_RUN    = 20
 GAP_THRESHOLD     = 0.72
 
 
@@ -85,7 +85,7 @@ def synthesize_topics(signals):
 
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 15 distinct COURSE TOPIC CANDIDATES for an AI literacy curriculum.
+I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for an AI literacy curriculum.
 
 RAW SIGNALS:
 {signal_text}
@@ -96,7 +96,7 @@ RULES:
 - Topics should be educational/literacy focused — things a general audience would take a course on
 - For each topic, list which signals it came from
 
-Return a JSON array of 15 objects:
+Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
 - "signals": array of the original signal texts that fed into this topic
 - "signal_sources": array of source names (e.g. ["google_trends", "reddit"])

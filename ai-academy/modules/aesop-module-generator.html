@@ -1143,9 +1143,9 @@ async function updateCoursesFile() {
 
   // Pick the ai-academy folder (parent of modules)
   try {
-    // Always re-pick to avoid stale handle pointing to wrong folder
-    statusEl.textContent = 'Select your ai-academy folder (the one containing courses.html)...';
-    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    // Pick the ai-academy folder just to read courses.html
+    statusEl.textContent = 'Select your ai-academy folder (containing courses.html)...';
+    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'read', startIn: 'documents' });
 
     statusEl.textContent = 'Reading courses.html...';
     const fileHandle = await coursesFolderHandle.getFileHandle('courses.html');
@@ -1213,23 +1213,32 @@ async function updateCoursesFile() {
       return 'courses-v' + a + '.' + b + '.' + (parseInt(c) + 1);
     });
 
-    // Write back
-    const writable = await fileHandle.createWritable();
-    await writable.write(content);
-    await writable.close();
-
-    // Verify the write actually took
-    const verify = await fileHandle.getFile();
-    const verifyText = await verify.text();
-    const linkExists = verifyText.includes('electives-hub.html?course=' + cid);
-    if (!linkExists) {
-      statusEl.textContent = 'Write appeared to succeed but link not found — check file permissions.';
-      statusEl.style.color = '#f87171';
-      return;
+    // Write back in-place using showSaveFilePicker for reliable disk write
+    try {
+      const saveHandle = await window.showSaveFilePicker({
+        suggestedName: 'courses.html',
+        types: [{ description: 'HTML file', accept: { 'text/html': ['.html'] } }]
+      });
+      const writable = await saveHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      statusEl.textContent = 'Saved! Replace your repo copy with this file, then commit and push.';
+      statusEl.style.color = '#5dd6a8';
+    } catch(saveErr) {
+      if (saveErr.name === 'AbortError') { statusEl.textContent = 'Save cancelled.'; return; }
+      // Final fallback: data URI download
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'courses.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      statusEl.textContent = 'Check your Downloads folder for courses.html — replace repo copy and push.';
+      statusEl.style.color = '#5dd6a8';
     }
-
-    statusEl.textContent = 'Verified! ' + cid + ' link is live in courses.html — commit and push.';
-    statusEl.style.color = '#5dd6a8';
 
     const btn = document.querySelector('#coursesUpdateCard .btn-set-folder');
     if (btn) {

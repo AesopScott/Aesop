@@ -123,7 +123,7 @@ textarea{resize:vertical;min-height:80px;}
       <button class="btn-set-folder" onclick="setRepoFolder()">Set Repo Folder</button>
       <span id="folderStatus" style="font-size:0.82rem;color:rgba(255,255,255,0.35);">No folder selected — will download to Downloads</span>
     </div>
-    <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:0.5rem;">Select your local Aesop repo root (e.g. Google Drive/Aesop). Files save to ai-academy/modules/[course]/module-[n]/ automatically.</div>
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:0.5rem;">Select your <strong style="color:rgba(255,255,255,0.4);">ai-academy/modules</strong> folder. Files save directly to [course]/module-[n]/ inside it.</div>
   </div>
 
   <div id="statusMsg" class="status"></div>
@@ -835,8 +835,8 @@ const COURSES = [
 
 const TIER_CONFIG = {
   intro:    {label:'Introduction', emoji:'⭐', groupId:1, accent:'#fbbf24', accentRgb:'251,191,36',  lessons:4},
-  basic:    {label:'Basic',        emoji:'🔬', groupId:2, accent:'#c084fc', accentRgb:'192,132,252', lessons:6},
-  advanced: {label:'Advanced',     emoji:'🎯', groupId:3, accent:'#f43f5e', accentRgb:'244,63,94',   lessons:8}
+  basic:    {label:'Basic',        emoji:'🔬', groupId:2, accent:'#c084fc', accentRgb:'192,132,252', lessons:4},
+  advanced: {label:'Advanced',     emoji:'🎯', groupId:3, accent:'#f43f5e', accentRgb:'244,63,94',   lessons:4}
 };
 
 let selectedTier = null, generatedContent = '', generatedFilename = '';
@@ -1007,6 +1007,13 @@ async function generate() {
   const btn = document.getElementById('generateBtn');
   btn.disabled = true; btn.textContent = 'Generating...';
 
+  // Stopwatch
+  const startTime = Date.now();
+  let swInterval = setInterval(() => {
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    btn.textContent = 'Generating... ' + elapsed + 's';
+  }, 100);
+
   showStatus('info', 'Building ' + course.name + ' M' + mod.n + ' — ' + tc.label + '...');
   showLog('');
   log('Course: ' + course.name);
@@ -1050,13 +1057,17 @@ async function generate() {
     document.getElementById('outputFilename').textContent = generatedFilename;
     document.getElementById('outputPreview').textContent = content.substring(0, 2000) + '\n\n... [' + content.length.toLocaleString() + ' chars — download for full file]';
     document.getElementById('outputArea').classList.add('visible');
-    showStatus('info', 'Done — ' + generatedFilename + ' ready to download');
+    const totalSecs = ((Date.now() - startTime) / 1000).toFixed(1);
+    log('Time: ' + totalSecs + 's');
+    showStatus('info', 'Done in ' + totalSecs + 's — ' + generatedFilename + ' ready to save');
 
   } catch(err) {
-    log('Error: ' + err.message);
+    const totalSecs = ((Date.now() - startTime) / 1000).toFixed(1);
+    log('Error after ' + totalSecs + 's: ' + err.message);
     showStatus('error', 'Error: ' + err.message);
   }
 
+  clearInterval(swInterval);
   btn.disabled = false; btn.textContent = 'Generate Module';
 }
 
@@ -1065,7 +1076,7 @@ let repoFolderHandle = null;
 async function setRepoFolder() {
   try {
     repoFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
-    document.getElementById('folderStatus').textContent = 'Repo folder: ' + repoFolderHandle.name;
+    document.getElementById('folderStatus').textContent = 'Modules folder: ' + repoFolderHandle.name;
     document.getElementById('folderStatus').style.color = '#5dd6a8';
   } catch(e) {
     if (e.name !== 'AbortError') showStatus('error', 'Could not access folder: ' + e.message);
@@ -1083,8 +1094,8 @@ async function downloadFile() {
 
   if (repoFolderHandle) {
     try {
-      // Navigate to ai-academy/modules/[course]/module-[n]/
-      const dirs = ['ai-academy', 'modules', cid, 'module-' + mn];
+      // Folder handle IS the modules folder — just navigate [course-id]/module-[n]/
+      const dirs = [cid, 'module-' + mn];
       let dir = repoFolderHandle;
       for (const d of dirs) {
         dir = await dir.getDirectoryHandle(d, { create: true });
@@ -1093,7 +1104,7 @@ async function downloadFile() {
       const writable = await file.createWritable();
       await writable.write(generatedContent);
       await writable.close();
-      showStatus('info', 'Saved to repo: ai-academy/modules/' + cid + '/module-' + mn + '/' + generatedFilename);
+      showStatus('info', 'Saved: ' + cid + '/module-' + mn + '/' + generatedFilename);
     } catch(e) {
       showStatus('error', 'Save failed: ' + e.message + ' — falling back to download');
       fallbackDownload();

@@ -123,7 +123,7 @@ textarea{resize:vertical;min-height:80px;}
       <button class="btn-set-folder" onclick="setRepoFolder()">Set Repo Folder</button>
       <span id="folderStatus" style="font-size:0.82rem;color:rgba(255,255,255,0.35);">No folder selected — will download to Downloads</span>
     </div>
-    <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:0.5rem;">Select your <strong style="color:rgba(255,255,255,0.4);">ai-academy/modules</strong> folder. Files save directly to [course]/module-[n]/ inside it.</div>
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-top:0.5rem;">Select your <strong style="color:rgba(255,255,255,0.4);">ai-academy</strong> folder. Modules save to modules/[course]/ and courses.html activates automatically.</div>
   </div>
 
   <div id="statusMsg" class="status"></div>
@@ -1271,8 +1271,17 @@ let repoFolderHandle = null;
 
 async function setRepoFolder() {
   try {
-    repoFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
-    document.getElementById('folderStatus').textContent = 'Modules folder: ' + repoFolderHandle.name;
+    // Ask user to select ai-academy folder — then navigate into modules
+    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    // Navigate into modules subfolder for module saves
+    try {
+      repoFolderHandle = await coursesFolderHandle.getDirectoryHandle('modules', { create: false });
+      document.getElementById('folderStatus').textContent = 'Folder set: ' + coursesFolderHandle.name + '/modules';
+    } catch(e) {
+      // If no modules subfolder, use selected folder as-is
+      repoFolderHandle = coursesFolderHandle;
+      document.getElementById('folderStatus').textContent = 'Folder set: ' + coursesFolderHandle.name;
+    }
     document.getElementById('folderStatus').style.color = '#5dd6a8';
   } catch(e) {
     if (e.name !== 'AbortError') showStatus('error', 'Could not access folder: ' + e.message);
@@ -1327,12 +1336,22 @@ async function updateCoursesFile() {
 
   if (!cid) { statusEl.textContent = 'Select a course first.'; return; }
 
-  // Pick the ai-academy folder (parent of modules)
   try {
-    statusEl.textContent = 'Select your ai-academy folder...';
-    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    // Reuse cached handle or ask once
+    if (!coursesFolderHandle) {
+      statusEl.textContent = 'Select your ai-academy folder (contains courses.html)...';
+      coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    }
     statusEl.textContent = 'Reading courses.html...';
-    const fileHandle = await coursesFolderHandle.getFileHandle('courses.html');
+    let fileHandle;
+    try {
+      fileHandle = await coursesFolderHandle.getFileHandle('courses.html');
+    } catch(e) {
+      // courses.html not found — ask again
+      statusEl.textContent = 'courses.html not found — select ai-academy folder...';
+      coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      fileHandle = await coursesFolderHandle.getFileHandle('courses.html');
+    }
     const file = await fileHandle.getFile();
     let content = await file.text();
 

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Continuous Improvement Pipelines — Advanced | AESOP AI Academy Module 8</title>
+<meta name="description" content="Advanced: Feedback loops, eval-driven iteration, and keeping agents getting better. Module 8 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-8/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+</head><body>
+<div class="site-layout">
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">&#8592; Academy</a>
+    <div class="sb-mod-num">Module 8</div>
+    <div class="sb-mod-title">Continuous Improvement</div>
+    <span class="sb-tier-chip">🎯 Advanced</span>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📡</span>Lesson 1: Eval Foundations</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">🔁</span>Lesson 2: Feedback Loops</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">⚙️</span>Lesson 3: Iteration Pipelines</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">🏗️</span>Lesson 4: Production Monitoring</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">🏆 Module Test</button>
+</nav>
+<div class="main">
+
+<!-- ==================== LESSON 1 ==================== -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>Eval Foundations</h1>
+    <p class="tagline">How systematic evaluation frameworks turn gut feelings into measurable improvement signals for production AI agents.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2023, Anthropic published details of their Constitutional AI evaluation process. Before releasing Claude, teams ran thousands of structured test prompts — called an "eval suite" — against every model checkpoint. Each prompt had a defined expected behavior. Regressions on any category of eval triggered mandatory review before deployment. This wasn't optional quality control; it was the gate through which no model could pass without proof of improvement. The approach directly influenced how safety researchers across the industry think about continuous improvement: you cannot improve what you cannot measure, and measurement must be systematic, not anecdotal.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">What Evals Actually Are</h2>
+    <div class="section-body">
+      <p>An eval — short for evaluation — is a structured, repeatable test that measures an AI agent's performance against a defined criterion. Unlike informal testing ("it seemed okay"), evals produce a numeric score or categorical pass/fail that can be tracked over time, compared across model versions, and used to trigger automated alerts.</p>
+      <p>Evals come in three broad families. <strong>Reference-based evals</strong> compare agent output to a known-correct answer — useful for factual recall, code execution, and structured data tasks. <strong>Model-graded evals</strong> use a second AI system (often a more capable model) to judge whether the output meets criteria like helpfulness, tone, or completeness. <strong>Human-graded evals</strong> rely on domain experts and are ground-truth accurate but expensive and slow to scale.</p>
+      <p>The critical insight — documented extensively in OpenAI's 2023 evals framework release on GitHub — is that eval quality determines improvement ceiling. A weak eval that accepts mediocre outputs will mask regressions. An overly strict eval that penalizes stylistic variation will produce false negatives. Calibrating evals is itself a skilled engineering discipline.</p>
+      <div class="callout-box">
+        <div class="callout-label">Core Principle</div>
+        <p>An eval suite is not a one-time artifact. It must be versioned, maintained, and expanded as the agent encounters new real-world cases. OpenAI's public evals repository had over 300 community-contributed eval sets within six months of its March 2023 launch — each capturing a failure mode from actual deployment.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Designing Eval Suites That Catch Real Failures</h2>
+    <div class="section-body">
+      <p>Effective eval suites are built from two sources: <em>anticipated failure modes</em> defined before deployment, and <em>observed failure modes</em> discovered in production. The first category — sometimes called "red team evals" — tests known edge cases: ambiguous instructions, adversarial inputs, long-context degradation, multi-step reasoning chains. The second category grows over time as real users expose unexpected behaviors.</p>
+      <p>Google DeepMind's 2024 Gemini technical report explicitly described maintaining a "living eval suite" — a document where every production incident that reached severity level 2 or higher generated at least one new eval case. The incident was not considered resolved until the new eval passed on the patched model. This closed the loop between failure discovery and preventive measurement.</p>
+      <ul class="ul-body">
+        <li><strong>Coverage:</strong> Does the eval touch every major capability the agent is expected to use?</li>
+        <li><strong>Isolation:</strong> Does each eval case test one thing, making regression attribution clear?</li>
+        <li><strong>Calibration:</strong> Have human experts verified that the scoring rubric matches real quality?</li>
+        <li><strong>Freshness:</strong> Were new cases added from the last three production incidents?</li>
+        <li><strong>Speed:</strong> Can the full suite run in under 30 minutes to allow rapid iteration?</li>
+      </ul>
+      <p>The speed constraint is not cosmetic. When Microsoft's Azure AI team published their responsible AI engineering retrospective in late 2023, they noted that eval suites taking more than an hour to run were routinely skipped during time-pressured releases — eliminating the safety guarantee entirely. Fast evals that ship are more valuable than perfect evals that don't run.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Scoring, Baselines, and Regression Thresholds</h2>
+    <div class="section-body">
+      <p>A single eval score means nothing without a baseline. The baseline is your best currently-deployed model's score on the same eval suite. Every proposed change — new prompt, retrieved context strategy, fine-tuned weights, tool configuration — is measured as a delta from baseline. Positive delta: improvement. Negative delta: regression.</p>
+      <p>Teams that ship reliable agents define explicit regression thresholds before reviewing results — not after. Anthropic's Constitutional AI papers describe a practice where any category-level regression exceeding 2 percentage points triggers a mandatory review, regardless of aggregate score improvement. This prevents "robbing Peter to pay Paul" failures where a model gets better at creative tasks while quietly degrading at safety-critical refusals.</p>
+      <div class="callout-box">
+        <div class="callout-label">Practical Note</div>
+        <p>Store eval results in a time-series database alongside the exact system prompt version, model version, retrieval strategy version, and tool list used. Without this provenance, you cannot determine which change caused a regression when multiple changes land simultaneously.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <a class="pnav-btn primary" onclick="goPage('p-l1-quiz')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 QUIZ ==================== -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Eval Foundations — Quiz</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. What is the primary difference between reference-based evals and model-graded evals?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Reference-based evals are faster; model-graded evals are more accurate in all cases.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Reference-based evals compare output to a known correct answer; model-graded evals use an AI judge to assess quality criteria.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Reference-based evals require human reviewers; model-graded evals do not involve any human input.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">They are functionally identical — the terms are used interchangeably in industry.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Reference-based evals check against a known ground truth; model-graded evals use a second AI to judge outputs on criteria like tone, helpfulness, or completeness where no single right answer exists.</div>
+    <div class="quiz-feedback wrong">❌ Not quite. The key distinction is how correctness is determined: by matching a known answer (reference-based) versus using an AI judge to assess quality (model-graded).</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. According to documented practices at Google DeepMind, what triggers the creation of a new eval case?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Any user complaint submitted through the feedback form.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">A quarterly review of the model's overall accuracy score.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Every production incident reaching severity level 2 or higher must generate at least one new eval case before the incident is closed.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">New eval cases are only created during annual red-team exercises.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. DeepMind's "living eval suite" practice links incident resolution directly to eval creation — the incident is not closed until the new eval passes on the patched model.</div>
+    <div class="quiz-feedback wrong">❌ Not right. DeepMind's documented approach ties new eval creation to production incidents of sufficient severity, not to periodic reviews or informal feedback.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. Why did Microsoft's Azure AI team document that long-running eval suites were problematic?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">They were too expensive to run in cloud environments.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">They produced overly strict scores that blocked valid improvements.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">They required dedicated GPU clusters not available during standard development.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">Suites taking more than an hour were routinely skipped during time-pressured releases, eliminating the safety guarantee.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. A safety check that doesn't run provides no safety. Speed is a feature, not a compromise — fast evals that actually run beat perfect evals that don't.</div>
+    <div class="quiz-feedback wrong">❌ Not quite. The documented problem was behavioral: teams under time pressure skipped slow evals entirely, making the eval suite useless in exactly the situations where it mattered most.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Lesson 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l1-lab')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 1 Lab</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 LAB ==================== -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Lab</div>
+    <h1>Design an Eval Suite</h1>
+    <p class="tagline">Work with an AI coach to design a practical eval suite for a real agent scenario.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You're building an AI agent that helps software engineers triage GitHub issues — categorizing them by severity, labeling them, and suggesting which team should respond. Design a minimal but rigorous eval suite for this agent.</p>
+    <div class="lab-prompt">Consider: What reference-based evals would you write? What model-graded evals? What's your regression threshold? How would you handle incidents that expose new failure modes?</div>
+    <p>The coach will challenge your thinking and push for specifics. Aim for 3+ exchanges to unlock full credit.</p>
+  </div>
+  <div class="lab-chat" id="lab-chat-l1">
+    <div class="lab-chat-header">
+      <span>🧪 Eval Design Coach</span>
+      <span class="chat-badge">Advanced Lab</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="2" placeholder="Describe your eval suite approach..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1-quiz')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 ==================== -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Feedback Loops</h1>
+    <p class="tagline">Closing the gap between agent outputs and improvement signals — from implicit signals to structured annotation pipelines.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">When Duolingo deployed its AI-powered conversation practice feature in 2023, the team faced a specific challenge: users couldn't articulate what made a response feel "off" in a foreign language — they just knew it did. Duolingo's engineering team solved this by instrumenting two implicit feedback signals. First, they tracked "abandon rate" — how often users stopped responding mid-conversation — as a proxy for frustration. Second, they tracked "replay rate" — how often users replayed the AI's audio response — as a proxy for confusion. These two metrics, collected passively from millions of daily interactions, provided a continuous improvement signal that no explicit rating system could have matched at scale. The team published these details in a 2023 engineering blog post, noting that implicit signals outperformed their five-star rating widget by a factor of roughly 40 in terms of actionable data volume.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Feedback Signal Hierarchy</h2>
+    <div class="section-body">
+      <p>Not all feedback is equal. A useful mental model organizes signals by their fidelity, latency, and scalability. At the bottom: <strong>explicit ratings</strong> (thumbs up/down, star ratings). These are high-fidelity but low-volume — most users don't rate. In the middle: <strong>implicit behavioral signals</strong> (session length, retry rate, copy-to-clipboard events, user edits to AI output). These are medium-fidelity but high-volume. At the top for correctness verification: <strong>ground-truth outcomes</strong> — did the code the agent wrote actually run? Did the customer support ticket get reopened within 24 hours? Did the user place the order the agent recommended?</p>
+      <p>Salesforce's Einstein AI team published a case study in 2024 describing how they weighted these signal types for their CRM AI assistant. Ground-truth outcome signals (was the suggested sales action taken, and did it result in a won deal?) received 10x the learning weight of thumbs-up ratings. The rationale: outcome signals reflect real-world value, not just whether the output felt good in the moment.</p>
+      <div class="callout-box">
+        <div class="callout-label">Signal Hierarchy</div>
+        <p><strong>Tier 1 (highest weight):</strong> Ground-truth outcomes — did the real world confirm the agent was right?<br><strong>Tier 2:</strong> Implicit behavioral signals — what did users actually do after receiving the output?<br><strong>Tier 3:</strong> Explicit ratings — what did users say about the output?</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Building Annotation Pipelines</h2>
+    <div class="section-body">
+      <p>Implicit signals are invaluable but noisy. Explicit expert annotation remains the gold standard for understanding <em>why</em> a failure occurred — not just <em>that</em> it occurred. The challenge is making annotation sustainable at scale.</p>
+      <p>Scale AI, which provides data annotation infrastructure for major AI labs, published a detailed methodology in 2023 for "targeted annotation" — a process where automated filtering identifies the subset of agent outputs most likely to contain errors (based on low model confidence, user behavioral signals, or proximity to known edge cases), and only those outputs enter the human annotation queue. In one published case study involving a legal document AI, this reduced annotation costs by 73% while increasing the density of useful training signal in the annotated dataset by 4x — because annotators were spending time on actually ambiguous or incorrect outputs, not reviewing correct ones.</p>
+      <p>The architecture of an annotation pipeline for a production agent typically has five stages:</p>
+      <ul class="ul-body">
+        <li><strong>Collection:</strong> All agent I/O logged with metadata (timestamp, user ID hash, session context).</li>
+        <li><strong>Filtering:</strong> Automated rules and model-based classifiers identify high-value annotation candidates.</li>
+        <li><strong>Sampling:</strong> Random samples drawn alongside targeted samples to maintain statistical representation.</li>
+        <li><strong>Annotation:</strong> Expert annotators score filtered outputs against a rubric with inter-rater reliability checks.</li>
+        <li><strong>Ingestion:</strong> Annotated data flows back into training, eval suite expansion, and prompt engineering experiments.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Closing the Loop: From Signal to Action</h2>
+    <div class="section-body">
+      <p>A feedback signal that doesn't change agent behavior is just data storage. The loop is only closed when signals systematically influence one of three levers: the system prompt, the retrieval strategy, or the model weights. Knowing which lever to pull for a given failure class is one of the key skills in continuous improvement work.</p>
+      <p>GitHub Copilot's team described their triage process in a 2024 developer conference talk: failures caused by the model "not knowing" something (factual gaps, outdated information) were addressed by retrieval improvements. Failures caused by the model "not caring" about a rule (ignoring formatting instructions, violating code style) were addressed by prompt engineering. Failures caused by the model "not understanding" a task type (systematic reasoning failures on a new language construct) were escalated to fine-tuning or model upgrade. This three-way triage prevented teams from misdiagnosing problems — which wastes weeks of engineering time.</p>
+      <div class="callout-box">
+        <div class="callout-label">Triage Heuristic</div>
+        <p>Not knowing → fix retrieval. Not following rules → fix the prompt. Not understanding the task type → fine-tune or upgrade model. Apply this triage before committing engineering resources to a fix.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1-lab')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Lab 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2-quiz')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 2 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 QUIZ ==================== -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Feedback Loops — Quiz</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. In Duolingo's documented 2023 case, which two implicit feedback signals did they use to measure AI conversation quality?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Five-star ratings and written reviews submitted by users after each session.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Abandon rate (stopping mid-conversation) and replay rate (replaying AI audio), collected passively from millions of interactions.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Grammar error counts measured by a secondary language model and session completion rate.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">User self-reported confidence scores and tutor comparison ratings.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Duolingo used abandon rate as a frustration proxy and replay rate as a confusion proxy — implicit behavioral signals that provided 40x more actionable data volume than explicit ratings.</div>
+    <div class="quiz-feedback wrong">❌ Not right. Duolingo specifically moved away from explicit rating widgets toward passive behavioral signals: abandon rate and replay rate, which scaled massively better.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. According to the Salesforce Einstein case study, why did ground-truth outcome signals receive 10x the learning weight of thumbs-up ratings?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Thumbs-up ratings are technically harder to collect and therefore less reliable.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Outcome signals are cheaper to collect and require less infrastructure.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Outcome signals reflect real-world value rather than whether the output felt good in the moment.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Thumbs-up ratings are biased because users always rate positively to avoid conflict.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The reasoning was explicit: did the recommended sales action actually lead to a won deal? That ground-truth outcome is a far stronger signal of real value than a user's immediate positive feeling about the suggestion.</div>
+    <div class="quiz-feedback wrong">❌ Not quite. The documented reason was philosophical: outcome signals measure whether the agent created actual value in the world, not just whether the output felt satisfying to the user.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. According to the GitHub Copilot triage framework, which type of failure should be addressed by improving retrieval, rather than prompt engineering or fine-tuning?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Failures where the model consistently ignores formatting instructions.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Failures where the model exhibits systematic reasoning errors on a new task type.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">Failures caused by the model not knowing something — factual gaps or outdated information.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Failures where the model produces outputs that violate established code style rules.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. "Not knowing" → fix retrieval. The model has the capability; it just lacks the information. Adding better context via retrieval solves this faster than any other lever.</div>
+    <div class="quiz-feedback wrong">❌ Not right. The Copilot framework specifically maps "not knowing" (factual gaps, outdated info) to retrieval improvements, "not following rules" to prompt engineering, and "not understanding a task type" to fine-tuning or model upgrade.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Lesson 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2-lab')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 2 Lab</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 LAB ==================== -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Lab</div>
+    <h1>Feedback Signal Design</h1>
+    <p class="tagline">Design a multi-tier feedback collection system for a real production agent scenario.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You're the AI engineer responsible for a customer support agent at an e-commerce company. The agent handles returns, shipping inquiries, and product questions. Your leadership wants a feedback system that catches failures before customer satisfaction scores drop.</p>
+    <div class="lab-prompt">Design your three-tier feedback signal system: What implicit behavioral signals will you instrument? What explicit signals? What ground-truth outcomes? Then walk through a specific failure scenario and show how your system would catch and route it.</div>
+    <p>The coach will probe for specificity — vague answers get pushed back. Aim for 3+ exchanges.</p>
+  </div>
+  <div class="lab-chat" id="lab-chat-l2">
+    <div class="lab-chat-header">
+      <span>🔁 Feedback Systems Coach</span>
+      <span class="chat-badge">Advanced Lab</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="2" placeholder="Describe your feedback signal system..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2-quiz')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 ==================== -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Iteration Pipelines</h1>
+    <p class="tagline">Building the engineering infrastructure that turns evaluation results into controlled, safe agent improvements at production cadence.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">When Notion launched its AI writing assistant in 2023, the team faced a specific engineering challenge: they were receiving improvement ideas faster than they could safely test and ship them. Engineers were proposing prompt changes, the retrieval team was experimenting with embedding models, and product managers were requesting new tool capabilities — simultaneously. Without a structured iteration pipeline, changes were being tested in production in an ad-hoc sequence that made it impossible to attribute improvements or regressions to specific decisions. Notion's AI team published a retrospective noting that they solved this by adopting a strict three-lane pipeline: prompt experiments ran in one lane, retrieval experiments in a second, and capability additions in a third. Each lane had its own eval gate and deployment schedule. This separation reduced their mean time to detect regressions from 11 days to under 36 hours.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Anatomy of an Iteration Pipeline</h2>
+    <div class="section-body">
+      <p>An iteration pipeline is the structured process by which a proposed change to an AI agent travels from idea to production. Without explicit pipeline design, the process is chaotic: changes land whenever someone has time, conflicts arise when multiple changes interact, and regression attribution becomes guesswork.</p>
+      <p>A production-grade iteration pipeline has six stages. <strong>Hypothesis formation</strong>: a specific, falsifiable claim about what change will improve what metric by how much. <strong>Offline experiment</strong>: the change is tested against the eval suite on a frozen dataset without touching production traffic. <strong>Shadow deployment</strong>: the new agent version runs alongside production, processing real inputs but not returning results to users — only logging outputs for comparison. <strong>A/B test</strong>: a controlled percentage of real users receive the new version; statistical significance thresholds are defined before the test starts. <strong>Staged rollout</strong>: the change is deployed to increasing percentages of traffic with automated rollback triggers. <strong>Post-deployment monitoring</strong>: eval suite runs on new production traffic for a defined burn-in period before the change is considered stable.</p>
+      <div class="callout-box">
+        <div class="callout-label">Critical Insight</div>
+        <p>The shadow deployment stage is frequently skipped under time pressure — and it is the stage that catches the most subtle failures. Shadow mode reveals problems that eval suites miss because it runs against the actual distribution of real user inputs, not curated test cases.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Hypothesis-Driven Iteration</h2>
+    <div class="section-body">
+      <p>The most expensive iteration mistakes come from skipping the hypothesis stage. A team notices that users are asking follow-up questions frequently and decides to "make the agent more detailed." This is not a hypothesis — it's a direction. A proper hypothesis would be: "Adding a summary section to agent responses will reduce follow-up question rate by 15%, as measured over 7 days of A/B traffic, without increasing response latency above our 3-second p95 threshold."</p>
+      <p>The specificity matters because it determines whether the experiment is actually conclusive. Slack's developer experience team documented this in their 2024 engineering blog when describing their Slack AI iteration process. They required every proposed change to specify: the target metric, the expected direction and magnitude of change, the secondary metrics that must not regress (guardrail metrics), and the minimum detectable effect size for statistical significance. Changes that couldn't be specified at this level of detail were sent back to the hypothesis formation stage — not because of bureaucracy, but because underdefined experiments waste compute, engineering time, and often cause harm by deploying changes that seem to work but don't.</p>
+      <ul class="ul-body">
+        <li><strong>Target metric:</strong> What specific number should improve?</li>
+        <li><strong>Expected magnitude:</strong> By how much, approximately?</li>
+        <li><strong>Guardrail metrics:</strong> What must not get worse?</li>
+        <li><strong>Duration:</strong> How long does the test need to run to be valid?</li>
+        <li><strong>Rollback trigger:</strong> At what point do we automatically revert?</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Managing Compound Changes and Interaction Effects</h2>
+    <div class="section-body">
+      <p>One of the most dangerous failure modes in agent iteration is the interaction effect: two changes that each improve the agent independently but degrade it when combined. This is particularly acute for AI agents because prompt changes, retrieval changes, and tool changes all influence the same underlying model in ways that interact non-linearly.</p>
+      <p>Meta's AI infrastructure team published a note in their 2024 systems research describing how they handled this for their Llama-based production agents: all changes were serialized through a single integration queue. No two changes could be in A/B testing simultaneously for the same agent. This slowed individual feature velocity but eliminated the class of regressions caused by interaction effects — which they documented as accounting for 34% of their historical severity-1 production incidents. The trade-off was explicit: slower iteration in exchange for clean attribution and lower incident rate.</p>
+      <div class="callout-box">
+        <div class="callout-label">Pipeline Rule</div>
+        <p>One live experiment per agent at a time. If a second experiment is ready before the first concludes, it waits in the queue. Clean attribution is worth more than parallelism — you cannot learn from an experiment you cannot interpret.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2-lab')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Lab 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3-quiz')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 3 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 QUIZ ==================== -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Iteration Pipelines — Quiz</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. What did Notion's three-lane pipeline (prompt / retrieval / capability) achieve according to their retrospective?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">It doubled the number of features they could ship per quarter.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">It reduced mean time to detect regressions from 11 days to under 36 hours.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">It eliminated the need for A/B testing by making changes deterministic.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">It allowed multiple changes to run in production simultaneously without conflict.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Separating changes into dedicated lanes with their own eval gates and deployment schedules enabled fast regression detection — from 11 days down to 36 hours.</div>
+    <div class="quiz-feedback wrong">❌ Not right. The key outcome was faster regression detection: from 11 days to under 36 hours. Separation of lanes made it possible to attribute regressions quickly.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. What is a "shadow deployment" and why is it frequently the most valuable stage of an iteration pipeline?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">A shadow deployment is a secret release to internal employees that avoids customer exposure.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">A shadow deployment runs the new version in a staging environment with synthetic test traffic only.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">The new agent version processes real user inputs but doesn't return results — only logging outputs for comparison. It catches failures eval suites miss because it uses actual user input distribution.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">A shadow deployment is an A/B test with less than 1% of traffic to minimize risk.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Shadow mode runs on real inputs without user impact, exposing problems that curated eval suites miss because real user inputs have a much wider and stranger distribution than test cases.</div>
+    <div class="quiz-feedback wrong">❌ Not quite. Shadow deployment specifically means running the new version on real traffic without serving results to users — giving you the benefits of real-input testing without any user risk.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. According to Meta's AI infrastructure team, what percentage of their historical severity-1 incidents were caused by interaction effects between simultaneous changes?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">About 8% — a minor but trackable fraction.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">About 52% — over half of all critical incidents.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">About 34% — significant enough to justify serializing all changes through a single integration queue.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">About 12% — enough to be annoying but not worth slowing feature velocity to address.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. 34% of severity-1 incidents at Meta came from interaction effects. That was enough to justify the explicit trade-off: slower feature velocity in exchange for clean attribution and lower incident rate.</div>
+    <div class="quiz-feedback wrong">❌ Not right. Meta documented 34% of their critical incidents as caused by interaction effects between simultaneous changes — a large enough fraction to justify serializing the entire experiment queue.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Lesson 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3-lab')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 3 Lab</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 LAB ==================== -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Lab</div>
+    <h1>Iteration Pipeline Design</h1>
+    <p class="tagline">Map a complete iteration pipeline for a specific proposed agent improvement.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You manage a medical information agent that helps patients understand their lab results. The agent currently gives generic explanations. Your product team wants to add personalization — incorporating the patient's age, sex, and known conditions into explanations.</p>
+    <div class="lab-prompt">Design the complete iteration pipeline for this change: hypothesis formation, offline experiment design, shadow deployment plan, A/B test structure, rollback triggers, and post-deployment monitoring. What guardrail metrics are non-negotiable? Where is the highest failure risk?</div>
+    <p>The coach will ask hard questions about your guardrail choices and statistical design. Aim for 3+ substantive exchanges.</p>
+  </div>
+  <div class="lab-chat" id="lab-chat-l3">
+    <div class="lab-chat-header">
+      <span>⚙️ Pipeline Design Coach</span>
+      <span class="chat-badge">Advanced Lab</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="2" placeholder="Describe your iteration pipeline..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3-quiz')">
+      <span class="pnav-arrow">&#8592;</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l4')">
+      <span class="pnav-arrow">&#8594;</span>
+      <span class="pnav-label">Lesson 4</span>
+    </a>
+  </div>
+</div>
+
+<!-- ==================== LESSON 4 ==================== -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 4 of 4</div>
+    <h1>Production Monitoring</h1>
+    <p class="tagline">Observability systems, drift detection, and the operational practices that keep deployed agents improving rather than silently degrading.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In early 2024, Intercom documented a production incident with their Fin AI customer support agent that became a widely-cited case study in AI observability. The agent had been performing well by all traditional metrics for approximately six weeks. Then a seasonal shift in customer query patterns — tied to a major product update — caused query topics to drift significantly from the distribution the agent had been optimized for. Latent accuracy degraded by an estimated 23% before any human reviewer noticed, because the visible customer satisfaction scores had a two-week lag. Intercom's engineering team subsequently published their post-mortem, which detailed the implementation of three new monitoring layers: embedding-space drift detection (which would have flagged the distribution shift within 48 hours), per-topic accuracy tracking (breaking out performance by query category rather than aggregate), and a "canary metric" — a small set of manually-verified questions run against production daily that served as a ground-truth check independent of user behavior signals.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Observability Stack for AI Agents</h2>
+    <div class="section-body">
+      <p>Traditional software monitoring tracks well-defined metrics: latency, error rate, uptime. AI agent monitoring requires this entire stack plus a second layer addressing quality degradation — which is invisible to infrastructure

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caching for Agents — Advanced | AESOP AI Academy Module 5</title>
+<meta name="description" content="Advanced: What to cache, where to cache it, and invalidation strategies. Module 5 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-5/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+</head><body>
+<div class="site-layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">← Academy</a>
+    <div class="sb-mod-num">MODULE 5</div>
+    <div class="sb-mod-title">Caching for Agents</div>
+    <div class="sb-tier-chip">🎯 Advanced</div>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📖</span>L1: What to Cache</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">📖</span>L2: Cache Layers</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">📖</span>L3: Invalidation Strategies</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">📖</span>L4: Semantic Caching</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')"><span class="sb-icon">❓</span>Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')"><span class="sb-icon">🧪</span>Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">⚡ Module Test</button>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ==================== LESSON 1 ==================== -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>What to Cache</h1>
+    <div class="tagline">Not everything deserves to be stored. Understanding cacheability is the first step to building agents that scale without accumulating garbage.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2023, Klarna's AI assistant — built on OpenAI's API and handling over 700,000 customer service conversations per month — reported that a significant portion of inbound queries were near-identical: order status lookups, return policy questions, and payment FAQ variants. By routing these through a result cache keyed on normalized query text, Klarna reduced redundant LLM calls dramatically. The principle was simple: if two queries resolve to the same intent and the answer doesn't change faster than the cache TTL, one LLM call is enough.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Cacheability Spectrum</h2>
+    <div class="section-body">
+      <p>Every piece of data an agent handles sits somewhere on a spectrum from "always cacheable" to "never cacheable." At one end: static system instructions, tool schemas, and reference documents that change only on deliberate deployment events. At the other end: live financial quotes, user authentication tokens, and real-time sensor readings that are stale within seconds of generation.</p>
+      <p>The critical analytical skill is placing each data type accurately on that spectrum, because a cache hit on stale financial data is actively dangerous, while refusing to cache a static FAQ response is just wasteful. Neither failure mode is trivial at scale.</p>
+      <ul class="ul-body">
+        <li><strong>Static artifacts:</strong> System prompts, tool definitions, policy documents, brand voice guides — cache aggressively with long or indefinite TTL.</li>
+        <li><strong>Slow-changing data:</strong> Product catalogs, user preference profiles, pricing tiers — cache with TTLs measured in hours, with event-driven invalidation on update.</li>
+        <li><strong>Session-scoped data:</strong> Conversation context, current task state — cache for session duration, invalidate on session end.</li>
+        <li><strong>Real-time data:</strong> Live inventory, token prices, authentication challenges — do not cache or use sub-second TTLs with explicit staleness flags.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Key Principle</div>
+        <p>Cache data at the granularity that matches its actual change rate. Combining fast-changing and slow-changing data into a single cache entry forces you to use the shorter TTL for everything, destroying the value of caching the stable component.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">LLM-Specific Cacheability: Prompt Caching</h2>
+    <div class="section-body">
+      <p>Anthropic's prompt caching feature — introduced in 2024 for Claude — introduced a specific dimension of cacheability that applies to the token processing stage rather than the result stage. When a long system prompt or document context is marked with <code>cache_control: ephemeral</code>, the KV (key-value) cache of the transformer's attention computation is stored on Anthropic's infrastructure. Subsequent requests reusing that exact prefix skip recomputation and are billed at 10% of the normal input token cost.</p>
+      <p>OpenAI rolled out analogous automatic prompt caching for GPT-4o in late 2024, caching prefixes of 1,024 tokens or more automatically at 50% cost reduction. The design difference matters: Anthropic's system requires explicit cache_control markers, giving the developer precise control; OpenAI's system is automatic but less controllable. For agents with long, stable system prompts — legal analysis agents, code review agents carrying large style guides — this can represent 60–80% reduction in per-call costs.</p>
+      <div class="callout-box">
+        <div class="callout-label">Design Implication</div>
+        <p>To maximize prompt cache hit rates, structure your prompts so stable content appears at the top (system role, instructions, reference documents) and variable content appears at the bottom (user message, dynamic context). Cache hits require prefix matching — any change to a character before the cached region breaks the hit.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">What Agents Specifically Produce Worth Caching</h2>
+    <div class="section-body">
+      <p>Beyond raw LLM inputs, agents produce several categories of intermediate output that are worth caching. Tool call results — especially API responses from external services — are expensive to re-fetch and often stable within a request window. Embedding vectors for documents that don't change are computationally expensive to regenerate. Retrieved chunks from a RAG pipeline, given a stable document corpus, can be cached keyed on the query embedding and document set version hash.</p>
+      <p>Planning outputs from a reasoning step — the task decomposition a ReAct agent produces before executing — are worth caching when the same high-level goal recurs across sessions. GitHub Copilot's infrastructure caches code completion prefixes across users working in the same repository, leveraging the fact that common boilerplate appears repeatedly across sessions even from different developers.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 QUIZ ==================== -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">❓ Quiz</div>
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. Klarna's AI caching strategy worked primarily because a large portion of their customer queries shared which characteristic?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">They were all submitted in the same language</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">They resolved to the same intent with a stable answer</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">They were all short, single-word queries</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">They arrived within the same 5-minute window</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Near-identical intent with a stable answer is the exact condition that makes result caching effective — one LLM call satisfies all equivalent requests.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The key was that many queries resolved to the same intent and the answer didn't change faster than the cache TTL — not surface-level query similarity.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. Anthropic's prompt caching charges cached input tokens at what fraction of normal input token cost?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">50%</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">25%</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">10%</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">1%</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Anthropic prices prompt cache hits at 10% of normal input token cost, versus OpenAI's 50% for their automatic caching on GPT-4o.</div>
+    <div class="quiz-feedback wrong">✗ Not correct. Anthropic's prompt caching hits are billed at 10% of normal input token cost. OpenAI's automatic caching is 50%.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. To maximize prompt cache hit rates with prefix-based caching, where should variable content (like the user message) be placed?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">At the very top, before system instructions</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Interleaved evenly throughout the prompt</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">In a separate API call with no system prompt</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">At the bottom, after all stable content</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Prefix caching requires that the cached portion be an exact prefix match. Placing variable content at the bottom preserves the stable prefix and maximizes cache hits.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Since prefix caching requires the cached text to appear at the start of the prompt unchanged, all variable content must go at the bottom to preserve that prefix.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Lab</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 1 LAB ==================== -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🧪 Lab</div>
+    <h1>Lab 1: Classifying Cacheability</h1>
+    <div class="tagline">Work with an AI tutor to analyze real agent data types and place them on the cacheability spectrum.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're architecting a customer-service agent for an e-commerce platform. The agent has access to: a static brand voice guide, live inventory counts, user order history, product descriptions, and real-time shipping carrier status APIs.</p>
+    <p>In this lab you'll work through:</p>
+    <ol>
+      <li>Classifying each data type on the cacheability spectrum with justification</li>
+      <li>Deciding whether to use result caching, prompt caching, or both for each type</li>
+      <li>Identifying which data types, if cached incorrectly, could cause user-facing errors</li>
+    </ol>
+    <div class="lab-prompt">Start by asking the tutor to walk you through classifying the brand voice guide — then work through the remaining data types one by one.</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🧪 Lab Assistant — Cacheability Classification</span>
+      <span class="chat-badge">Advanced · Module 5</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="1" placeholder="Type your message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1')}"></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 ==================== -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Cache Layers</h1>
+    <div class="tagline">Where you store a cache is as important as what you store. Agents operating across distributed infrastructure need a deliberate layering strategy.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">When Notion launched its AI features in early 2023 — embedded directly into the document editor and backed by OpenAI's API — latency was a primary user complaint. The team implemented a multi-layer caching architecture: an in-process memory cache for prompt prefixes within a single editing session, a Redis-backed distributed cache for repeated block-level completions shared across users, and Cloudflare's edge cache for static system prompts served at the CDN layer. Each layer had a different TTL and eviction policy. The result was sub-100ms response times for common completions that would otherwise require a round trip to OpenAI's API.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Three-Layer Model</h2>
+    <div class="section-body">
+      <p>Production agent systems typically operate across three distinct cache layers, each optimized for different access patterns and scale characteristics.</p>
+      <ul class="ul-body">
+        <li><strong>L1 — In-process / in-memory:</strong> Fastest access (nanoseconds), zero serialization overhead. Limited to the memory of a single process. Appropriate for: per-request memoization, session state that doesn't need to survive process restart. Tools: Python's <code>functools.lru_cache</code>, LangChain's <code>InMemoryCache</code>.</li>
+        <li><strong>L2 — Shared distributed cache:</strong> Millisecond access, shared across all agent instances. Survives individual process restarts. Appropriate for: shared tool results, embedding vectors, RAG retrieval results. Tools: Redis, Memcached, DynamoDB with TTL.</li>
+        <li><strong>L3 — Persistent / edge cache:</strong> Hundreds of milliseconds to seconds for cold reads, effectively zero for CDN-edge hits. Appropriate for: static system prompts, documentation chunks, tool schemas. Tools: Cloudflare KV, Fastly, AWS CloudFront with S3 origin.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Architecture Rule</div>
+        <p>Cache lookups should cascade: check L1 first, then L2, then L3, then origin. Writes should populate all lower layers. A miss at any layer should warm the layers above it so the next request is faster. This is the same write-through / read-through pattern used in CPU cache hierarchies.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Agent-Specific Considerations</h2>
+    <div class="section-body">
+      <p>Agents introduce concerns that pure web caches don't face. The first is statefulness: a web cache stores response payloads, but an agent's cache may store intermediate reasoning states, partially completed tool call sequences, or RAG context windows. These need careful scoping — a cached tool result from user A's session must never be served for user B without explicit cross-user sharing logic.</p>
+      <p>The second concern is the multi-step nature of agent execution. In a ReAct loop, caching the output of step 2 is only valid if steps 0 and 1 were identical. The cache key must encode enough of the execution context to guarantee this. LangChain's SQLiteCache, for example, keys on the exact prompt text sent to the LLM — meaning it won't incorrectly reuse a cached response if the context changed.</p>
+      <div class="callout-box">
+        <div class="callout-label">Real Deployment</div>
+        <p>LangChain's production caching backends — including Redis, MongoDB, and Cassandra integrations released in 2023–2024 — all key on the full serialized prompt. This means cache keys can be very large, and teams often hash them (SHA-256) to keep key sizes manageable while avoiding collisions.</p>
+      </div>
+      <p>A third concern specific to agents is tool call deduplication within a single run. When an agent's ReAct loop generates the same tool call twice in one execution (a known failure mode called "looping"), an L1 in-process cache that returns the cached result immediately breaks the loop without incurring a second external API call.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Choosing a Cache Backend</h2>
+    <div class="section-body">
+      <p>For serverless or edge-deployed agents (AWS Lambda, Cloudflare Workers), L1 in-process caching is largely useless because each invocation may run in a fresh process. The architecture must rely on L2/L3 for any cache benefit. Redis on ElastiCache or Upstash's serverless Redis (which offers HTTP-based access compatible with edge runtimes) are the standard choices in 2024 production deployments.</p>
+      <p>For long-running agent servers — common in enterprise deployments running LangGraph or CrewAI — L1 caching provides substantial benefit and should be the first layer added. The <code>@lru_cache</code> decorator on embedding generation functions alone can halve embedding API costs when documents repeat across requests within a server's lifetime.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 QUIZ ==================== -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">❓ Quiz</div>
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. In Notion's AI caching architecture, which layer handled repeated block-level completions shared across multiple users?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">In-process memory cache</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Redis-backed distributed cache</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Cloudflare edge cache</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">OpenAI's built-in response cache</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Redis handled the shared, cross-user completions. The in-process cache was session-scoped, and Cloudflare handled static system prompts.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Redis was the shared distributed layer. The in-process cache was per-session, and Cloudflare handled static content at the edge.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. Why is L1 in-process caching largely ineffective for agents deployed on serverless platforms like AWS Lambda?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Lambda functions cannot access memory</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Each invocation may run in a fresh process with no shared state</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Lambda has a built-in cache that conflicts with L1</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Serverless platforms prohibit dictionary-based caching</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Without a persistent process, L1 memory caches don't survive across invocations. The architecture must rely on L2 distributed caches like Redis for any cache persistence.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The issue is process lifecycle: each Lambda invocation may be a cold start with a fresh process, so anything stored in memory from a previous invocation is gone.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. LangChain's production cache backends key on the full serialized prompt. Why do teams typically SHA-256 hash these keys?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">To encrypt sensitive user data in the cache</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Because Redis only accepts numeric keys</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">To keep key sizes manageable while avoiding collisions</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">To enable cache key expiration by date</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Full serialized prompts can be very large. SHA-256 produces a fixed-length 64-character key regardless of prompt size, keeping the cache index lightweight.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The reason is practical key size management. Full prompt strings can be thousands of tokens long — SHA-256 hashing produces a compact, fixed-length key while preserving uniqueness.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Lab</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 2 LAB ==================== -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🧪 Lab</div>
+    <h1>Lab 2: Designing a Cache Layer Stack</h1>
+    <div class="tagline">Design a three-layer cache architecture for a real production scenario with the AI tutor.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're building a code review agent that runs on AWS Lambda, uses a large GPT-4o system prompt containing your organization's coding standards, calls a GitHub API to fetch PR diffs, and generates inline comments. The agent processes ~500 PRs per day, with many PRs touching the same files.</p>
+    <p>In this lab you'll work through:</p>
+    <ol>
+      <li>Deciding which cache layer is appropriate for the system prompt vs. PR diff results vs. generated comments</li>
+      <li>Designing the cache key structure for each layer</li>
+      <li>Handling the Lambda-specific constraint that L1 caching may not persist between invocations</li>
+    </ol>
+    <div class="lab-prompt">Ask the tutor to start by helping you decide what goes in L2 (Redis) vs. L3 (edge/CDN) for this specific agent scenario.</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>🧪 Lab Assistant — Cache Layer Design</span>
+      <span class="chat-badge">Advanced · Module 5</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="1" placeholder="Type your message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2')}"></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 ==================== -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Invalidation Strategies</h1>
+    <div class="tagline">Phil Karlton famously said there are only two hard things in computer science: cache invalidation and naming things. For agents, stale data can mean wrong answers delivered confidently.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2024, a widely-reported issue with several RAG-based legal research tools involved documents being updated by regulatory bodies — GDPR guidance updates, SEC rule amendments — while the tools' vector stores and result caches retained the old versions. Attorneys received AI-generated summaries confidently citing superseded rules. The root cause was not missing invalidation logic, but invalidation logic tied only to TTL rather than to source document version hashes. When the source document changed, the cache had no mechanism to detect it until the TTL expired — sometimes weeks later.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">TTL-Based vs. Event-Driven Invalidation</h2>
+    <div class="section-body">
+      <p>TTL (time-to-live) invalidation is the simplest strategy: every cache entry expires after a fixed duration. It requires no coordination between the cache and the data source. But it has two failure modes: entries that expire too early cause unnecessary cache misses, and entries that expire too late serve stale data. For agent knowledge bases, "too late" can mean users receiving wrong answers for the entire TTL window after the source changes.</p>
+      <p>Event-driven invalidation solves the staleness problem by coupling the cache to the data source's change events. When a document is updated, a webhook, message queue event, or database trigger fires and explicitly deletes or updates the affected cache entries. This is more complex to implement but eliminates the staleness window entirely.</p>
+      <ul class="ul-body">
+        <li><strong>TTL:</strong> Simple, low-coordination overhead. Best for data with predictable and acceptable staleness windows.</li>
+        <li><strong>Event-driven:</strong> Zero staleness window. Requires change event infrastructure (Kafka, SNS, database triggers). Best for data where any staleness is unacceptable.</li>
+        <li><strong>Version-hash invalidation:</strong> Cache entries include a hash of the source document. On retrieval, hash is verified against source. Stale entries are detected immediately without requiring push events from the source.</li>
+        <li><strong>Hybrid:</strong> TTL as a safety net, event-driven for known high-change data, version hashing for critical documents.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">The Legal RAG Lesson</div>
+        <p>The legal tool failures stemmed from using TTL alone on regulatory documents. The fix: compute a SHA-256 hash of each source document at cache write time, store it with the cache entry, and re-verify on read. If the hash doesn't match the current document hash, treat as a miss and re-fetch. This adds a lightweight source read on every cache hit but eliminates silent staleness.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Invalidation Scope: Entry, Tag, and Namespace</h2>
+    <div class="section-body">
+      <p>When an invalidation event fires, you need to invalidate the right scope. Three invalidation granularities matter in practice:</p>
+      <p><strong>Entry-level invalidation</strong> deletes a single cache key. This is precise but requires knowing the exact key. For agent caches keyed on SHA-256 prompt hashes, the system must maintain a reverse mapping from source document ID to all cache keys that included that document. Without this, entry-level invalidation on a document change requires a full cache scan.</p>
+      <p><strong>Tag-based invalidation</strong> groups cache entries under semantic tags. When the "pricing-policy-v3" document updates, all cache entries tagged with "pricing-policy-v3" are invalidated in one operation. Redis 7.4 (released 2024) introduced native support for key expiration callbacks that can power this pattern. FastAPI's <code>fastapi-cache2</code> library supports tag-based invalidation out of the box.</p>
+      <p><strong>Namespace invalidation</strong> wipes an entire cache namespace at once. Used when a major update affects too many entries to invalidate individually — for example, when a company's entire product catalog is re-priced. The trade-off is a temporary cache miss storm (cache stampede) as all requests hit the origin simultaneously.</p>
+      <div class="callout-box">
+        <div class="callout-label">Cache Stampede Mitigation</div>
+        <p>A cache stampede after namespace invalidation can overwhelm your origin. Mitigation techniques include: probabilistic early expiration (regenerate cache entries slightly before expiry using a random jitter), request coalescing (a single "lock" key ensures only one request regenerates a cache entry while others wait), and staggered TTL assignment so entries don't all expire simultaneously.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Prompt Cache Invalidation</h2>
+    <div class="section-body">
+      <p>For LLM-side prompt caches (Anthropic's and OpenAI's), invalidation is implicit: any change to the cached prefix — including a single character — creates a new cache key and starts a new cache entry. This means prompt cache invalidation is automatic but also accidental. A tempting anti-pattern is injecting dynamic content (current date, user-specific flags) into the system prompt, which defeats prefix caching entirely. Anthropic's documentation explicitly recommends moving all dynamic content below the cached prefix boundary.</p>
+      <p>In multi-tenant agent deployments, each tenant's customized system prompt is a different cache entry. When updating a base template that all tenants share, the update propagates only to newly created sessions — existing cached sessions retain the old prefix until their <code>ephemeral</code> cache expires (Anthropic's ephemeral TTL is 5 minutes). This 5-minute window must be accounted for in deployment rollout plans for agents where prompt changes have correctness implications.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 QUIZ ==================== -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">❓ Quiz</div>
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. The legal RAG tool failures described in this lesson were caused by what specific invalidation design flaw?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">No cache invalidation logic existed at all</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Invalidation relied only on TTL, with no version hash or event trigger tied to source document changes</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The cache TTL was set to zero, making all entries immediately stale</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The tools used Redis, which doesn't support TTL-based expiration</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. TTL-only invalidation has no mechanism to detect that the source document changed. The cache could serve stale regulatory guidance for the entire TTL window — potentially weeks.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The flaw was specifically that TTL-only invalidation has no coupling to source document changes. When a document was updated, the cache had no way to know until the TTL expired.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. What is a "cache stampede" in the context of namespace invalidation?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">When cache entries are written faster than they can be read</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">When two cache entries share the same key and overwrite each other</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">When all cache entries expire simultaneously, causing all requests to hit the origin at once</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">When a cache runs out of memory and starts evicting entries randomly</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. A cache stampede (also called a thundering herd) occurs when a mass expiration or invalidation causes all requests to simultaneously miss the cache and hit the origin system, potentially overwhelming it.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. A cache stampede happens after mass invalidation when all requests simultaneously miss the cache and hit the origin server at once, which can overwhelm the origin.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. Anthropic's ephemeral prompt cache TTL is approximately how long, and why does this matter for deployment rollouts?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">24 hours — changes take a full day to propagate to cached sessions</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">5 minutes — prompt changes may not reach existing cached sessions for up to 5 minutes</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">1 second — the cache is nearly stateless and has negligible propagation lag</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">30 days — teams must plan month-long rollout windows for any prompt change</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Anthropic's ephemeral cache has a ~5-minute TTL. For correctness-critical prompt updates, deployment plans must account for this window where old prompts remain cached.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The ephemeral TTL is approximately 5 minutes. Any existing session may continue using the old cached prompt for up to 5 minutes after a prompt update is deployed.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 3</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Lab</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 3 LAB ==================== -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🧪 Lab</div>
+    <h1>Lab 3: Building an Invalidation Strategy</h1>
+    <div class="tagline">Design a multi-strategy invalidation system for a knowledge-intensive agent with the AI tutor.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're building a compliance monitoring agent that watches regulatory document sources (SEC filings, GDPR guidance updates, OSHA standards) and answers questions about current rules. Documents can update at any time. Your cache currently uses TTL-only invalidation with a 24-hour window.</p>
+    <p>In this lab you'll work through:</p>
+    <ol>
+      <li>Identifying the specific risks of your current 24-hour TTL-only strategy for regulatory content</li>
+      <li>Designing a version-hash invalidation layer that runs alongside TTL</li>
+      <li>Planning a tag-based invalidation structure so updating one regulatory document invalidates only the affected entries</li>
+    </ol>
+    <div class="lab-prompt">Start by asking the tutor to help you articulate the specific failure scenario that could occur with the 24-hour TTL if an SEC rule is amended overnight.</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🧪 Lab Assistant — Invalidation Strategy</span>
+      <span class="chat-badge">Advanced · Module 5</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="1" placeholder="Type your message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3')}"></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz 3</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></button>
+  </div>
+</div>
+
+<!-- ==================== LESSON 4 ==================== -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Semantic Caching</h1>
+    <div class="tagline">Exact-match caching misses most of the reuse potential in natural language. Semantic caching uses vector similarity to serve cached results for questions that mean the same thing.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">GPTCache — an open-source library released by Zilliz in early 2023 — demonstrated that exact-match caching of LLM responses captures only a fraction of the reusable computation. By storing query embeddings alongside responses and using approximate nearest neighbor (ANN) search at query time, GPTCache could serve cached responses for semantically equivalent queries even when the exact wording differed. In benchmarks on a customer service dataset, GPTCache achieved a 7× speedup and ~30% cost reduction over no caching, while exact-match caching achieved only a 1.2× speedup on the same dataset. The gap exists because natural language users rarely ask identical questions — but they very often ask equivalent ones.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">How Semantic Caching Works</h2>
+    <div class="section-body">
+      <p>A semantic cache replaces the exact-match key lookup with a vector similarity search. When a query arrives, it's embedded using a small, fast embedding model (text-embedding-3-small, all-MiniLM-L6-v2). The resulting vector is compared against the vectors of all previously cached queries using cosine similarity or L2 distance via an ANN index (FAISS, Hnswlib, or a managed vector database like Pinecone or Weaviate). If any cached query exceeds a similarity threshold — typically 0.9–0.95 cosine similarity — the cached response is returned.</p>
+      <ul class="ul-body">
+        <li><strong>Embedding model choice:</strong> Must be deterministic and fast. text-embedding-3-small at $0.02/1M tokens is the common production choice as of 2024. The embedding model must not change after cache population, or all embeddings become incomparable.</li>
+        <li><strong>Similarity threshold:</strong> Too low (0.7) returns false positives — factually different questions get the same answer. Too high (0.99) degrades to near-exact matching with embedding overhead. 0.92–0.95 is empirically validated across customer service and FAQ workloads.</li>
+        <li><strong>ANN index:</strong> Exact nearest neighbor search scales poorly. FAISS (Facebook AI Similarity Search) with IVF-PQ quantization handles millions of cached vectors with sub-millisecond query times. For smaller caches (&lt;100K entries), exact search with numpy is sufficient.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">GPTCache Architecture</div>
+        <p>GPTCache separ

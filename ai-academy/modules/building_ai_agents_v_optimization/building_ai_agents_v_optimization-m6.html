@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graceful Degradation — Advanced | AESOP AI Academy Module 6</title>
+<meta name="description" content="Advanced: Designing agents that fail safely — fallbacks, retries, and circuit breakers. Module 6 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-6/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+</head><body>
+<div class="site-layout">
+
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">← Academy</a>
+    <div class="sb-mod-num">MODULE 6</div>
+    <div class="sb-mod-title">Graceful Degradation</div>
+    <div class="sb-tier-chip">🎯 Advanced</div>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📖</span> Lesson 1</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">📖</span> Lesson 2</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">📖</span> Lesson 3</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">📖</span> Lesson 4</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')"><span class="sb-icon">❓</span> Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')"><span class="sb-icon">🧪</span> Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">⚡ Module Test</button>
+</nav>
+
+<div class="main">
+
+<!-- ============================================================ LESSON 1 ============================================================ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>What Graceful Degradation Actually Means</h1>
+    <div class="tagline">Why "fail safely" is an engineering discipline, not a hope — and the real-world disasters that proved it.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">On August 1, 2012, Knight Capital Group deployed a new trading algorithm to production servers. Due to a configuration error, old dormant code — the "Power Peg" algorithm — was accidentally reactivated on seven of eight servers. For 45 minutes, the system executed 4 million trades in 154 stocks, buying high and selling low at machine speed. By the time human operators manually shut it down, Knight had accumulated a $440 million loss — wiping out four years of earnings in under an hour. The agent had no circuit breaker, no fallback, and no automatic shutdown trigger. It simply kept doing exactly what it was told, catastrophically.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Defining Graceful Degradation</h2>
+    <div class="section-body">
+      <p>Graceful degradation is a system design property: when a component fails, the system continues to operate — at reduced functionality rather than total failure. In the context of AI agents, this means every tool call, every API dependency, every sub-task has an answer to the question: <em>what happens when this breaks?</em></p>
+      <p>The Knight Capital disaster illustrates the inverse: a system with zero degradation logic. When the misconfigured code activated, there was no layer that asked "is this output reasonable?" There was no rate limit, no anomaly threshold, no human escalation path. The agent executed its loop 400 times per second with perfect technical fidelity toward a catastrophic outcome.</p>
+      <p>Graceful degradation is not the same as error handling, though error handling is part of it. Error handling catches exceptions. Graceful degradation is the architectural philosophy that determines what the system does <em>after</em> catching that exception — and ensures a sensible answer exists before any error ever occurs.</p>
+      <div class="callout-box">
+        <div class="callout-label">Core Principle</div>
+        <p>A robust agent is not one that never fails. It is one whose failures are bounded, predictable, and recoverable. Every failure mode should be <em>designed</em>, not discovered.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Failure Mode Taxonomy</h2>
+    <div class="section-body">
+      <p>Before you can design fallbacks, you need a clear taxonomy of the ways an agent can fail. In production AI systems, failures cluster into four categories:</p>
+      <ul class="ul-body">
+        <li><strong>Tool failures</strong> — External APIs return errors, time out, or return malformed data. A weather API goes down; a payment gateway returns 503; a database query exceeds its connection limit.</li>
+        <li><strong>Model failures</strong> — The LLM produces hallucinated outputs, refuses a legitimate request due to over-aggressive safety filters, loops in reasoning, or exceeds context limits.</li>
+        <li><strong>Orchestration failures</strong> — The agent's planning layer produces an invalid task sequence, calls the wrong tool for the context, or gets stuck in a retry loop consuming budget.</li>
+        <li><strong>Environmental failures</strong> — Infrastructure problems: network partitions, rate limiting, cost budget exhaustion, or downstream services that are technically responding but returning stale data.</li>
+      </ul>
+      <p>Each category requires different mitigation strategies. A tool failure might be handled with a cached fallback. A model failure might require a prompt restructure or a smaller, faster model as backup. An orchestration failure might need a human-in-the-loop escalation. Treating all failures the same — with a generic "try again" — produces the kind of system that fails expensively.</p>
+      <div class="callout-box">
+        <div class="callout-label">Design Checkpoint</div>
+        <p>For every tool in your agent's toolkit, explicitly document: what does a timeout look like? What does a malformed response look like? What is the fallback action for each? If you cannot answer these questions before deployment, you are not ready to deploy.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Why Agents Make This Harder</h2>
+    <div class="section-body">
+      <p>Traditional software has deterministic failure paths. If function A calls function B and B throws, you catch the exception. AI agents introduce non-determinism at every layer: the model may choose a different tool, generate different reasoning, or interpret the same error differently across runs. This makes "design the failure modes" significantly harder — and significantly more important.</p>
+      <p>Google's Site Reliability Engineering team documented this challenge in their 2016 SRE book: reliability requires explicit, tested failure scenarios. For AI agents, the SRE principle of <em>error budgets</em> directly applies. You should know, before launch, what your acceptable failure rate is per task type, and your architecture should enforce that budget automatically.</p>
+      <p>The foundational insight is this: your agent's ability to degrade gracefully is as important as its ability to perform correctly. A system that succeeds 95% of the time but catastrophically corrupts data on the other 5% is far worse than one that succeeds 90% of the time and safely returns an error message on the other 10%.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <a class="pnav-btn primary" onclick="goPage('p-l1-quiz')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 1 QUIZ ============================================================ -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Quiz: What Graceful Degradation Actually Means</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. The Knight Capital 2012 incident is primarily an example of what failure in agent design?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">An LLM hallucination causing bad trades</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">No circuit breaker, fallback, or anomaly threshold to bound the failure</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">A network partition that disconnected the trading system</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Excessive retry logic flooding the market with duplicate orders</button>
+    </div>
+    <div class="quiz-feedback right">✓ Exactly. Knight Capital's system had no mechanism to detect that outcomes were catastrophic and stop execution. The $440M loss was possible precisely because no architectural layer was asking "is this reasonable?"</div>
+    <div class="quiz-feedback wrong">✗ Knight Capital's failure was architectural: no circuit breaker, fallback, or automatic shutdown trigger existed to bound the catastrophic loop once it started.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. Which statement best distinguishes graceful degradation from error handling?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Error handling is for software; graceful degradation is only for AI systems</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">They are synonymous — both describe catching and logging exceptions</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Error handling catches exceptions; graceful degradation is the architecture that determines what happens after catching them</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Graceful degradation only applies to network failures, not model failures</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Error handling is a mechanism. Graceful degradation is a design philosophy that ensures every failure mode has a planned, sensible response before errors ever occur.</div>
+    <div class="quiz-feedback wrong">✗ The key distinction is scope: error handling catches exceptions, while graceful degradation is the broader architectural philosophy governing what happens after — and it must be designed before deployment.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. Which failure category best describes an agent's LLM producing a hallucinated output mid-task?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Tool failure</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Environmental failure</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Orchestration failure</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">Model failure</button>
+    </div>
+    <div class="quiz-feedback right">✓ Right. Model failures include hallucinated outputs, over-aggressive refusals, reasoning loops, and context limit issues. They require different mitigations than tool or orchestration failures.</div>
+    <div class="quiz-feedback wrong">✗ A hallucinated LLM output is a model failure — the language model itself producing incorrect or fabricated content. Each failure category requires different mitigation strategies.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l1-lab')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 1 LAB ============================================================ -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 1</div>
+    <h1>Lab: Failure Mode Mapping</h1>
+    <div class="tagline">Map out the failure modes for a real agent design scenario with AI guidance.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You are designing an AI agent that monitors customer support tickets and automatically routes them to the correct team, drafts a reply, and logs the action. Before building, you need a failure mode map.</p>
+    <ol>
+      <li>Ask the AI to help you identify at least one failure mode from each of the four categories (tool, model, orchestration, environmental) for this specific agent.</li>
+      <li>For each failure mode you identify together, ask what a well-designed fallback should look like.</li>
+      <li>Challenge the AI: ask which failure mode in this system is most likely to cause compounding damage if not caught early.</li>
+    </ol>
+    <div class="lab-prompt">Start by describing the agent to the AI and asking it to begin the failure mode mapping exercise with you.</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🧪 Failure Mode Mapping Lab</span>
+      <span class="chat-badge">Graceful Degradation</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="2" placeholder="Describe your agent or ask about failure modes…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1-quiz')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 2 ============================================================ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Fallback Strategies and Retry Logic</h1>
+    <div class="tagline">How to design fallback chains that actually work — and why naive retries make failures worse.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In November 2020, AWS experienced a major outage in us-east-1 that cascaded across dozens of dependent services. The root cause was an overloaded network device, but the damage amplified because many services used naive retry logic: when requests failed, clients immediately retried, creating a thundering herd that saturated already-stressed infrastructure further. AWS's postmortem explicitly identified the absence of exponential backoff with jitter in client retry implementations as a key amplifying factor. Systems that had implemented proper backoff recovered orders of magnitude faster than those that did not.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Retry Spectrum: From Naive to Production-Grade</h2>
+    <div class="section-body">
+      <p>Retry logic exists on a spectrum. At the naive end: try again immediately, same parameters, same rate. This is what most developers write first, and it is dangerous under load. The AWS us-east-1 outage demonstrated this at scale: a failing service receiving immediate retries from thousands of clients becomes more failing, not less.</p>
+      <p>Production-grade retry logic has four properties that separate it from naive approaches:</p>
+      <ul class="ul-body">
+        <li><strong>Exponential backoff</strong> — Each retry waits longer than the last: 1s, 2s, 4s, 8s, 16s. This gives overwhelmed services time to recover between attempts rather than hammering them continuously.</li>
+        <li><strong>Jitter</strong> — Random variation added to each backoff delay. Without jitter, all clients that failed at the same moment retry at the same moment, reconstructing the thundering herd. Jitter distributes the load.</li>
+        <li><strong>Retry budgets</strong> — A maximum number of retries before the agent gives up and takes a fallback action. Unlimited retries turn transient failures into permanent hangs.</li>
+        <li><strong>Idempotency checks</strong> — Before retrying, confirm the original action did not partially succeed. Retrying a payment that partially processed is worse than the original failure.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Implementation Standard</div>
+        <p>AWS, Google Cloud, and Azure all publish retry guidance that includes exponential backoff with full jitter as the recommended default. For AI agents calling external APIs, this is the baseline minimum, not an advanced optimization.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Designing Fallback Chains</h2>
+    <div class="section-body">
+      <p>A fallback chain is a pre-planned sequence of alternative actions the agent takes when its primary action fails. The chain should be designed before deployment, not improvised at runtime. Each step in the chain reduces capability but maintains safety and user experience.</p>
+      <p>A well-constructed fallback chain for an agent tool call might look like this: (1) Call primary API with full parameters. (2) On failure, wait with exponential backoff and retry up to 3 times. (3) If still failing, call a secondary/backup API with equivalent functionality. (4) If backup API also fails, return a cached result from the last successful call if freshness is acceptable. (5) If cache is stale, return a structured "unavailable" response with an estimated recovery time rather than an error message. (6) Log the failure with full context for postmortem analysis.</p>
+      <p>The critical insight: steps 3 through 6 must be implemented before you need them. Engineers who discover at step 2 that there is no backup API, no cache, and no graceful "unavailable" response have already failed their users.</p>
+      <div class="callout-box">
+        <div class="callout-label">Real Pattern</div>
+        <p>Netflix's Hystrix library (open-sourced 2012, retired 2018 with recommendation to use Resilience4j) popularized the fallback chain pattern at scale. Their documented principle: "Fallbacks can be chained so that the first fallback makes some network call, which in turn falls back to static data." The chain, not the single fallback, is the pattern.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Model-Level Fallbacks for AI Agents</h2>
+    <div class="section-body">
+      <p>For AI agents specifically, fallback chains extend to the model layer itself. OpenAI's API rate limits and occasional availability issues have driven many production teams to implement model fallback strategies: if GPT-4 is rate-limited, fall back to GPT-3.5-turbo for lower-priority tasks; if the primary provider is unavailable, route to an alternative provider.</p>
+      <p>This introduces a design question that doesn't exist in traditional software: do the fallback models produce outputs that are compatible with downstream processing? A fallback model that produces different JSON schema, different tone, or different accuracy characteristics can cause downstream failures even if the call itself succeeds. Model fallback chains must be tested end-to-end, not just at the API call layer.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1-lab')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lab 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2-quiz')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 2 QUIZ ============================================================ -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Quiz: Fallback Strategies and Retry Logic</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. The 2020 AWS us-east-1 outage was amplified by which specific retry failure?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Services used too many retry attempts with exponential backoff</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Clients used immediate retries without exponential backoff and jitter, creating a thundering herd</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Retry budgets were set too low, causing services to give up before recovery</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Idempotency checks caused retries to be blocked entirely</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. AWS's postmortem explicitly cited the absence of exponential backoff with jitter as a key amplifying factor — immediate retries from thousands of clients created a thundering herd that worsened the overload.</div>
+    <div class="quiz-feedback wrong">✗ The AWS postmortem identified the opposite: clients lacked exponential backoff with jitter, so simultaneous failures led to simultaneous retries — a thundering herd that made the overloaded infrastructure worse.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. Why is jitter added to exponential backoff delays?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">To make retry timing unpredictable and harder for attackers to exploit</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">To ensure retries always happen faster than the base backoff interval</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">To spread out retries from clients that all failed at the same moment, avoiding synchronized thundering herds</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">To comply with rate limiting headers returned by the server</button>
+    </div>
+    <div class="quiz-feedback right">✓ Exactly. Without jitter, all clients that experience a simultaneous failure will retry at the same moments. Jitter introduces variation that distributes load across time, preventing the herd from reforming.</div>
+    <div class="quiz-feedback wrong">✗ Jitter prevents synchronized retries. When many clients fail simultaneously, identical backoff intervals cause them to retry simultaneously too — recreating the spike. Random variation distributes those retries across time.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. When implementing a model-level fallback for an AI agent, what critical additional testing is required beyond verifying the API call succeeds?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Testing that the fallback model has lower latency than the primary model</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Verifying the fallback model's pricing does not exceed the primary model's budget</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">End-to-end testing that the fallback model's outputs are compatible with downstream processing steps</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Confirming the fallback model provider has a higher uptime SLA than the primary</button>
+    </div>
+    <div class="quiz-feedback right">✓ Right. A fallback model may produce different JSON schema, different tone, or different accuracy — causing downstream failures even if the API call itself succeeds. End-to-end compatibility must be validated.</div>
+    <div class="quiz-feedback wrong">✗ The critical concern is downstream compatibility. A fallback model that returns different output structure, tone, or accuracy can cause cascading failures in downstream processing even when the API call technically succeeds.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2-lab')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 2 LAB ============================================================ -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 2</div>
+    <h1>Lab: Building a Fallback Chain</h1>
+    <div class="tagline">Design a complete fallback chain for a real agent scenario with AI coaching.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You are building an AI agent that fetches real-time stock prices, analyzes them, and sends a summary email to portfolio managers. The stock data API is third-party and has known reliability issues.</p>
+    <ol>
+      <li>Ask the AI to help you design a complete fallback chain for the stock data tool call — include at least 5 steps from primary call to final graceful failure.</li>
+      <li>Ask how you should implement exponential backoff with jitter specifically for this API's behavior pattern.</li>
+      <li>Ask the AI to identify where in this chain the agent should log a structured failure event and what fields that log entry should include.</li>
+    </ol>
+    <div class="lab-prompt">Tell the AI about the stock price agent and ask it to walk you through building the fallback chain step by step.</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>🧪 Fallback Chain Design Lab</span>
+      <span class="chat-badge">Retry Logic</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="2" placeholder="Describe your scenario or ask about fallback design…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2-quiz')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 3 ============================================================ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Circuit Breakers: Stopping the Bleeding</h1>
+    <div class="tagline">How circuit breakers prevent cascading failures — and what happens in production systems that skip them.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">On July 2, 2019, Cloudflare experienced a global outage affecting roughly 15% of all internet traffic. The root cause was a CPU-exhausting WAF rule deployed without adequate testing. But the cascading damage occurred because dependent systems had no circuit breakers — when Cloudflare's edge nodes started failing, services behind them kept sending traffic, overwhelming already-failing infrastructure. The outage lasted 27 minutes globally. In Cloudflare's postmortem, they explicitly committed to implementing global traffic controls that would automatically reduce load on degraded infrastructure — the circuit breaker pattern in all but name.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Circuit Breaker Pattern</h2>
+    <div class="section-body">
+      <p>The circuit breaker pattern, popularized by Michael Nygard in <em>Release It!</em> (2007) and deeply influential in Netflix's Hystrix library, works by monitoring calls to a dependency and automatically "opening the circuit" — stopping all calls — when failure rates exceed a threshold. This prevents a failing dependency from dragging down the entire system.</p>
+      <p>A circuit breaker has three states that mirror a physical electrical circuit breaker:</p>
+      <ul class="ul-body">
+        <li><strong>Closed</strong> — Normal operation. Requests flow through. The breaker counts failures. When the failure count exceeds the threshold within a time window, it trips to Open.</li>
+        <li><strong>Open</strong> — The circuit is broken. All requests immediately fail fast — no actual calls are made to the dependency. The system returns fallback responses instantly rather than waiting for timeouts. After a configured timeout, the breaker transitions to Half-Open.</li>
+        <li><strong>Half-Open</strong> — A probe state. A limited number of requests are allowed through to test if the dependency has recovered. If they succeed, the breaker closes. If they fail, it opens again.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Why "Fail Fast" Matters</div>
+        <p>When a circuit is Open, requests fail in microseconds rather than waiting for a 30-second timeout. For an AI agent making 100 tool calls per minute, the difference between a 30-second timeout and an instant failure can mean the difference between a 50-minute degraded state and a 5-second one.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Calibrating Circuit Breaker Parameters</h2>
+    <div class="section-body">
+      <p>A circuit breaker that trips too easily causes false outages — real users unable to access working services because one slow request triggered the threshold. A circuit breaker calibrated too loosely provides no protection. Calibration requires knowing your dependency's normal behavior before anything fails.</p>
+      <p>Key parameters to configure thoughtfully:</p>
+      <ul class="ul-body">
+        <li><strong>Failure threshold</strong> — What percentage of calls must fail within the window before tripping? Netflix's Hystrix default was 50% over a 10-second window. For a critical payment API, you might set 20%. For a non-critical enrichment API, 70%.</li>
+        <li><strong>Minimum request volume</strong> — Don't trip a circuit after 1 failure out of 1 request. Require a statistically meaningful sample — typically 20 requests minimum in the window.</li>
+        <li><strong>Open duration</strong> — How long to stay Open before probing. Too short re-trips immediately. Netflix used 5 seconds; production systems tuned to their specific dependency recovery times.</li>
+        <li><strong>Half-Open probe count</strong> — How many test requests to allow before deciding. Usually 1-3, enough to distinguish recovery from a lucky single success.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">For AI Agents Specifically</div>
+        <p>LLM API calls have unusual characteristics: they are expensive, high-latency, and often rate-limited rather than erroring. Circuit breakers for LLM calls should also monitor for rate limit responses (HTTP 429) and context errors, not just HTTP 500s. A breaker that only opens on server errors will miss the most common LLM failure modes.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Circuit Breakers in Multi-Agent Systems</h2>
+    <div class="section-body">
+      <p>In multi-agent architectures — where agents call other agents as services — circuit breakers become load-bearing infrastructure, not optional optimizations. A failing sub-agent that is called without circuit protection can cascade: the orchestrating agent waits for timeouts, accumulates latency, and eventually fails its own callers. With circuit breakers at each inter-agent call boundary, a failing sub-agent causes predictable, fast failures that the orchestrator handles cleanly via its own fallback logic.</p>
+      <p>Microsoft's Azure documentation on multi-agent resilience (2023) explicitly recommends circuit breakers at every inter-agent communication boundary, treating sub-agents as external services even when they run within the same system. This is the same principle applied to microservices architectures — the fact that the downstream dependency is an AI model rather than a database doesn't change the circuit breaker math.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2-lab')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lab 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3-quiz')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 3 QUIZ ============================================================ -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Quiz: Circuit Breakers</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. In the circuit breaker pattern, what happens to requests when the circuit is in the Open state?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Requests are queued and retried when the circuit closes</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Requests are routed to a secondary dependency automatically</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Requests fail immediately without being sent to the dependency, returning a fallback response</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Requests are sampled — one in ten is sent to probe for recovery</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. The Open state means no actual calls are made to the dependency — requests fail fast, in microseconds, allowing the system to handle failures cleanly through fallback logic rather than accumulating timeouts.</div>
+    <div class="quiz-feedback wrong">✗ In the Open state, all requests fail immediately without touching the dependency. This "fail fast" behavior prevents timeout accumulation and allows fallback logic to engage quickly.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. Why does a circuit breaker require a minimum request volume before tripping?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">To require a statistically meaningful sample before concluding the dependency is failing, preventing false trips from single errors</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">To comply with API rate limits that restrict how often circuit state can change</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">To give the dependency time to log errors before the circuit opens</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">To ensure the half-open probe has baseline traffic to compare against</button>
+    </div>
+    <div class="quiz-feedback right">✓ Exactly. One failure out of one request is not meaningful signal. Requiring a minimum volume (typically 20 requests) before evaluating the failure rate prevents a single unlucky error from tripping the circuit and causing false outages.</div>
+    <div class="quiz-feedback wrong">✗ Minimum volume requirements prevent statistical noise from causing false trips. A single failure in a single request is not meaningful evidence of dependency failure — you need a sufficient sample before the rate calculation is reliable.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. For AI agents calling LLM APIs, what additional failure signal should circuit breakers monitor beyond standard HTTP 500 errors?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">HTTP 200 responses with unexpected JSON structure</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Latency increases above 2 seconds on any single call</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Rate limit responses (HTTP 429) and context/token limit errors</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Model version deprecation notices in response headers</button>
+    </div>
+    <div class="quiz-feedback right">✓ Right. LLM APIs most commonly fail through rate limiting (429) and context errors, not server errors. A circuit breaker that only monitors 500s misses the most common LLM failure modes entirely.</div>
+    <div class="quiz-feedback wrong">✗ LLMs have unusual failure patterns — rate limiting (HTTP 429) and context errors are more common than server errors. Circuit breakers must be configured to treat these signals as failures, not just HTTP 500s.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3-lab')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 3 LAB ============================================================ -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lab 3</div>
+    <h1>Lab: Circuit Breaker Configuration</h1>
+    <div class="tagline">Design and calibrate a circuit breaker for a real multi-agent system scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You are building a multi-agent research system. An orchestrator agent calls three sub-agents: a web search agent, a document summarization agent, and a citation verification agent. The citation verification agent has historically had a 15% error rate and 8-second average latency when healthy.</p>
+    <ol>
+      <li>Ask the AI to help you set specific circuit breaker parameters for the citation verification sub-agent — failure threshold, minimum volume, open duration, and half-open probe count — and justify each choice given the agent's characteristics.</li>
+      <li>Ask how the orchestrator should handle citation verification requests when the circuit is Open — what should users see?</li>
+      <li>Ask the AI what additional LLM-specific failure signals the circuit breaker on the summarization agent should monitor.</li>
+    </ol>
+    <div class="lab-prompt">Describe the multi-agent research system and ask the AI to help you configure circuit breaker parameters for it.</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🧪 Circuit Breaker Configuration Lab</span>
+      <span class="chat-badge">Multi-Agent Resilience</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="2" placeholder="Describe your system or ask about circuit breaker parameters…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3-quiz')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l4')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 4</span>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 4 ============================================================ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced · Lesson 4 of 4</div>
+    <h1>Observability and Recovery Architecture</h1>
+    <div class="tagline">You can't fix what you can't see — building the observability infrastructure that makes graceful degradation operational.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">On March 8, 2017, GitLab experienced a database incident that deleted 300GB of production data. A database administrator running a routine replication repair procedure accidentally executed a deletion command on the wrong server. Six backup and replication systems were available — five were found to be non-functional or misconfigured when tested during the incident. The only working backup was 6 hours old. GitLab published a brutally honest postmortem acknowledging that they had backup systems on paper that did not work in practice. They had no observability into whether their fallback systems were actually ready. The incident prompted a complete revision of their disaster recovery testing, moving to continuous automated validation of every recovery pathway.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Observability as a Prerequisite for Degradation</h2>
+    <div class="section-body">
+      <p>The GitLab incident makes a critical point: graceful degradation is not a design-time achievement. It is an operational posture that must be continuously validated. Fallback systems that are not tested regularly are not fallback systems — they are liabilities. GitLab had circuit-breaker-equivalent systems; they simply had no observability into whether those systems worked.</p>
+      <p>For AI agents, observability means instrumenting three distinct layers:</p>
+      <ul class="ul-body">
+        <li><strong>Tool call observability</strong> — Every external API call should emit structured telemetry: latency, status code, retry count, fallback triggered (yes/no), tokens consumed, cost. This data enables circuit breaker calibration and SLA monitoring.</li>
+        <li><strong>Agent reasoning observability</strong> — What

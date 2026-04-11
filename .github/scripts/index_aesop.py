@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+VOYAGE_API_KEY    = os.environ["VOYAGE_API_KEY"]
 PINECONE_API_KEY  = os.environ["PINECONE_API_KEY"]
 PINECONE_HOST     = os.environ["PINECONE_HOST"]
 PINECONE_INDEX    = "aesop-academy"
@@ -23,7 +24,7 @@ PINECONE_INDEX    = "aesop-academy"
 MODULES_DIR       = Path("ai-academy/modules")
 CHUNK_SIZE        = 500   # words per chunk
 CHUNK_OVERLAP     = 50    # word overlap between chunks
-EMBED_BATCH       = 20    # vectors per Voyage API call
+EMBED_BATCH       = 5     # vectors per Voyage API call (keep small — chunks are large)
 UPSERT_BATCH      = 50    # vectors per Pinecone upsert
 
 # ── HTML PARSING ─────────────────────────────────────────────────────────────
@@ -64,27 +65,39 @@ def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
 
 # ── EMBEDDING ────────────────────────────────────────────────────────────────
 
-def embed_texts(texts):
+def embed_texts(texts, retries=3):
     """Embed a batch of texts using Voyage-3 via VoyageAI REST API."""
-    resp = requests.post(
-        "https://api.voyageai.com/v1/embeddings",
-        headers={
-            "Authorization": f"Bearer {ANTHROPIC_API_KEY}",
-            "content-type": "application/json",
-        },
-        json={
-            "model": "voyage-3",
-            "input": texts,
-            "input_type": "document",
-        },
-        timeout=60,
-    )
+    import time
 
-    if resp.status_code != 200:
-        raise RuntimeError(f"Voyage embedding failed ({resp.status_code}): {resp.text}")
+    for attempt in range(retries):
+        resp = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
+            headers={
+                "Authorization": f"Bearer {VOYAGE_API_KEY}",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "voyage-3",
+                "input": texts,
+                "input_type": "document",
+            },
+            timeout=120,
+        )
 
-    data = resp.json()["data"]
-    return [item["embedding"] for item in data]
+        if resp.status_code == 200:
+            data = resp.json()["data"]
+            return [item["embedding"] for item in data]
+
+        if resp.status_code == 429 and attempt < retries - 1:
+            wait = (attempt + 1) * 5
+            print(f"    Rate limited, waiting {wait}s...")
+            time.sleep(wait)
+            continue
+
+        print(f"    Voyage API error ({resp.status_code}): {resp.text[:500]}")
+        raise RuntimeError(f"Voyage embedding failed ({resp.status_code}): {resp.text[:200]}")
+
+    raise RuntimeError("Voyage embedding failed after all retries")
 
 # ── MAIN PIPELINE ────────────────────────────────────────────────────────────
 

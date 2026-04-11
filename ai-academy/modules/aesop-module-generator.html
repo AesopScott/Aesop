@@ -865,6 +865,12 @@ function init() {
 }
 
 function onCourseChange() {
+  document.getElementById('coursesUpdateStatus').textContent = '';
+  document.getElementById('coursesUpdateStatus').style.color = '';
+  const card = document.getElementById('coursesUpdateCard');
+  if (card) { card.style.border = ''; }
+  const btn = document.querySelector('#coursesUpdateCard .btn-set-folder');
+  if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.boxShadow = ''; }
   const cid = document.getElementById('courseSelect').value;
   const ms = document.getElementById('moduleSelect');
   ms.innerHTML = '<option value="">— Select module —</option>';
@@ -883,10 +889,39 @@ function onModuleChange() {
   const cid = document.getElementById('courseSelect').value;
   const mn = parseInt(document.getElementById('moduleSelect').value);
   const el = document.getElementById('modInfo');
-  if (!cid || !mn) { el.classList.remove('visible'); return; }
-  const mod = COURSES.find(c => c.id === cid).modules.find(m => m.n === mn);
+  if (!cid || !mn) { el.classList.remove('visible'); checkActivateReady(); return; }
+  const course = COURSES.find(c => c.id === cid);
+  const mod = course.modules.find(m => m.n === mn);
   el.innerHTML = '<strong>' + mod.title + '</strong><br>' + mod.sub;
   el.classList.add('visible');
+  checkActivateReady();
+}
+
+function checkActivateReady() {
+  const cid = document.getElementById('courseSelect').value;
+  const mn = parseInt(document.getElementById('moduleSelect').value);
+  const card = document.getElementById('coursesUpdateCard');
+  const btn = document.querySelector('#coursesUpdateCard .btn-set-folder');
+  const hint = document.getElementById('coursesUpdateStatus');
+  if (!cid || !mn || !card || !btn) return;
+  const course = COURSES.find(c => c.id === cid);
+  const totalMods = course ? course.modules.length : 0;
+  if (mn === totalMods) {
+    // Last module selected — this course is complete
+    btn.style.background = 'var(--teal)';
+    btn.style.color = '#fff';
+    btn.style.boxShadow = '0 0 0 3px rgba(29,158,117,0.35)';
+    hint.textContent = 'Module ' + mn + ' of ' + totalMods + ' — all modules built! Time to activate.';
+    hint.style.color = '#5dd6a8';
+    card.style.border = '1px solid rgba(29,158,117,0.4)';
+  } else {
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.boxShadow = '';
+    hint.textContent = mn ? 'Module ' + mn + ' of ' + totalMods + ' — ' + (totalMods - mn) + ' remaining.' : '';
+    hint.style.color = 'rgba(255,255,255,0.35)';
+    card.style.border = '';
+  }
 }
 
 function selectTier(input) {
@@ -1143,10 +1178,8 @@ async function updateCoursesFile() {
 
   // Pick the ai-academy folder (parent of modules)
   try {
-    // Pick the ai-academy folder just to read courses.html
-    statusEl.textContent = 'Select your ai-academy folder (containing courses.html)...';
-    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'read', startIn: 'documents' });
-
+    statusEl.textContent = 'Select your ai-academy folder...';
+    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
     statusEl.textContent = 'Reading courses.html...';
     const fileHandle = await coursesFolderHandle.getFileHandle('courses.html');
     const file = await fileHandle.getFile();
@@ -1162,9 +1195,11 @@ async function updateCoursesFile() {
     const course = COURSES.find(c => c.id === cid);
     const courseTitle = course ? course.name : '';
 
-    // First check if already active
+    // First check if already active — show the version so we know which file was read
+    const versionMatch = content.match(/courses-v[\d.]+/);
+    const fileVersion = versionMatch ? versionMatch[0] : 'unknown version';
     if (content.includes('electives-hub.html?course=' + cid)) {
-      statusEl.textContent = 'Already active — course link exists in courses.html.';
+      statusEl.textContent = 'Already active in ' + fileVersion + ' — if wrong, check you selected the right folder.';
       statusEl.style.color = '#5dd6a8';
       return;
     }
@@ -1208,37 +1243,45 @@ async function updateCoursesFile() {
       return;
     }
 
+    // 2. Remove "coming" class and "Soon" badge from the tab
+    // Tab pattern: class="core-tab coming" ... >N. CourseName <span class="tab-cs-badge">Soon</span></button>
+    const tabRegex = new RegExp(
+      '(<button class="core-tab) coming(" [^>]+>)([^<]+)<span class="tab-cs-badge">Soon</span>(</button>)',
+      'g'
+    );
+    let tabReplaced = false;
+    content = content.replace(tabRegex, (match, p1, p2, label, p4) => {
+      if (label.includes(courseTitle)) {
+        tabReplaced = true;
+        return p1 + p2 + label.trim() + p4;
+      }
+      return match;
+    });
+
+    // 3. Swap "Coming Soon" badge to "Live" in the panel header
+    // Find the panel header for this course and update the badge
+    const panelTitleIdx = content.indexOf('core-panel__title">' + courseTitle + '<');
+    if (panelTitleIdx !== -1) {
+      const headerEnd = content.indexOf('core-modules-label', panelTitleIdx);
+      const headerSection = content.substring(panelTitleIdx, headerEnd);
+      const updatedHeader = headerSection.replace(
+        '<span class="core-badge-cs">Coming Soon</span>',
+        '<span class="core-badge-live"><span class="live-dot"></span> Live</span>'
+      );
+      content = content.substring(0, panelTitleIdx) + updatedHeader + content.substring(panelTitleIdx + headerSection.length);
+    }
+
     // Bump version number
     content = content.replace(/courses-v(\d+)\.(\d+)\.(\d+)/, function(m, a, b, c) {
       return 'courses-v' + a + '.' + b + '.' + (parseInt(c) + 1);
     });
 
-    // Write back in-place using showSaveFilePicker for reliable disk write
-    try {
-      const saveHandle = await window.showSaveFilePicker({
-        suggestedName: 'courses.html',
-        types: [{ description: 'HTML file', accept: { 'text/html': ['.html'] } }]
-      });
-      const writable = await saveHandle.createWritable();
-      await writable.write(content);
-      await writable.close();
-      statusEl.textContent = 'Saved! Replace your repo copy with this file, then commit and push.';
-      statusEl.style.color = '#5dd6a8';
-    } catch(saveErr) {
-      if (saveErr.name === 'AbortError') { statusEl.textContent = 'Save cancelled.'; return; }
-      // Final fallback: data URI download
-      const blob = new Blob([content], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'courses.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      statusEl.textContent = 'Check your Downloads folder for courses.html — replace repo copy and push.';
-      statusEl.style.color = '#5dd6a8';
-    }
+    // Write back in-place directly to the repo folder
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+    statusEl.textContent = 'Done! ' + cid + ' is now live in courses.html — commit and push.';
+    statusEl.style.color = '#5dd6a8';
 
     const btn = document.querySelector('#coursesUpdateCard .btn-set-folder');
     if (btn) {

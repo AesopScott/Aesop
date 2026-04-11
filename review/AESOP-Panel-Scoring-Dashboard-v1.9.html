@@ -293,21 +293,16 @@
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
     <a class="nav-rubric" href="/review/rubric.html">&#9670; How AESOP Was Scored</a>
     <div class="unit-meta">
-      <label>GitHub PAT</label>
-      <input type="password" id="gh-token" placeholder="ghp_..." style="width:260px;" />
-      <div style="height:6px;"></div>
       <label>Course</label>
-      <select id="course-select" style="width:260px;" onchange="onCourseSelect()">
-        <option value="">— Load Courses —</option>
+      <select id="course-select" style="width:280px;" onchange="onCourseSelect()">
+        <option value="">Loading courses...</option>
       </select>
       <div style="height:6px;"></div>
       <label>Module</label>
-      <select id="module-select" style="width:260px;" onchange="onModuleSelect()">
+      <select id="module-select" style="width:280px;" onchange="onModuleSelect()">
         <option value="">— Select Module —</option>
       </select>
-      <div style="height:6px;"></div>
-      <button class="btn btn-primary" onclick="loadCourses()" style="font-size:14px;padding:8px 16px;">Load Eval Reports</button>
-      <div id="load-status" style="font-size:13px;color:rgba(245,240,232,0.5);margin-top:4px;"></div>
+      <div id="load-status" style="font-size:13px;color:rgba(245,240,232,0.5);margin-top:6px;"></div>
     </div>
     <div class="unit-meta" style="margin-top:8px;">
       <label>Module / Unit</label>
@@ -839,78 +834,69 @@ function resetAll(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// EVAL REPORT LOADING — Fetch automated eval reports from GitHub
+// EVAL REPORT LOADING — Fetch automated eval reports from the site
 // ═══════════════════════════════════════════════════════════════════════════
 
-const GH_OWNER = 'AesopScott';
-const GH_REPO  = 'Aesop';
-const GH_BRANCH = 'main';
-const MODULES_PATH = 'ai-academy/modules';
+const MODULES_BASE = '/ai-academy/modules';
 
 let loadedReports = {};   // courseId → eval report JSON
 let currentReport = null; // currently selected course report
-
-function ghToken() { return document.getElementById('gh-token').value.trim(); }
-
-async function ghFetch(path) {
-  const token = ghToken();
-  if (!token) throw new Error('Enter a GitHub PAT first.');
-  const resp = await fetch(`https://api.github.com${path}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/vnd.github+json'
-    }
-  });
-  if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${resp.statusText}`);
-  return resp.json();
-}
 
 async function loadCourses() {
   const status = document.getElementById('load-status');
   const courseSelect = document.getElementById('course-select');
 
   try {
-    status.textContent = 'Scanning for eval reports...';
+    status.textContent = 'Loading eval reports...';
     status.style.color = 'rgba(245,240,232,0.5)';
 
-    // List directories under ai-academy/modules/
-    const contents = await ghFetch(`/repos/${GH_OWNER}/${GH_REPO}/contents/${MODULES_PATH}?ref=${GH_BRANCH}`);
-    const dirs = contents.filter(f => f.type === 'dir');
+    // Fetch the central eval index
+    const resp = await fetch(`${MODULES_BASE}/eval-index.json?v=${Date.now()}`);
+    if (!resp.ok) {
+      status.textContent = 'No eval reports found yet. Run an evaluation from the module generator first.';
+      status.style.color = '#f87171';
+      courseSelect.innerHTML = '<option value="">— No Reports —</option>';
+      return;
+    }
 
-    // Check each directory for an eval report
-    let found = 0;
+    const evalIndex = await resp.json();
+    const courseIds = Object.keys(evalIndex);
+
     courseSelect.innerHTML = '<option value="">— Select Course —</option>';
     loadedReports = {};
 
-    for (const dir of dirs) {
+    // Fetch each course's eval report
+    let loaded = 0;
+    for (const cid of courseIds) {
+      const entry = evalIndex[cid];
       try {
-        const files = await ghFetch(`/repos/${GH_OWNER}/${GH_REPO}/contents/${MODULES_PATH}/${dir.name}?ref=${GH_BRANCH}`);
-        const evalFile = files.find(f => f.name.endsWith('-eval-report.json'));
-        if (evalFile) {
-          // Fetch the report content
-          const fileData = await ghFetch(`/repos/${GH_OWNER}/${GH_REPO}/contents/${MODULES_PATH}/${dir.name}/${evalFile.name}?ref=${GH_BRANCH}`);
-          const decoded = JSON.parse(atob(fileData.content));
-          loadedReports[dir.name] = decoded;
+        const reportResp = await fetch(`${MODULES_BASE}/${entry.reportFile}?v=${Date.now()}`);
+        if (!reportResp.ok) continue;
+        const report = await reportResp.json();
+        loadedReports[cid] = report;
 
-          const opt = document.createElement('option');
-          opt.value = dir.name;
-          opt.textContent = decoded.course || dir.name;
-          courseSelect.appendChild(opt);
-          found++;
-        }
+        const opt = document.createElement('option');
+        opt.value = cid;
+        const avg = entry.panelAverage ? ` (${entry.panelAverage}/100)` : '';
+        opt.textContent = (entry.course || cid) + avg;
+        courseSelect.appendChild(opt);
+        loaded++;
       } catch(e) {
-        // Directory doesn't have an eval report — skip
+        // Report file missing or corrupt — skip
       }
     }
 
-    status.textContent = found > 0 ? `Found ${found} course evaluation(s).` : 'No eval reports found yet.';
-    status.style.color = found > 0 ? '#5dd6a8' : '#f87171';
+    status.textContent = loaded > 0 ? `${loaded} course evaluation(s) loaded.` : 'No eval reports available.';
+    status.style.color = loaded > 0 ? '#5dd6a8' : '#f87171';
 
   } catch(e) {
     status.textContent = 'Error: ' + e.message;
     status.style.color = '#f87171';
   }
 }
+
+// Auto-load on page open
+window.addEventListener('DOMContentLoaded', () => { loadCourses(); });
 
 function onCourseSelect() {
   const courseId = document.getElementById('course-select').value;

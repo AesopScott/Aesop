@@ -2071,6 +2071,33 @@ async function runPanelEvaluation(cid, courseName) {
     log('Could not save report: ' + e.message);
   }
 
+  // Update central eval-index.json so the dashboard can find all reports
+  try {
+    let evalIndex = {};
+    try {
+      const existingHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: false });
+      const existingFile = await existingHandle.getFile();
+      evalIndex = JSON.parse(await existingFile.text());
+    } catch(e) { /* no existing index — start fresh */ }
+
+    evalIndex[cid] = {
+      course: fullReport.course,
+      date: fullReport.date,
+      reviewers: fullReport.reviewers,
+      moduleCount: fullReport.modules.length,
+      panelAverage: fullReport.summary.panelAverage || null,
+      reportFile: cid + '/' + cid + '-eval-report.json'
+    };
+
+    const indexHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: true });
+    const indexWritable = await indexHandle.createWritable();
+    await indexWritable.write(JSON.stringify(evalIndex, null, 2));
+    await indexWritable.close();
+    log('Eval index updated.');
+  } catch(e) {
+    log('Could not update eval index: ' + e.message);
+  }
+
   return fullReport;
 }
 

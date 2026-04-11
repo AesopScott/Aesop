@@ -16,7 +16,7 @@ import anthropic
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 DRAFTS_DIR        = Path("aip/drafts")
-DRAFTS_PER_RUN    = 3
+DRAFTS_PER_RUN    = 20
 
 # ── EXISTING COURSES (keep updated as courses launch) ─────────────────────────
 
@@ -47,11 +47,11 @@ For EACH topic, return a JSON object with exactly these fields:
 - "modules": array of 4 module names (each max 5 words)
 - "synopsis": 2-sentence course description for a general audience
 
-Return ONLY a JSON array of {DRAFTS_PER_RUN} objects. No preamble, no markdown fences."""
+Return ONLY a JSON array of 20 objects. No preamble, no markdown fences."""
 
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=1500,
+        max_tokens=8000,
         messages=[{"role": "user", "content": prompt}]
     )
 

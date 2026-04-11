@@ -1159,35 +1159,53 @@ async function updateCoursesFile() {
     const ghostSpan = '<span class="core-panel__cta core-panel__cta--ghost">In Development</span>';
     const liveLink = '<a href="/ai-academy/modules/electives-hub.html?course=' + cid + '" class="core-panel__cta">Enter Course &rarr;</a>';
 
-    // Find the panel for this course by matching course= link OR panel title text
-    // Build title from course id: ai_in_healthcare -> AI In Healthcare (approx match)
+    // Find the panel for this course by title, then find the next ghost CTA after it
     const course = COURSES.find(c => c.id === cid);
     const courseTitle = course ? course.name : '';
 
+    // First check if already active
+    if (content.includes('electives-hub.html?course=' + cid)) {
+      statusEl.textContent = 'Already active — course link exists in courses.html.';
+      statusEl.style.color = '#5dd6a8';
+      return;
+    }
+
     let replaced = false;
-    let idx = 0;
-    while ((idx = content.indexOf(ghostSpan, idx)) !== -1) {
-      const before = content.substring(Math.max(0, idx - 1200), idx);
-      const matchesCourseId = before.includes('course=' + cid) ||
-                              before.includes("'" + cid + "'") ||
-                              before.includes('"' + cid + '"');
-      // Also match by panel title text
-      const matchesTitle = courseTitle && before.includes(courseTitle);
-      if (matchesCourseId || matchesTitle) {
-        content = content.substring(0, idx) + liveLink + content.substring(idx + ghostSpan.length);
-        replaced = true;
-        break;
+
+    // Strategy: find the course title in a core-panel__title div, then find the
+    // next ghost span after it (forward search — panels can be 10k+ chars)
+    const titlePattern = 'core-panel__title">' + courseTitle + '<';
+    const titleIdx = content.indexOf(titlePattern);
+
+    if (titleIdx !== -1) {
+      const ghostIdx = content.indexOf(ghostSpan, titleIdx);
+      if (ghostIdx !== -1) {
+        // Make sure no other panel__title appears between (would mean wrong panel)
+        const between = content.substring(titleIdx, ghostIdx);
+        const otherPanelStart = between.indexOf('core-panel__title">', titlePattern.length);
+        if (otherPanelStart === -1) {
+          content = content.substring(0, ghostIdx) + liveLink + content.substring(ghostIdx + ghostSpan.length);
+          replaced = true;
+        }
       }
-      idx += ghostSpan.length;
+    }
+
+    // Fallback: course= link nearby (for panels that already had links)
+    if (!replaced) {
+      let idx = 0;
+      while ((idx = content.indexOf(ghostSpan, idx)) !== -1) {
+        const before = content.substring(Math.max(0, idx - 800), idx);
+        if (before.includes('course=' + cid)) {
+          content = content.substring(0, idx) + liveLink + content.substring(idx + ghostSpan.length);
+          replaced = true;
+          break;
+        }
+        idx += ghostSpan.length;
+      }
     }
 
     if (!replaced) {
-      if (content.includes('course=' + cid + '"')) {
-        statusEl.textContent = 'Course already has an active link.';
-        statusEl.style.color = '#5dd6a8';
-        return;
-      }
-      statusEl.textContent = 'Could not find panel for ' + cid + ' — may already be active.';
+      statusEl.textContent = 'Panel not found for ' + cid + '. Check course selection.';
       return;
     }
 

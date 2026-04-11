@@ -130,7 +130,10 @@ textarea{resize:vertical;min-height:80px;}
   <div id="progressLog" class="progress-log"></div>
 
 
-  <button class="btn-generate" id="generateBtn" onclick="generate()">Generate Module</button>
+  <div style="display:flex;gap:0.75rem;">
+    <button class="btn-generate" id="generateBtn" onclick="generate()" style="flex:1;">Generate Module</button>
+    <button class="btn-generate" id="chainBtn" onclick="buildFullCourse()" style="flex:1;background:var(--teal);color:#fff;" title="Generate and save all modules automatically">Build Full Course</button>
+  </div>
 
   <div class="output-area" id="outputArea">
     <div class="card">
@@ -1030,6 +1033,156 @@ function buildSystemPrompt(course, mod, tier, tc) {
     '',
     'BUILD ' + tc.lessons + ' LESSONS + ' + tc.lessons + ' QUIZZES + ' + tc.lessons + ' LABS + 1 MODULE TEST (15 questions). Generate all of it now.'
   ].join('\n');
+}
+
+let chainRunning = false;
+
+async function buildFullCourse() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const cid = document.getElementById('courseSelect').value;
+  const protagonist = document.getElementById('protagonist').value.trim();
+  const aiChar = document.getElementById('aiChar').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+
+  if (!apiKey) { showStatus('error', 'Enter your Anthropic API key.'); return; }
+  if (!cid) { showStatus('error', 'Select a course.'); return; }
+  if (!selectedTier) { showStatus('error', 'Select a tier.'); return; }
+  if (!repoFolderHandle) { showStatus('error', 'Set your repo folder first.'); return; }
+
+  const course = COURSES.find(c => c.id === cid);
+  const totalMods = course.modules.length;
+  const tc = TIER_CONFIG[selectedTier];
+
+  const generateBtn = document.getElementById('generateBtn');
+  const chainBtn = document.getElementById('chainBtn');
+  generateBtn.disabled = true;
+  chainBtn.disabled = true;
+  chainRunning = true;
+
+  showLog('');
+  log('=== BUILD FULL COURSE: ' + course.name + ' ===');
+  log('Tier: ' + tc.label + ' | Modules: ' + totalMods);
+  log('');
+
+  const chainStart = Date.now();
+  let allSaved = true;
+
+  for (let mn = 1; mn <= totalMods; mn++) {
+    if (!chainRunning) { log('Stopped.'); break; }
+
+    // Update module select to current
+    document.getElementById('moduleSelect').value = mn;
+
+    const mod = course.modules.find(m => m.n === mn);
+    const modStart = Date.now();
+
+    chainBtn.textContent = 'Building M' + mn + ' of ' + totalMods + '...';
+    showStatus('info', 'M' + mn + ' of ' + totalMods + ': ' + mod.title);
+    log('--- Module ' + mn + ': ' + mod.title + ' ---');
+
+    // Stopwatch for this module
+    const swInterval = setInterval(() => {
+      const elapsed = ((Date.now() - modStart) / 1000).toFixed(1);
+      chainBtn.textContent = 'M' + mn + '/' + totalMods + ' — ' + elapsed + 's';
+    }, 100);
+
+    let userMsg = 'Build this module now.';
+    if (protagonist) userMsg += ' Protagonist: ' + protagonist + '.';
+    if (aiChar) userMsg += ' AI character: ' + aiChar + '.';
+    if (notes) userMsg += ' Notes: ' + notes;
+    userMsg += ' Output complete HTML only starting with <!DOCTYPE html>.';
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 16000,
+          system: buildSystemPrompt(course, mod, selectedTier, tc),
+          messages: [{ role: 'user', content: userMsg }]
+        })
+      });
+
+      clearInterval(swInterval);
+
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'API error ' + resp.status); }
+      const data = await resp.json();
+      const content = data.content[0]?.text || '';
+      if (!content.includes('<!DOCTYPE')) throw new Error('No valid HTML in response.');
+
+      const modSecs = ((Date.now() - modStart) / 1000).toFixed(1);
+      log('Generated ' + content.length.toLocaleString() + ' chars in ' + modSecs + 's');
+
+      // Auto-save to repo
+      const filename = cid + '-m' + mn + '.html';
+      const courseDir = await repoFolderHandle.getDirectoryHandle(cid, { create: true });
+      const fileHandle = await courseDir.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      log('Saved: ' + cid + '/' + filename);
+
+      // Update output area with latest
+      generatedContent = content;
+      generatedFilename = filename;
+      document.getElementById('outputFilename').textContent = filename;
+      document.getElementById('outputPreview').textContent = content.substring(0, 2000) + '
+
+... [' + content.length.toLocaleString() + ' chars]';
+      document.getElementById('outputArea').classList.add('visible');
+
+    } catch(err) {
+      clearInterval(swInterval);
+      log('ERROR on M' + mn + ': ' + err.message);
+      showStatus('error', 'Failed on M' + mn + ': ' + err.message);
+      allSaved = false;
+      break;
+    }
+
+    // Brief pause between modules to avoid rate limits
+    if (mn < totalMods) {
+      log('Pausing 3s before next module...');
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+
+  const totalMins = ((Date.now() - chainStart) / 60000).toFixed(1);
+  log('');
+  log('=== COMPLETE: ' + totalMods + ' modules in ' + totalMins + ' min ===');
+
+  if (allSaved) {
+    showStatus('info', 'All ' + totalMods + ' modules built and saved! Activating course in courses.html...');
+    log('Auto-activating course link in courses.html...');
+
+    // Auto-trigger activation
+    try {
+      await updateCoursesFile();
+    } catch(activateErr) {
+      log('Activate error: ' + activateErr.message);
+      // Fall back to highlighting the button
+      const activateBtn = document.querySelector('#coursesUpdateCard .btn-set-folder');
+      if (activateBtn) {
+        activateBtn.style.background = 'var(--teal)';
+        activateBtn.style.color = '#fff';
+        activateBtn.style.boxShadow = '0 0 0 3px rgba(29,158,117,0.35)';
+      }
+      const card = document.getElementById('coursesUpdateCard');
+      if (card) card.style.border = '1px solid rgba(29,158,117,0.4)';
+      document.getElementById('coursesUpdateStatus').textContent = 'All modules done — click to activate.';
+      document.getElementById('coursesUpdateStatus').style.color = '#5dd6a8';
+    }
+  }
+
+  chainRunning = false;
+  generateBtn.disabled = false;
+  chainBtn.disabled = false;
+  chainBtn.textContent = 'Build Full Course';
 }
 
 async function generate() {

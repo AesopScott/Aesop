@@ -139,6 +139,14 @@ textarea{resize:vertical;min-height:80px;}
       </div>
       <div class="output-preview" id="outputPreview"></div>
     </div>
+    <div class="card" id="coursesUpdateCard" style="display:none;margin-top:1rem;">
+      <div class="card-title">Activate Course in courses.html</div>
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:0.75rem;">When all modules for this course are saved, click below to update courses.html and activate the Enter Course link.</div>
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <button class="btn-set-folder" onclick="updateCoursesFile()">Update courses.html</button>
+        <span id="coursesUpdateStatus" style="font-size:0.8rem;color:rgba(255,255,255,0.35);"></span>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -1114,12 +1122,99 @@ async function downloadFile() {
         }, 2500);
       }
       showStatus('info', 'Saved: ' + cid + '/' + generatedFilename);
+      document.getElementById('coursesUpdateCard').style.display = 'block';
     } catch(e) {
       showStatus('error', 'Save failed: ' + e.message + ' — falling back to download');
       fallbackDownload();
     }
   } else {
     fallbackDownload();
+  }
+}
+
+let coursesFolderHandle = null;
+
+async function updateCoursesFile() {
+  const cid = document.getElementById('courseSelect').value;
+  const statusEl = document.getElementById('coursesUpdateStatus');
+
+  if (!cid) { statusEl.textContent = 'Select a course first.'; return; }
+
+  // Pick the ai-academy folder (parent of modules)
+  try {
+    if (!coursesFolderHandle) {
+      statusEl.textContent = 'Select your ai-academy folder...';
+      coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    }
+
+    statusEl.textContent = 'Reading courses.html...';
+    const fileHandle = await coursesFolderHandle.getFileHandle('courses.html');
+    const file = await fileHandle.getFile();
+    let content = await file.text();
+
+    // Pattern: <span class="core-panel__cta core-panel__cta--ghost">In Development</span>
+    // inside the panel whose CTA href contains course=CID
+    // Replace the ghost span for this course with a live link
+    const ghostSpan = '<span class="core-panel__cta core-panel__cta--ghost">In Development</span>';
+    const liveLink = '<a href="/ai-academy/modules/electives-hub.html?course=' + cid + '" class="core-panel__cta">Enter Course &rarr;</a>';
+
+    // Find the panel block for this course and replace only its ghost CTA
+    // The panel contains href with course=CID in its CTA or has the course id nearby
+    // Strategy: find the panel that already has course=CID in a link, OR find the panel
+    // whose tab has the course id. Use the existing live-link pattern as anchor.
+    // Simpler: find ghost span preceded by the course id in the nearest preceding 500 chars
+    let replaced = false;
+    let idx = 0;
+    while ((idx = content.indexOf(ghostSpan, idx)) !== -1) {
+      const before = content.substring(Math.max(0, idx - 800), idx);
+      // Check if this panel belongs to our course — look for course= in nearby preceding HTML
+      if (before.includes('course=' + cid) || before.includes("'" + cid + "'") || before.includes('"' + cid + '"')) {
+        content = content.substring(0, idx) + liveLink + content.substring(idx + ghostSpan.length);
+        replaced = true;
+        break;
+      }
+      idx += ghostSpan.length;
+    }
+
+    if (!replaced) {
+      // Try bumping version comment and check if already live
+      if (content.includes('course=' + cid + '"')) {
+        statusEl.textContent = 'Course already has an active link.';
+        statusEl.style.color = '#5dd6a8';
+        return;
+      }
+      statusEl.textContent = 'Could not find ghost CTA for ' + cid + ' — may already be active.';
+      return;
+    }
+
+    // Bump version number
+    content = content.replace(/courses-v(\d+)\.(\d+)\.(\d+)/, function(m, a, b, c) {
+      return 'courses-v' + a + '.' + b + '.' + (parseInt(c) + 1);
+    });
+
+    // Write back
+    const writable = await fileHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+
+    statusEl.textContent = 'Done! ' + cid + ' is now live in courses.html';
+    statusEl.style.color = '#5dd6a8';
+
+    const btn = document.querySelector('#coursesUpdateCard .btn-set-folder');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = 'Updated!';
+      btn.style.background = '#1D9E75';
+      btn.style.color = '#fff';
+      setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 2500);
+    }
+
+  } catch(e) {
+    if (e.name === 'AbortError') { statusEl.textContent = 'Cancelled.'; return; }
+    // If folder already selected but file not found, reset
+    coursesFolderHandle = null;
+    statusEl.textContent = 'Error: ' + e.message;
+    statusEl.style.color = '#f87171';
   }
 }
 

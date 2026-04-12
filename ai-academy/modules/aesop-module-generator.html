@@ -1485,7 +1485,7 @@ async function buildFullCourse() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 16000,
+          max_tokens: 32000,
           system: buildSystemPrompt(course, mod, selectedTier, tc),
           messages: [{ role: 'user', content: userMsg }]
         })
@@ -1497,6 +1497,17 @@ async function buildFullCourse() {
       const data = await resp.json();
       const content = data.content[0]?.text || '';
       if (!content.includes('<!DOCTYPE')) throw new Error('No valid HTML in response.');
+
+      // Truncation check — verify the output has closing tags
+      if (!content.includes('</script>') || !content.includes('</html>')) {
+        log('⚠ WARNING: Module output appears truncated (missing </script> or </html>). Increase max_tokens or simplify prompt.');
+      }
+
+      // Check stop reason
+      const stopReason = data.stop_reason || data.stop || '';
+      if (stopReason === 'max_tokens') {
+        log('⚠ WARNING: Generation hit max_tokens limit — output is truncated. Module will be incomplete.');
+      }
 
       const modSecs = ((Date.now() - modStart) / 1000).toFixed(1);
       log('Generated ' + content.length.toLocaleString() + ' chars in ' + modSecs + 's');
@@ -1644,7 +1655,7 @@ async function generate() {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 16000,
+        max_tokens: 32000,
         system: buildSystemPrompt(course, mod, selectedTier, tc),
         messages: [{ role: 'user', content: userMsg }]
       })
@@ -1654,6 +1665,15 @@ async function generate() {
     const data = await resp.json();
     const content = data.content[0]?.text || '';
     if (!content.includes('<!DOCTYPE')) throw new Error('No valid HTML in response. Try again.');
+
+    // Truncation check
+    if (!content.includes('</script>') || !content.includes('</html>')) {
+      log('⚠ WARNING: Output appears truncated (missing </script> or </html>).');
+    }
+    const stopReason = data.stop_reason || data.stop || '';
+    if (stopReason === 'max_tokens') {
+      log('⚠ WARNING: Hit max_tokens limit — output is truncated.');
+    }
 
     log('Generated ' + content.length.toLocaleString() + ' characters');
     log('Tokens: ' + (data.usage?.input_tokens||'?') + ' in / ' + (data.usage?.output_tokens||'?') + ' out');
@@ -1805,11 +1825,12 @@ async function writeRegistryEntry(cid) {
       const fh = await courseDir.getFileHandle(filename);
       const file = await fh.getFile();
       const html = await file.text();
-      // Extract lesson titles from lesson-hero h1s inside lesson pages (p-l1..p-l4)
-      for (let i = 1; i <= 4; i++) {
+      // Extract lesson titles from lesson-hero h1s inside lesson pages (p-l1..p-lN)
+      for (let i = 1; i <= 8; i++) {
         const re = new RegExp('id="p-l' + i + '"[\\s\\S]*?<h1>([^<]+)</h1>');
         const m = html.match(re);
         if (m) lessons.push(m[1].trim());
+        else break; // stop at first missing lesson
       }
     } catch(e) {
       // Module file not found — use generic titles
@@ -1991,37 +2012,50 @@ async function runPostActivationAudit(cid) {
           fail('M' + mod.n + ' MODULE_ID', 'No MODULE_ID variable found');
         }
 
+        // Truncation check — must have script block and closing tags
+        const hasScript = html.includes('<script>') || html.includes('<script ');
+        const hasClose  = html.includes('</html>');
+        if (hasScript && hasClose)
+          pass('M' + mod.n + ' complete file', 'Has <script> and </html>');
+        else fail('M' + mod.n + ' complete file', 'TRUNCATED — missing ' + (!hasScript ? '<script>' : '') + (!hasClose ? ' </html>' : '') + '. Regenerate this module.');
+
         // scroll-to-top fix
         if (html.includes('scrollTo') || html.includes('scrollTop'))
           pass('M' + mod.n + ' scroll fix', 'Present');
         else fail('M' + mod.n + ' scroll fix', 'No scrollTo/scrollTop found — user may land mid-page');
 
-        // lesson pages exist (p-l1 through p-l4)
+        // Detect actual lesson count from HTML (find highest p-l# id)
+        let expectedLessons = 4; // default
+        for (let i = 8; i >= 1; i--) {
+          if (html.includes('id="p-l' + i + '"')) { expectedLessons = i; break; }
+        }
+
+        // lesson pages — check consistency (l1 through detected count)
         let lessonPages = 0;
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= expectedLessons; i++) {
           if (html.includes('id="p-l' + i + '"')) lessonPages++;
         }
-        if (lessonPages === 4)
-          pass('M' + mod.n + ' lesson pages', '4/4 found');
-        else fail('M' + mod.n + ' lesson pages', lessonPages + '/4 found');
+        if (lessonPages === expectedLessons)
+          pass('M' + mod.n + ' lesson pages', lessonPages + '/' + expectedLessons + ' found');
+        else fail('M' + mod.n + ' lesson pages', lessonPages + '/' + expectedLessons + ' found');
 
-        // quiz pages exist (p-q1 through p-q4)
+        // quiz pages (match lesson count)
         let quizPages = 0;
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= expectedLessons; i++) {
           if (html.includes('id="p-q' + i + '"')) quizPages++;
         }
-        if (quizPages === 4)
-          pass('M' + mod.n + ' quiz pages', '4/4');
-        else fail('M' + mod.n + ' quiz pages', quizPages + '/4');
+        if (quizPages === expectedLessons)
+          pass('M' + mod.n + ' quiz pages', quizPages + '/' + expectedLessons);
+        else fail('M' + mod.n + ' quiz pages', quizPages + '/' + expectedLessons);
 
-        // lab pages exist (p-lab1 through p-lab4)
+        // lab pages (match lesson count)
         let labPages = 0;
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= expectedLessons; i++) {
           if (html.includes('id="p-lab' + i + '"')) labPages++;
         }
-        if (labPages === 4)
-          pass('M' + mod.n + ' lab pages', '4/4');
-        else fail('M' + mod.n + ' lab pages', labPages + '/4');
+        if (labPages === expectedLessons)
+          pass('M' + mod.n + ' lab pages', labPages + '/' + expectedLessons);
+        else fail('M' + mod.n + ' lab pages', labPages + '/' + expectedLessons);
 
         // module test page
         if (html.includes('id="p-mt"') || html.includes("id='p-mt'"))

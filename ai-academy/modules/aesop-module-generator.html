@@ -2044,6 +2044,34 @@ async function runPostActivationAudit(cid) {
     else fail('Hub folder derivation', 'Hub derives "' + hubFolder + '" but folder is "' + folderName + '"');
   }
 
+  // ── 5. COURSES.HTML MEGA-MENU CHECK ────────────────────────────────
+  // Verify the mega-link button was flipped from --soon to --live
+  if (coursesFolderHandle || repoFolderHandle) {
+    try {
+      const csHandle = coursesFolderHandle
+        ? await coursesFolderHandle.getFileHandle('courses.html')
+        : await repoFolderHandle.getFileHandle('../courses.html').catch(() => null);
+      if (csHandle) {
+        const csHtml = await (await csHandle.getFile()).text();
+        const courseName = course.name;
+        if (csHtml.includes('mega-link--live') && csHtml.includes(courseName)) {
+          const liveRe = new RegExp('mega-link--live[^>]*>' + courseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+          if (liveRe.test(csHtml))
+            pass('Mega-menu button live', courseName);
+          else {
+            const soonRe = new RegExp('mega-link--soon[^>]*>' + courseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            if (soonRe.test(csHtml))
+              fail('Mega-menu button live', 'Still --soon in courses.html dropdown — teal dot missing');
+            else
+              pass('Mega-menu button', 'Course found in courses.html');
+          }
+        }
+      }
+    } catch(e) {
+      // courses.html not accessible — skip this check
+    }
+  }
+
   // ── BUILD REPORT ──────────────────────────────────────────────────
   const passed = results.filter(r => r.pass).length;
   const failed = results.filter(r => !r.pass).length;
@@ -2247,6 +2275,15 @@ async function updateCoursesFile() {
       );
       content = content.substring(0, panelTitleIdx) + updatedHeader + content.substring(panelTitleIdx + headerSection.length);
     }
+
+    // 4. Flip mega-menu button from --soon to --live
+    // Pattern: <button class="mega-link mega-link--soon" data-panel="..." onclick="...">CourseTitle</button>
+    const megaRegex = new RegExp(
+      '(<button class="mega-link) mega-link--soon("\\s+data-panel="[^"]*"\\s+onclick="[^"]*">)' +
+      courseTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+      '(</button>)'
+    );
+    content = content.replace(megaRegex, '$1 mega-link--live$2' + courseTitle + '$3');
 
     // Bump version number
     content = content.replace(/courses-v(\d+)\.(\d+)\.(\d+)/, function(m, a, b, c) {

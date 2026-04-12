@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aesop Academy — Site Map</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Top bar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    z-index: 100;
+    position: relative;
+  }
+  .toolbar h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+  .toolbar h1 span { color: #60a5fa; }
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .toolbar-actions button {
+    background: #334155;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .toolbar-actions button:hover {
+    background: #475569;
+    color: #f1f5f9;
+  }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 14px 18px;
+    z-index: 100;
+    font-size: 12px;
+  }
+  .legend-title {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Minimap */
+  .minimap {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 180px;
+    height: 120px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 100;
+  }
+  .minimap-viewport {
+    stroke: #60a5fa;
+    stroke-width: 1.5;
+    fill: rgba(96,165,250,0.08);
+  }
+
+  /* Canvas */
+  #canvas {
+    width: 100%;
+    height: calc(100vh - 49px);
+    cursor: grab;
+  }
+  #canvas:active { cursor: grabbing; }
+
+  /* Links */
+  .link {
+    stroke: #334155;
+    stroke-width: 2;
+    fill: none;
+  }
+  .link.highlighted {
+    stroke: #60a5fa;
+    stroke-width: 2.5;
+  }
+
+  /* Nodes */
+  .node { cursor: pointer; }
+  .node rect {
+    rx: 8;
+    ry: 8;
+    stroke-width: 2;
+    transition: filter 0.15s;
+  }
+  .node:hover rect {
+    filter: brightness(1.2) drop-shadow(0 0 8px rgba(96,165,250,0.4));
+  }
+  .node.dragging rect {
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  }
+  .node-label {
+    font-size: 13px;
+    font-weight: 600;
+    fill: #f1f5f9;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .node-sublabel {
+    font-size: 10px;
+    fill: #94a3b8;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .node-icon {
+    font-size: 16px;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 200;
+    max-width: 260px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .tooltip.visible { opacity: 1; }
+  .tooltip-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #f8fafc;
+    margin-bottom: 4px;
+  }
+  .tooltip-desc { color: #94a3b8; line-height: 1.4; }
+  .tooltip-path {
+    color: #60a5fa;
+    font-family: monospace;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  /* Search */
+  .search-box {
+    position: relative;
+  }
+  .search-box input {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    padding: 6px 12px 6px 30px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 200px;
+    outline: none;
+  }
+  .search-box input:focus {
+    border-color: #60a5fa;
+  }
+  .search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  /* Badge count */
+  .badge {
+    font-size: 9px;
+    fill: #94a3b8;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1><span>AESOP</span> Academy — Site Map</h1>
+  <div class="toolbar-actions">
+    <div class="search-box">
+      <span class="search-icon">&#128269;</span>
+      <input type="text" id="searchInput" placeholder="Search pages...">
+    </div>
+    <button onclick="resetView()">Reset View</button>
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="saveLayout()" style="background:#1d4ed8;border-color:#3b82f6;color:#fff">Save Layout</button>
+    <button onclick="exportSVG()">Export SVG</button>
+  </div>
+</div>
+
+<svg id="canvas"></svg>
+
+<div class="legend">
+  <div class="legend-title">Sections</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> Home / Root</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Academy (Learning)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div> Policy & Governance</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Community</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div> Backend / API</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#94a3b8"></div> Support / Docs</div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-title" id="tooltipTitle"></div>
+  <div class="tooltip-desc" id="tooltipDesc"></div>
+  <div class="tooltip-path" id="tooltipPath"></div>
+</div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────
+const siteData = {
+  name: "Aesop Academy",
+  path: "/",
+  icon: "\u{1F3E0}",
+  desc: "AI Literacy Curriculum for Ages 5+",
+  category: "root",
+  children: [
+    {
+      name: "AI Academy",
+      path: "/ai-academy",
+      icon: "\u{1F916}",
+      desc: "Core AI literacy courses and learning materials",
+      category: "academy",
+      children: [
+        { name: "Courses", path: "/ai-academy/courses", icon: "\u{1F4DA}", desc: "AI literacy course catalog", category: "academy" },
+        { name: "Lessons", path: "/ai-academy/lessons", icon: "\u{1F4DD}", desc: "Individual lesson pages", category: "academy" },
+        { name: "Assessments", path: "/ai-academy/assessments", icon: "\u2705", desc: "Student evaluation tools", category: "academy" },
+        { name: "Resources", path: "/ai-academy/resources", icon: "\u{1F4E6}", desc: "Downloadable teaching materials", category: "academy" },
+        { name: "Dashboard", path: "/ai-academy/dashboard", icon: "\u{1F4CA}", desc: "Student & teacher dashboard", category: "academy" }
+      ]
+    },
+    {
+      name: "Health Academy",
+      path: "/health-academy",
+      icon: "\u{1F3E5}",
+      desc: "Health literacy and wellness education",
+      category: "academy",
+      children: [
+        { name: "Modules", path: "/health-academy/modules", icon: "\u{1F4D7}", desc: "Health education modules", category: "academy" },
+        { name: "Activities", path: "/health-academy/activities", icon: "\u{1F3AF}", desc: "Interactive health activities", category: "academy" },
+        { name: "Resources", path: "/health-academy/resources", icon: "\u{1F4E6}", desc: "Health education resources", category: "academy" }
+      ]
+    },
+    {
+      name: "AI Policy (AIP)",
+      path: "/aip",
+      icon: "\u2696\uFE0F",
+      desc: "AI policy framework and governance documents",
+      category: "policy",
+      children: [
+        { name: "Framework", path: "/aip/framework", icon: "\u{1F4CB}", desc: "AI policy framework documents", category: "policy" },
+        { name: "Guidelines", path: "/aip/guidelines", icon: "\u{1F4C4}", desc: "Implementation guidelines", category: "policy" },
+        { name: "Compliance", path: "/aip/compliance", icon: "\u{1F512}", desc: "Compliance and audit tools", category: "policy" }
+      ]
+    },
+    {
+      name: "Policies",
+      path: "/policies",
+      icon: "\u{1F4DC}",
+      desc: "Site policies, terms, and legal documents",
+      category: "policy",
+      children: [
+        { name: "Privacy Policy", path: "/policies/privacy", icon: "\u{1F6E1}\uFE0F", desc: "Data privacy policy", category: "policy" },
+        { name: "Terms of Service", path: "/policies/terms", icon: "\u{1F4C4}", desc: "Terms and conditions", category: "policy" },
+        { name: "Acceptable Use", path: "/policies/acceptable-use", icon: "\u270B", desc: "Acceptable use policy", category: "policy" },
+        { name: "COPPA", path: "/policies/coppa", icon: "\u{1F476}", desc: "Children's privacy compliance", category: "policy" }
+      ]
+    },
+    {
+      name: "Forums",
+      path: "/forums",
+      icon: "\u{1F4AC}",
+      desc: "Community discussion forums",
+      category: "community",
+      children: [
+        { name: "General", path: "/forums/general", icon: "\u{1F5E3}\uFE0F", desc: "General discussion board", category: "community" },
+        { name: "Teacher Lounge", path: "/forums/teachers", icon: "\u{1F469}\u200D\u{1F3EB}", desc: "Educator community space", category: "community" },
+        { name: "Student Hub", path: "/forums/students", icon: "\u{1F392}", desc: "Student community area", category: "community" },
+        { name: "Parents", path: "/forums/parents", icon: "\u{1F46A}", desc: "Parent discussion board", category: "community" }
+      ]
+    },
+    {
+      name: "Review",
+      path: "/review",
+      icon: "\u{1F50D}",
+      desc: "Evaluation reports and assessment dashboards",
+      category: "community",
+      children: [
+        { name: "Reports", path: "/review/reports", icon: "\u{1F4C8}", desc: "Evaluation reports", category: "community" },
+        { name: "Dashboard", path: "/review/dashboard", icon: "\u{1F4CA}", desc: "Review dashboard interface", category: "community" },
+        { name: "Feedback", path: "/review/feedback", icon: "\u{1F4EC}", desc: "Feedback collection", category: "community" }
+      ]
+    },
+    {
+      name: "Aesop API",
+      path: "/aesop-api",
+      icon: "\u26A1",
+      desc: "Backend API services and endpoints",
+      category: "backend",
+      children: [
+        { name: "Auth", path: "/aesop-api/auth", icon: "\u{1F511}", desc: "Authentication endpoints", category: "backend" },
+        { name: "Data", path: "/aesop-api/data", icon: "\u{1F5C4}\uFE0F", desc: "Data API endpoints", category: "backend" },
+        { name: "Webhooks", path: "/aesop-api/webhooks", icon: "\u{1F517}", desc: "Webhook integrations", category: "backend" }
+      ]
+    },
+    {
+      name: "Board Meetings",
+      path: "/Board Meetings",
+      icon: "\u{1F3DB}\uFE0F",
+      desc: "Board meeting minutes and documents",
+      category: "docs",
+      children: [
+        { name: "Minutes", path: "/Board Meetings/minutes", icon: "\u{1F4DD}", desc: "Meeting minutes archive", category: "docs" },
+        { name: "Agendas", path: "/Board Meetings/agendas", icon: "\u{1F4CB}", desc: "Meeting agendas", category: "docs" }
+      ]
+    },
+    {
+      name: "Archive",
+      path: "/archive",
+      icon: "\u{1F5C3}\uFE0F",
+      desc: "Archived content and previous versions",
+      category: "docs",
+      children: [
+        { name: "Old Versions", path: "/archive/versions", icon: "\u{1F4C2}", desc: "Previous site versions", category: "docs" },
+        { name: "Deprecated", path: "/archive/deprecated", icon: "\u{1F6AB}", desc: "Deprecated features/pages", category: "docs" }
+      ]
+    },
+    {
+      name: "PHPMailer",
+      path: "/phpmailer",
+      icon: "\u{1F4E7}",
+      desc: "Email service configuration",
+      category: "backend",
+      children: []
+    },
+    {
+      name: "Report (v1.2)",
+      path: "/aesop-academy-report-v1.2.html",
+      icon: "\u{1F4CA}",
+      desc: "Academy evaluation report document",
+      category: "docs",
+      children: []
+    }
+  ]
+};
+
+// ─── COLOR PALETTE ─────────────────────────────────
+const categoryColors = {
+  root:      { fill: "#1e3a5f", stroke: "#60a5fa", text: "#60a5fa" },
+  academy:   { fill: "#2e1f5e", stroke: "#a78bfa", text: "#a78bfa" },
+  policy:    { fill: "#1a3a2a", stroke: "#34d399", text: "#34d399" },
+  community: { fill: "#3b2d10", stroke: "#fbbf24", text: "#fbbf24" },
+  backend:   { fill: "#3b1a1a", stroke: "#f87171", text: "#f87171" },
+  docs:      { fill: "#1e293b", stroke: "#94a3b8", text: "#94a3b8" }
+};
+
+// ─── LAYOUT ────────────────────────────────────────
+const width = window.innerWidth;
+const height = window.innerHeight - 49;
+const nodeW = 160, nodeH = 56;
+
+// Build tree hierarchy
+const root = d3.hierarchy(siteData);
+root.each(d => { d.data._collapsed = false; });
+
+// Tree layout
+const treeLayout = d3.tree()
+  .nodeSize([nodeW + 30, nodeH + 80])
+  .separation((a, b) => a.parent === b.parent ? 1.1 : 1.4);
+
+function updateLayout() {
+  treeLayout(root);
+  // Swap x and y for horizontal layout
+  root.each(d => {
+    const tmp = d.x;
+    d.x = d.y;
+    d.y = tmp;
+  });
+}
+updateLayout();
+
+// ─── SVG SETUP ─────────────────────────────────────
+const svg = d3.select("#canvas")
+  .attr("width", width)
+  .attr("height", height);
+
+const g = svg.append("g");
+
+// Zoom behavior
+const zoom = d3.zoom()
+  .scaleExtent([0.2, 3])
+  .on("zoom", (event) => {
+    g.attr("transform", event.transform);
+  });
+
+svg.call(zoom);
+
+// Center on root
+const initialTransform = d3.zoomIdentity
+  .translate(width / 2 - 200, height / 2)
+  .scale(0.7);
+svg.call(zoom.transform, initialTransform);
+
+// ─── DRAW ──────────────────────────────────────────
+const linkGroup = g.append("g").attr("class", "links");
+const nodeGroup = g.append("g").attr("class", "nodes");
+
+function getVisibleDescendants(node) {
+  const nodes = [];
+  const links = [];
+  function walk(n) {
+    nodes.push(n);
+    if (n.children) {
+      n.children.forEach(child => {
+        links.push({ source: n, target: child });
+        walk(child);
+      });
+    }
+  }
+  walk(node);
+  return { nodes, links };
+}
+
+function render() {
+  updateLayout();
+  const { nodes, links } = getVisibleDescendants(root);
+
+  // Links
+  const linkSel = linkGroup.selectAll(".link").data(links, d => d.target.data.path);
+
+  linkSel.exit().transition().duration(300).style("opacity", 0).remove();
+
+  const linkEnter = linkSel.enter()
+    .append("path")
+    .attr("class", "link")
+    .style("opacity", 0);
+
+  linkSel.merge(linkEnter)
+    .transition().duration(500)
+    .style("opacity", 1)
+    .attr("d", d => {
+      const sx = d.source.x + nodeW / 2;
+      const sy = d.source.y;
+      const tx = d.target.x - nodeW / 2;
+      const ty = d.target.y;
+      const mx = (sx + tx) / 2;
+      return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+    });
+
+  // Nodes
+  const nodeSel = nodeGroup.selectAll(".node").data(nodes, d => d.data.path);
+
+  nodeSel.exit().transition().duration(300).style("opacity", 0).remove();
+
+  const nodeEnter = nodeSel.enter()
+    .append("g")
+    .attr("class", "node")
+    .style("opacity", 0)
+    .attr("transform", d => `translate(${d.x - nodeW/2},${d.y - nodeH/2})`);
+
+  // Background rect
+  nodeEnter.append("rect")
+    .attr("width", nodeW)
+    .attr("height", nodeH)
+    .attr("fill", d => categoryColors[d.data.category].fill)
+    .attr("stroke", d => categoryColors[d.data.category].stroke);
+
+  // Icon
+  nodeEnter.append("text")
+    .attr("class", "node-icon")
+    .attr("x", 20)
+    .attr("y", nodeH / 2 - 4)
+    .text(d => d.data.icon);
+
+  // Name
+  nodeEnter.append("text")
+    .attr("class", "node-label")
+    .attr("x", nodeW / 2 + 8)
+    .attr("y", nodeH / 2 - 4)
+    .text(d => d.data.name.length > 16 ? d.data.name.substring(0, 15) + '\u2026' : d.data.name);
+
+  // Child count badge
+  nodeEnter.append("text")
+    .attr("class", "badge")
+    .attr("x", nodeW / 2 + 8)
+    .attr("y", nodeH / 2 + 12)
+    .text(d => {
+      const kids = d.data.children ? d.data.children.length : 0;
+      if (kids === 0) return '';
+      return d.children ? `\u25BC ${kids} pages` : `\u25B6 ${kids} pages`;
+    });
+
+  // Expand/collapse indicator
+  nodeEnter.append("rect")
+    .attr("class", "expand-btn")
+    .attr("x", nodeW - 24)
+    .attr("y", nodeH / 2 - 8)
+    .attr("width", 16)
+    .attr("height", 16)
+    .attr("rx", 3)
+    .attr("fill", "transparent")
+    .attr("stroke", d => d.data.children && d.data.children.length ? categoryColors[d.data.category].stroke : "none")
+    .attr("stroke-width", 1);
+
+  nodeEnter.append("text")
+    .attr("class", "expand-icon")
+    .attr("x", nodeW - 16)
+    .attr("y", nodeH / 2 + 1)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "central")
+    .attr("fill", d => categoryColors[d.data.category].text)
+    .attr("font-size", "10px")
+    .attr("pointer-events", "none")
+    .text(d => {
+      if (!d.data.children || !d.data.children.length) return '';
+      return d.children ? '\u2212' : '+';
+    });
+
+  // Interaction handlers
+  nodeEnter
+    .on("click", (event, d) => {
+      event.stopPropagation();
+      if (!d.data.children || d.data.children.length === 0) return;
+      if (d.children) {
+        d._children = d.children;
+        d.children = null;
+      } else {
+        d.children = d._children;
+        d._children = null;
+      }
+      render();
+    })
+    .on("mouseover", (event, d) => {
+      const tt = document.getElementById("tooltip");
+      document.getElementById("tooltipTitle").textContent = d.data.icon + " " + d.data.name;
+      document.getElementById("tooltipDesc").textContent = d.data.desc;
+      document.getElementById("tooltipPath").textContent = d.data.path;
+      tt.style.left = (event.pageX + 14) + "px";
+      tt.style.top = (event.pageY - 10) + "px";
+      tt.classList.add("visible");
+      // Highlight connected links
+      linkGroup.selectAll(".link")
+        .classed("highlighted", l => l.source === d || l.target === d);
+    })
+    .on("mouseout", () => {
+      document.getElementById("tooltip").classList.remove("visible");
+      linkGroup.selectAll(".link").classed("highlighted", false);
+    })
+    .call(d3.drag()
+      .on("start", function(event, d) {
+        d3.select(this).classed("dragging", true).raise();
+      })
+      .on("drag", function(event, d) {
+        d.x = event.x + nodeW/2;
+        d.y = event.y + nodeH/2;
+        d3.select(this).attr("transform", `translate(${event.x},${event.y})`);
+        // Update links connected to this node
+        linkGroup.selectAll(".link")
+          .attr("d", l => {
+            const sx = l.source.x + nodeW / 2;
+            const sy = l.source.y;
+            const tx = l.target.x - nodeW / 2;
+            const ty = l.target.y;
+            const mx = (sx + tx) / 2;
+            return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+          });
+      })
+      .on("end", function() {
+        d3.select(this).classed("dragging", false);
+      })
+    );
+
+  // Update existing + entering nodes
+  const allNodes = nodeSel.merge(nodeEnter);
+
+  allNodes.transition().duration(500)
+    .style("opacity", 1)
+    .attr("transform", d => `translate(${d.x - nodeW/2},${d.y - nodeH/2})`);
+
+  // Update badges
+  allNodes.select(".badge")
+    .text(d => {
+      const kids = d.data.children ? d.data.children.length : 0;
+      if (kids === 0) return '';
+      return d.children ? `\u25BC ${kids} pages` : `\u25B6 ${kids} pages`;
+    });
+
+  // Update expand icons
+  allNodes.select(".expand-icon")
+    .text(d => {
+      if (!d.data.children || !d.data.children.length) return '';
+      return d.children ? '\u2212' : '+';
+    });
+}
+
+render();
+
+// ─── CONTROLS ──────────────────────────────────────
+function resetView() {
+  svg.transition().duration(600)
+    .call(zoom.transform, initialTransform);
+}
+
+function expandAll() {
+  root.each(d => {
+    if (d._children) {
+      d.children = d._children;
+      d._children = null;
+    }
+  });
+  render();
+}
+
+function collapseAll() {
+  root.each(d => {
+    if (d.depth > 0 && d.children) {
+      d._children = d.children;
+      d.children = null;
+    }
+  });
+  render();
+}
+
+// Search
+document.getElementById("searchInput").addEventListener("input", function() {
+  const q = this.value.toLowerCase().trim();
+  nodeGroup.selectAll(".node").each(function(d) {
+    const match = !q || d.data.name.toLowerCase().includes(q) || d.data.path.toLowerCase().includes(q);
+    d3.select(this).style("opacity", match ? 1 : 0.15);
+  });
+  linkGroup.selectAll(".link").style("opacity", q ? 0.1 : 1);
+});
+
+// ─── SAVE / EXPORT ─────────────────────────────────
+
+// Collect current positions & collapsed state from the tree
+function captureState() {
+  const positions = {};
+  root.each(d => {
+    positions[d.data.path] = {
+      x: d.x,
+      y: d.y,
+      collapsed: !!d._children
+    };
+  });
+  return positions;
+}
+
+// Apply saved positions
+function applyState(positions) {
+  root.each(d => {
+    const saved = positions[d.data.path];
+    if (saved) {
+      d.x = saved.x;
+      d.y = saved.y;
+      if (saved.collapsed && d.children) {
+        d._children = d.children;
+        d.children = null;
+      }
+    }
+  });
+}
+
+// Save current layout - downloads a new standalone HTML file with positions baked in
+function saveLayout() {
+  const state = captureState();
+  const html = document.documentElement.outerHTML;
+  const stateScript = `<` + `script>
+    window.__savedLayout = ${JSON.stringify(state)};
+  <` + `/script>`;
+  const patched = html.replace('</head>', stateScript + '\n</head>');
+  const blob = new Blob(['<!DOCTYPE html>\n' + patched], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aesop-sitemap-saved.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('Layout saved! Open the downloaded file to restore.');
+}
+
+// On load: check for baked-in positions
+if (window.__savedLayout) {
+  applyState(window.__savedLayout);
+  const { nodes, links } = getVisibleDescendants(root);
+  nodeGroup.selectAll(".node")
+    .attr("transform", d => `translate(${d.x - nodeW/2},${d.y - nodeH/2})`);
+  linkGroup.selectAll(".link")
+    .attr("d", d => {
+      const sx = d.source.x + nodeW / 2;
+      const sy = d.source.y;
+      const tx = d.target.x - nodeW / 2;
+      const ty = d.target.y;
+      const mx = (sx + tx) / 2;
+      return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+    });
+}
+
+// Export current view as SVG file
+function exportSVG() {
+  const svgEl = document.getElementById('canvas');
+  const clone = svgEl.cloneNode(true);
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  bg.setAttribute('width', '100%');
+  bg.setAttribute('height', '100%');
+  bg.setAttribute('fill', '#0f172a');
+  clone.insertBefore(bg, clone.firstChild);
+  const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+  styleEl.textContent = `
+    .link { stroke: #334155; stroke-width: 2; fill: none; }
+    .node rect { rx: 8; ry: 8; stroke-width: 2; }
+    .node-label { font: 600 13px 'Segoe UI', system-ui, sans-serif; fill: #f1f5f9; }
+    .node-sublabel { font: 10px 'Segoe UI', system-ui, sans-serif; fill: #94a3b8; }
+    .node-icon { font-size: 16px; }
+    .badge { font: 9px 'Segoe UI', system-ui, sans-serif; fill: #94a3b8; }
+  `;
+  clone.insertBefore(styleEl, clone.firstChild);
+  const svgData = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([svgData], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aesop-sitemap.svg';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('SVG exported!');
+}
+
+// Toast notification
+function showToast(msg) {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+}
+
+// Resize
+window.addEventListener("resize", () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight - 49;
+  svg.attr("width", w).attr("height", h);
+});
+</script>
+</body>
+</html>

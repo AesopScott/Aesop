@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- AESOP-Panel-Scoring-Dashboard-v1.9 -->
+<!-- AESOP-Panel-Scoring-Dashboard-v2.0 -->
 <title>AESOP AI Academy — Panel Scoring Dashboard</title>
 <link rel="stylesheet" href="/academy-theme.css">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -39,8 +39,11 @@
   .nav-rubric:hover{border-color:var(--gold-light);background:rgba(201,151,63,0.2)}
   .unit-meta input, .unit-meta select {
     font-family: 'IBM Plex Sans', sans-serif; font-size:19.5px;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-    color: var(--paper); padding: 6px 12px; width: 220px;
+    background: #1a1a1a; border: 1px solid rgba(255,255,255,0.3);
+    color: #f5f0e8; padding: 6px 12px; width: 220px;
+  }
+  .unit-meta select option {
+    background: #1a1a1a; color: #f5f0e8;
   }
   .unit-meta input::placeholder { color: rgba(245,240,232,0.3); }
 
@@ -304,18 +307,9 @@
       </select>
       <div id="load-status" style="font-size:13px;color:rgba(245,240,232,0.5);margin-top:6px;"></div>
     </div>
-    <div class="unit-meta" style="margin-top:8px;">
-      <label>Module / Unit</label>
-      <input type="text" id="unit-name" placeholder="auto-filled on selection" readonly>
-      <div style="height:6px;"></div>
-      <label>Level</label>
-      <select id="level-select">
-        <option value="">— Select Level —</option>
-        <option value="Intro">Intro (Ages 5–8)</option>
-        <option value="Basic">Basic (Ages 9–12)</option>
-        <option value="Advanced">Advanced (Ages 13–18)</option>
-      </select>
-    </div>
+    <!-- unit-name hidden for JS compat -->
+    <input type="hidden" id="unit-name" value="">
+    <input type="hidden" id="level-select" value="">
   </div>
 </div>
 
@@ -901,7 +895,7 @@ window.addEventListener('DOMContentLoaded', () => { loadCourses(); });
 function onCourseSelect() {
   const courseId = document.getElementById('course-select').value;
   const moduleSelect = document.getElementById('module-select');
-  moduleSelect.innerHTML = '<option value="">— Select Module —</option>';
+  moduleSelect.innerHTML = '<option value="all">All Modules (Course Score)</option>';
 
   if (!courseId || !loadedReports[courseId]) {
     currentReport = null;
@@ -910,7 +904,7 @@ function onCourseSelect() {
 
   currentReport = loadedReports[courseId];
 
-  // Populate module dropdown
+  // Populate module dropdown with individual modules for drill-down
   if (currentReport.modules && currentReport.modules.length > 0) {
     for (let i = 0; i < currentReport.modules.length; i++) {
       const m = currentReport.modules[i];
@@ -920,13 +914,10 @@ function onCourseSelect() {
       opt.textContent = (m.module || `Module ${i+1}`) + verdict;
       moduleSelect.appendChild(opt);
     }
-
-    // Also add "All Modules (Average)" option
-    const allOpt = document.createElement('option');
-    allOpt.value = 'all';
-    allOpt.textContent = '— All Modules (Average) —';
-    moduleSelect.appendChild(allOpt);
   }
+
+  // Auto-load course-level averages immediately
+  populateAveragedScores();
 }
 
 function onModuleSelect() {

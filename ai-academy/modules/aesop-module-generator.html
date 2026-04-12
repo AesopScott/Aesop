@@ -2190,4 +2190,606 @@ function parseEvalResponse(raw) {
   text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
   // Try to extract JSON object from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON found
+  if (!jsonMatch) throw new Error('No JSON found in response');  const parsed = JSON.parse(jsonMatch[0]);
+  if (!parsed.scores) throw new Error('Missing scores in response');
+  return parsed;
+}
+
+// ── SCORING CALCULATION ────────────────────────────────────────────────────
+
+function calcDimScore(scores, dimId) {
+  const dim = EVAL_RUBRIC.dimensions.find(d => d.id === dimId);
+  if (!dim) return 0;
+  let total = 0;
+  for (const c of dim.criteria) {
+    const key = 'd' + dimId;
+    const cKey = 'c' + c.id;
+    const val = Math.min(5, Math.max(0, scores[key]?.[cKey] || 0));
+    total += val * c.weight;
+  }
+  return total;
+}
+
+function calcTotalScore(scores) {
+  let total = 0;
+  for (const dim of EVAL_RUBRIC.dimensions) {
+    total += calcDimScore(scores, dim.id);
+  }
+  return total;
+}
+
+function getVerdict(totalScore, d5Score) {
+  // D5 override check
+  if (d5Score < EVAL_RUBRIC.d5Override) {
+    if (totalScore < 55) return EVAL_RUBRIC.verdicts.rebuild;
+    return EVAL_RUBRIC.verdicts.revise;
+  }
+  if (totalScore >= 85) return EVAL_RUBRIC.verdicts.pass;
+  if (totalScore >= 70) return EVAL_RUBRIC.verdicts.notes;
+  if (totalScore >= 55) return EVAL_RUBRIC.verdicts.revise;
+  return EVAL_RUBRIC.verdicts.rebuild;
+}
+
+// ── COURSE FOLDER MAPPING ─────────────────────────────────────────────────
+// Base courses use folder names and file prefixes that differ from their COURSES id.
+// Generated courses (underscored IDs) match their folder names exactly.
+const COURSE_FOLDER_MAP = {
+  'governance':       { folder: 'ai-governance',   prefix: 'ai-governance' },
+  'society':          { folder: 'ai-in-society',   prefix: 'ai-in-society' },
+  'ethics':           { folder: 'ai-ethics',       prefix: 'ai-ethics' },
+  'building':         { folder: 'building-with-ai', prefix: 'building-with-ai' },
+  'building-with-ai': { folder: 'building-with-ai', prefix: 'building-with-ai' },
+  'creativity':       { folder: 'ai-and-creativity', prefix: 'ai-and-creativity' },
+  'careers':          { folder: 'ai-careers',        prefix: 'ai-careers' },
+};
+
+function getFolderName(cid) {
+  return COURSE_FOLDER_MAP[cid]?.folder || cid;
+}
+function getFilePrefix(cid) {
+  return COURSE_FOLDER_MAP[cid]?.prefix || cid;
+}
+
+// Find a module file in a directory handle, handling version suffixes.
+// Tries exact match first, then scans for pattern: [prefix]-m[n]*.html
+async function findModuleFile(dirHandle, cid, moduleNum) {
+  const prefix = getFilePrefix(cid);
+  const exactName = prefix + '-m' + moduleNum + '.html';
+
+  // Try exact match first
+  try {
+    const fh = await dirHandle.getFileHandle(exactName);
+    return fh;
+  } catch(e) { /* not found — try pattern */ }
+
+  // Scan directory for files matching [prefix]-m[n]-*.html (version suffix)
+  const pattern = prefix + '-m' + moduleNum;
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'file' && name.startsWith(pattern) && name.endsWith('.html')) {
+      return handle;
+    }
+  }
+
+  return null; // Not found
+}
+
+// ── GITHUB MODULE FETCHING ─────────────────────────────────────────────────
+
+const GITHUB_REPO = 'AesopScott/Aesop';
+const GITHUB_BASE = 'ai-academy/modules';
+
+// List module HTML files in a course folder on GitHub
+async function listGitHubModuleFiles(pat, folderName) {
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + GITHUB_BASE + '/' + folderName;
+  const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } });
+  if (!resp.ok) throw new Error('GitHub API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+  const files = await resp.json();
+  return files.filter(f => f.type === 'file' && f.name.endsWith('.html') && f.name.includes('-m'));
+}
+
+// Fetch a single module HTML file from GitHub (raw content)
+async function fetchModuleFromGitHub(pat, folderName, fileName) {
+  const url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + GITHUB_BASE + '/' + folderName + '/' + fileName;
+  const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat } });
+  if (!resp.ok) throw new Error('GitHub raw fetch ' + resp.status + ' for ' + fileName);
+  return await resp.text();
+}
+
+// Find the right module file from a list of GitHub files, handling version suffixes
+function findModuleInList(files, cid, moduleNum) {
+  const prefix = getFilePrefix(cid);
+  const exactName = prefix + '-m' + moduleNum + '.html';
+  // Exact match first
+  const exact = files.find(f => f.name === exactName);
+  if (exact) return exact.name;
+  // Pattern match (version suffix)
+  const pattern = prefix + '-m' + moduleNum;
+  const match = files.find(f => f.name.startsWith(pattern) && f.name.endsWith('.html'));
+  return match ? match.name : null;
+}
+
+// Save eval report by pushing to GitHub
+async function saveReportToGitHub(pat, folderName, fileName, content) {
+  const path = GITHUB_BASE + '/' + folderName + '/' + fileName;
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + path;
+  const headers = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+  // Check if file exists (need sha to update)
+  let sha = null;
+  try {
+    const check = await fetch(url, { headers });
+    if (check.ok) {
+      const existing = await check.json();
+      sha = existing.sha;
+    }
+  } catch(e) { /* new file */ }
+
+  const body = {
+    message: 'Panel eval report: ' + folderName,
+    content: btoa(unescape(encodeURIComponent(content)))
+  };
+  if (sha) body.sha = sha;
+
+  const resp = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!resp.ok) throw new Error('GitHub save failed ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+  return true;
+}
+
+// Save/update eval-index.json on GitHub
+async function saveEvalIndexToGitHub(pat, indexData) {
+  const path = GITHUB_BASE + '/eval-index.json';
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + path;
+  const headers = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+  let sha = null;
+  try {
+    const check = await fetch(url, { headers });
+    if (check.ok) {
+      const existing = await check.json();
+      sha = existing.sha;
+    }
+  } catch(e) { /* new file */ }
+
+  const body = {
+    message: 'Update eval-index.json',
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(indexData, null, 2))))
+  };
+  if (sha) body.sha = sha;
+
+  const resp = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!resp.ok) throw new Error('GitHub index save failed ' + resp.status);
+  return true;
+}
+
+// Load eval-index.json from GitHub
+async function loadEvalIndexFromGitHub(pat) {
+  const url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + GITHUB_BASE + '/eval-index.json';
+  try {
+    const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat } });
+    if (!resp.ok) return {};
+    return JSON.parse(await resp.text());
+  } catch(e) { return {}; }
+}
+
+// ── MAIN EVALUATION RUNNER ─────────────────────────────────────────────────
+
+async function runPanelEvaluation(cid, courseName) {
+  log('');
+  log('═══════════════════════════════════════════════════');
+  log('  PANEL EVALUATION — ' + courseName);
+  log('═══════════════════════════════════════════════════');
+
+  const claudeKey     = document.getElementById('apiKey').value.trim();
+  const geminiKey     = document.getElementById('geminiKey').value.trim();
+  const openaiKey     = document.getElementById('openaiKey').value.trim();
+  const perplexityKey = document.getElementById('perplexityKey').value.trim();
+
+  const reviewers = [];
+  if (claudeKey)     reviewers.push({ name: 'Claude',     fn: callClaude,     key: claudeKey });
+  if (geminiKey)     reviewers.push({ name: 'Gemini',     fn: callGemini,     key: geminiKey });
+  if (openaiKey)     reviewers.push({ name: 'ChatGPT',    fn: callOpenAI,     key: openaiKey });
+  if (perplexityKey) reviewers.push({ name: 'Perplexity', fn: callPerplexity, key: perplexityKey });
+
+  if (reviewers.length === 0) {
+    log('No API keys provided — skipping evaluation.');
+    return null;
+  }
+
+  log('Active reviewers: ' + reviewers.map(r => r.name).join(', '));
+
+  const course = COURSES.find(c => c.id === cid);
+  if (!course) { log('ERROR: Course not found.'); return null; }
+
+  const totalMods = course.modules.length;
+  const fullReport = {
+    course: courseName,
+    courseId: cid,
+    date: new Date().toISOString(),
+    reviewers: reviewers.map(r => r.name),
+    modules: [],
+    summary: {}
+  };
+
+  const githubPat = document.getElementById('githubPat').value.trim();
+  if (!githubPat) {
+    log('ERROR: GitHub PAT required to fetch module files. Enter it in the API Keys section.');
+    return null;
+  }
+
+  const folderName = getFolderName(cid);
+  log('Fetching file list from GitHub: ' + GITHUB_BASE + '/' + folderName + '/');
+
+  let githubFiles;
+  try {
+    githubFiles = await listGitHubModuleFiles(githubPat, folderName);
+    log('Found ' + githubFiles.length + ' module files on GitHub:');
+    githubFiles.forEach(f => log('  · ' + f.name));
+  } catch(e) {
+    log('ERROR: Could not list files in ' + folderName + '/ on GitHub — ' + e.message);
+    return null;
+  }
+
+  const prefix = getFilePrefix(cid);
+  log('Course ID: ' + cid + ' | Folder: ' + folderName + ' | File prefix: ' + prefix);
+
+  let grandTotal = {};
+  reviewers.forEach(r => { grandTotal[r.name] = { total: 0, count: 0 }; });
+
+  for (let mi = 0; mi < totalMods; mi++) {
+    const mod = course.modules[mi];
+    const mn = mod.n || (mi + 1);
+    const modName = 'M' + mn + ': ' + mod.title;
+
+    log('');
+    log('── Evaluating ' + modName + ' ──');
+
+    // Fetch module HTML from GitHub
+    let moduleHtml = '';
+    const fileName = findModuleInList(githubFiles, cid, mn);
+    if (!fileName) {
+      log('  SKIP: No matching file for module ' + mn + ' — looking for "' + prefix + '-m' + mn + '.html" in file list');
+      continue;
+    }
+    try {
+      moduleHtml = await fetchModuleFromGitHub(githubPat, folderName, fileName);
+      log('  Fetched: ' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
+    } catch(e) {
+      log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
+      continue;
+    }
+
+    // Trim HTML to avoid token limits (keep first 60k chars — should cover full module)
+    if (moduleHtml.length > 60000) {
+      moduleHtml = moduleHtml.substring(0, 60000) + '\n<!-- truncated for evaluation -->';
+    }
+
+    const prompt = buildEvalPrompt(moduleHtml, modName, courseName);
+    const moduleResult = { module: modName, reviews: {} };
+
+    // Send to all reviewers in parallel
+    const results = await Promise.allSettled(
+      reviewers.map(async (r) => {
+        try {
+          log('  Sending to ' + r.name + '...');
+          const raw = await r.fn(prompt, r.key);
+          const parsed = parseEvalResponse(raw);
+          const total = calcTotalScore(parsed.scores);
+          const d5 = calcDimScore(parsed.scores, 5);
+          const verdict = getVerdict(total, d5);
+
+          log('  ' + r.name + ': ' + total + '/100 → ' + verdict.label +
+              (d5 < EVAL_RUBRIC.d5Override ? ' [D5 OVERRIDE: ' + d5 + '/20]' : ''));
+
+          return {
+            reviewer: r.name,
+            scores: parsed.scores,
+            notes: parsed.notes || '',
+            topIssue: parsed.top_issue || '',
+            dimScores: EVAL_RUBRIC.dimensions.map(d => ({
+              dim: d.id, name: d.name, score: calcDimScore(parsed.scores, d.id), max: d.max
+            })),
+            total: total,
+            d5Score: d5,
+            verdict: verdict
+          };
+        } catch(err) {
+          log('  ' + r.name + ' ERROR: ' + err.message);
+          return { reviewer: r.name, error: err.message };
+        }
+      })
+    );
+
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) {
+        moduleResult.reviews[r.value.reviewer] = r.value;
+        if (!r.value.error) {
+          grandTotal[r.value.reviewer].total += r.value.total;
+          grandTotal[r.value.reviewer].count += 1;
+        }
+      }
+    }
+
+    // Calculate panel average for this module
+    const validReviews = Object.values(moduleResult.reviews).filter(r => !r.error);
+    if (validReviews.length > 0) {
+      const avgTotal = validReviews.reduce((s, r) => s + r.total, 0) / validReviews.length;
+      const avgD5 = validReviews.reduce((s, r) => s + r.d5Score, 0) / validReviews.length;
+      moduleResult.panelAverage = Math.round(avgTotal * 10) / 10;
+      moduleResult.panelVerdict = getVerdict(Math.round(avgTotal), Math.round(avgD5));
+      log('  PANEL AVG: ' + moduleResult.panelAverage + '/100 → ' + moduleResult.panelVerdict.label);
+    }
+
+    fullReport.modules.push(moduleResult);
+
+    // Brief pause between modules to avoid rate limits
+    if (mi < totalMods - 1) {
+      await new Promise(r => setTimeout(r, 2000));
+    }
+  }
+
+  // Course-level summary
+  log('');
+  log('═══════════════════════════════════════════════════');
+  log('  COURSE SUMMARY');
+  log('═══════════════════════════════════════════════════');
+
+  for (const r of reviewers) {
+    const gt = grandTotal[r.name];
+    if (gt.count > 0) {
+      const avg = Math.round((gt.total / gt.count) * 10) / 10;
+      fullReport.summary[r.name] = { averageScore: avg, modulesReviewed: gt.count };
+      log('  ' + r.name + ': avg ' + avg + '/100 across ' + gt.count + ' modules');
+    }
+  }
+
+  // Overall panel average
+  const allAvgs = Object.values(fullReport.summary).map(s => s.averageScore);
+  if (allAvgs.length > 0) {
+    const panelAvg = Math.round((allAvgs.reduce((a, b) => a + b, 0) / allAvgs.length) * 10) / 10;
+    fullReport.summary.panelAverage = panelAvg;
+    log('  PANEL AVERAGE: ' + panelAvg + '/100');
+  }
+
+  // Flag modules needing attention
+  const issues = fullReport.modules.filter(m => m.panelVerdict && m.panelVerdict.label !== 'PASS');
+  if (issues.length > 0) {
+    log('');
+    log('  ATTENTION NEEDED:');
+    for (const m of issues) {
+      log('  ⚠ ' + m.module + ' → ' + m.panelVerdict.label + ' (' + m.panelAverage + '/100)');
+      const topIssues = Object.values(m.reviews)
+        .filter(r => r.topIssue && r.topIssue !== 'none')
+        .map(r => r.reviewer + ': ' + r.topIssue);
+      if (topIssues.length) log('    Issues: ' + topIssues.join(' | '));
+    }
+  } else if (fullReport.modules.length > 0) {
+    log('');
+    log('  ✓ All modules PASSED panel review.');
+  }
+
+  // Save report to GitHub
+  const saveFolderName = getFolderName(cid);
+  try {
+    const reportFilename = saveFolderName + '-eval-report.json';
+    const reportContent = JSON.stringify(fullReport, null, 2);
+    await saveReportToGitHub(githubPat, saveFolderName, reportFilename, reportContent);
+    log('');
+    log('Report saved to GitHub: ' + saveFolderName + '/' + reportFilename);
+  } catch(e) {
+    log('Could not save report to GitHub: ' + e.message);
+  }
+
+  // Update central eval-index.json on GitHub
+  try {
+    let evalIndex = await loadEvalIndexFromGitHub(githubPat);
+
+    evalIndex[cid] = {
+      course: fullReport.course,
+      date: fullReport.date,
+      reviewers: fullReport.reviewers,
+      moduleCount: fullReport.modules.length,
+      panelAverage: fullReport.summary.panelAverage || null,
+      reportFile: saveFolderName + '/' + saveFolderName + '-eval-report.json'
+    };
+
+    await saveEvalIndexToGitHub(githubPat, evalIndex);
+    log('Eval index updated on GitHub.');
+  } catch(e) {
+    log('Could not update eval index: ' + e.message);
+  }
+
+  return fullReport;
+}
+
+// ── EVALUATE EXISTING COURSE ──────────────────────────────────────────────
+
+async function populateEvalDropdown() {
+  const sel = document.getElementById('evalCourseSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Select Course to Evaluate —</option>';
+
+  // Load eval-index from GitHub to mark which courses already have evals
+  let evalIndex = {};
+  const pat = document.getElementById('githubPat')?.value?.trim();
+  if (pat) {
+    try {
+      evalIndex = await loadEvalIndexFromGitHub(pat);
+    } catch(e) { /* no index yet */ }
+  }
+
+  // Show all live courses, marking eval status
+  const needsEval = [];
+  const hasEval = [];
+
+  for (const cid of LIVE_COURSES) {
+    const course = COURSES.find(c => c.id === cid);
+    if (!course) continue;
+    const evalInfo = evalIndex[cid];
+    if (evalInfo) {
+      hasEval.push({ cid, course, evalInfo });
+    } else {
+      needsEval.push({ cid, course });
+    }
+  }
+
+  // Show courses needing eval first
+  if (needsEval.length > 0) {
+    const grp1 = document.createElement('optgroup');
+    grp1.label = 'Needs Evaluation (' + needsEval.length + ')';
+    for (const { cid, course } of needsEval) {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      opt.textContent = course.name + ' (' + course.modules.length + ' modules)';
+      grp1.appendChild(opt);
+    }
+    sel.appendChild(grp1);
+  }
+
+  // Then courses that already have evals (for re-evaluation)
+  if (hasEval.length > 0) {
+    const grp2 = document.createElement('optgroup');
+    grp2.label = 'Already Evaluated (' + hasEval.length + ')';
+    for (const { cid, course, evalInfo } of hasEval) {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      const score = evalInfo.panelAverage ? evalInfo.panelAverage + '/100' : '—';
+      opt.textContent = course.name + ' — ' + score + ' (' + course.modules.length + ' modules)';
+      grp2.appendChild(opt);
+    }
+    sel.appendChild(grp2);
+  }
+
+  // Update the status line with summary
+  const statusEl = document.getElementById('evalExistingStatus');
+  if (statusEl) {
+    statusEl.textContent = needsEval.length + ' courses need evaluation, ' + hasEval.length + ' already done.';
+    statusEl.style.color = needsEval.length > 0 ? 'rgba(255,255,255,0.5)' : '#5dd6a8';
+  }
+}
+
+async function evalExistingCourse() {
+  const sel = document.getElementById('evalCourseSelect');
+  const status = document.getElementById('evalExistingStatus');
+  const cid = sel.value;
+
+  // Make log visible for eval
+  showLog('');
+  log('Starting evaluation...');
+
+  if (!cid) {
+    status.textContent = 'Select a course first.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  const course = COURSES.find(c => c.id === cid);
+  if (!course) {
+    status.textContent = 'Course not found in COURSES array.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  // Check GitHub PAT
+  const githubPat = document.getElementById('githubPat').value.trim();
+  if (!githubPat) {
+    status.textContent = 'Enter your GitHub PAT in the API Keys section above.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  // Check at least one reviewer key is entered
+  const claudeKey = document.getElementById('apiKey').value.trim();
+  if (!claudeKey) {
+    status.textContent = 'Enter at least the Anthropic API key above.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  // Pre-flight: verify course folder exists on GitHub
+  const folderName = getFolderName(cid);
+  try {
+    const files = await listGitHubModuleFiles(githubPat, folderName);
+    if (files.length === 0) {
+      status.textContent = 'No module files found in ' + folderName + '/ on GitHub.';
+      status.style.color = '#f07070';
+      return;
+    }
+    status.textContent = 'Found ' + files.length + ' modules in ' + folderName + '/ — starting evaluation...';
+    status.style.color = '#4a90d9';
+  } catch(e) {
+    status.textContent = 'Cannot read ' + folderName + '/ from GitHub — check your PAT. (' + e.message + ')';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  sel.disabled = true;
+
+  try {
+    const report = await runPanelEvaluation(cid, course.name);
+    if (report && report.modules.length > 0) {
+      const evaluated = report.modules.filter(m => Object.values(m.reviews).some(r => r.total)).length;
+      const avg = report.summary?.panelAverage || '—';
+      status.textContent = 'Done — ' + course.name + ': ' + avg + '/100 (' + evaluated + '/' + report.modules.length + ' modules scored). Report saved.';
+      status.style.color = '#5dd6a8';
+      await populateEvalDropdown();
+    } else if (report && report.modules.length === 0) {
+      status.textContent = 'All module reads failed. Check log — folder: ' + folderName + '/, prefix: ' + getFilePrefix(cid);
+      status.style.color = '#f07070';
+    } else {
+      status.textContent = 'No report generated. Check API keys and log output.';
+      status.style.color = '#f0c040';
+    }
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    status.style.color = '#f07070';
+  } finally {
+    sel.disabled = false;
+  }
+}
+
+// Populate eval dropdown on init and when GitHub PAT is entered
+window.addEventListener('DOMContentLoaded', populateEvalDropdown);
+document.getElementById('githubPat')?.addEventListener('change', populateEvalDropdown);
+
+init();
+
+// ── SYNC CHECK ────────────────────────────────────────────────────────────
+// Embedded commit hash — updated on each push. On page load, compares to
+// the latest commit on the active branch via GitHub API. Shows a red banner
+// if this file is outdated so you know to pull.
+const LOCAL_COMMIT = '13d7f5217cab64a82d79f38781d62f04acab4a41';
+const SYNC_REPO = 'AesopScott/Aesop';
+const SYNC_FILE = 'ai-academy/modules/aesop-module-generator.html';
+
+async function runSyncCheck() {
+  const banner = document.getElementById('syncBanner');
+  if (!banner) return;
+  const pat = document.getElementById('githubPat')?.value?.trim();
+  const headers = pat ? { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } : { 'Accept': 'application/vnd.github.v3+json' };
+  try {
+    for (const branch of ['eval-system', 'main']) {
+      const url = 'https://api.github.com/repos/' + SYNC_REPO + '/commits?path=' + SYNC_FILE + '&sha=' + branch + '&per_page=1';
+      const resp = await fetch(url, { headers });
+      if (!resp.ok) continue;
+      const commits = await resp.json();
+      if (commits.length === 0) continue;
+      const latestSha = commits[0].sha;
+      const latestMsg = commits[0].commit.message.split('\n')[0];
+      const latestDate = new Date(commits[0].commit.committer.date).toLocaleString();
+      if (LOCAL_COMMIT === '__COMMIT' + '_HASH__' || LOCAL_COMMIT !== latestSha) {
+        banner.className = 'warn';
+        banner.innerHTML = '⚠️ OUTDATED — Latest on <b>' + branch + '</b>: "' + latestMsg + '" (' + latestDate + '). Pull or switch to <b>' + branch + '</b> to get the latest.';
+      } else {
+        banner.className = 'ok';
+        banner.textContent = '✓ Up to date (' + branch + ' @ ' + latestSha.substring(0, 7) + ')';
+        setTimeout(() => { banner.className = ''; }, 5000);
+      }
+      return;
+    }
+  } catch(e) { /* silent — don't block page */ }
+}
+runSyncCheck();
+document.getElementById('githubPat')?.addEventListener('change', runSyncCheck);
+</script>
+</body>
+</html>

@@ -870,8 +870,11 @@ let selectedTier = null, generatedContent = '', generatedFilename = '';
 
 // Course IDs that are already live in electives-hub — exclude from dropdown
 const LIVE_COURSES = new Set([
-  'governance', 'society', 'creativity', 'ethics', 'building', 'building_with_ai', 'careers',
-  'ai_in_healthcare', 'ai_and_education', 'ai_leadership'
+  'governance', 'society', 'ethics', 'building_with_ai',
+  'ai_in_healthcare', 'ai_and_education', 'ai_leadership', 'ai_and_finance',
+  'building_ai_agents_i_use_cases', 'building_ai_agents_ii_skills',
+  'building_ai_agents_iii_tools', 'building_ai_agents_iv_openclaw',
+  'building_ai_agents_v_optimization'
 ]);
 
 // Registry metadata for electives-hub — maps course IDs to display config
@@ -998,7 +1001,7 @@ function buildSystemPrompt(course, mod, tier, tc) {
     '',
     'BUILDING: ' + course.name + ' | Module ' + mod.n + ': ' + mod.title + ' | Tier: ' + tc.label,
     'Module subtitle: ' + mod.sub,
-    'File: local=' + tier + '-m' + mod.n + '-v1.0.0.html | server=' + tier + '.html | path=/ai-academy/modules/module-' + mod.n + '/',
+    'File: ' + tier + '-m' + mod.n + '.html | path=/ai-academy/modules/module-' + mod.n + '/',
     '',
     'TIER: GROUP_ID=' + tc.groupId + ' | chip=' + tc.emoji + ' ' + tc.label + ' | accent=' + tc.accent + ' | accentRgb=' + tc.accentRgb + ' | lessons=' + tc.lessons,
     '',
@@ -1009,7 +1012,7 @@ function buildSystemPrompt(course, mod, tier, tc) {
     '',
     'HTML STRUCTURE:',
     '<!DOCTYPE html>',
-    '<!-- v1.0.0 -->',
+    '<!-- ' + tier + '-m' + mod.n + ' -->',
     '<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">',
     '<title>' + mod.title + ' — ' + tc.label + ' | AESOP AI Academy Module ' + mod.n + '</title>',
     '<meta name="description" content="' + tc.label + ': ' + mod.sub + '. Module ' + mod.n + ' of the AESOP AI Academy." />',
@@ -1358,6 +1361,8 @@ async function setRepoFolder() {
       document.getElementById('folderStatus').textContent = 'Folder set: ' + coursesFolderHandle.name;
     }
     document.getElementById('folderStatus').style.color = '#5dd6a8';
+    // Refresh eval dropdown now that we can read eval-index.json
+    populateEvalDropdown();
   } catch(e) {
     if (e.name !== 'AbortError') showStatus('error', 'Could not access folder: ' + e.message);
   }
@@ -1897,6 +1902,47 @@ function getVerdict(totalScore, d5Score) {
   return EVAL_RUBRIC.verdicts.rebuild;
 }
 
+// ── COURSE FOLDER MAPPING ─────────────────────────────────────────────────
+// Base courses use folder names and file prefixes that differ from their COURSES id.
+// Generated courses (underscored IDs) match their folder names exactly.
+const COURSE_FOLDER_MAP = {
+  'governance':   { folder: 'ai-governance',   prefix: 'ai-governance' },
+  'society':      { folder: 'ai-in-society',   prefix: 'ai-in-society' },
+  'ethics':       { folder: 'ai-ethics',       prefix: 'ai-ethics' },
+  'building':     { folder: 'building_with_ai', prefix: 'building_with_ai' },
+  'building_with_ai': { folder: 'building_with_ai', prefix: 'building_with_ai' },
+};
+
+function getFolderName(cid) {
+  return COURSE_FOLDER_MAP[cid]?.folder || cid;
+}
+function getFilePrefix(cid) {
+  return COURSE_FOLDER_MAP[cid]?.prefix || cid;
+}
+
+// Find a module file in a directory handle, handling version suffixes.
+// Tries exact match first, then scans for pattern: [prefix]-m[n]*.html
+async function findModuleFile(dirHandle, cid, moduleNum) {
+  const prefix = getFilePrefix(cid);
+  const exactName = prefix + '-m' + moduleNum + '.html';
+
+  // Try exact match first
+  try {
+    const fh = await dirHandle.getFileHandle(exactName);
+    return fh;
+  } catch(e) { /* not found — try pattern */ }
+
+  // Scan directory for files matching [prefix]-m[n]-*.html (version suffix)
+  const pattern = prefix + '-m' + moduleNum;
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind === 'file' && name.startsWith(pattern) && name.endsWith('.html')) {
+      return handle;
+    }
+  }
+
+  return null; // Not found
+}
+
 // ── MAIN EVALUATION RUNNER ─────────────────────────────────────────────────
 
 async function runPanelEvaluation(cid, courseName) {
@@ -1942,21 +1988,23 @@ async function runPanelEvaluation(cid, courseName) {
   for (let mi = 0; mi < totalMods; mi++) {
     const mod = course.modules[mi];
     const mn = mod.n || (mi + 1);
-    const filename = cid + '-m' + mn + '.html';
+    const folderName = getFolderName(cid);
     const modName = 'M' + mn + ': ' + mod.title;
 
     log('');
     log('── Evaluating ' + modName + ' ──');
 
-    // Read module HTML from file system
+    // Read module HTML from file system (handles version suffixes and folder name mismatches)
     let moduleHtml = '';
     try {
-      const courseDir = await repoFolderHandle.getDirectoryHandle(cid, { create: false });
-      const fh = await courseDir.getFileHandle(filename);
+      const courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
+      const fh = await findModuleFile(courseDir, cid, mn);
+      if (!fh) throw new Error('No matching file found');
       const file = await fh.getFile();
       moduleHtml = await file.text();
+      log('  Read: ' + (await fh).name);
     } catch(e) {
-      log('  SKIP: Could not read ' + filename + ' — ' + e.message);
+      log('  SKIP: Could not read module ' + mn + ' in ' + folderName + '/ — ' + e.message);
       continue;
     }
 
@@ -2069,16 +2117,17 @@ async function runPanelEvaluation(cid, courseName) {
     log('  ✓ All modules PASSED panel review.');
   }
 
-  // Save report to file system
+  // Save report to file system (use mapped folder name)
+  const saveFolderName = getFolderName(cid);
   try {
-    const reportFilename = cid + '-eval-report.json';
-    const courseDir = await repoFolderHandle.getDirectoryHandle(cid, { create: true });
+    const reportFilename = saveFolderName + '-eval-report.json';
+    const courseDir = await repoFolderHandle.getDirectoryHandle(saveFolderName, { create: true });
     const fh = await courseDir.getFileHandle(reportFilename, { create: true });
     const writable = await fh.createWritable();
     await writable.write(JSON.stringify(fullReport, null, 2));
     await writable.close();
     log('');
-    log('Report saved: ' + cid + '/' + reportFilename);
+    log('Report saved: ' + saveFolderName + '/' + reportFilename);
   } catch(e) {
     log('Could not save report: ' + e.message);
   }
@@ -2098,7 +2147,7 @@ async function runPanelEvaluation(cid, courseName) {
       reviewers: fullReport.reviewers,
       moduleCount: fullReport.modules.length,
       panelAverage: fullReport.summary.panelAverage || null,
-      reportFile: cid + '/' + cid + '-eval-report.json'
+      reportFile: saveFolderName + '/' + saveFolderName + '-eval-report.json'
     };
 
     const indexHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: true });
@@ -2115,17 +2164,68 @@ async function runPanelEvaluation(cid, courseName) {
 
 // ── EVALUATE EXISTING COURSE ──────────────────────────────────────────────
 
-function populateEvalDropdown() {
+async function populateEvalDropdown() {
   const sel = document.getElementById('evalCourseSelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="">— Select Live Course —</option>';
+  sel.innerHTML = '<option value="">— Select Course to Evaluate —</option>';
+
+  // Load eval-index to mark which courses already have evals
+  let evalIndex = {};
+  if (repoFolderHandle) {
+    try {
+      const fh = await repoFolderHandle.getFileHandle('eval-index.json', { create: false });
+      const file = await fh.getFile();
+      evalIndex = JSON.parse(await file.text());
+    } catch(e) { /* no index yet */ }
+  }
+
+  // Show all live courses, marking eval status
+  const needsEval = [];
+  const hasEval = [];
+
   for (const cid of LIVE_COURSES) {
     const course = COURSES.find(c => c.id === cid);
     if (!course) continue;
-    const opt = document.createElement('option');
-    opt.value = cid;
-    opt.textContent = course.name + ' (' + course.modules.length + ' modules)';
-    sel.appendChild(opt);
+    const evalInfo = evalIndex[cid];
+    if (evalInfo) {
+      hasEval.push({ cid, course, evalInfo });
+    } else {
+      needsEval.push({ cid, course });
+    }
+  }
+
+  // Show courses needing eval first
+  if (needsEval.length > 0) {
+    const grp1 = document.createElement('optgroup');
+    grp1.label = 'Needs Evaluation (' + needsEval.length + ')';
+    for (const { cid, course } of needsEval) {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      opt.textContent = course.name + ' (' + course.modules.length + ' modules)';
+      grp1.appendChild(opt);
+    }
+    sel.appendChild(grp1);
+  }
+
+  // Then courses that already have evals (for re-evaluation)
+  if (hasEval.length > 0) {
+    const grp2 = document.createElement('optgroup');
+    grp2.label = 'Already Evaluated (' + hasEval.length + ')';
+    for (const { cid, course, evalInfo } of hasEval) {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      const score = evalInfo.panelAverage ? evalInfo.panelAverage + '/100' : '—';
+      opt.textContent = course.name + ' — ' + score + ' (' + course.modules.length + ' modules)';
+      grp2.appendChild(opt);
+    }
+    sel.appendChild(grp2);
+  }
+
+  // Update the status line with summary
+  const statusEl = document.getElementById('evalExistingStatus');
+  if (statusEl) {
+    statusEl.textContent = needsEval.length + ' courses need evaluation, ' + hasEval.length + ' already done.';
+    statusEl.style.color = needsEval.length > 0 ? 'rgba(255,255,255,0.5)' : '#5dd6a8';
   }
 }
 
@@ -2177,6 +2277,8 @@ async function evalExistingCourse() {
       const avg = report.summary?.panelAverage || '—';
       status.textContent = 'Done — ' + course.name + ': ' + avg + '/100. Report saved.';
       status.style.color = '#5dd6a8';
+      // Refresh dropdown to update eval status
+      await populateEvalDropdown();
     } else {
       status.textContent = 'Evaluation completed but no report generated.';
       status.style.color = '#f0c040';

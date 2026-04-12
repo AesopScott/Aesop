@@ -5,10 +5,14 @@ build_registry.py — Generate course-registry.json from courses.html
 courses.html is the single source of truth for all course data.
 This script parses it and produces a clean registry that the electives hub consumes.
 
+The registry includes lesson names extracted from the actual module HTML files on disk
+for live courses.
+
 Usage:
     python .github/scripts/build_registry.py
 
 Reads:  ai-academy/courses.html
+        ai-academy/modules/<course_folder>/*.html
 Writes: ai-academy/modules/course-registry.json
 """
 
@@ -21,6 +25,7 @@ from html.parser import HTMLParser
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 COURSES_HTML = os.path.join(REPO_ROOT, "ai-academy", "courses.html")
 REGISTRY_OUT = os.path.join(REPO_ROOT, "ai-academy", "modules", "course-registry.json")
+MODULES_DIR = os.path.join(REPO_ROOT, "ai-academy", "modules")
 
 # ── Accent colors assigned by category ──
 # The hub needs accent/accentRgb for styling. courses.html doesn't carry these,
@@ -193,25 +198,38 @@ def build_registry(courses):
         accent, accent_rgb = CATEGORY_ACCENTS.get(c["category"], DEFAULT_ACCENT)
 
         # Build URL — for live courses we know the folder; for others, derive from course_id
+        folder = None
+        url = None
         if c["course_id"]:
             # Live courses: folder is on disk, derive from actual modules
             folder = _resolve_folder(c["course_id"])
             url = f"/ai-academy/modules/{folder}/"
-        else:
-            # Not yet active — no URL
-            url = None
 
-        # Build module list with IDs
-        # The hub needs module IDs like "gov-m1". We use a short prefix from the panel_id.
-        prefix = c["panel_id"].replace("-", "")[:3]
+        # Build module list with IDs and extracted lessons
+        # For live courses, use the prefix from _MODULE_ID_PREFIXES
+        # For coming-soon courses, use panel_id-based prefix (doesn't matter much)
+        if c["course_id"] and c["course_id"] in _MODULE_ID_PREFIXES:
+            prefix = _MODULE_ID_PREFIXES[c["course_id"]]
+        else:
+            # Fallback: use first 3 chars of panel_id
+            prefix = c["panel_id"].replace("-", "")[:3]
+
         modules = []
         for m in c["modules"]:
             mod_id = f"{prefix}-m{m['num']}"
+
+            # Extract lessons from HTML if this is a live course
+            lessons = []
+            if c["is_live"] and folder:
+                module_filename = f"{folder}-m{m['num']}.html"
+                module_path = os.path.join(MODULES_DIR, folder, module_filename)
+                lessons = _extract_lessons_from_module_html(module_path)
+
             modules.append({
                 "id": mod_id,
                 "title": m["title"],
                 "subtitle": m.get("subtitle", ""),
-                "lessons": []  # Lesson titles aren't in courses.html — populated by generator
+                "lessons": lessons
             })
 
         entry = {
@@ -238,6 +256,23 @@ def build_registry(courses):
     return registry
 
 
+# Map of course IDs to their module ID prefixes for live courses
+_MODULE_ID_PREFIXES = {
+    "governance": "gov",
+    "society": "soc",
+    "ethics": "eth",
+    "building": "bld",
+    "careers": "car",
+    "ai-in-healthcare": "hlth",
+    "ai-and-education": "edu",
+    "ai-leadership": "lead",
+    "building-ai-agents-i-use-cases": "ba1",
+    "building-ai-agents-ii-skills": "ba2",
+    "building-ai-agents-iii-tools": "ba3",
+    "building-ai-agents-iv-openclaw": "ba4",
+    "building-ai-agents-v-optimization": "ba5",
+}
+
 # Map of course IDs whose folder name doesn't match the ID
 _FOLDER_OVERRIDES = {
     "governance": "ai-governance",
@@ -253,6 +288,61 @@ def _resolve_folder(course_id):
     if course_id in _FOLDER_OVERRIDES:
         return _FOLDER_OVERRIDES[course_id]
     return course_id
+
+
+def _extract_lessons_from_module_html(module_path):
+    """
+    Extract lesson names from a module HTML file.
+
+    Handles two formats:
+    1. Standalone: <button class="sb-btn"><span class="sb-icon">EMOJI</span> Lesson Name</button>
+    2. Injection: <div class="page" id="p-lN">...<h1>Lesson Name</h1>...
+
+    Returns a list of lesson names in order (e.g., ["Lesson 1", "Lesson 2", ...])
+    """
+    try:
+        with open(module_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+    except Exception as e:
+        print(f"  Warning: Could not read {module_path}: {e}", file=sys.stderr)
+        return []
+
+    lessons = {}
+
+    # Try the standalone format first:
+    # <button class="sb-btn[^"]*" id="sbi-lN" ...><span class="sb-icon">...</span> LESSON_NAME</button>
+    # Match sb-btn but NOT sb-sub (which are Quiz/Lab buttons)
+    standalone_pattern = re.compile(
+        r'<button\s+class="sb-btn(?:\s|").*?\sid="[^-]*-l(\d+)".*?<span\s+class="sb-icon">[^<]*</span>\s*([^<]+)</button>',
+        re.DOTALL
+    )
+    for m in standalone_pattern.finditer(html):
+        lesson_num = int(m.group(1))
+        lesson_name = m.group(2).strip()
+        lessons[lesson_num] = lesson_name
+
+    # If standalone found lessons, return them
+    if lessons:
+        sorted_lessons = [lessons[i] for i in sorted(lessons.keys())]
+        return sorted_lessons
+
+    # Try the injection format:
+    # <div class="page[^"]*" id="p-lN">...<h1>LESSON_TITLE</h1>...
+    injection_pattern = re.compile(
+        r'<div\s+class="page[^"]*"\s+id="p-l(\d+)"[^>]*>.*?<h1[^>]*>([^<]+)</h1>',
+        re.DOTALL
+    )
+    for m in injection_pattern.finditer(html):
+        lesson_num = int(m.group(1))
+        lesson_name = m.group(2).strip()
+        lessons[lesson_num] = lesson_name
+
+    if lessons:
+        sorted_lessons = [lessons[i] for i in sorted(lessons.keys())]
+        return sorted_lessons
+
+    # If no lessons found, return empty list
+    return []
 
 
 def main():

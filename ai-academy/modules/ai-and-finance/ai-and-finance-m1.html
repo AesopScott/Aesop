@@ -653,4 +653,116 @@ const MODULE_ID = 'fin-m1';
         <div class="quiz-opts">
           <button class="quiz-opt" onclick="answer(this, true, 'mt-q1')">Under 100 microseconds</button>
           <button class="quiz-opt" onclick="answer(this, false, 'mt-q1')">Under 1 millisecond</button>
-           
+<script>
+var COURSE_ID='cp10';
+var MODULE_ID='cp1-m1';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l1-quiz':'l1','p-l1-lab':'l1','p-l2':'l2','p-l2-quiz':'l2','p-l2-lab':'l2','p-l3':'l3','p-l3-quiz':'l3','p-l3-lab':'l3','p-l4':'l4','p-l4-quiz':'l4','p-l4-lab':'l4'};
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+var LAB_SYSTEM_PROMPTS={"l1": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l2": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l3": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l4": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  var sbBtn=document.getElementById('sbi-'+id.split('-').slice(1).join('-'));
+  if(sbBtn) {
+    document.querySelectorAll('.sb-btn').forEach(function(b){b.classList.remove('active');});
+    sbBtn.classList.add('active');
+  }
+  window.scrollTo(0,0);
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  if(!box) return;
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result);
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(!box) box=document.getElementById(qNum);
+  if(!box||box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt,.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  var scoreEl=document.getElementById('mt-score');
+  if(scoreEl) scoreEl.textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    var resultEl=document.getElementById('mt-result');
+    if(resultEl) resultEl.style.display='block';
+    var scoreResEl=document.getElementById('mt-result-score');
+    if(scoreResEl) scoreResEl.textContent=pct+'%';
+    var msgEl=document.getElementById('mt-result-msg');
+    if(msgEl) msgEl.textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML=''}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  chatSetLoading(labId,true);
+  try{
+    var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:chatHistories[labId],system_prompt:LAB_SYSTEM_PROMPTS[labId]||'',max_tokens:1024})});
+    if(!res.ok) throw new Error('Server error '+res.status);
+    var data=await res.json();
+    var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+  }catch(err){
+    chatAppend(labId,'error','⚠ '+(err.message||'Connection error.'));
+    chatHistories[labId].pop();
+  }
+  chatSetLoading(labId,false);
+}
+
+goPage('p-l1');
+</script>
+</body>
+</html>

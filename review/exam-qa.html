@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AESOP Exam QA Dashboard — v1.0.3</title>
+<title>AESOP Exam QA Dashboard — v1.1.0</title>
 <link rel="stylesheet" href="/academy-theme.css">
 <style>
 /* ============================================================
@@ -102,6 +102,41 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', 'Segoe
   margin-top: 0.8rem;
 }
 .sb-section-label:first-child { margin-top: 0; }
+
+/* Course picker */
+.course-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0 0.5rem 1rem 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.course-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-size: 0.84rem;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-weight: 500;
+}
+.course-btn:hover { background: var(--bg3); border-color: var(--border); }
+.course-btn.active { background: color-mix(in srgb, var(--navy) 8%, white); border-color: var(--navy); font-weight: 600; }
+.course-icon { font-size: 1.1rem; min-width: 28px; }
+.course-live-badge { font-size: 0.6rem; color: var(--green); margin-left: auto; font-weight: 700; }
+
+#tier-filters-section {
+  display: flex;
+  flex-direction: column;
+}
 
 .tier-btn {
   display: flex;
@@ -451,27 +486,38 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', 'Segoe
 
   <!-- SIDEBAR -->
   <aside class="qa-sidebar" id="sidebar">
-    <div class="sb-section-label">Filter by Tier</div>
-    <button class="tier-btn active" data-tier="all" onclick="setFilter('tier','all',this)">
-      <div class="tier-pip" style="background:#718096"></div>
-      All Tiers
-      <span class="tier-count" id="cnt-all">600</span>
-    </button>
-    <button class="tier-btn" data-tier="1" onclick="setFilter('tier','1',this)">
-      <div class="tier-pip" style="background:var(--intro)"></div>
-      ⭐ Intro Course
-      <span class="tier-count" id="cnt-1">150</span>
-    </button>
-    <button class="tier-btn" data-tier="2" onclick="setFilter('tier','2',this)">
-      <div class="tier-pip" style="background:var(--basic)"></div>
-      🔬 Basic Course
-      <span class="tier-count" id="cnt-2">200</span>
-    </button>
-    <button class="tier-btn" data-tier="3" onclick="setFilter('tier','3',this)">
-      <div class="tier-pip" style="background:var(--adv)"></div>
-      🎯 Advanced Course
-      <span class="tier-count" id="cnt-3">250</span>
-    </button>
+    <div class="sb-section-label">Course</div>
+    <div class="course-picker" id="course-picker">
+      <button class="course-btn active" data-course="foundations" onclick="switchCourse('foundations')">
+        <span class="course-icon">📚</span>
+        Foundations
+        <span class="course-live-badge">● Live</span>
+      </button>
+    </div>
+
+    <div class="sb-section-label" id="tier-filters-label">Filter by Tier</div>
+    <div id="tier-filters-section">
+      <button class="tier-btn active" data-tier="all" onclick="setFilter('tier','all',this)">
+        <div class="tier-pip" style="background:#718096"></div>
+        All Tiers
+        <span class="tier-count" id="cnt-all">600</span>
+      </button>
+      <button class="tier-btn" data-tier="1" onclick="setFilter('tier','1',this)">
+        <div class="tier-pip" style="background:var(--intro)"></div>
+        ⭐ Intro Course
+        <span class="tier-count" id="cnt-1">150</span>
+      </button>
+      <button class="tier-btn" data-tier="2" onclick="setFilter('tier','2',this)">
+        <div class="tier-pip" style="background:var(--basic)"></div>
+        🔬 Basic Course
+        <span class="tier-count" id="cnt-2">200</span>
+      </button>
+      <button class="tier-btn" data-tier="3" onclick="setFilter('tier','3',this)">
+        <div class="tier-pip" style="background:var(--adv)"></div>
+        🎯 Advanced Course
+        <span class="tier-count" id="cnt-3">250</span>
+      </button>
+    </div>
 
     <div class="sb-section-label" style="margin-top:1.2rem">Filter by Module</div>
     <div id="mod-filters"><!-- rendered by JS --></div>
@@ -618,6 +664,11 @@ const MOD_TITLES  = {
   M9:'AI in Society', M10:'Careers & Building'
 };
 
+let currentSource = 'foundations'; // 'foundations' or course ID like 'governance'
+let registryCourses = []; // [{id, title, icon, status, moduleNames}]
+let courseBanksCache = {}; // courseId → parsed bank array
+let dynamicModTitles = {}; // populated from registry when course is selected
+
 let allQuestions  = [];   // [{tier, bankIndex, module, text, options, correct}]
 let edits         = {};   // key: `${tier}_${bankIndex}` → {text,options,correct,status,editedAt}
 let filters       = { tier:'all', module:'all', status:'all', search:'' };
@@ -705,6 +756,137 @@ function buildQuestionList(banks) {
   applyFilters();
 }
 
+// ── LOAD REGISTRY & COURSE SWITCHING ─────────────────────────
+async function loadRegistry() {
+  try {
+    const resp = await fetch('/ai-academy/modules/course-registry.json');
+    if (!resp.ok) throw new Error('Registry fetch failed: ' + resp.status);
+    const registry = await resp.json();
+
+    // Registry is an object keyed by course ID — convert to array
+    registryCourses = Object.values(registry).filter(c => c.status === 'live');
+
+    // Render course picker buttons
+    renderCoursePicker();
+  } catch (e) {
+    console.warn('Could not load course registry:', e);
+  }
+}
+
+function renderCoursePicker() {
+  const picker = document.getElementById('course-picker');
+  if (!picker) return;
+
+  // Keep foundations button, add course buttons
+  let html = `<button class="course-btn active" data-course="foundations" onclick="switchCourse('foundations')">
+    <span class="course-icon">📚</span>
+    Foundations
+    <span class="course-live-badge">● Live</span>
+  </button>`;
+
+  registryCourses.forEach(course => {
+    html += `<button class="course-btn" data-course="${course.id}" onclick="switchCourse('${course.id}')">
+      <span class="course-icon">${course.icon || '📖'}</span>
+      ${course.title}
+      <span class="course-live-badge">● Live</span>
+    </button>`;
+  });
+
+  picker.innerHTML = html;
+}
+
+function switchCourse(source) {
+  currentSource = source;
+  filters.tier = 'all';
+  filters.module = 'all';
+  currentPage = 1;
+  correctMap = {};
+
+  // Update active state on course picker
+  document.querySelectorAll('[data-course]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-course="${source}"]`)?.classList.add('active');
+
+  // Show/hide tier filters section
+  const tierSection = document.getElementById('tier-filters-section');
+  const tierLabel = document.getElementById('tier-filters-label');
+  if (source === 'foundations') {
+    if (tierSection) tierSection.style.display = 'flex';
+    if (tierLabel) tierLabel.style.display = 'block';
+    loadBanks();
+  } else {
+    if (tierSection) tierSection.style.display = 'none';
+    if (tierLabel) tierLabel.style.display = 'none';
+    loadCourseBanks(source);
+  }
+}
+
+async function loadCourseBanks(courseId) {
+  if (courseBanksCache[courseId]) {
+    buildCourseBankList(courseBanksCache[courseId], courseId);
+    return;
+  }
+
+  showToast('⏳ Loading ' + courseId + ' questions…', 'info', 4000);
+  try {
+    const resp = await fetch('/ai-academy/modules/electives-hub.html');
+    if (!resp.ok) throw new Error('Electives load failed: ' + resp.status);
+    const html = await resp.text();
+
+    // Extract EXAM_BANKS object from HTML
+    const banksStart = html.indexOf('const EXAM_BANKS = {');
+    const engineMarker = html.indexOf('// EXAM ENGINE');
+    if (banksStart < 0 || engineMarker < 0) throw new Error('EXAM_BANKS markers not found in electives-hub.html');
+
+    const closeIdx = html.lastIndexOf('};', engineMarker);
+    const banksInner = html.slice(banksStart + 'const EXAM_BANKS = '.length, closeIdx + 1);
+    let banks;
+    try { banks = new Function('return ' + banksInner.trim())(); }
+    catch(e) { throw new Error('EXAM_BANKS parse failed: ' + e.message); }
+
+    courseBanksCache[courseId] = banks;
+    buildCourseBankList(banks, courseId);
+    showToast('✅ Loaded course questions', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('⚠️ Could not load ' + courseId + ' questions', 'error', 5000);
+    document.getElementById('q-list').innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">⚠️</div>
+        <p>Could not load questions for this course.</p>
+      </div>`;
+  }
+}
+
+function buildCourseBankList(banks, courseId) {
+  allQuestions = [];
+  const course = registryCourses.find(c => c.id === courseId);
+  // Build module title map from registry's modules array (e.g. {id:'gov-m1', title:'Defining AI Governance'} → {'M1':'Defining AI Governance'})
+  dynamicModTitles = {};
+  if (course?.modules) {
+    course.modules.forEach((m, i) => {
+      dynamicModTitles['M' + (i + 1)] = m.title || '';
+    });
+  }
+
+  // Get questions from the course's bank
+  const courseBank = banks[courseId] || [];
+  courseBank.forEach((q, i) => {
+    // Normalize from electives format {mod, q, opts, correct, exp} to dashboard format
+    allQuestions.push({
+      tier: courseId,
+      bankIndex: i,
+      module: q.mod || 'M0',
+      text: q.q || '',
+      options: q.opts || [],
+      correct: q.correct !== undefined ? q.correct : 0
+    });
+  });
+
+  renderModFilters();
+  updateStats();
+  applyFilters();
+}
+
 // ── FIREBASE: LOAD EXISTING EDITS ────────────────────────────
 document.addEventListener('fbReady', async () => {
   if (!window._fb || !window._fbUser) return;
@@ -748,7 +930,9 @@ function onSearch(val) {
 
 function filteredQuestions() {
   return allQuestions.filter(q => {
-    if (filters.tier !== 'all' && q.tier !== parseInt(filters.tier)) return false;
+    if (currentSource === 'foundations') {
+      if (filters.tier !== 'all' && q.tier !== parseInt(filters.tier)) return false;
+    }
     if (filters.module !== 'all' && q.module !== filters.module) return false;
     const key = `${q.tier}_${q.bankIndex}`;
     if (filters.status === 'edited'   && !edits[key]) return false;
@@ -762,9 +946,15 @@ function applyFilters() {
   const filtered = filteredQuestions();
   document.getElementById('stat-showing').textContent = filtered.length;
 
-  const title = filters.tier === 'all'
-    ? 'All Questions'
-    : `${TIER_NAMES[filters.tier]} Course${filters.module !== 'all' ? ' · ' + filters.module : ''}`;
+  let title;
+  if (currentSource === 'foundations') {
+    title = filters.tier === 'all'
+      ? 'All Questions'
+      : `${TIER_NAMES[filters.tier]} Course${filters.module !== 'all' ? ' · ' + filters.module : ''}`;
+  } else {
+    const courseTitle = registryCourses.find(c => c.id === currentSource)?.title || currentSource;
+    title = courseTitle + (filters.module !== 'all' ? ' · ' + filters.module : '');
+  }
   document.getElementById('toolbar-title').textContent = title;
 
   renderPage(filtered, currentPage);
@@ -780,9 +970,15 @@ function renderModFilters() {
       All Modules <span class="mod-count">${allQuestions.length}</span>
     </button>
     ${mods.map(m => {
-      const cnt = allQuestions.filter(q => q.module === m && (filters.tier === 'all' || q.tier === parseInt(filters.tier))).length;
+      let cnt;
+      if (currentSource === 'foundations') {
+        cnt = allQuestions.filter(q => q.module === m && (filters.tier === 'all' || q.tier === parseInt(filters.tier))).length;
+      } else {
+        cnt = allQuestions.filter(q => q.module === m).length;
+      }
+      const modTitle = dynamicModTitles[m] || MOD_TITLES[m] || m;
       return `<button class="mod-btn" data-mod="${m}" onclick="setFilter('module','${m}',this)">
-        ${m}: ${MOD_TITLES[m] || m}
+        ${m}: ${modTitle}
         <span class="mod-count">${cnt}</span>
       </button>`;
     }).join('')}`;
@@ -810,11 +1006,23 @@ function renderPage(filtered, page) {
     const displayOptions = edit?.options || q.options;
     const displayCorrect = edit?.correct !== undefined ? edit.correct : q.correct;
 
+    // Determine module tag color/icon for course vs foundations mode
+    let moduleTagColor = 'var(--navy)';
+    let moduleTagIcon = '📖';
+    if (currentSource === 'foundations') {
+      moduleTagColor = TIER_COLORS[q.tier];
+      moduleTagIcon = q.tier === 1 ? '⭐' : q.tier === 2 ? '🔬' : '🎯';
+    } else {
+      const course = registryCourses.find(c => c.id === currentSource);
+      moduleTagColor = course?.accentColor || 'var(--teal)';
+      moduleTagIcon = course?.icon || '📖';
+    }
+
     return `
     <div class="q-card ${cardClass}" id="qcard-${key}">
       <div class="q-card-header" onclick="toggleCard('${key}')">
         <span class="q-idx">#${q.bankIndex + 1}</span>
-        <span class="q-module-tag" style="background:${TIER_COLORS[q.tier]}">${q.tier === 1 ? '⭐' : q.tier === 2 ? '🔬' : '🎯'} ${q.module}</span>
+        <span class="q-module-tag" style="background:${moduleTagColor}">${moduleTagIcon} ${q.module}</span>
         <span class="q-preview">${escHtml(displayText)}</span>
         ${isApproved ? '<span class="q-status-badge approved">✅ Approved</span>' : ''}
         ${hasEdit && !isApproved ? '<span class="q-status-badge pending">⚙️ Edited</span>' : ''}
@@ -895,8 +1103,14 @@ function onOptInput(key, idx) {
 }
 
 function getQ(key) {
-  const [tier, bankIndex] = key.split('_').map(Number);
-  return allQuestions.find(q => q.tier === tier && q.bankIndex === bankIndex);
+  const parts = key.split('_');
+  const bankIndex = parseInt(parts[parts.length - 1]);
+  if (currentSource === 'foundations') {
+    const tier = parseInt(parts[0]);
+    return allQuestions.find(q => q.tier === tier && q.bankIndex === bankIndex);
+  } else {
+    return allQuestions.find(q => q.bankIndex === bankIndex);
+  }
 }
 
 function readCardValues(key) {
@@ -1119,6 +1333,7 @@ function escHtml(s) {
 }
 
 // ── INIT ─────────────────────────────────────────────────────
+loadRegistry();
 loadBanks();
 </script>
 </body>

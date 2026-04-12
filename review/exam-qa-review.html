@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- v1.0.4 -->
+<!-- v1.1.0 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AESOP Exam QA Review — v1.0.4</title>
+<title>AESOP Exam QA Review — v1.1.0</title>
 <link rel="stylesheet" href="/academy-theme.css">
 <style>
 :root {
@@ -57,6 +57,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans','Segoe UI',san
 .start-new-btn{width:100%;padding:.75rem;font-size:.9rem}
 .info-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;margin-bottom:1rem;font-size:.82rem;color:var(--text);line-height:1.6}
 .info-box strong{color:var(--navy)}
+
+/* ── COURSE PICKER ── */
+.course-picker{margin-bottom:1.5rem}
+.course-grid{display:flex;flex-direction:column;gap:.5rem}
+.course-option{background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:.7rem 1rem;cursor:pointer;display:flex;align-items:center;gap:.6rem;font-size:.88rem;transition:all .15s}
+.course-option:hover{border-color:var(--teal)}
+.course-option.active{border-color:var(--teal);background:color-mix(in srgb, var(--teal) 8%, white)}
+.course-q-count{margin-left:auto;font-size:.72rem;color:var(--muted)}
+.course-live-dot{width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block}
 
 /* ── REVIEW LAYOUT ── */
 .review-layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 52px)}
@@ -180,7 +189,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans','Segoe UI',san
 <header class="qa-header">
   <a href="https://aesopacademy.org">AesopAcademy.org</a>
   <div class="qa-title">Exam QA Review</div>
-  <div class="qa-badge">ADMIN</div>
+  <div class="qa-badge">v1.1.0</div>
   <div class="qa-header-right">
     <span><span class="fb-dot" id="fb-dot"></span><span id="fb-label">Connecting…</span></span>
     <a href="/review/exam-qa.html" class="btn btn-ghost btn-sm">📋 QA Dashboard</a>
@@ -303,7 +312,7 @@ document.addEventListener('keydown', e => {
 
 
 // ── QUESTION BANK LOADER ─────────────────────────────────────────────────────
-// Fetches the Advanced bank (250 Qs) from the live nav page
+// Supports foundations Advanced bank AND live courses from course-registry.json
 
 let QUESTIONS = [];   // [{bankIndex, module, text, options, correct}]
 let reviewedSet = {}; // bankIndex → {status:'approved'|'flagged', sessionName}
@@ -314,16 +323,35 @@ let unreviewed  = []; // subset of QUESTIONS not yet approved
 let localEdits  = {}; // bankIndex → {text, options, correct, flagNote}
 let correctMap  = {}; // bankIndex → current correct index (during editing)
 
+let currentSource = 'foundations'; // 'foundations' or course ID like 'governance'
+let registryCourses = []; // [{id, title, icon, status, modCount}]
+// courseBanksCache removed — allElectivesBanks handles caching
+
 const MOD_COLORS = {
   M1:'#2ba898', M2:'#9a5fb0', M3:'#c0384f', M4:'#e07b39',
   M5:'#2563eb', M6:'#7c3aed', M7:'#0891b2', M8:'#be185d'
 };
 
-// ── FETCH BANKS ───────────────────────────────────────────────────────────────
-async function loadBanks() {
-  showRoot('<div style="text-align:center;padding:3rem;color:var(--muted)">⏳ Loading question bank…</div>');
+// ── LOAD REGISTRY ─────────────────────────────────────────────────────────────
+// Fetch live courses from course-registry.json
+async function loadRegistry() {
   try {
-    // Use XHR (more reliable than fetch for same-origin HTML pages on this server)
+    const resp = await fetch('/ai-academy/modules/course-registry.json');
+    if (!resp.ok) throw new Error('Registry fetch failed: ' + resp.status);
+    const registry = await resp.json();
+    // Registry is an object keyed by course ID — convert to array
+    registryCourses = Object.values(registry).filter(c => c.status === 'live');
+    return registryCourses;
+  } catch(e) {
+    console.warn('Registry load failed', e);
+    return [];
+  }
+}
+
+// ── LOAD FOUNDATIONS BANKS ─────────────────────────────────────────────────────
+// Original loadBanks() logic for Foundations Advanced tier
+async function loadFoundationsBanks() {
+  try {
     const html = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET', '/ai-academy/');
@@ -331,24 +359,90 @@ async function loadBanks() {
       xhr.onerror = () => reject(new Error('Nav XHR network error'));
       xhr.send();
     });
-    // Extract EXAM_BANKS
-    // Extract EXAM_BANKS block using the actual end marker in the live nav
     const banksStart = html.indexOf('const EXAM_BANKS =');
     const banksEnd   = html.indexOf('] // end advanced bank');
     if (banksStart < 0 || banksEnd < 0) throw new Error('EXAM_BANKS markers not found');
-    // Get the full object: from { to the closing }; after the advanced bank
     const closeIdx = html.indexOf('};', banksEnd);
     const banksInner = html.slice(banksStart + 'const EXAM_BANKS ='.length, closeIdx + 1);
     let banks;
     try { banks = new Function('return ' + banksInner.trim())(); }
     catch(e) { throw new Error('EXAM_BANKS parse failed: ' + e.message); }
-    // Use tier 3 (Advanced) as master set
     QUESTIONS = (banks[3] || []).map((q, i) => ({ bankIndex: i, ...q }));
-    toast('✅ Loaded ' + QUESTIONS.length + ' questions', 'ok');
+    toast('✅ Loaded ' + QUESTIONS.length + ' Foundations questions', 'ok');
     await loadReviewedState();
   } catch(e) {
     console.error(e);
-    showRoot('<div style="text-align:center;padding:3rem"><p style="color:var(--red);margin-bottom:1rem">⚠️ Could not load question bank from /ai-academy/</p><p style="color:var(--muted);font-size:.85rem">Open console and run: <code>window.loadManual(banks)</code></p></div>');
+    showRoot('<div style="text-align:center;padding:3rem"><p style="color:var(--red);margin-bottom:1rem">⚠️ Could not load question bank</p><p style="color:var(--muted);font-size:.85rem">Open console and run: <code>window.loadManual(banks)</code></p></div>');
+  }
+}
+
+// ── LOAD ALL ELECTIVES BANKS ──────────────────────────────────────────────────
+// Pre-fetch and cache all course banks from electives-hub.html
+let allElectivesBanks = null; // full parsed EXAM_BANKS object
+async function loadElectivesBanks() {
+  if (allElectivesBanks) return allElectivesBanks;
+  try {
+    const html = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', '/ai-academy/modules/electives-hub.html');
+      xhr.onload  = () => xhr.status === 200 ? resolve(xhr.responseText) : reject(new Error('Electives load failed: ' + xhr.status));
+      xhr.onerror = () => reject(new Error('Electives XHR network error'));
+      xhr.send();
+    });
+    const banksStart = html.indexOf('const EXAM_BANKS =');
+    const engineMarker = html.indexOf('// EXAM ENGINE');
+    if (banksStart < 0 || engineMarker < 0) throw new Error('EXAM_BANKS markers not found in electives-hub.html');
+    const closeIdx = html.lastIndexOf('};', engineMarker);
+    const banksInner = html.slice(banksStart + 'const EXAM_BANKS ='.length, closeIdx + 1);
+    allElectivesBanks = new Function('return ' + banksInner.trim())();
+    return allElectivesBanks;
+  } catch(e) {
+    console.error('Failed to load electives banks:', e);
+    return {};
+  }
+}
+
+// Get question count for a specific course (used by start screen)
+function getCourseQCount(courseId) {
+  if (!allElectivesBanks) return '?';
+  return (allElectivesBanks[courseId] || []).length;
+}
+
+// ── LOAD COURSE BANKS ──────────────────────────────────────────────────────────
+// Load EXAM_BANKS for a specific course
+async function loadCourseBanks(courseId) {
+  try {
+    const banks = await loadElectivesBanks();
+    const courseBank = banks[courseId] || [];
+
+    // Normalize questions from {mod, q, opts, correct, exp} to {bankIndex, module, text, options, correct}
+    QUESTIONS = courseBank.map((q, i) => ({
+      bankIndex: i,
+      module: q.mod || 'M1',
+      text: q.q || '',
+      options: q.opts || [],
+      correct: q.correct !== undefined ? q.correct : 0
+    }));
+
+    const course = registryCourses.find(c => c.id === courseId);
+    const courseName = course ? course.title : courseId;
+    toast('✅ Loaded ' + QUESTIONS.length + ' ' + courseName + ' questions', 'ok');
+    await loadReviewedState();
+  } catch(e) {
+    console.error(e);
+    toast('⚠️ Failed to load course banks: ' + e.message, 'warn');
+    renderStartScreen();
+  }
+}
+
+// ── FETCH BANKS ───────────────────────────────────────────────────────────────
+// Dispatcher: loads based on currentSource
+async function loadBanks() {
+  showRoot('<div style="text-align:center;padding:3rem;color:var(--muted)">⏳ Loading question bank…</div>');
+  if (currentSource === 'foundations') {
+    await loadFoundationsBanks();
+  } else {
+    await loadCourseBanks(currentSource);
   }
 }
 
@@ -362,22 +456,31 @@ window.loadManual = function(banks) {
 async function loadReviewedState() {
   if (!window._fb) { renderStartScreen(); return; }
   try {
-    // Load all approved/flagged question records
+    // Load all approved/flagged question records for current source
     const snap = await window._fb.getDocs(
       window._fb.collection(window._fb.db, 'examQAReviews')
     );
     reviewedSet = {};
     snap.forEach(d => {
       const data = d.data();
-      reviewedSet[data.bankIndex] = data;
+      // Only include records matching current source
+      if (data.source === currentSource || (currentSource === 'foundations' && !data.source)) {
+        reviewedSet[data.bankIndex] = data;
+      }
     });
 
-    // Load session list
+    // Load session list (only for current source)
     const sessSnap = await window._fb.getDocs(
       window._fb.collection(window._fb.db, 'examQASessions')
     );
     sessions = [];
-    sessSnap.forEach(d => sessions.push(d.data()));
+    sessSnap.forEach(d => {
+      const data = d.data();
+      // Filter to sessions from current source
+      if (data.source === currentSource || (currentSource === 'foundations' && !data.source)) {
+        sessions.push(data);
+      }
+    });
     sessions.sort((a, b) => a.num - b.num);
 
     renderStartScreen();
@@ -401,13 +504,15 @@ async function startSession(sessionInfo) {
   localEdits = {};
   correctMap = {};
 
-  // Create session record in Firebase
+  // Create session record in Firebase (source-aware naming)
   if (window._fb && window._fbUser) {
     try {
-      const ref = window._fb.doc(window._fb.db, 'examQASessions', 'session_' + sessionInfo.num);
+      const sessionId = 'session_' + currentSource + '_' + sessionInfo.num;
+      const ref = window._fb.doc(window._fb.db, 'examQASessions', sessionId);
       await window._fb.setDoc(ref, {
         num:       sessionInfo.num,
         name:      sessionInfo.name,
+        source:    currentSource,
         startedAt: window._fb.serverTimestamp(),
         startedBy: window._fbUser.email || 'unknown',
         totalQs:   QUESTIONS.length,
@@ -432,6 +537,19 @@ function buildUnreviewedList() {
   });
 }
 
+// ── COURSE SELECTOR ───────────────────────────────────────────────────────────
+function selectCourse(courseId) {
+  currentSource = courseId;
+  reviewedSet = {}; // Clear reviewed state when switching courses
+  sessions = []; // Clear sessions
+  currentSession = null;
+  currentIdx = 0;
+  unreviewed = [];
+  localEdits = {};
+  correctMap = {};
+  loadBanks();
+}
+
 // ── START SCREEN ──────────────────────────────────────────────────────────────
 // Wrapper to avoid JSON in onclick attributes
 function startNextSession() {
@@ -445,6 +563,30 @@ function renderStartScreen() {
   const remaining     = QUESTIONS.length - approvedCount;
   const nextSess      = nextSessionName();
 
+  // Build course picker HTML
+  const sourceName = currentSource === 'foundations' ? 'Foundations' : registryCourses.find(c => c.id === currentSource)?.title || currentSource;
+  const sourceQCount = QUESTIONS.length;
+
+  let coursePickerHtml = '<div class="course-picker">'
+    + '<div class="sb-section-label">Select Course to Review</div>'
+    + '<div class="course-grid">'
+    + '<div class="course-option' + (currentSource === 'foundations' ? ' active' : '') + '" onclick="selectCourse(\'foundations\')">'
+    + '📚 Foundations — Advanced'
+    + '<span class="course-q-count">250 Qs</span>'
+    + '</div>';
+
+  // Add live courses
+  registryCourses.forEach(course => {
+    const qCount = getCourseQCount(course.id);
+    const icon = course.icon || '📖';
+    coursePickerHtml += '<div class="course-option' + (currentSource === course.id ? ' active' : '') + '" onclick="selectCourse(\'' + course.id + '\')">'
+      + icon + ' ' + course.title
+      + '<span class="course-q-count">' + qCount + ' Qs</span>'
+      + '</div>';
+  });
+
+  coursePickerHtml += '</div></div>';
+
   const sessionItems = sessions.map(s => {
     const isLatest = s.num === (sessions.length ? sessions[sessions.length-1].num : 0);
     return '<div class="session-item' + (isLatest ? ' active' : '') + '" onclick="resumeSession(' + s.num + ')">'
@@ -453,10 +595,13 @@ function renderStartScreen() {
       + '</div>';
   }).join('') || '<p style="color:var(--muted);font-size:.85rem;padding:.5rem 0">No sessions yet.</p>';
 
+  const descriptorText = 'Sequential review of all ' + sourceQCount + ' ' + sourceName + ' questions. Approved questions won\'t appear in future sessions. Flagged questions reappear until approved.';
+
   showRoot(
     '<div class="start-screen">'
     + '<h1>QA Review</h1>'
-    + '<p>Sequential review of all 250 Advanced questions. Approved questions won\'t appear in future sessions. Flagged questions reappear until approved.</p>'
+    + '<p>' + descriptorText + '</p>'
+    + coursePickerHtml
     + '<div class="info-box">'
     + '<strong>' + approvedCount + '/' + QUESTIONS.length + '</strong> approved &nbsp;·&nbsp; '
     + '<strong>' + flaggedCount + '</strong> flagged (pending edit) &nbsp;·&nbsp; '
@@ -492,9 +637,9 @@ function updateSidebar() {
   const doneThisSession = unreviewed.length > 0 ? currentIdx : unreviewed.length;
   const pct = QUESTIONS.length ? Math.round((approvedCount / QUESTIONS.length) * 100) : 0;
 
-  // Per-module breakdown
-  const mods = ['M1','M2','M3','M4','M5','M6','M7','M8'];
-  const modRows = mods.map(m => {
+  // Per-module breakdown — dynamically get unique modules from questions
+  const uniqueMods = [...new Set(QUESTIONS.map(q => q.module || 'M1'))].sort();
+  const modRows = uniqueMods.map(m => {
     const total = QUESTIONS.filter(q => q.module === m).length;
     const done  = QUESTIONS.filter(q => q.module === m && reviewedSet[q.bankIndex]?.status === 'approved').length;
     const mpct  = total ? Math.round((done/total)*100) : 0;
@@ -654,7 +799,7 @@ async function approveQuestion(bankIndex) {
   // Build the record
   const record = {
     bankIndex,
-    tier:     3,
+    source:   currentSource,
     module:   q.module,
     status:   'approved',
     session:  currentSession.name,
@@ -670,21 +815,23 @@ async function approveQuestion(bankIndex) {
     originalCorrect: q.correct,
   };
 
-  // Firebase write
+  // Firebase write (source-aware naming)
   if (window._fb) {
     try {
       const dot = document.getElementById('fb-dot');
       if (dot) dot.className = 'fb-dot saving';
+      const reviewDocId = currentSource + '_' + bankIndex;
       await window._fb.setDoc(
-        window._fb.doc(window._fb.db, 'examQAReviews', 'adv_' + bankIndex),
+        window._fb.doc(window._fb.db, 'examQAReviews', reviewDocId),
         record
       );
       // If it was also flagged for dashboard editing, push that too
       if (edit && edit.text !== q.text || (edit && JSON.stringify(edit.options) !== JSON.stringify(q.options)) || (edit && edit.correct !== q.correct)) {
+        const editDocId = currentSource + '_' + bankIndex;
         await window._fb.setDoc(
-          window._fb.doc(window._fb.db, 'examQAEdits', '3_' + bankIndex),
+          window._fb.doc(window._fb.db, 'examQAEdits', editDocId),
           {
-            tier: 3, bankIndex, module: q.module,
+            source: currentSource, bankIndex, module: q.module,
             text: edit.text, options: edit.options, correct: edit.correct,
             originalText: q.text, originalOptions: q.options, originalCorrect: q.correct,
             status: 'approved',
@@ -729,7 +876,7 @@ async function flagQuestion(bankIndex) {
   }
 
   const record = {
-    bankIndex, tier: 3, module: q.module,
+    bankIndex, source: currentSource, module: q.module,
     status:    'flagged',
     session:   currentSession.name,
     flagNote:  note,
@@ -744,11 +891,13 @@ async function flagQuestion(bankIndex) {
     try {
       const dot = document.getElementById('fb-dot');
       if (dot) dot.className = 'fb-dot saving';
+      const reviewDocId = currentSource + '_' + bankIndex;
+      const editDocId = currentSource + '_' + bankIndex;
       // Write to reviews (as flagged)
-      await window._fb.setDoc(window._fb.doc(window._fb.db, 'examQAReviews', 'adv_' + bankIndex), record);
+      await window._fb.setDoc(window._fb.doc(window._fb.db, 'examQAReviews', reviewDocId), record);
       // Write to edits queue for dashboard
-      await window._fb.setDoc(window._fb.doc(window._fb.db, 'examQAEdits', '3_' + bankIndex), {
-        tier: 3, bankIndex, module: q.module,
+      await window._fb.setDoc(window._fb.doc(window._fb.db, 'examQAEdits', editDocId), {
+        source: currentSource, bankIndex, module: q.module,
         text: edit.text, options: edit.options, correct: edit.correct,
         originalText: q.text, originalOptions: q.options, originalCorrect: q.correct,
         status: 'pending', flagNote: note,
@@ -789,13 +938,14 @@ function renderComplete() {
   const flaggedCount  = Object.values(reviewedSet).filter(r => r.status === 'flagged').length;
   const remaining     = QUESTIONS.length - approvedCount;
   const nextSess      = nextSessionName();
+  const sourceName = currentSource === 'foundations' ? 'Foundations Advanced' : registryCourses.find(c => c.id === currentSource)?.title || currentSource;
 
   showRoot(
     '<div class="complete-screen">'
     + '<div class="complete-icon">' + (remaining === 0 ? '🎉' : '✅') + '</div>'
     + '<div class="complete-title">' + (remaining === 0 ? 'All Questions Reviewed!' : currentSession.name + ' Complete') + '</div>'
     + '<div class="complete-sub">' + (remaining === 0
-        ? 'All 250 Advanced questions have been approved.'
+        ? 'All ' + QUESTIONS.length + ' ' + sourceName + ' questions have been approved.'
         : remaining + ' questions remaining to review.')
     + '</div>'
     + '<div class="complete-stats">'
@@ -836,9 +986,19 @@ function toast(msg, type='ok') {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-document.addEventListener('fbReady', loadBanks);
+// Load registry first, then load banks when Firebase is ready
+async function initApp() {
+  await loadRegistry();
+  // Pre-cache electives banks so question counts display on start screen
+  if (registryCourses.length > 0) {
+    await loadElectivesBanks();
+  }
+  loadBanks();
+}
+
+document.addEventListener('fbReady', initApp);
 // Fallback if Firebase loads slowly
-setTimeout(() => { if (!QUESTIONS.length) loadBanks(); }, 3000);
+setTimeout(() => { if (!QUESTIONS.length) initApp(); }, 3000);
 </script>
 </body>
 </html>

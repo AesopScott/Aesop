@@ -2013,7 +2013,7 @@ async function runPanelEvaluation(cid, courseName) {
       if (!fh) throw new Error('No matching file found');
       const file = await fh.getFile();
       moduleHtml = await file.text();
-      log('  Read: ' + (await fh).name);
+      log('  Read: ' + fh.name);
     } catch(e) {
       log('  SKIP: Could not read module ' + mn + ' in ' + folderName + '/ — ' + e.message);
       continue;
@@ -2025,7 +2025,7 @@ async function runPanelEvaluation(cid, courseName) {
     }
 
     const prompt = buildEvalPrompt(moduleHtml, modName, courseName);
-    const moduleResult = { module: modName, filename: filename, reviews: {} };
+    const moduleResult = { module: modName, reviews: {} };
 
     // Send to all reviewers in parallel
     const results = await Promise.allSettled(
@@ -2149,4 +2149,185 @@ async function runPanelEvaluation(cid, courseName) {
     try {
       const existingHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: false });
       const existingFile = await existingHandle.getFile();
-      evalIndex = JSON.parse(await existi
+      evalIndex = JSON.parse(await existingFile.text());
+    } catch(e) { /* no existing index — start fresh */ }
+
+    evalIndex[cid] = {
+      course: fullReport.course,
+      date: fullReport.date,
+      reviewers: fullReport.reviewers,
+      moduleCount: fullReport.modules.length,
+      panelAverage: fullReport.summary.panelAverage || null,
+      reportFile: saveFolderName + '/' + saveFolderName + '-eval-report.json'
+    };
+
+    const indexHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: true });
+    const indexWritable = await indexHandle.createWritable();
+    await indexWritable.write(JSON.stringify(evalIndex, null, 2));
+    await indexWritable.close();
+    log('Eval index updated.');
+  } catch(e) {
+    log('Could not update eval index: ' + e.message);
+  }
+
+  return fullReport;
+}
+
+// ── EVALUATE EXISTING COURSE ──────────────────────────────────────────────
+
+async function populateEvalDropdown() {
+  const sel = document.getElementById('evalCourseSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Select Course to Evaluate —</option>';
+
+  // Load eval-index to mark which courses already have evals
+  let evalIndex = {};
+  if (repoFolderHandle) {
+    try {
+      const fh = await repoFolderHandle.getFileHandle('eval-index.json', { create: false });
+      const file = await fh.getFile();
+      evalIndex = JSON.parse(await file.text());
+    } catch(e) { /* no index yet */ }
+  }
+
+  // Show all live courses, marking eval status
+  const needsEval = [];
+  const hasEval = [];
+
+  for (const cid of LIVE_COURSES) {
+    const course = COURSES.find(c => c.id === cid);
+    if (!course) continue;
+    const evalInfo = evalIndex[cid];
+    if (evalInfo) {
+      hasEval.push({ cid, course, evalInfo });
+    } else {
+      needsEval.push({ cid, course });
+    }
+  }
+
+  // Show courses needing eval first
+  if (needsEval.length > 0) {
+    const grp1 = document.createElement('optgroup');
+    grp1.label = 'Needs Evaluation (' + needsEval.length + ')';
+    for (const { cid, course } of needsEval) {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      opt.textContent = course.name + ' (' + course.modules.length + ' modules)';
+      grp1.appendChild(opt);
+    }
+    sel.appendChild(grp1);
+  }
+
+  // Then courses that already have evals (for re-evaluation)
+  if (hasEval.length > 0) {
+    const grp2 = document.createElement('optgroup');
+    grp2.label = 'Already Evaluated (' + hasEval.length + ')';
+    for (const { cid, course, evalInfo } of hasEval) {
+      const opt = document.createElement('option');
+      opt.value = cid;
+      const score = evalInfo.panelAverage ? evalInfo.panelAverage + '/100' : '—';
+      opt.textContent = course.name + ' — ' + score + ' (' + course.modules.length + ' modules)';
+      grp2.appendChild(opt);
+    }
+    sel.appendChild(grp2);
+  }
+
+  // Update the status line with summary
+  const statusEl = document.getElementById('evalExistingStatus');
+  if (statusEl) {
+    statusEl.textContent = needsEval.length + ' courses need evaluation, ' + hasEval.length + ' already done.';
+    statusEl.style.color = needsEval.length > 0 ? 'rgba(255,255,255,0.5)' : '#5dd6a8';
+  }
+}
+
+async function evalExistingCourse() {
+  const sel = document.getElementById('evalCourseSelect');
+  const status = document.getElementById('evalExistingStatus');
+  const cid = sel.value;
+
+  if (!cid) {
+    status.textContent = 'Select a course first.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  const course = COURSES.find(c => c.id === cid);
+  if (!course) {
+    status.textContent = 'Course not found in COURSES array.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  // Ensure repo folder is set
+  if (!repoFolderHandle) {
+    status.textContent = 'Setting repo folder...';
+    status.style.color = 'rgba(255,255,255,0.5)';
+    await setRepoFolder();
+    if (!repoFolderHandle) {
+      status.textContent = 'Repo folder required. Click Set Repo Folder first.';
+      status.style.color = '#f07070';
+      return;
+    }
+  }
+
+  // Check at least one reviewer key is entered
+  const claudeKey = document.getElementById('apiKey').value.trim();
+  if (!claudeKey) {
+    status.textContent = 'Enter at least the Anthropic API key above.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  // Verify we can actually read the course folder before starting
+  const folderName = getFolderName(cid);
+  try {
+    const testDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
+    let fileCount = 0;
+    for await (const [name, handle] of testDir.entries()) {
+      if (handle.kind === 'file' && name.endsWith('.html') && name.includes('-m')) fileCount++;
+    }
+    if (fileCount === 0) {
+      status.textContent = 'No module files found in ' + folderName + '/. Check your repo folder.';
+      status.style.color = '#f07070';
+      return;
+    }
+    status.textContent = 'Found ' + fileCount + ' modules in ' + folderName + '/ — starting evaluation...';
+    status.style.color = '#4a90d9';
+  } catch(e) {
+    status.textContent = 'Cannot open folder "' + folderName + '/" — is your repo folder set to ai-academy/modules? (' + e.message + ')';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  sel.disabled = true;
+
+  try {
+    const report = await runPanelEvaluation(cid, course.name);
+    if (report && report.modules.length > 0) {
+      const evaluated = report.modules.filter(m => Object.values(m.reviews).some(r => r.total)).length;
+      const avg = report.summary?.panelAverage || '—';
+      status.textContent = 'Done — ' + course.name + ': ' + avg + '/100 (' + evaluated + '/' + report.modules.length + ' modules scored). Report saved.';
+      status.style.color = '#5dd6a8';
+      await populateEvalDropdown();
+    } else if (report && report.modules.length === 0) {
+      status.textContent = 'All module reads failed. Check log — folder: ' + folderName + '/, prefix: ' + getFilePrefix(cid);
+      status.style.color = '#f07070';
+    } else {
+      status.textContent = 'No report generated. Check API keys and log output.';
+      status.style.color = '#f0c040';
+    }
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    status.style.color = '#f07070';
+  } finally {
+    sel.disabled = false;
+  }
+}
+
+// Populate eval dropdown on init
+window.addEventListener('DOMContentLoaded', populateEvalDropdown);
+
+init();
+</script>
+</body>
+</html>

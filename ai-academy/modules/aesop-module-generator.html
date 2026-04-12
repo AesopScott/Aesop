@@ -87,6 +87,10 @@ textarea{resize:vertical;min-height:80px;}
       <label>GitHub PAT — Required for course evaluation (reads module files from repo)</label>
       <input type="password" id="githubPat" placeholder="ghp_..." />
     </div>
+    <div class="form-group" style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">
+      <label>Obsidian REST API Key — Posts audit reports after activation</label>
+      <input type="password" id="obsidianKey" placeholder="paste from Obsidian Local REST API settings" />
+    </div>
   </div>
 
   <div class="card">
@@ -1560,6 +1564,11 @@ async function buildFullCourse() {
       document.getElementById('coursesUpdateStatus').style.color = '#5dd6a8';
     }
 
+    // Post-activation audit
+    if (repoFolderHandle) {
+      try { await runPostActivationAudit(cid); } catch(e) { log('Audit error: ' + e.message); }
+    }
+
     // Auto-trigger panel evaluation after activation
     log('');
     log('Starting automated panel evaluation...');
@@ -1755,6 +1764,11 @@ async function manualActivate() {
     document.getElementById('courseSelect').value = '';
     onCourseChange();
 
+    // Post-activation audit
+    if (repoFolderHandle) {
+      try { await runPostActivationAudit(cid); } catch(e) { log('Audit error: ' + e.message); }
+    }
+
     // Auto-trigger panel evaluation after manual activation
     const course = COURSES.find(c => c.id === cid);
     const courseName = course ? course.name : cid;
@@ -1844,6 +1858,263 @@ async function writeRegistryEntry(cid) {
   await writable.close();
 
   console.log('Registry updated for', cid);
+}
+
+// ── Post-Activation Audit ────────────────────────────────────────────
+// Runs every check we'd do manually, then POSTs a markdown report
+// to Obsidian at GEN MOD/Course Audit.md via the Local REST API.
+async function runPostActivationAudit(cid) {
+  const course = COURSES.find(c => c.id === cid);
+  if (!course) { log('[Audit] Course not found: ' + cid); return; }
+
+  log('');
+  log('── Post-Activation Audit ──');
+
+  const results = [];       // {check, pass, detail}
+  const fail = (ck, d) => { results.push({check:ck, pass:false, detail:d}); log('  ✗ ' + ck + ': ' + d); };
+  const pass = (ck, d) => { results.push({check:ck, pass:true,  detail:d}); log('  ✓ ' + ck); };
+
+  // ── 1. REGISTRY CHECKS ────────────────────────────────────────────
+  let registry = {};
+  try {
+    const rh = await repoFolderHandle.getFileHandle('course-registry.json');
+    registry = JSON.parse(await (await rh.getFile()).text());
+  } catch(e) {
+    fail('Registry readable', 'Could not read course-registry.json: ' + e.message);
+  }
+
+  const entry = registry[cid];
+  if (!entry) {
+    fail('Registry entry exists', 'No key "' + cid + '" in course-registry.json');
+  } else {
+    pass('Registry entry exists', cid);
+
+    // status
+    if (entry.status === 'live') pass('Status is live', entry.status);
+    else fail('Status is live', 'status = "' + entry.status + '"');
+
+    // url
+    if (entry.url && entry.url.startsWith('/ai-academy/modules/'))
+      pass('URL present', entry.url);
+    else fail('URL present', 'url = ' + JSON.stringify(entry.url));
+
+    // modCount
+    if (entry.modCount === course.modules.length)
+      pass('modCount matches', entry.modCount + ' modules');
+    else fail('modCount matches', 'registry ' + entry.modCount + ' vs course ' + course.modules.length);
+
+    // modules array
+    if (entry.modules && entry.modules.length === course.modules.length)
+      pass('Modules array populated', entry.modules.length + ' entries');
+    else fail('Modules array populated', 'Expected ' + course.modules.length + ', got ' + (entry.modules ? entry.modules.length : 0));
+
+    // lessons populated (not empty defaults)
+    let emptyLessons = 0;
+    if (entry.modules) {
+      for (const m of entry.modules) {
+        if (!m.lessons || m.lessons.length === 0 ||
+            (m.lessons.length === 4 && m.lessons[0] === 'Lesson 1'))
+          emptyLessons++;
+      }
+    }
+    if (emptyLessons === 0)
+      pass('Lessons extracted', 'All modules have real lesson titles');
+    else fail('Lessons extracted', emptyLessons + ' module(s) have empty / generic lessons');
+  }
+
+  // ── 2. GENERATOR CONFIG CHECKS ────────────────────────────────────
+  if (LIVE_COURSES.has(cid))
+    pass('LIVE_COURSES contains CID', cid);
+  else fail('LIVE_COURSES contains CID', cid + ' not in LIVE_COURSES — will still appear in dropdown');
+
+  const meta = REGISTRY_META[cid];
+  if (meta) pass('REGISTRY_META entry', 'icon ' + meta.icon + '  accent ' + meta.accent);
+  else fail('REGISTRY_META entry', 'No REGISTRY_META for ' + cid + ' — defaults will be used on next activation');
+
+  // MODULE_PREFIX_MAP is scoped inside buildSystemPrompt, so check indirectly
+  // by verifying the entry's module IDs follow a non-generic pattern
+  if (entry && entry.modules && entry.modules.length > 0) {
+    const firstModId = entry.modules[0].id; // e.g. "am1-m1"
+    const prefix = firstModId.replace(/-m\d+$/, '');
+    if (prefix !== cid.substring(0,3))
+      pass('Module prefix (custom)', prefix + '-m*');
+    else pass('Module prefix (auto)', prefix + '-m* (using auto-generated prefix)');
+  }
+
+  // ── 3. FILE CHECKS (local via repoFolderHandle) ───────────────────
+  const folderName = getFolderName(cid);
+  const filePrefix = getFilePrefix(cid);
+  let courseDir = null;
+
+  try {
+    courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
+    pass('Course folder exists', folderName + '/');
+  } catch(e) {
+    fail('Course folder exists', 'Missing folder: ' + folderName + '/');
+  }
+
+  if (courseDir) {
+    for (const mod of course.modules) {
+      const fname = filePrefix + '-m' + mod.n + '.html';
+      try {
+        const fh = await courseDir.getFileHandle(fname);
+        const html = await (await fh.getFile()).text();
+
+        // injection format
+        const hasTabStrip = html.includes('class="tab-strip"') || html.includes("class='tab-strip'");
+        const hasContentArea = html.includes('class="content-area"') || html.includes("class='content-area'");
+        if (hasTabStrip && hasContentArea)
+          pass('M' + mod.n + ' injection format', fname);
+        else fail('M' + mod.n + ' injection format', 'Missing ' + (!hasTabStrip ? '.tab-strip' : '') + (!hasContentArea ? ' .content-area' : ''));
+
+        // COURSE_ID in HTML matches registry key
+        const cidMatch = html.match(/COURSE_ID\s*=\s*['"]([^'"]+)['"]/);
+        if (cidMatch) {
+          const htmlCid = cidMatch[1];
+          // Check it matches registry key
+          if (htmlCid === cid || (entry && registry[htmlCid]))
+            pass('M' + mod.n + ' COURSE_ID', htmlCid);
+          else fail('M' + mod.n + ' COURSE_ID', 'HTML has "' + htmlCid + '" but registry key is "' + cid + '" — progress tracking will break');
+        } else {
+          fail('M' + mod.n + ' COURSE_ID', 'No COURSE_ID variable found in ' + fname);
+        }
+
+        // MODULE_ID matches expected pattern
+        const midMatch = html.match(/MODULE_ID\s*=\s*['"]([^'"]+)['"]/);
+        if (midMatch) {
+          const htmlMid = midMatch[1];
+          const expectedSuffix = '-m' + mod.n;
+          if (htmlMid.endsWith(expectedSuffix))
+            pass('M' + mod.n + ' MODULE_ID', htmlMid);
+          else fail('M' + mod.n + ' MODULE_ID', 'HTML has "' + htmlMid + '", expected *' + expectedSuffix);
+        } else {
+          fail('M' + mod.n + ' MODULE_ID', 'No MODULE_ID variable found');
+        }
+
+        // scroll-to-top fix
+        if (html.includes('scrollTo') || html.includes('scrollTop'))
+          pass('M' + mod.n + ' scroll fix', 'Present');
+        else fail('M' + mod.n + ' scroll fix', 'No scrollTo/scrollTop found — user may land mid-page');
+
+        // lesson pages exist (p-l1 through p-l4)
+        let lessonPages = 0;
+        for (let i = 1; i <= 4; i++) {
+          if (html.includes('id="p-l' + i + '"')) lessonPages++;
+        }
+        if (lessonPages === 4)
+          pass('M' + mod.n + ' lesson pages', '4/4 found');
+        else fail('M' + mod.n + ' lesson pages', lessonPages + '/4 found');
+
+        // quiz pages exist (p-q1 through p-q4)
+        let quizPages = 0;
+        for (let i = 1; i <= 4; i++) {
+          if (html.includes('id="p-q' + i + '"')) quizPages++;
+        }
+        if (quizPages === 4)
+          pass('M' + mod.n + ' quiz pages', '4/4');
+        else fail('M' + mod.n + ' quiz pages', quizPages + '/4');
+
+        // lab pages exist (p-lab1 through p-lab4)
+        let labPages = 0;
+        for (let i = 1; i <= 4; i++) {
+          if (html.includes('id="p-lab' + i + '"')) labPages++;
+        }
+        if (labPages === 4)
+          pass('M' + mod.n + ' lab pages', '4/4');
+        else fail('M' + mod.n + ' lab pages', labPages + '/4');
+
+        // module test page
+        if (html.includes('id="p-mt"') || html.includes("id='p-mt'"))
+          pass('M' + mod.n + ' module test', 'Present');
+        else fail('M' + mod.n + ' module test', 'Missing p-mt page');
+
+      } catch(e) {
+        fail('M' + mod.n + ' file exists', 'Could not read ' + fname + ': ' + e.message);
+      }
+    }
+  }
+
+  // ── 4. HUB LOADING SIMULATION ─────────────────────────────────────
+  // Check that the hub's folder-derivation logic would produce the right path
+  if (entry && entry.url) {
+    const hubFolder = entry.url.replace(/\/+$/, '').split('/').pop();
+    const expectedFile = entry.url + hubFolder + '-m1.html';
+    if (hubFolder === folderName)
+      pass('Hub folder derivation', hubFolder + ' → ' + expectedFile);
+    else fail('Hub folder derivation', 'Hub derives "' + hubFolder + '" but folder is "' + folderName + '"');
+  }
+
+  // ── BUILD REPORT ──────────────────────────────────────────────────
+  const passed = results.filter(r => r.pass).length;
+  const failed = results.filter(r => !r.pass).length;
+  const total  = results.length;
+  const verdict = failed === 0 ? 'ALL PASSED' : failed + ' FAILED';
+
+  const now = new Date();
+  const ts  = now.toISOString().slice(0, 10);
+  const courseName = course.name || cid;
+
+  let md = '---\n';
+  md += '### ' + ts + ' — ' + courseName + ' (' + cid + ')\n\n';
+  md += '**Result:** ' + verdict + ' — ' + passed + '/' + total + ' checks passed\n\n';
+
+  if (failed > 0) {
+    md += '#### Failures\n\n';
+    for (const r of results.filter(r => !r.pass))
+      md += '- **' + r.check + ':** ' + r.detail + '\n';
+    md += '\n';
+  }
+
+  md += '#### Full Results\n\n';
+  md += '| # | Check | Result | Detail |\n';
+  md += '|---|-------|--------|--------|\n';
+  results.forEach((r, i) => {
+    md += '| ' + (i+1) + ' | ' + r.check + ' | ' + (r.pass ? '✅' : '❌') + ' | ' + (r.detail || '') + ' |\n';
+  });
+  md += '\n---\n\n';
+
+  log('');
+  log('Audit complete: ' + passed + '/' + total + ' passed' + (failed > 0 ? '  (' + failed + ' FAILED)' : ''));
+
+  // ── POST TO OBSIDIAN ──────────────────────────────────────────────
+  const obsKey = document.getElementById('obsidianKey').value.trim();
+  if (!obsKey) {
+    log('[Audit] No Obsidian API key — skipping vault post. Report logged above.');
+    return { passed, failed, total, results, markdown: md };
+  }
+
+  try {
+    // Prepend to GEN MOD/Course Audit.md (creates if missing)
+    const vaultPath = 'GEN MOD/Course Audit.md';
+    // Read existing content first
+    let existing = '';
+    try {
+      const getResp = await fetch('http://127.0.0.1:27124/vault/' + encodeURIComponent(vaultPath), {
+        headers: { 'Authorization': 'Bearer ' + obsKey, 'Accept': 'text/markdown' }
+      });
+      if (getResp.ok) existing = await getResp.text();
+    } catch(e) { /* file doesn't exist yet */ }
+
+    const putResp = await fetch('http://127.0.0.1:27124/vault/' + encodeURIComponent(vaultPath), {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'Bearer ' + obsKey,
+        'Content-Type': 'text/markdown'
+      },
+      body: md + existing
+    });
+
+    if (putResp.ok) {
+      log('[Audit] Report posted to Obsidian → ' + vaultPath);
+    } else {
+      log('[Audit] Obsidian POST failed: ' + putResp.status + ' ' + putResp.statusText);
+    }
+  } catch(e) {
+    log('[Audit] Could not reach Obsidian REST API: ' + e.message);
+    log('[Audit] Make sure the Local REST API plugin is running (port 27124).');
+  }
+
+  return { passed, failed, total, results, markdown: md };
 }
 
 async function updateCoursesFile() {

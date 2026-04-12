@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- aesop-module-generator-v1.0.2 | AESOP AI Academy Module Builder | April 2026 -->
+<!-- aesop-module-generator-v1.1.0 | AESOP AI Academy Module Builder | April 2026 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AESOP Module Generator</title>
@@ -52,7 +52,7 @@ textarea{resize:vertical;min-height:80px;}
 <div class="header">
   <div>
     <div class="header-brand">AESOP AI Academy</div>
-    <div class="header-sub">Module Generator v1.0.2</div>
+    <div class="header-sub">Module Generator v1.1.0</div>
   </div>
 </div>
 
@@ -163,6 +163,18 @@ textarea{resize:vertical;min-height:80px;}
     <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
       <button class="btn-set-folder" onclick="manualActivate()">Activate in courses.html</button>
       <span id="coursesUpdateStatus" style="font-size:0.8rem;color:rgba(255,255,255,0.35);"></span>
+    </div>
+  </div>
+
+  <div class="card" id="evalExistingCard" style="margin-top:1rem;border:1px solid rgba(74,144,217,0.25);background:rgba(74,144,217,0.04);">
+    <div class="card-title" style="color:#4a90d9;">Evaluate Existing Course</div>
+    <div style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:0.75rem;">Run the 4-reviewer panel evaluation on any live course. Reads modules from your repo folder, sends to all configured reviewers, and saves the report to the Panel Scoring Dashboard.</div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <select id="evalCourseSelect" style="font-family:inherit;font-size:0.85rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#e8e3db;padding:6px 12px;border-radius:4px;min-width:260px;">
+        <option value="">— Select Live Course —</option>
+      </select>
+      <button class="btn-set-folder" onclick="evalExistingCourse()" style="background:rgba(74,144,217,0.15);border-color:rgba(74,144,217,0.4);color:#4a90d9;">Run Panel Evaluation</button>
+      <span id="evalExistingStatus" style="font-size:0.8rem;color:rgba(255,255,255,0.35);"></span>
     </div>
   </div>
 
@@ -2100,6 +2112,85 @@ async function runPanelEvaluation(cid, courseName) {
 
   return fullReport;
 }
+
+// ── EVALUATE EXISTING COURSE ──────────────────────────────────────────────
+
+function populateEvalDropdown() {
+  const sel = document.getElementById('evalCourseSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Select Live Course —</option>';
+  for (const cid of LIVE_COURSES) {
+    const course = COURSES.find(c => c.id === cid);
+    if (!course) continue;
+    const opt = document.createElement('option');
+    opt.value = cid;
+    opt.textContent = course.name + ' (' + course.modules.length + ' modules)';
+    sel.appendChild(opt);
+  }
+}
+
+async function evalExistingCourse() {
+  const sel = document.getElementById('evalCourseSelect');
+  const status = document.getElementById('evalExistingStatus');
+  const cid = sel.value;
+
+  if (!cid) {
+    status.textContent = 'Select a course first.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  const course = COURSES.find(c => c.id === cid);
+  if (!course) {
+    status.textContent = 'Course not found in COURSES array.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  // Ensure repo folder is set
+  if (!repoFolderHandle) {
+    status.textContent = 'Setting repo folder...';
+    status.style.color = 'rgba(255,255,255,0.5)';
+    await setRepoFolder();
+    if (!repoFolderHandle) {
+      status.textContent = 'Repo folder required. Click Set Repo Folder first.';
+      status.style.color = '#f07070';
+      return;
+    }
+  }
+
+  // Check at least one reviewer key is entered
+  const claudeKey = document.getElementById('apiKey').value.trim();
+  if (!claudeKey) {
+    status.textContent = 'Enter at least the Anthropic API key above.';
+    status.style.color = '#f07070';
+    return;
+  }
+
+  status.textContent = 'Running evaluation...';
+  status.style.color = '#4a90d9';
+  sel.disabled = true;
+
+  try {
+    const report = await runPanelEvaluation(cid, course.name);
+    if (report) {
+      const avg = report.summary?.panelAverage || '—';
+      status.textContent = 'Done — ' + course.name + ': ' + avg + '/100. Report saved.';
+      status.style.color = '#5dd6a8';
+    } else {
+      status.textContent = 'Evaluation completed but no report generated.';
+      status.style.color = '#f0c040';
+    }
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    status.style.color = '#f07070';
+  } finally {
+    sel.disabled = false;
+  }
+}
+
+// Populate eval dropdown on init
+window.addEventListener('DOMContentLoaded', populateEvalDropdown);
 
 init();
 </script>

@@ -387,8 +387,8 @@
 const REPO_OWNER  = 'AesopScott';
 const REPO_NAME   = 'Aesop';
 const DRAFTS_PATH = 'aip/drafts';
-// GitHub PAT with repo read access — store in meta tag or prompt on load
-// For now: prompt user once per session
+// GitHub PAT — only needed for write operations (approve/reject)
+// Reads use unauthenticated GitHub API (public repo)
 let GH_TOKEN = sessionStorage.getItem('aip_gh_token') || '';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -398,10 +398,6 @@ let moduleCounter = 0;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  if (!GH_TOKEN) {
-    GH_TOKEN = prompt('Enter GitHub PAT (read:repo scope):');
-    if (GH_TOKEN) sessionStorage.setItem('aip_gh_token', GH_TOKEN);
-  }
   await loadDrafts();
 });
 
@@ -498,6 +494,13 @@ async function setStatus(filename, newStatus) {
   const draft = allDrafts.find(d => d._filename === filename);
   if (!draft) return;
 
+  // Prompt for PAT if not yet provided (needed for writes)
+  if (!GH_TOKEN) {
+    GH_TOKEN = prompt('Enter GitHub PAT to approve/reject courses:');
+    if (!GH_TOKEN) { showToast('Action cancelled — PAT required.'); return; }
+    sessionStorage.setItem('aip_gh_token', GH_TOKEN);
+  }
+
   draft.status = newStatus;
 
   try {
@@ -560,15 +563,13 @@ function updateSubtitle(count) {
 
 // ── GITHUB FETCH ──────────────────────────────────────────────────────────────
 function ghFetch(path, opts = {}) {
-  return fetch(`https://api.github.com${path}`, {
-    ...opts,
-    headers: {
-      'Authorization': `Bearer ${GH_TOKEN}`,
-      'Accept': 'application/vnd.github+json',
-      'Content-Type': 'application/json',
-      ...(opts.headers || {})
-    }
-  });
+  const headers = {
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    ...(opts.headers || {})
+  };
+  if (GH_TOKEN) headers['Authorization'] = `Bearer ${GH_TOKEN}`;
+  return fetch(`https://api.github.com${path}`, { ...opts, headers });
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────

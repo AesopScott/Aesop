@@ -13,7 +13,7 @@
   <!-- Firebase (Firestore only — no auth) -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove }
+    import { getFirestore, doc, getDoc, setDoc }
       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
@@ -27,7 +27,10 @@
 
     const app = initializeApp(firebaseConfig);
     const db  = getFirestore(app);
-    const LS_KEY = 'aesop-guardian-id';
+
+    /* ── localStorage keys ─────────────────────────────────── */
+    const LS_KEY      = 'aesop-guardian-id';
+    const LS_DATA_KEY = 'aesop-guardian-data';
 
     /* ── Course catalog (matches transcript.html) ──────────── */
     const COURSES = [
@@ -41,8 +44,16 @@
     ];
 
     /* ── State ─────────────────────────────────────────────── */
-    let guardianData  = null;   // full Firestore doc
-    let studentsCache = {};     // learnerId → Firestore learner doc
+    let guardianData  = null;   // local guardian record
+    let studentsCache = {};     // learnerId → learner data (from Firestore or stub)
+
+    /* ── localStorage helpers ──────────────────────────────── */
+    function saveGuardianLocal() {
+      if (guardianData) localStorage.setItem(LS_DATA_KEY, JSON.stringify(guardianData));
+    }
+    function loadGuardianLocal() {
+      try { return JSON.parse(localStorage.getItem(LS_DATA_KEY)); } catch { return null; }
+    }
 
     /* ── ID generation ─────────────────────────────────────── */
     function generateGuardianId(role) {
@@ -54,10 +65,16 @@
     }
 
     /* ── Init ──────────────────────────────────────────────── */
-    async function init() {
+    function init() {
       const stored = localStorage.getItem(LS_KEY);
       if (stored) {
-        await loadGuardian(stored);
+        const data = loadGuardianLocal();
+        if (data) {
+          guardianData = data;
+          showGuardianDashboard(stored);
+        } else {
+          showWelcome();
+        }
       } else {
         showWelcome();
       }
@@ -75,24 +92,37 @@
       $('guardianIdBar').style.display  = 'flex';
     }
 
+    function showGuardianDashboard(id) {
+      const roleLabel = guardianData.dashboardRole === 'teacher' ? 'Teacher' : 'Parent';
+      $('displayGuardianId').textContent = id;
+      $('roleLabel').textContent = roleLabel;
+      $('heroRoleLabel').textContent = roleLabel + ' Dashboard';
+      showDashboard();
+      // Try to refresh student data from Firestore in background
+      refreshAllStudents();
+      renderStudentList();
+      renderAssignments();
+      updateStats();
+    }
+
     /* ── Create new guardian ────────────────────────────────── */
     window._startParent = () => createGuardian('parent');
     window._startTeacher = () => createGuardian('teacher');
 
-    async function createGuardian(role) {
+    function createGuardian(role) {
       const id = generateGuardianId(role);
       localStorage.setItem(LS_KEY, id);
-      try {
-        await setDoc(doc(db, 'learners', id), {
-          learnerId: id,
-          createdAt: new Date().toISOString(),
-          courseProgress: {},
-          dashboardRole: role,
-          trackedStudents: [],
-          assignments: []
-        });
-      } catch(e) { console.warn('Firestore write error:', e); }
-      await loadGuardian(id);
+      guardianData = {
+        learnerId: id,
+        dashboardRole: role,
+        createdAt: new Date().toISOString(),
+        trackedStudents: [],
+        assignments: []
+      };
+      saveGuardianLocal();
+      // Best-effort Firestore sync
+      setDoc(doc(db, 'learners', id), { ...guardianData, courseProgress: {} }).catch(() => {});
+      showGuardianDashboard(id);
     }
 
     /* ── Look up existing guardian ──────────────────────────── */
@@ -106,60 +136,42 @@
         err.textContent = 'Enter a valid ID (e.g. AESOP-P-7K3X or AESOP-T-9M2D).';
         return;
       }
-      try {
-        const snap = await getDoc(doc(db, 'learners', input));
-        if (!snap.exists()) {
-          err.textContent = 'No record found for that ID. Check and try again.';
-          return;
-        }
-        localStorage.setItem(LS_KEY, input);
-        await loadGuardian(input);
-      } catch(e) {
-        err.textContent = 'Could not look up your ID. Please try again.';
-        console.error(e);
-      }
+
+      // Dashboard data is localStorage-only per-browser.
+      // Looking up a dashboard ID from another device won't have data here.
+      err.textContent = 'Dashboard data is stored in your browser. If you created this ID on another device, you\'ll need to re-add your students. Continue?';
+      // Auto-create local data for this ID
+      localStorage.setItem(LS_KEY, input);
+      const role = input.startsWith('AESOP-T-') ? 'teacher' : 'parent';
+      guardianData = loadGuardianLocal() || {
+        learnerId: input,
+        dashboardRole: role,
+        createdAt: new Date().toISOString(),
+        trackedStudents: [],
+        assignments: []
+      };
+      saveGuardianLocal();
+      err.textContent = '';
+      showGuardianDashboard(input);
     };
 
-    /* ── Load guardian and render dashboard ─────────────────── */
-    async function loadGuardian(id) {
-      let data = null;
-      try {
-        const snap = await getDoc(doc(db, 'learners', id));
-        if (snap.exists()) data = snap.data();
-      } catch(e) { console.warn('Guardian read error:', e); }
-
-      if (!data) {
-        // Doc missing — could be leftover localStorage
-        localStorage.removeItem(LS_KEY);
-        showWelcome();
-        return;
-      }
-
-      guardianData = data;
-      const roleLabel = data.dashboardRole === 'teacher' ? 'Teacher' : 'Parent';
-      $('displayGuardianId').textContent = id;
-      $('roleLabel').textContent = roleLabel;
-      $('heroRoleLabel').textContent = roleLabel + ' Dashboard';
-
-      // Load student data
-      studentsCache = {};
-      const tracked = data.trackedStudents || [];
+    /* ── Load student data from Firestore (best-effort) ────── */
+    async function refreshAllStudents() {
+      const tracked = guardianData.trackedStudents || [];
       for (const sid of tracked) {
         try {
           const snap = await getDoc(doc(db, 'learners', sid));
           if (snap.exists()) studentsCache[sid] = snap.data();
-        } catch(e) { console.warn('Student read error:', e); }
+        } catch(e) { /* Firestore unavailable — use cached/stub */ }
       }
-
-      showDashboard();
       renderStudentList();
-      renderAssignments();
       updateStats();
     }
 
     /* ── Switch guardian ────────────────────────────────────── */
     window._switchGuardian = () => {
       localStorage.removeItem(LS_KEY);
+      localStorage.removeItem(LS_DATA_KEY);
       guardianData = null;
       studentsCache = {};
       showWelcome();
@@ -175,60 +187,44 @@
         err.textContent = 'Enter a valid Learner ID (e.g. AESOP-7K3X).';
         return;
       }
-      // Don't allow adding guardian IDs
       if (input.startsWith('AESOP-P-') || input.startsWith('AESOP-T-')) {
         err.textContent = 'That looks like a parent/teacher ID. Enter a student Learner ID.';
         return;
       }
-      // Check if already tracked
       if ((guardianData.trackedStudents || []).includes(input)) {
         err.textContent = 'This student is already on your dashboard.';
         return;
       }
-      // Verify student exists
+
+      // Try to fetch student data from Firestore (best-effort)
+      let studentData = null;
       try {
         const snap = await getDoc(doc(db, 'learners', input));
-        if (!snap.exists()) {
-          err.textContent = 'No student found with that Learner ID.';
-          return;
-        }
-        studentsCache[input] = snap.data();
-      } catch(e) {
-        err.textContent = 'Could not verify student. Try again.';
-        return;
+        if (snap.exists()) studentData = snap.data();
+      } catch(e) { /* Firestore unavailable */ }
+
+      // Add student regardless — they can track even if Firestore is down
+      if (studentData) {
+        studentsCache[input] = studentData;
+      } else {
+        // Create a stub so the card renders
+        studentsCache[input] = { learnerId: input, courseProgress: {}, createdAt: null };
       }
 
-      // Add to Firestore
-      try {
-        await updateDoc(doc(db, 'learners', guardianData.guardianId), {
-          trackedStudents: arrayUnion(input)
-        });
-        guardianData.trackedStudents = [...(guardianData.trackedStudents || []), input];
-      } catch(e) {
-        err.textContent = 'Could not save. Try again.';
-        return;
-      }
-
+      guardianData.trackedStudents = [...(guardianData.trackedStudents || []), input];
+      saveGuardianLocal();
       $('addStudentInput').value = '';
       renderStudentList();
       updateStats();
     };
 
     /* ── Remove student ────────────────────────────────────── */
-    window._removeStudent = async (sid) => {
+    window._removeStudent = (sid) => {
       if (!confirm(`Remove student ${sid} from your dashboard? Their progress won't be affected.`)) return;
-      try {
-        await updateDoc(doc(db, 'learners', guardianData.guardianId), {
-          trackedStudents: arrayRemove(sid)
-        });
-        guardianData.trackedStudents = guardianData.trackedStudents.filter(s => s !== sid);
-        // Also remove their assignments
-        guardianData.assignments = (guardianData.assignments || []).filter(a => a.studentId !== sid);
-        await updateDoc(doc(db, 'learners', guardianData.guardianId), {
-          assignments: guardianData.assignments
-        });
-        delete studentsCache[sid];
-      } catch(e) { console.warn('Remove error:', e); }
+      guardianData.trackedStudents = (guardianData.trackedStudents || []).filter(s => s !== sid);
+      guardianData.assignments = (guardianData.assignments || []).filter(a => a.studentId !== sid);
+      delete studentsCache[sid];
+      saveGuardianLocal();
       renderStudentList();
       renderAssignments();
       updateStats();
@@ -336,7 +332,7 @@
       try {
         const snap = await getDoc(doc(db, 'learners', sid));
         if (snap.exists()) studentsCache[sid] = snap.data();
-      } catch(e) {}
+      } catch(e) { /* Firestore unavailable */ }
       renderStudentList();
       updateStats();
     };
@@ -361,7 +357,7 @@
       assignTarget = null;
     };
 
-    window._submitAssignment = async () => {
+    window._submitAssignment = () => {
       const courseId = $('assignCourseSelect').value;
       const dueDate  = $('assignDueDate').value;
       const notes    = $('assignNotes').value.trim();
@@ -383,15 +379,8 @@
         status:      'assigned'
       };
 
-      try {
-        await updateDoc(doc(db, 'learners', guardianData.guardianId), {
-          assignments: arrayUnion(assignment)
-        });
-        guardianData.assignments = [...(guardianData.assignments || []), assignment];
-      } catch(e) {
-        err.textContent = 'Could not save assignment. Try again.';
-        return;
-      }
+      guardianData.assignments = [...(guardianData.assignments || []), assignment];
+      saveGuardianLocal();
 
       _closeAssignModal();
       renderAssignments();
@@ -400,17 +389,11 @@
     };
 
     /* ── Remove assignment ─────────────────────────────────── */
-    window._removeAssignment = async (idx) => {
+    window._removeAssignment = (idx) => {
       const assignments = guardianData.assignments || [];
       if (idx < 0 || idx >= assignments.length) return;
-      const removed = assignments[idx];
-      const updated = assignments.filter((_, i) => i !== idx);
-      try {
-        await updateDoc(doc(db, 'learners', guardianData.guardianId), {
-          assignments: updated
-        });
-        guardianData.assignments = updated;
-      } catch(e) { console.warn('Remove assignment error:', e); }
+      guardianData.assignments = assignments.filter((_, i) => i !== idx);
+      saveGuardianLocal();
       renderAssignments();
       renderStudentList();
       updateStats();

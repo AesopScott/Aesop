@@ -77,6 +77,10 @@ textarea{resize:vertical;min-height:80px;}
       <input type="password" id="perplexityKey" placeholder="pplx-..." />
     </div>
     <div class="api-key-note">Stored in memory only — never sent anywhere except their respective APIs. Reviewers without keys will be skipped.</div>
+    <div class="form-group" style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">
+      <label>GitHub PAT — Required for course evaluation (reads module files from repo)</label>
+      <input type="password" id="githubPat" placeholder="ghp_..." />
+    </div>
   </div>
 
   <div class="card">
@@ -168,7 +172,7 @@ textarea{resize:vertical;min-height:80px;}
 
   <div class="card" id="evalExistingCard" style="margin-top:1rem;border:1px solid rgba(74,144,217,0.25);background:rgba(74,144,217,0.04);">
     <div class="card-title" style="color:#4a90d9;">Evaluate Existing Course</div>
-    <div style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:0.75rem;">Run the 4-reviewer panel evaluation on any live course. Reads modules from your repo folder, sends to all configured reviewers, and saves the report to the Panel Scoring Dashboard.</div>
+    <div style="font-size:0.8rem;color:rgba(255,255,255,0.45);margin-bottom:0.75rem;">Run the 4-reviewer panel evaluation on any live course. Fetches modules from GitHub, sends to all configured reviewers, and saves the report.</div>
     <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
       <select id="evalCourseSelect" style="font-family:inherit;font-size:0.85rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#e8e3db;padding:6px 12px;border-radius:4px;min-width:260px;">
         <option value="">— Select Live Course —</option>
@@ -1954,6 +1958,104 @@ async function findModuleFile(dirHandle, cid, moduleNum) {
   return null; // Not found
 }
 
+// ── GITHUB MODULE FETCHING ─────────────────────────────────────────────────
+
+const GITHUB_REPO = 'AesopScott/Aesop';
+const GITHUB_BASE = 'ai-academy/modules';
+
+// List module HTML files in a course folder on GitHub
+async function listGitHubModuleFiles(pat, folderName) {
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + GITHUB_BASE + '/' + folderName;
+  const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } });
+  if (!resp.ok) throw new Error('GitHub API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+  const files = await resp.json();
+  return files.filter(f => f.type === 'file' && f.name.endsWith('.html') && f.name.includes('-m'));
+}
+
+// Fetch a single module HTML file from GitHub (raw content)
+async function fetchModuleFromGitHub(pat, folderName, fileName) {
+  const url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + GITHUB_BASE + '/' + folderName + '/' + fileName;
+  const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat } });
+  if (!resp.ok) throw new Error('GitHub raw fetch ' + resp.status + ' for ' + fileName);
+  return await resp.text();
+}
+
+// Find the right module file from a list of GitHub files, handling version suffixes
+function findModuleInList(files, cid, moduleNum) {
+  const prefix = getFilePrefix(cid);
+  const exactName = prefix + '-m' + moduleNum + '.html';
+  // Exact match first
+  const exact = files.find(f => f.name === exactName);
+  if (exact) return exact.name;
+  // Pattern match (version suffix)
+  const pattern = prefix + '-m' + moduleNum;
+  const match = files.find(f => f.name.startsWith(pattern) && f.name.endsWith('.html'));
+  return match ? match.name : null;
+}
+
+// Save eval report by pushing to GitHub
+async function saveReportToGitHub(pat, folderName, fileName, content) {
+  const path = GITHUB_BASE + '/' + folderName + '/' + fileName;
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + path;
+  const headers = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+  // Check if file exists (need sha to update)
+  let sha = null;
+  try {
+    const check = await fetch(url, { headers });
+    if (check.ok) {
+      const existing = await check.json();
+      sha = existing.sha;
+    }
+  } catch(e) { /* new file */ }
+
+  const body = {
+    message: 'Panel eval report: ' + folderName,
+    content: btoa(unescape(encodeURIComponent(content)))
+  };
+  if (sha) body.sha = sha;
+
+  const resp = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!resp.ok) throw new Error('GitHub save failed ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
+  return true;
+}
+
+// Save/update eval-index.json on GitHub
+async function saveEvalIndexToGitHub(pat, indexData) {
+  const path = GITHUB_BASE + '/eval-index.json';
+  const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + path;
+  const headers = { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+  let sha = null;
+  try {
+    const check = await fetch(url, { headers });
+    if (check.ok) {
+      const existing = await check.json();
+      sha = existing.sha;
+    }
+  } catch(e) { /* new file */ }
+
+  const body = {
+    message: 'Update eval-index.json',
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(indexData, null, 2))))
+  };
+  if (sha) body.sha = sha;
+
+  const resp = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!resp.ok) throw new Error('GitHub index save failed ' + resp.status);
+  return true;
+}
+
+// Load eval-index.json from GitHub
+async function loadEvalIndexFromGitHub(pat) {
+  const url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + GITHUB_BASE + '/eval-index.json';
+  try {
+    const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat } });
+    if (!resp.ok) return {};
+    return JSON.parse(await resp.text());
+  } catch(e) { return {}; }
+}
+
 // ── MAIN EVALUATION RUNNER ─────────────────────────────────────────────────
 
 async function runPanelEvaluation(cid, courseName) {
@@ -1993,29 +2095,47 @@ async function runPanelEvaluation(cid, courseName) {
     summary: {}
   };
 
+  const githubPat = document.getElementById('githubPat').value.trim();
+  if (!githubPat) {
+    log('ERROR: GitHub PAT required to fetch module files. Enter it in the API Keys section.');
+    return null;
+  }
+
+  const folderName = getFolderName(cid);
+  log('Fetching file list from GitHub: ' + GITHUB_BASE + '/' + folderName + '/');
+
+  let githubFiles;
+  try {
+    githubFiles = await listGitHubModuleFiles(githubPat, folderName);
+    log('Found ' + githubFiles.length + ' module files on GitHub.');
+  } catch(e) {
+    log('ERROR: Could not list files in ' + folderName + '/ on GitHub — ' + e.message);
+    return null;
+  }
+
   let grandTotal = {};
   reviewers.forEach(r => { grandTotal[r.name] = { total: 0, count: 0 }; });
 
   for (let mi = 0; mi < totalMods; mi++) {
     const mod = course.modules[mi];
     const mn = mod.n || (mi + 1);
-    const folderName = getFolderName(cid);
     const modName = 'M' + mn + ': ' + mod.title;
 
     log('');
     log('── Evaluating ' + modName + ' ──');
 
-    // Read module HTML from file system (handles version suffixes and folder name mismatches)
+    // Fetch module HTML from GitHub
     let moduleHtml = '';
+    const fileName = findModuleInList(githubFiles, cid, mn);
+    if (!fileName) {
+      log('  SKIP: No matching file for module ' + mn + ' in ' + folderName + '/');
+      continue;
+    }
     try {
-      const courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
-      const fh = await findModuleFile(courseDir, cid, mn);
-      if (!fh) throw new Error('No matching file found');
-      const file = await fh.getFile();
-      moduleHtml = await file.text();
-      log('  Read: ' + fh.name);
+      moduleHtml = await fetchModuleFromGitHub(githubPat, folderName, fileName);
+      log('  Fetched: ' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
     } catch(e) {
-      log('  SKIP: Could not read module ' + mn + ' in ' + folderName + '/ — ' + e.message);
+      log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
       continue;
     }
 
@@ -2128,29 +2248,21 @@ async function runPanelEvaluation(cid, courseName) {
     log('  ✓ All modules PASSED panel review.');
   }
 
-  // Save report to file system (use mapped folder name)
+  // Save report to GitHub
   const saveFolderName = getFolderName(cid);
   try {
     const reportFilename = saveFolderName + '-eval-report.json';
-    const courseDir = await repoFolderHandle.getDirectoryHandle(saveFolderName, { create: true });
-    const fh = await courseDir.getFileHandle(reportFilename, { create: true });
-    const writable = await fh.createWritable();
-    await writable.write(JSON.stringify(fullReport, null, 2));
-    await writable.close();
+    const reportContent = JSON.stringify(fullReport, null, 2);
+    await saveReportToGitHub(githubPat, saveFolderName, reportFilename, reportContent);
     log('');
-    log('Report saved: ' + saveFolderName + '/' + reportFilename);
+    log('Report saved to GitHub: ' + saveFolderName + '/' + reportFilename);
   } catch(e) {
-    log('Could not save report: ' + e.message);
+    log('Could not save report to GitHub: ' + e.message);
   }
 
-  // Update central eval-index.json so the dashboard can find all reports
+  // Update central eval-index.json on GitHub
   try {
-    let evalIndex = {};
-    try {
-      const existingHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: false });
-      const existingFile = await existingHandle.getFile();
-      evalIndex = JSON.parse(await existingFile.text());
-    } catch(e) { /* no existing index — start fresh */ }
+    let evalIndex = await loadEvalIndexFromGitHub(githubPat);
 
     evalIndex[cid] = {
       course: fullReport.course,
@@ -2161,11 +2273,8 @@ async function runPanelEvaluation(cid, courseName) {
       reportFile: saveFolderName + '/' + saveFolderName + '-eval-report.json'
     };
 
-    const indexHandle = await repoFolderHandle.getFileHandle('eval-index.json', { create: true });
-    const indexWritable = await indexHandle.createWritable();
-    await indexWritable.write(JSON.stringify(evalIndex, null, 2));
-    await indexWritable.close();
-    log('Eval index updated.');
+    await saveEvalIndexToGitHub(githubPat, evalIndex);
+    log('Eval index updated on GitHub.');
   } catch(e) {
     log('Could not update eval index: ' + e.message);
   }
@@ -2180,13 +2289,12 @@ async function populateEvalDropdown() {
   if (!sel) return;
   sel.innerHTML = '<option value="">— Select Course to Evaluate —</option>';
 
-  // Load eval-index to mark which courses already have evals
+  // Load eval-index from GitHub to mark which courses already have evals
   let evalIndex = {};
-  if (repoFolderHandle) {
+  const pat = document.getElementById('githubPat')?.value?.trim();
+  if (pat) {
     try {
-      const fh = await repoFolderHandle.getFileHandle('eval-index.json', { create: false });
-      const file = await fh.getFile();
-      evalIndex = JSON.parse(await file.text());
+      evalIndex = await loadEvalIndexFromGitHub(pat);
     } catch(e) { /* no index yet */ }
   }
 
@@ -2258,16 +2366,12 @@ async function evalExistingCourse() {
     return;
   }
 
-  // Ensure repo folder is set
-  if (!repoFolderHandle) {
-    status.textContent = 'Setting repo folder...';
-    status.style.color = 'rgba(255,255,255,0.5)';
-    await setRepoFolder();
-    if (!repoFolderHandle) {
-      status.textContent = 'Repo folder required. Click Set Repo Folder first.';
-      status.style.color = '#f07070';
-      return;
-    }
+  // Check GitHub PAT
+  const githubPat = document.getElementById('githubPat').value.trim();
+  if (!githubPat) {
+    status.textContent = 'Enter your GitHub PAT in the API Keys section above.';
+    status.style.color = '#f07070';
+    return;
   }
 
   // Check at least one reviewer key is entered
@@ -2278,23 +2382,19 @@ async function evalExistingCourse() {
     return;
   }
 
-  // Verify we can actually read the course folder before starting
+  // Pre-flight: verify course folder exists on GitHub
   const folderName = getFolderName(cid);
   try {
-    const testDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
-    let fileCount = 0;
-    for await (const [name, handle] of testDir.entries()) {
-      if (handle.kind === 'file' && name.endsWith('.html') && name.includes('-m')) fileCount++;
-    }
-    if (fileCount === 0) {
-      status.textContent = 'No module files found in ' + folderName + '/. Check your repo folder.';
+    const files = await listGitHubModuleFiles(githubPat, folderName);
+    if (files.length === 0) {
+      status.textContent = 'No module files found in ' + folderName + '/ on GitHub.';
       status.style.color = '#f07070';
       return;
     }
-    status.textContent = 'Found ' + fileCount + ' modules in ' + folderName + '/ — starting evaluation...';
+    status.textContent = 'Found ' + files.length + ' modules in ' + folderName + '/ — starting evaluation...';
     status.style.color = '#4a90d9';
   } catch(e) {
-    status.textContent = 'Cannot open folder "' + folderName + '/" — is your repo folder set to ai-academy/modules? (' + e.message + ')';
+    status.textContent = 'Cannot read ' + folderName + '/ from GitHub — check your PAT. (' + e.message + ')';
     status.style.color = '#f07070';
     return;
   }
@@ -2324,8 +2424,9 @@ async function evalExistingCourse() {
   }
 }
 
-// Populate eval dropdown on init
+// Populate eval dropdown on init and when GitHub PAT is entered
 window.addEventListener('DOMContentLoaded', populateEvalDropdown);
+document.getElementById('githubPat')?.addEventListener('change', populateEvalDropdown);
 
 init();
 </script>

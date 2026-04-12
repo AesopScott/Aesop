@@ -905,6 +905,18 @@ const COURSES = [
     {n:7,title:'Benchmark Selection and Interpretation',sub:'Choosing the right benchmarks for your system and reading results honestly'},
     {n:8,title:'Continuous Evaluation in CI/CD',sub:'Running evals in your deployment pipeline — tooling and thresholds'},
   ]},
+  { id:'foundations_advanced', name:'AI Foundations (Advanced)', isFoundations: true, modules:[
+    {n:1,title:'What AI Is',sub:'Foundation concepts: defining AI, distinguishing it from magic and human thinking'},
+    {n:2,title:'AI in Our World',sub:'AI applications across industries, daily life, and society'},
+    {n:3,title:'Sometimes AI Gets It Wrong',sub:'Errors, hallucinations, bias, and limits'},
+    {n:4,title:'Stories & Creativity with AI',sub:'AI as creative collaborator — storytelling, art, music'},
+    {n:5,title:'Staying Safe with AI',sub:'Privacy, safety, responsible use, and digital citizenship'},
+    {n:6,title:'How AI Learns',sub:'The mechanics of machine learning — data, training, and models'},
+    {n:7,title:'How AI Thinks',sub:'Inside the inference process — tokens, attention, transformers'},
+    {n:8,title:'AI Ethics & Real Decisions',sub:'Ethical frameworks applied to real AI decisions'},
+    {n:9,title:'AI and the Future',sub:'Long-term trajectories, existential questions, democratic futures'},
+    {n:10,title:'Building with AI',sub:'Practical frameworks for designing and deploying AI systems'},
+  ]},
 ];
 
 const TIER_CONFIG = {
@@ -947,6 +959,7 @@ const REGISTRY_META = {
   'running_models_locally':   {icon:'💻',accent:'#6366f1',accentRgb:'99,102,241',pts:1,days:1,prefix:'loc',desc:'Open-source models, hardware, quantization, Ollama, and building on local AI.'},
   'how_large_language_models_work':{icon:'📐',accent:'#0284c7',accentRgb:'2,132,199',pts:2,days:2,prefix:'llm',desc:'Transformers, pre-training, fine-tuning, emergent abilities, and LLM internals.'},
   'ai_in_game_design_i':{icon:'🎮',accent:'#9333ea',accentRgb:'147,51,234',pts:2,days:2,prefix:'ar1',desc:'Explore how AI is transforming game design — procedural generation, NPC behavior, and the tools reshaping how games are made.'},
+  'foundations_advanced':{icon:'🎯',accent:'#f43f5e',accentRgb:'244,63,94',pts:3,days:3,prefix:'fnd',desc:'Complete AI Foundations course — Advanced tier. 10 modules, 8 lessons each, real-world case studies.'},
 };
 
 function populateCourseDropdown() {
@@ -1469,6 +1482,351 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
   ].join('\n');
 }
 
+function buildFoundationsSystemPrompt(course, mod, lang, langName) {
+  const accentHex = '#f43f5e';
+  const accentRgb = '244,63,94';
+  const moduleNum = mod.n;
+
+  // Lesson titles for this module from the index.html data
+  const FOUNDATIONS_LESSONS = {
+    1: ['What Is a Computer Helper?','AI Helpers in Our World','Sometimes AI Gets It Wrong','How AI Learns','How AI Thinks','LLMs, Transformers & Emergence','AI History — Decision Points','Scaling Laws, Alignment & AGI'],
+    2: ['AI You See Every Day','AI at School and at Play','AI in Our Community','AI in Medicine and Science','AI in Business and Work','AI in Art, Music, and Culture','AI in Government and Infrastructure','Global AI Landscape'],
+    3: ['AI Makes Mistakes','When AI Doesn\'t Know','Whose Fault Is It?','Bias in, Bias Out','Fairness and AI','Failure Modes and Mitigation','Adversarial Attacks and Manipulation','Evaluating and Auditing AI Systems'],
+    4: ['AI Can Tell Stories','We Tell Stories Together','AI Makes Pictures and Music','What Makes a Good Prompt','Creativity and Originality','AI in Professional Creative Fields','Copyright, Ownership, and Credit','The Future of Human Creativity'],
+    5: ['Keep Your Secrets Safe','Is This Real?','Tell a Trusted Adult','Privacy and Data','Misinformation and Manipulation','Digital Identity and Reputation','Cybersecurity and AI','Rights, Regulation, and Your Digital Self'],
+    6: ['Teaching with Examples','Patterns Everywhere','What Is a Model?','Unsupervised and Reinforcement Learning','The Data Problem','Pretraining and Fine-Tuning','Evaluation and Benchmarks','The Frontier: What Models Can\'t Learn Yet'],
+    7: ['From Input to Output','The Prediction Game','When the Logic Breaks','Memory and Context','Attention and Transformers','Agents and Tool Use','Multimodal AI','Interpretability: Inside the Black Box'],
+    8: ['What Is Ethics?','Who Gets to Decide?','Real Harm, Real People','The Trolley Problem, AI Edition','Fairness Is Not Simple','Consent, Autonomy, and AI','Whistleblowing and Accountability','Building Ethical AI'],
+    9: ['Forecasting AI Progress','Transformative AI & Growth','AI and Existential Risk','The Alignment Horizon','AI Consciousness & Moral Status','Post-Scarcity & Meaning','Democratic AI Futures','The Choices That Remain'],
+    10: ['Define the Problem First','Prompting as Design','Evaluating AI Output','Human-AI Workflow Design','Testing & Red-Teaming','Responsible Deployment','Building for Equity','Ongoing Responsibilities'],
+  };
+
+  const lessons = FOUNDATIONS_LESSONS[moduleNum] || [];
+
+  // Build sidebar HTML
+  let sidebarBtns = '';
+  for (let i = 1; i <= 8; i++) {
+    const lTitle = lessons[i-1] || 'Lesson ' + i;
+    sidebarBtns += `
+      <button class="sb-btn${i===1?' active':''}" data-page="p-l${i}" onclick="goPage('p-l${i}')">
+        <span class="sb-icon">📖</span>L${i}: ${lTitle}
+      </button>
+      <button class="sb-btn sb-sub" data-page="p-l${i}-quiz" onclick="goPage('p-l${i}-quiz')">
+        <span class="sb-icon">📝</span>Quiz
+      </button>
+      <button class="sb-btn sb-sub" data-page="p-l${i}-lab" onclick="goPage('p-l${i}-lab')">
+        <span class="sb-icon">🧪</span>Lab
+      </button>
+      <div class="sb-div"></div>`;
+  }
+
+  const langBlock = lang && lang !== 'en' ? [
+    '',
+    '═══ LANGUAGE ═══',
+    'Build this ENTIRE module in ' + langName + ' (' + lang + ').',
+    'ALL user-facing content MUST be in ' + langName + ':',
+    '- Lesson text, story scenes, section headings, callouts, key terms',
+    '- Quiz questions, answer options, and feedback',
+    '- Lab titles, instructions, placeholder text, suggested prompts',
+    '- Module test questions and score text',
+    '- Page navigation button labels',
+    '- Sidebar lesson titles and labels',
+    '- ACADEMY_GUARDRAIL and LAB_PROMPTS must instruct the AI to respond in ' + langName,
+    '',
+    'DO NOT translate literally from English. Write naturally in ' + langName + '.',
+    'Use culturally relevant examples appropriate for ' + langName + '-speaking audiences.',
+    'Keep all HTML structure, CSS class names, JS function names in English.',
+    'The <html lang="en"> tag should be <html lang="' + lang + '">.',
+    lang === 'ar' || lang === 'ur' || lang === 'fa' ? 'Add dir="rtl" to the <html> tag for right-to-left layout.' : '',
+  ].filter(Boolean).join('\n') : '';
+
+  return [
+    'You are the AESOP AI Academy Foundations module builder.',
+    'You build STANDALONE HTML files — complete pages with <!DOCTYPE>, <head>, <body>, sidebar, and full CSS/JS.',
+    'This is NOT an Electives module. Do NOT use electives format.',
+    '',
+    '═══ MODULE IDENTITY ═══',
+    'Course: AI Foundations',
+    'Tier: Advanced (🎯)',
+    'Module: ' + moduleNum + ' — ' + mod.title,
+    'Subtitle: ' + (mod.sub || ''),
+    'GROUP_ID: 3',
+    'Accent: ' + accentHex + ' (RGB: ' + accentRgb + ')',
+    '',
+    '═══ LESSONS (8 per module) ═══',
+    lessons.map((l, i) => 'Lesson ' + (i+1) + ': ' + l).join('\n'),
+    '',
+    '═══ NARRATIVE DENSITY — ADVANCED ═══',
+    '~20% narrative. Real documented cases only. No fictional protagonists.',
+    'Case referenced throughout. History = decisions and consequences, not timelines.',
+    'Each lesson opens with a real, documented case study (data-label="CASE STUDY").',
+    'No hypothetical scenarios. Specific real events, real companies, real consequences.',
+    '',
+    '═══ REQUIRED HTML STRUCTURE ═══',
+    '<!DOCTYPE html>',
+    '<html lang="' + (lang || 'en') + '">',
+    '<head>',
+    '  <meta charset="UTF-8">',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    '  <title>' + mod.title + ' — Advanced | AESOP AI Academy Module ' + moduleNum + '</title>',
+    '  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">',
+    '  <style>/* FULL CSS BLOCK */</style>',
+    '</head>',
+    '<body>',
+    '<div class="site-layout">',
+    '',
+    '  <nav class="sidebar">',
+    '    <div class="sb-header">',
+    '      <a class="sb-back" href="/ai-academy/">← Academy</a>',
+    '      <div class="sb-mod-num">Module ' + moduleNum + '</div>',
+    '      <div class="sb-mod-title">' + mod.title + '</div>',
+    '      <div class="sb-tier-chip">🎯 Advanced</div>',
+    '    </div>',
+    '    <div class="sb-lessons" id="sb-lessons">',
+    sidebarBtns,
+    '    </div>',
+    '    <button class="sb-test" id="sbi-mt" onclick="goPage(\'p-mt\')">📋 Module Test</button>',
+    '  </nav>',
+    '',
+    '  <div class="main">',
+    '    <!-- 8 lessons, each with: lesson page (p-l{N}), quiz page (p-l{N}-quiz), lab page (p-l{N}-lab) -->',
+    '    <!-- Plus module test (p-mt) at end -->',
+    '  </div>',
+    '</div>',
+    '',
+    '<script>/* ALL JS */</script>',
+    '</body></html>',
+    '',
+    '═══ PAGE IDS (MANDATORY — 25 pages total) ═══',
+    'Lessons: p-l1 through p-l8',
+    'Quizzes: p-l1-quiz through p-l8-quiz',
+    'Labs: p-l1-lab through p-l8-lab',
+    'Module Test: p-mt',
+    'First page MUST have class="page active". All others: class="page".',
+    '',
+    '═══ PAGE NAVIGATION CHAIN ═══',
+    'L1 → Q1 → Lab1 → L2 → Q2 → Lab2 → L3 → Q3 → Lab3 → L4 → Q4 → Lab4 →',
+    'L5 → Q5 → Lab5 → L6 → Q6 → Lab6 → L7 → Q7 → Lab7 → L8 → Q8 → Lab8 → Module Test',
+    '',
+    '═══ REQUIRED CSS ═══',
+    'Use this EXACT CSS block. Replace {ACCENT_HEX} with ' + accentHex + ' and {ACCENT_RGB} with ' + accentRgb + ':',
+    '',
+    ':root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:' + accentHex + ';--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}',
+    '*{margin:0;padding:0;box-sizing:border-box;}',
+    'body{background:var(--bg);color:var(--text);font-family:\'Nunito\',sans-serif;min-height:100vh;}',
+    '.site-layout{display:flex;flex-direction:row;min-height:100vh;}',
+    '.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}',
+    '.sidebar::-webkit-scrollbar{width:4px;} .sidebar::-webkit-scrollbar-thumb{background:rgba(' + accentRgb + ',0.2);border-radius:2px;}',
+    '.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}',
+    '.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;} .sb-back:hover{opacity:0.8;}',
+    '.sb-mod-num{font-family:\'Cinzel\',serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}',
+    '.sb-mod-title{font-family:\'Cinzel\',serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}',
+    '.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(' + accentRgb + ',0.1);border:1px solid rgba(' + accentRgb + ',0.25);border-radius:20px;padding:3px 10px;}',
+    '.sb-lessons{flex:1;padding:10px 8px;}',
+    '.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:\'Nunito\',sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}',
+    '.sb-btn:hover{background:rgba(' + accentRgb + ',0.07);color:var(--text);}',
+    '.sb-btn.active{background:rgba(' + accentRgb + ',0.13);color:var(--accent);}',
+    '.sb-icon{font-size:1.2rem;flex-shrink:0;}',
+    '.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}',
+    '.sb-div{height:1px;background:var(--border);margin:6px 8px;}',
+    '.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:\'Cinzel\',serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;} .sb-test:hover{background:rgba(240,192,64,0.13);} .sb-test.active{background:rgba(240,192,64,0.18);}',
+    '.main{flex:1;overflow-y:auto;}',
+    '.page{display:none;} .page.active{display:block;animation:fadeIn 0.25s ease;}',
+    '@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}',
+    '.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}',
+    '.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(' + accentRgb + ',0.1);border:1px solid rgba(' + accentRgb + ',0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}',
+    '.lesson-hero h1{font-family:\'Cinzel\',serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}',
+    '.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}',
+    '.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}',
+    '.mt-hero h1{font-family:\'Cinzel\',serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}',
+    '.mt-hero p{font-size:1.4rem;color:var(--muted);}',
+    '.story-scene{background:rgba(' + accentRgb + ',0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}',
+    '.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}',
+    '.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);} .story-text+.story-text{margin-top:16px;}',
+    '.lesson-section{margin:0 0 48px;padding:0 40px;}',
+    '.section-heading{font-family:\'Cinzel\',serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}',
+    '.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);} .section-body p+p{margin-top:22px;}',
+    '.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}',
+    '.callout-box{background:rgba(' + accentRgb + ',0.06);border:1px solid rgba(' + accentRgb + ',0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}',
+    '.callout-label{font-family:\'Cinzel\',serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}',
+    '.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}',
+    '.ul-body{list-style:none;padding:0;margin:16px 0;} .ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;} .ul-body li::before{content:"\\25B8";position:absolute;left:0;color:var(--accent);}',
+    '.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}',
+    '.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:\'Nunito\',sans-serif;} .pnav-btn:hover{border-color:var(--accent);color:var(--accent);} .pnav-btn.primary{background:rgba(' + accentRgb + ',0.1);border-color:var(--accent);color:var(--accent);}',
+    '.pnav-arrow{font-size:2.1rem;line-height:1;} .pnav-label{font-size:1.08rem;opacity:0.7;}',
+    '.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}',
+    '.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}',
+    '.quiz-opts{display:flex;flex-direction:column;gap:10px;}',
+    '.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:\'Nunito\',sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;} .quiz-opt:hover{border-color:var(--accent);background:rgba(' + accentRgb + ',0.07);} .quiz-opt:disabled{cursor:default;}',
+    '.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}',
+    '.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}',
+    '.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}',
+    '.lab-intro{padding:24px 40px 0;}',
+    '.lab-intro h4{font-family:\'Cinzel\',serif;font-size:1.65rem;color:white;margin-bottom:14px;}',
+    '.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}',
+    '.lab-intro ol{padding-left:1.6rem;margin:12px 0;} .lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}',
+    '.lab-prompt{background:rgba(' + accentRgb + ',0.08);border:1px solid rgba(' + accentRgb + ',0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}',
+    '.lab-chat{background:rgba(' + accentRgb + ',0.03);border:1.5px solid rgba(' + accentRgb + ',0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}',
+    '.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(' + accentRgb + ',0.07);border-bottom:1px solid rgba(' + accentRgb + ',0.15);font-size:1.2rem;font-weight:700;}',
+    '.chat-badge{font-size:1.02rem;background:rgba(' + accentRgb + ',0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}',
+    '.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}',
+    '.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}',
+    '.chat-bubble.ai{background:rgba(' + accentRgb + ',0.09);border:1px solid rgba(' + accentRgb + ',0.18);align-self:flex-start;}',
+    '.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}',
+    '.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}',
+    '.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(' + accentRgb + ',0.1);}',
+    '.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:\'Nunito\',sans-serif;resize:none;} .chat-input:focus{outline:none;border-color:var(--accent);}',
+    '.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:\'Nunito\',sans-serif;cursor:pointer;} .chat-send-btn:hover{opacity:0.85;} .chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}',
+    '',
+    '═══ REQUIRED JS BLOCK ═══',
+    'const GROUP_ID = 3;',
+    'const ACADEMY_GUARDRAIL = "You are operating within the AESOP AI Academy. Your role is strictly scoped to the topic of this lab. If the student asks about anything outside this topic, warmly redirect.";',
+    'const LAB_PROMPTS = { l1:"...", l2:"...", l3:"...", l4:"...", l5:"...", l6:"...", l7:"...", l8:"..." };',
+    '// Write SPECIFIC lab prompts for each of the 8 lessons. Each must instruct the AI to open with a question.',
+    '',
+    'let currentPage = "p-l1";',
+    'const lessonSignaled = {}, quizSignaled = {}, labSignaled = {};',
+    '',
+    'function goPage(id) {',
+    '  document.getElementById(currentPage).classList.remove("active");',
+    '  const next = document.getElementById(id);',
+    '  if (!next) return;',
+    '  next.classList.add("active");',
+    '  currentPage = id;',
+    '  updateSidebar();',
+    '  const labMatch = id.match(/^p-(l\\d+)-lab$/);',
+    '  if (labMatch) initLab(labMatch[1]);',
+    '  const lessonMatch = id.match(/^p-(l\\d+)$/);',
+    '  if (lessonMatch) {',
+    '    const lid = "m' + moduleNum + '-" + lessonMatch[1];',
+    '    if (!lessonSignaled[lid]) {',
+    '      lessonSignaled[lid] = true;',
+    '      window.parent.postMessage({ type: "lessonComplete", lessonId: lid, groupId: GROUP_ID }, "*");',
+    '    }',
+    '  }',
+    '  window.scrollTo(0, 0);',
+    '}',
+    '',
+    'function updateSidebar() {',
+    '  document.querySelectorAll("#sb-lessons .sb-btn").forEach(btn =>',
+    '    btn.classList.toggle("active", btn.dataset.page === currentPage)',
+    '  );',
+    '  document.getElementById("sbi-mt").classList.toggle("active", currentPage === "p-mt");',
+    '}',
+    '',
+    'function answer(btn, result, qId) {',
+    '  const box = document.getElementById(qId);',
+    '  if (!box) return;',
+    '  box.querySelectorAll(".quiz-opt").forEach(b => { b.disabled = true; });',
+    '  btn.style.background = result === "correct" ? "rgba(110,231,183,0.2)" : "rgba(244,114,182,0.2)";',
+    '  btn.style.borderColor = result === "correct" ? "#6ee7b7" : "#f472b6";',
+    '  btn.style.color = result === "correct" ? "#6ee7b7" : "#f472b6";',
+    '  const fb = box.querySelectorAll(".quiz-feedback");',
+    '  fb[0].style.display = result === "correct" ? "block" : "none";',
+    '  fb[1].style.display = result === "wrong" ? "block" : "none";',
+    '}',
+    '',
+    'let chatHistories = {}, chatExchanges = {};',
+    'const LAB_THRESHOLD = 3;',
+    '',
+    'function initLab(labId) {',
+    '  if (chatHistories[labId]) return;',
+    '  chatHistories[labId] = [];',
+    '  chatExchanges[labId] = 0;',
+    '  sendOpener(labId);',
+    '}',
+    '',
+    'async function sendOpener(labId) {',
+    '  const btn = document.getElementById("send-" + labId);',
+    '  if (btn) btn.disabled = true;',
+    '  try {',
+    '    const res = await fetch("https://playagame.ai/claude-proxy.php", {',
+    '      method: "POST",',
+    '      headers: { "Content-Type": "application/json" },',
+    '      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 400, system: LAB_PROMPTS[labId], messages: [{ role: "user", content: "[Begin immediately with your opening question.]" }] })',
+    '    });',
+    '    const data = await res.json();',
+    '    const text = data.content?.[0]?.text || "Connection error.";',
+    '    chatHistories[labId].push({ role: "assistant", content: text });',
+    '    addMsg(labId, "ai", text);',
+    '  } catch(e) { addMsg(labId, "ai", "Connection error. Please reload."); }',
+    '  finally { if (btn) btn.disabled = false; }',
+    '}',
+    '',
+    'async function chatSend(labId) {',
+    '  const inp = document.getElementById("inp-" + labId);',
+    '  const btn = document.getElementById("send-" + labId);',
+    '  if (!inp || !btn) return;',
+    '  const txt = inp.value.trim();',
+    '  if (!txt) return;',
+    '  inp.value = "";',
+    '  btn.disabled = true;',
+    '  if (!chatHistories[labId]) { chatHistories[labId] = []; chatExchanges[labId] = 0; }',
+    '  chatHistories[labId].push({ role: "user", content: txt });',
+    '  addMsg(labId, "user", txt);',
+    '  const thinking = addMsg(labId, "thinking", "Thinking...");',
+    '  try {',
+    '    const res = await fetch("https://playagame.ai/claude-proxy.php", {',
+    '      method: "POST",',
+    '      headers: { "Content-Type": "application/json" },',
+    '      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 400, system: LAB_PROMPTS[labId], messages: chatHistories[labId] })',
+    '    });',
+    '    const data = await res.json();',
+    '    const text = data.content?.[0]?.text || "Error.";',
+    '    chatHistories[labId].push({ role: "assistant", content: text });',
+    '    thinking.remove();',
+    '    addMsg(labId, "ai", text);',
+    '    chatExchanges[labId]++;',
+    '    if (chatExchanges[labId] >= LAB_THRESHOLD && !labSignaled[labId]) {',
+    '      labSignaled[labId] = true;',
+    '      window.parent.postMessage({ type: "labComplete", lessonId: "m' + moduleNum + '-" + labId, groupId: GROUP_ID, exchangeCount: chatExchanges[labId] }, "*");',
+    '    }',
+    '  } catch(e) { thinking.remove(); addMsg(labId, "ai", "Error. Please try again."); }',
+    '  finally { btn.disabled = false; inp.focus(); }',
+    '}',
+    '',
+    'function addMsg(labId, role, text) {',
+    '  const msgs = document.getElementById("msgs-" + labId);',
+    '  if (!msgs) return null;',
+    '  const el = document.createElement("div");',
+    '  el.className = "chat-bubble " + role;',
+    '  el.textContent = text;',
+    '  msgs.appendChild(el);',
+    '  msgs.scrollTop = msgs.scrollHeight;',
+    '  return el;',
+    '}',
+    '',
+    '// Parse ?lesson= URL param',
+    '(function() {',
+    '  var params = new URLSearchParams(window.location.search);',
+    '  var lp = params.get("lesson") || window.location.hash.replace("#", "");',
+    '  if (lp) {',
+    '    var map = {' + Array.from({length:8}, (_,i) => '"m' + moduleNum + '-l' + (i+1) + '":"p-l' + (i+1) + '"').join(',') + ',"m' + moduleNum + '-test":"p-mt"};',
+    '    if (map[lp]) goPage(map[lp]);',
+    '  }',
+    '})();',
+    '',
+    '═══ CONTENT RULES ═══',
+    '- 8 lessons, each with: lesson page + quiz (3 questions) + lab (AI chat)',
+    '- 1 module test at end (15 questions)',
+    '- Quiz IDs: q0-l1, q1-l1, q2-l1 for lesson 1; q0-l2, q1-l2, q2-l2 for lesson 2; etc.',
+    '- Module test IDs: mt-q0 through mt-q14',
+    '- Quiz feedback: .right class FIRST, .wrong class SECOND — order matters',
+    '- Correct answer position MUST vary across questions',
+    '- Case studies open EVERY lesson (data-label="CASE STUDY")',
+    '- Lab chat uses: https://playagame.ai/claude-proxy.php — NEVER /aesop-api/proxy.php',
+    '- Model in labs: claude-sonnet-4-20250514, max_tokens: 400',
+    '- sendOpener() fires immediately when lab page opens — AI starts with a question',
+    '- No starfield, no .stars elements',
+    '- Module test uses .mt-hero, NOT .lesson-hero',
+    '- Sidebar uses <nav class="sidebar">, NOT <aside>',
+    '- Main area uses <div class="main">, NOT <main>',
+    langBlock,
+    '',
+    'BUILD ALL 8 LESSONS + 8 QUIZZES + 8 LABS + MODULE TEST NOW. Output complete standalone HTML.'
+  ].join('\n');
+}
+
 let chainRunning = false;
 
 async function buildFullCourse() {
@@ -1564,8 +1922,10 @@ async function buildFullCourse() {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 32000,
-          system: buildSystemPrompt(course, mod, selectedTier, tc, selectedLang, selectedLangName),
+          max_tokens: course.isFoundations ? 64000 : 32000,
+          system: course.isFoundations
+            ? buildFoundationsSystemPrompt(course, mod, selectedLang, selectedLangName)
+            : buildSystemPrompt(course, mod, selectedTier, tc, selectedLang, selectedLangName),
           messages: [{ role: 'user', content: userMsg }]
         })
       });
@@ -1593,9 +1953,9 @@ async function buildFullCourse() {
       log('Generated ' + content.length.toLocaleString() + ' chars in ' + modSecs + 's');
 
       // Auto-save to repo
-      const chainFilePrefix = getFilePrefix(cid);
-      const chainFolderName = getFolderName(cid);
-      const filename = chainFilePrefix + '-m' + mn + '.html';
+      const isFoundations = course.isFoundations;
+      const chainFolderName = isFoundations ? 'module-' + mn : getFolderName(cid);
+      const filename = isFoundations ? 'advanced-m' + mn + '.html' : getFilePrefix(cid) + '-m' + mn + '.html';
       let courseDir = await repoFolderHandle.getDirectoryHandle(chainFolderName, { create: true });
       // Non-English: nest inside a language subfolder (e.g. ai-governance/es/)
       if (selectedLang !== 'en') {
@@ -1757,8 +2117,10 @@ async function generate() {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 32000,
-        system: buildSystemPrompt(course, mod, selectedTier, tc, selectedLang, selectedLangName),
+        max_tokens: course.isFoundations ? 64000 : 32000,
+        system: course.isFoundations
+          ? buildFoundationsSystemPrompt(course, mod, selectedLang, selectedLangName)
+          : buildSystemPrompt(course, mod, selectedTier, tc, selectedLang, selectedLangName),
         messages: [{ role: 'user', content: userMsg }]
       })
     });
@@ -1782,8 +2144,8 @@ async function generate() {
     log('Tokens: ' + (data.usage?.input_tokens||'?') + ' in / ' + (data.usage?.output_tokens||'?') + ' out');
 
     generatedContent = content;
-    const filePrefix = getFilePrefix(cid);
-    generatedFilename = filePrefix + '-m' + mn + '.html';
+    const course = COURSES.find(c => c.id === cid);
+    generatedFilename = course && course.isFoundations ? 'advanced-m' + mn + '.html' : getFilePrefix(cid) + '-m' + mn + '.html';
     document.getElementById('outputFilename').textContent = generatedFilename;
     document.getElementById('outputPreview').textContent = content.substring(0, 2000) + '\n\n... [' + content.length.toLocaleString() + ' chars — download for full file]';
     document.getElementById('outputArea').classList.add('visible');
@@ -1837,7 +2199,8 @@ async function downloadFile() {
     const saveBtn = document.getElementById('saveBtn');
     try {
       // Folder handle IS the modules folder — navigate to course folder name
-      const folderName = getFolderName(cid);
+      const course = COURSES.find(c => c.id === cid);
+      const folderName = course && course.isFoundations ? 'module-' + mn : getFolderName(cid);
       let courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: true });
       // Non-English: nest inside a language subfolder
       if (selectedLang !== 'en') {

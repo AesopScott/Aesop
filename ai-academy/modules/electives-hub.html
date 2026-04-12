@@ -912,6 +912,143 @@ function injectModuleContent(html, cId, mId, m, c){
 
 
 // ═══════════════════════════════════════════════════════════
+// LEARNER ID GATE — require ID before module tests / course exams
+// ═══════════════════════════════════════════════════════════
+const LEARNER_ID_KEY = 'aesop-learner-id';
+
+function hasLearnerId() {
+  return !!localStorage.getItem(LEARNER_ID_KEY);
+}
+
+function generateLearnerId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return 'AESOP-' + code;
+}
+
+function showLearnerIdGate(onComplete) {
+  // Remove any existing gate
+  var existing = document.getElementById('learnerIdGate');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'learnerIdGate';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+
+  overlay.innerHTML = `
+    <div style="background:#1a2332;border:1px solid rgba(201,160,90,0.3);border-radius:12px;padding:2rem;max-width:400px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+      <div style="font-size:2.5rem;margin-bottom:0.75rem;">📋</div>
+      <h2 style="font-family:var(--font-display);font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:0.5rem;">Learner ID Required</h2>
+      <p style="font-size:0.85rem;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:1.5rem;">
+        You need a Learner ID to take exams and track your progress. No email or account needed — just a unique code.
+      </p>
+      <button id="gateGetId" style="width:100%;padding:0.7rem 1.5rem;font-size:0.85rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:var(--gold);color:#0d1b2a;border:none;border-radius:6px;cursor:pointer;margin-bottom:1rem;transition:background 0.2s;">
+        Get My Learner ID
+      </button>
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
+        <span style="font-size:0.65rem;color:rgba(255,255,255,0.3);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;">or</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <input id="gateIdInput" type="text" placeholder="AESOP-XXXX" maxlength="10"
+               style="flex:1;padding:0.6rem 0.75rem;font-family:'SF Mono','Fira Code',monospace;font-size:0.85rem;letter-spacing:0.06em;text-transform:uppercase;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#fff;outline:none;">
+        <button id="gateLookup" style="padding:0.6rem 1rem;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:rgba(201,160,90,0.15);color:var(--gold);border:1px solid rgba(201,160,90,0.3);border-radius:6px;cursor:pointer;white-space:nowrap;">
+          Look Up
+        </button>
+      </div>
+      <div id="gateErr" style="font-size:0.78rem;color:#dc3545;margin-top:0.5rem;min-height:1.2em;"></div>
+      <div id="gateSuccess" style="display:none;margin-top:1rem;padding:1rem;background:rgba(61,214,192,0.1);border:1px solid rgba(61,214,192,0.25);border-radius:8px;">
+        <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);font-weight:600;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.3rem;">Your Learner ID</div>
+        <div id="gateIdDisplay" style="font-family:'SF Mono','Fira Code',monospace;font-size:1.2rem;font-weight:800;color:var(--gold-light);letter-spacing:0.08em;margin-bottom:0.5rem;"></div>
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;">Save this ID — you'll need it to access your transcript later.</p>
+        <button id="gateContinue" style="width:100%;padding:0.6rem 1.5rem;font-size:0.82rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:var(--gold);color:#0d1b2a;border:none;border-radius:6px;cursor:pointer;">
+          Continue to Exam
+        </button>
+      </div>
+      <button id="gateCancel" style="margin-top:1rem;font-size:0.72rem;color:rgba(255,255,255,0.3);background:none;border:none;cursor:pointer;text-decoration:underline;">Cancel</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Get new ID
+  document.getElementById('gateGetId').addEventListener('click', function() {
+    var id = generateLearnerId();
+    localStorage.setItem(LEARNER_ID_KEY, id);
+    document.getElementById('gateGetId').style.display = 'none';
+    document.getElementById('gateSuccess').style.display = 'block';
+    document.getElementById('gateIdDisplay').textContent = id;
+    // Also save to Firestore via transcript page on next visit
+  });
+
+  // Lookup existing ID
+  document.getElementById('gateLookup').addEventListener('click', function() {
+    var val = document.getElementById('gateIdInput').value.trim().toUpperCase();
+    var err = document.getElementById('gateErr');
+    err.textContent = '';
+    if (!val || !val.startsWith('AESOP-') || val.length < 8) {
+      err.textContent = 'Enter a valid Learner ID (e.g. AESOP-7K3X).';
+      return;
+    }
+    localStorage.setItem(LEARNER_ID_KEY, val);
+    overlay.remove();
+    if (onComplete) onComplete();
+  });
+
+  // Enter key in input
+  document.getElementById('gateIdInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('gateLookup').click();
+  });
+
+  // Continue after getting new ID
+  document.getElementById('gateContinue').addEventListener('click', function() {
+    overlay.remove();
+    if (onComplete) onComplete();
+  });
+
+  // Cancel
+  document.getElementById('gateCancel').addEventListener('click', function() {
+    overlay.remove();
+  });
+}
+
+// Intercept goPage calls — gate module test pages behind Learner ID
+(function() {
+  var _origGoPage = null;
+
+  // Poll for goPage to exist (injected by module load)
+  var observer = new MutationObserver(function() {
+    if (window.goPage && window.goPage !== _gatedGoPage) {
+      _origGoPage = window.goPage;
+      window.goPage = _gatedGoPage;
+    }
+    if (window.standaloneGoPage && window.standaloneGoPage !== _gatedStandaloneGoPage) {
+      window._origStandaloneGoPage = window.standaloneGoPage;
+      window.standaloneGoPage = _gatedStandaloneGoPage;
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  function _gatedGoPage(pageId) {
+    if (pageId === 'p-mt' && !hasLearnerId()) {
+      showLearnerIdGate(function() { _origGoPage(pageId); });
+      return;
+    }
+    _origGoPage(pageId);
+  }
+
+  function _gatedStandaloneGoPage(pageId) {
+    if (pageId === 'p-mt' && !hasLearnerId()) {
+      showLearnerIdGate(function() { window._origStandaloneGoPage(pageId); });
+      return;
+    }
+    window._origStandaloneGoPage(pageId);
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════
 // COURSE EXAM ENGINE
 // ═══════════════════════════════════════════════════════════
 // Exam question banks — 4 questions per module × modules per course

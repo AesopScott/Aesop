@@ -822,21 +822,42 @@ function injectModuleContent(html, cId, mId, m, c){
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
-  // Extract pieces from the fetched document
-  const tabStrip  = doc.querySelector('.tab-strip');
+  // Detect format: "injection" modules have .content-area; "standalone" modules have .site-layout > .main
   const contentArea = doc.querySelector('.content-area');
-  const moduleStyles = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
-  const moduleScripts = Array.from(doc.querySelectorAll('script')).map(s=>s.textContent).filter(t=>t.trim() && t.includes('COURSE_ID')).join('\n');
-  const modTitle = doc.querySelector('.topbar-module')?.textContent || m.title;
+  const standaloneMain = !contentArea ? doc.querySelector('.main') : null;
+  const isStandalone = !contentArea && standaloneMain;
 
-  if(!contentArea){ document.getElementById('contentArea').innerHTML='<div style="padding:2rem;color:rgba(255,255,255,0.4);">Content not found in module file.</div>'; return; }
+  // Extract styles & scripts from both formats
+  const moduleStyles = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  const moduleScripts = Array.from(doc.querySelectorAll('script')).map(s=>s.textContent).filter(t=>t.trim()).join('\n');
+
+  if(!contentArea && !standaloneMain){
+    document.getElementById('contentArea').innerHTML='<div style="padding:2rem;color:rgba(255,255,255,0.4);">Content not found in module file.</div>';
+    return;
+  }
+
+  // Module title: injection format uses .topbar-module; standalone uses .sb-mod-title
+  const modTitle = doc.querySelector('.topbar-module')?.textContent
+    || doc.querySelector('.sb-mod-title')?.textContent
+    || m.title;
 
   // Inject module-scoped styles (only once per module)
   const styleId = 'module-style-'+cId+'-'+mId;
   if(!document.getElementById(styleId)){
     const styleEl = document.createElement('style');
     styleEl.id = styleId;
-    styleEl.textContent = moduleStyles;
+    // For standalone modules, scope styles so sidebar CSS doesn't leak into hub
+    let styles = moduleStyles;
+    if(isStandalone){
+      styles += `\n/* Hub overrides for standalone modules */
+.standalone-injected .site-layout { display:block !important; }
+.standalone-injected .sidebar { display:none !important; }
+.standalone-injected .main { overflow:visible !important; }
+.standalone-injected .page { display:none; flex-direction:column; }
+.standalone-injected .page.active { display:flex; }
+`;
+    }
+    styleEl.textContent = styles;
     document.head.appendChild(styleEl);
   }
 
@@ -857,10 +878,51 @@ function injectModuleContent(html, cId, mId, m, c){
       </div>
     </div>`;
 
-  const tabHTML  = tabStrip  ? tabStrip.outerHTML  : '';
-  const bodyHTML = contentArea ? contentArea.outerHTML : '';
+  if(isStandalone){
+    // ── Standalone format: build a tab strip from the sidebar buttons, inject .main content ──
+    const sidebarBtns = doc.querySelectorAll('.sb-btn:not(.sb-sub)');
+    const testBtn = doc.querySelector('.sb-test');
+    let tabHTML = '<div class="tab-strip">';
+    sidebarBtns.forEach((btn, i) => {
+      const pageId = btn.getAttribute('onclick')?.match(/goPage\('([^']+)'\)/)?.[1] || '';
+      const label = btn.textContent.trim();
+      const activeClass = i === 0 ? ' active' : '';
+      tabHTML += `<div class="tab-group"><div class="tab-lesson${activeClass}" onclick="standaloneGoPage('${pageId}',this)" data-page="${pageId}">${label}</div>`;
+      // Add quiz/lab sub-tabs for this lesson
+      const nextSiblings = [];
+      let sib = btn.nextElementSibling;
+      while(sib && sib.classList.contains('sb-sub')){
+        nextSiblings.push(sib);
+        sib = sib.nextElementSibling;
+      }
+      if(nextSiblings.length){
+        tabHTML += '<div class="tab-subs">';
+        nextSiblings.forEach(sub => {
+          const subPageId = sub.getAttribute('onclick')?.match(/goPage\('([^']+)'\)/)?.[1] || '';
+          const subLabel = sub.textContent.trim();
+          tabHTML += `<span class="tab-sep">·</span><div class="tab-sub" onclick="standaloneGoPage('${subPageId}',this)" data-page="${subPageId}">${subLabel}</div>`;
+        });
+        tabHTML += '</div>';
+      }
+      tabHTML += '</div>';
+    });
+    if(testBtn){
+      const testPageId = testBtn.getAttribute('onclick')?.match(/goPage\('([^']+)'\)/)?.[1] || '';
+      tabHTML += `<div class="tab-test" onclick="standaloneGoPage('${testPageId}',this)" data-page="${testPageId}">Module Test</div>`;
+    }
+    tabHTML += '</div>';
 
-  document.getElementById('contentArea').innerHTML = topbarHTML + tabHTML + bodyHTML;
+    // Wrap the standalone .main content
+    const bodyHTML = `<div class="content-area standalone-injected"><div class="site-layout">${standaloneMain.outerHTML}</div></div>`;
+    document.getElementById('contentArea').innerHTML = topbarHTML + tabHTML + bodyHTML;
+
+  } else {
+    // ── Injection format (original path) ──
+    const tabStrip = doc.querySelector('.tab-strip');
+    const tabHTML  = tabStrip  ? tabStrip.outerHTML  : '';
+    const bodyHTML = contentArea.outerHTML;
+    document.getElementById('contentArea').innerHTML = topbarHTML + tabHTML + bodyHTML;
+  }
 
   // Restore hub controls on new content
   setTimeout(function(){ if(typeof hubRestoreControls==='function') hubRestoreControls(); }, 50);
@@ -874,6 +936,22 @@ function injectModuleContent(html, cId, mId, m, c){
     scriptEl.textContent = moduleScripts;
     document.body.appendChild(scriptEl);
   } catch(e){ console.warn('Module script injection error:', e); }
+}
+
+// Navigation handler for standalone-format modules injected into the hub
+function standaloneGoPage(pageId, clickedTab){
+  if(!pageId) return;
+  // Switch active page
+  const container = document.querySelector('.standalone-injected');
+  if(!container) return;
+  container.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = container.querySelector('#'+pageId);
+  if(target) target.classList.add('active');
+  // Update tab highlight
+  document.querySelectorAll('.tab-strip .tab-lesson, .tab-strip .tab-sub, .tab-strip .tab-test').forEach(t => t.classList.remove('active'));
+  if(clickedTab) clickedTab.classList.add('active');
+  // Scroll content to top
+  document.getElementById('contentArea')?.scrollTo(0,0);
 }
 
 
@@ -1014,233 +1092,4 @@ function renderExamPanel(cId){
       </ul>
     </div>
     <div id="examStart-${cId}">
-      <button class="exam-start-btn" onclick="startExam('${cId}')">Begin Exam →</button>
-    </div>
-    <div class="exam-q-area" id="examQs-${cId}"></div>
-    <div id="examResults-${cId}"></div>`;
-  }
-  h+=`</div>`;
-  document.getElementById('contentArea').innerHTML=h;
-}
-
-function startExam(cId){
-  const bank=EXAM_BANKS[cId]||[];
-  // Shuffle
-  const qs=[...bank].sort(()=>Math.random()-0.5);
-  examState[cId]={questions:qs,current:0,answers:[],started:true};
-
-  document.getElementById(`examStart-${cId}`).style.display='none';
-  document.getElementById(`examQs-${cId}`).classList.add('active');
-  renderExamQuestion(cId);
-}
-
-function renderExamQuestion(cId){
-  const es=examState[cId];
-  if(!es) return;
-  const q=es.questions[es.current];
-  const prog=Math.round(((es.current)/es.questions.length)*100);
-  const qa=document.getElementById(`examQs-${cId}`);
-
-  let h=`<div class="exam-prog-bar"><div class="exam-prog-fill" style="width:${prog}%"></div></div>`;
-  h+=`<div class="q-card">
-    <div class="q-meta">Question ${es.current+1} of ${es.questions.length}</div>
-    <div class="q-mod-tag">${q.mod}</div>
-    <div class="q-text">${q.q}</div>
-    <div class="q-opts" id="opts-${cId}">`;
-  q.opts.forEach((o,i)=>{
-    h+=`<button class="q-opt" onclick="selectAnswer('${cId}',${i})">${o}</button>`;
-  });
-  h+=`</div></div>`;
-  h+=`<div class="exam-nav">
-    <span class="q-counter">${es.current+1} / ${es.questions.length}</span>
-    <button class="exam-btn" id="examNext-${cId}" disabled onclick="nextQuestion('${cId}')">
-      ${es.current<es.questions.length-1?'Next →':'Submit Exam'}
-    </button>
-  </div>`;
-  qa.innerHTML=h;
-}
-
-function selectAnswer(cId,idx){
-  const es=examState[cId];
-  if(!es) return;
-  es.answers[es.current]=idx;
-  document.querySelectorAll(`#opts-${cId} .q-opt`).forEach((b,i)=>b.classList.toggle('sel',i===idx));
-  document.getElementById(`examNext-${cId}`).disabled=false;
-}
-
-function nextQuestion(cId){
-  const es=examState[cId];
-  if(!es) return;
-  if(es.current<es.questions.length-1){
-    es.current++;
-    renderExamQuestion(cId);
-  } else {
-    submitExam(cId);
-  }
-}
-
-function submitExam(cId){
-  const es=examState[cId];
-  const c=getCourse(cId);
-  if(!es) return;
-  let correct=0;
-  es.questions.forEach((q,i)=>{
-    if(es.answers[i]===q.correct) correct++;
-  });
-  const total=es.questions.length;
-  const pct=Math.round((correct/total)*100);
-  const passed=pct>=80;
-
-  if(passed) markExamPassed(cId);
-
-  document.getElementById(`examQs-${cId}`).classList.remove('active');
-  const resultsEl=document.getElementById(`examResults-${cId}`);
-  let h=`<div class="results-panel">
-    <div class="score-ring ${passed?'pass':'fail'}">
-      <span class="score-pct ${passed?'pass':'fail'}">${pct}%</span>
-      <span class="score-lbl">${passed?'PASSED':'FAILED'}</span>
-    </div>
-    <div class="result-verdict ${passed?'pass':'fail'}">${passed?'Congratulations!':'Not quite — review and retry'}</div>
-    <div class="result-sub">${passed?`You\'ve passed the ${c.title} exam.`:'You need 80% to pass. Review the modules and try again.'}</div>
-    <div class="result-detail">
-      <div class="rd-row"><span>Correct</span><span>${correct}</span></div>
-      <div class="rd-row"><span>Total Questions</span><span>${total}</span></div>
-      <div class="rd-row"><span>Score</span><span>${pct}%</span></div>
-      <div class="rd-row"><span>Required to Pass</span><span>80%</span></div>
-    </div>`;
-
-  if(passed){
-    h+=`<div class="pts-award">
-      <div class="pts-award-num">+${c.pts}</div>
-      <div class="pts-award-label">Core Point${c.pts>1?'s':''} Awarded</div>
-      <div class="pts-award-sub">Total earned: ${totalPoints()} / 9 points · Valid 3 years</div>
-    </div>`;
-  } else {
-    h+=`<div style="margin-top:1rem;text-align:center;">
-      <button class="exam-start-btn" onclick="retryExam('${cId}')">Retry Exam</button>
-    </div>`;
-  }
-  h+=`</div>`;
-  resultsEl.innerHTML=h;
-  renderAll();
-}
-
-function retryExam(cId){
-  delete examState[cId];
-  renderExamPanel(cId);
-}
-
-// ═══════════════════════════════════════════════════════════
-// DARK MODE
-// ═══════════════════════════════════════════════════════════
-(function(){
-  const KEY='aesop-theme';
-  const HTML=document.documentElement;
-  const BTN=document.getElementById('themeToggle');
-  if(localStorage.getItem(KEY)==='dark') HTML.setAttribute('data-theme','dark');
-  BTN.addEventListener('click',function(){
-    const dark=HTML.getAttribute('data-theme')==='dark';
-    dark?HTML.removeAttribute('data-theme'):HTML.setAttribute('data-theme','dark');
-    localStorage.setItem(KEY,dark?'light':'dark');
-  });
-})();
-
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════
-// HUB CONTENT CONTROLS — size + color
-// ═══════════════════════════════════════════════════════════
-var HUB_FONT_SIZE = 16;
-
-function hubGetContentArea(){
-  // Target the injected .content-area inside contentArea, or contentArea itself
-  const outer = document.getElementById('contentArea');
-  if(!outer) return null;
-  return outer.querySelector('.content-area') || outer;
-}
-
-function hubApplySize(val){
-  HUB_FONT_SIZE = parseInt(val);
-  var base = parseInt(val);
-  var dynStyle = document.getElementById('hub-dynamic-size');
-  if(!dynStyle){ dynStyle = document.createElement('style'); dynStyle.id = 'hub-dynamic-size'; document.head.appendChild(dynStyle); }
-  var css = '.content-area p,.content-area li,.content-area td,.story-text,.section-body p,.lesson-body p,.lesson-body li,.quiz-q,.quiz-opt,.lab-intro p,.callout p,.gold-callout p,.key-term{font-size:'+base+'px !important;}';
-  css += '.lesson-hero h1{font-size:'+Math.round(base*1.8)+'px !important;}';
-  css += '.section-heading,.callout-label{font-size:'+Math.round(base*0.95)+'px !important;}';
-  dynStyle.textContent = css;
-  localStorage.setItem('aesop-hub-fontsize', val);
-}
-
-function hubAdjustSize(delta){
-  const r = document.getElementById('hubSizerRange');
-  if(!r) return;
-  r.value = Math.min(22, Math.max(12, parseInt(r.value) + delta));
-  hubApplySize(r.value);
-}
-
-function hubApplyColor(val){
-  // Shift text color only — interpolate from muted (#6e7a8a) to full (#e8e3db)
-  const pct = parseInt(val) / 100;
-  const r = Math.round(110 + (232 - 110) * pct);
-  const g = Math.round(122 + (227 - 122) * pct);
-  const b = Math.round(138 + (219 - 138) * pct);
-  const color = 'rgb(' + r + ',' + g + ',' + b + ')';
-  // Inject/update a dynamic style rule
-  let dynStyle = document.getElementById('hub-dynamic-color');
-  if(!dynStyle){
-    dynStyle = document.createElement('style');
-    dynStyle.id = 'hub-dynamic-color';
-    document.head.appendChild(dynStyle);
-  }
-  if(parseInt(val) === 100){
-    dynStyle.textContent = '';
-  } else {
-    dynStyle.textContent = '.content-area p,.content-area li,.content-area td,.story-text,.section-body p,.lesson-section p,.lesson-body p,.lesson-body li{color:'+color+' !important;}';
-  }
-  localStorage.setItem('aesop-hub-textcolor', val);
-}
-
-function hubRestoreControls(){
-  const savedSize  = localStorage.getItem('aesop-hub-fontsize');
-  const savedColor = localStorage.getItem('aesop-hub-textcolor');
-  if(savedSize){
-    const r = document.getElementById('hubSizerRange');
-    if(r) r.value = savedSize;
-    hubApplySize(savedSize);
-  }
-  if(savedColor){
-    const r = document.getElementById('hubColorRange');
-    if(r) r.value = savedColor;
-    hubApplyColor(savedColor);
-  }
-}
-
-loadCourseRegistry().then(() => {
-  const _urlCourse = new URLSearchParams(window.location.search).get('course');
-  selectCourse(_urlCourse && COURSES.find(c=>c.id===_urlCourse) ? _urlCourse : 'governance');
-});
-
-(function(){
-  const resizer=document.getElementById('sidebarResizer');
-  const sidebar=document.getElementById('hubSidebar');
-  const main=sidebar&&sidebar.closest('.main');
-  if(!resizer||!sidebar||!main)return;
-  const KEY='aesop-electives-sidebar-w',MIN=200,MAX=600;
-  const saved=parseInt(localStorage.getItem(KEY));
-  if(saved&&saved>=MIN&&saved<=MAX){sidebar.style.width=saved+'px';main.style.gridTemplateColumns=saved+'px 8px 1fr';}
-  let dragging=false,startX=0,startW=0;
-  function startDrag(x){dragging=true;startX=x;startW=sidebar.offsetWidth;resizer.classList.add('dragging');document.body.style.cursor='col-resize';document.body.style.userSelect='none';}
-  function onMove(x){if(!dragging)return;const w=Math.min(MAX,Math.max(MIN,startW+(x-startX)));sidebar.style.width=w+'px';main.style.gridTemplateColumns=w+'px 8px 1fr';}
-  function endDrag(){if(!dragging)return;dragging=false;resizer.classList.remove('dragging');document.body.style.cursor='';document.body.style.userSelect='';localStorage.setItem(KEY,sidebar.offsetWidth);}
-  resizer.addEventListener('mousedown',e=>{e.preventDefault();startDrag(e.clientX);});
-  document.addEventListener('mousemove',e=>onMove(e.clientX));
-  document.addEventListener('mouseup',endDrag);
-  resizer.addEventListener('touchstart',e=>{startDrag(e.touches[0].clientX);},{passive:true});
-  document.addEventListener('touchmove',e=>{if(dragging)e.preventDefault();onMove(e.touches[0].clientX);},{passive:false});
-  document.addEventListener('touchend',endDrag);
-})();
-</script>
-</body>
-</html>
+      <button class="exam-start-btn" 

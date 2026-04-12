@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<!-- v1.0.0 -->
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observability and Logging — Advanced | AESOP AI Academy Module 6</title>
+<meta name="description" content="Advanced: Tracing agent runs, debugging failures, and monitoring in production. Module 6 of the AESOP AI Academy." />
+<link rel="canonical" href="https://aesopacademy.org/ai-academy/modules/module-6/advanced.html" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Nunito:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080810;--panel:#0e0e1a;--border:#1e1e2e;--accent:#f43f5e;--gold:#f0c040;--text:#f0eef5;--muted:#6a6a80;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:Nunito,sans-serif;min-height:100vh;}
+.site-layout{display:flex;flex-direction:row;min-height:100vh;}
+.sidebar{background:#0a0a14;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;width:260px;flex-shrink:0;}
+.sb-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.sb-back{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:1.2rem;font-weight:700;text-decoration:none;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;}
+.sb-mod-num{font-family:Cinzel,serif;font-size:1.05rem;color:var(--muted);letter-spacing:0.12em;margin-bottom:2px;}
+.sb-mod-title{font-family:Cinzel,serif;font-size:1.35rem;font-weight:700;color:var(--gold);margin-bottom:6px;}
+.sb-tier-chip{display:inline-flex;align-items:center;gap:5px;font-size:1.05rem;font-weight:700;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:3px 10px;}
+.sb-lessons{flex:1;padding:10px 8px;}
+.sb-btn{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;text-align:left;font-family:Nunito,sans-serif;font-size:1.2rem;font-weight:700;color:var(--muted);transition:all 0.15s;margin-bottom:2px;}
+.sb-btn:hover{background:rgba(244,63,94,0.07);color:var(--text);}
+.sb-btn.active{background:rgba(244,63,94,0.13);color:var(--accent);}
+.sb-icon{font-size:1.2rem;flex-shrink:0;}
+.sb-sub{padding-left:28px;font-size:1.08rem;font-weight:600;}
+.sb-div{height:1px;background:var(--border);margin:6px 8px;}
+.sb-test{margin:8px;padding:10px 14px;background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-family:Cinzel,serif;font-size:1.1rem;font-weight:700;color:var(--gold);cursor:pointer;text-align:left;transition:all 0.15s;}
+.sb-test:hover{background:rgba(240,192,64,0.13);}
+.sb-test.active{background:rgba(240,192,64,0.18);}
+.main{flex:1;overflow-y:auto;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.lesson-hero{padding:40px 40px 28px;border-bottom:1px solid var(--border);}
+.age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
+.lesson-hero h1{font-family:Cinzel,serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
+.lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
+.mt-hero h1{font-family:Cinzel,serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
+.mt-hero p{font-size:1.4rem;color:var(--muted);}
+.story-scene{background:rgba(244,63,94,0.04);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:24px 36px;margin:36px 40px;position:relative;}
+.story-scene[data-label]::before{content:attr(data-label);position:absolute;top:-12px;left:24px;background:var(--panel);padding:0 12px;font-size:1.02rem;font-weight:800;letter-spacing:0.2em;color:var(--accent);border:1px solid var(--accent);border-radius:10px;}
+.story-text{font-size:1.53rem;line-height:1.95;color:var(--text);}
+.story-text+.story-text{margin-top:16px;}
+.lesson-section{margin:0 0 48px;padding:0 40px;}
+.section-heading{font-family:Cinzel,serif;font-size:1.8rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);}
+.section-body{font-size:1.5rem;line-height:1.95;color:var(--text);}
+.section-body p+p{margin-top:22px;}
+.section-divider{height:1px;background:var(--border);margin:0 40px 48px;}
+.callout-box{background:rgba(244,63,94,0.06);border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px 24px;margin:20px 0;}
+.callout-label{font-family:Cinzel,serif;font-size:1.05rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.callout-box p{font-size:1.38rem;line-height:1.8;color:var(--text);}
+.ul-body{list-style:none;padding:0;margin:16px 0;}
+.ul-body li{font-size:1.45rem;line-height:1.85;color:var(--text);padding:6px 0 6px 20px;position:relative;}
+.ul-body li::before{content:"\25B8";position:absolute;left:0;color:var(--accent);}
+.page-nav{display:flex;justify-content:space-between;align-items:center;padding:28px 40px 40px;border-top:1px solid var(--border);margin-top:40px;gap:16px;}
+.pnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:12px 24px;cursor:pointer;text-decoration:none;color:var(--muted);transition:all 0.15s;font-family:Nunito,sans-serif;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{background:rgba(244,63,94,0.1);border-color:var(--accent);color:var(--accent);}
+.pnav-arrow{font-size:2.1rem;line-height:1;}
+.pnav-label{font-size:1.08rem;opacity:0.7;}
+.quiz-box{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin:24px 40px;}
+.quiz-q{font-size:1.5rem;font-weight:700;line-height:1.6;margin-bottom:18px;color:var(--text);}
+.quiz-opts{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:1.38rem;font-family:Nunito,sans-serif;color:var(--text);cursor:pointer;text-align:left;transition:all 0.15s;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(244,63,94,0.07);}
+.quiz-opt:disabled{cursor:default;}
+.quiz-feedback{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:1.3rem;line-height:1.6;}
+.quiz-feedback.right{display:block;background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.3);color:#6ee7b7;}
+.quiz-feedback.wrong{display:block;background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);color:#f472b6;}
+.lab-intro{padding:24px 40px 0;}
+.lab-intro h4{font-family:Cinzel,serif;font-size:1.65rem;color:white;margin-bottom:14px;}
+.lab-intro p{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-intro ol{padding-left:1.6rem;margin:12px 0;}
+.lab-intro ol li{font-size:1.425rem;line-height:1.8;margin-bottom:12px;}
+.lab-prompt{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;padding:16px 20px;margin:16px 0 24px;font-size:1.35rem;font-style:italic;color:var(--accent);line-height:1.7;}
+.lab-chat{background:rgba(244,63,94,0.03);border:1.5px solid rgba(244,63,94,0.15);border-radius:14px;margin:0 40px 24px;overflow:hidden;}
+.lab-chat-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(244,63,94,0.07);border-bottom:1px solid rgba(244,63,94,0.15);font-size:1.2rem;font-weight:700;}
+.chat-badge{font-size:1.02rem;background:rgba(244,63,94,0.15);padding:3px 10px;border-radius:20px;color:var(--accent);}
+.chat-msgs{height:240px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-bubble{max-width:85%;padding:10px 15px;border-radius:10px;font-size:1.3rem;line-height:1.65;}
+.chat-bubble.ai{background:rgba(244,63,94,0.09);border:1px solid rgba(244,63,94,0.18);align-self:flex-start;}
+.chat-bubble.user{background:rgba(96,165,250,0.09);border:1px solid rgba(96,165,250,0.2);align-self:flex-end;}
+.chat-bubble.thinking{color:var(--muted);font-style:italic;align-self:flex-start;}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid rgba(244,63,94,0.1);}
+.chat-input{flex:1;background:rgba(10,10,20,0.8);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:1.3rem;color:var(--text);font-family:Nunito,sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{background:var(--accent);color:#0a0a14;border:none;border-radius:8px;padding:10px 20px;font-size:1.2rem;font-weight:800;font-family:Nunito,sans-serif;cursor:pointer;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.4;cursor:not-allowed;}
+</style>
+<script>
+// -- Course Identity (added by audit fix) --
+const COURSE_ID = 'building-ai-agents-iv-openclaw';
+const MODULE_ID = 'bai4-m6';
+</script>
+</head><body>
+<div class="site-layout">
+
+<nav class="sidebar">
+  <div class="sb-header">
+    <a class="sb-back" href="/ai-academy/">← Academy</a>
+    <div class="sb-mod-num">MODULE 6</div>
+    <div class="sb-mod-title">Observability &amp; Logging</div>
+    <span class="sb-tier-chip">🎯 Advanced</span>
+  </div>
+  <div class="sb-lessons">
+    <button class="sb-btn active" id="sbi-l1" onclick="goPage('p-l1')"><span class="sb-icon">📡</span>Lesson 1: Tracing Runs</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-quiz" onclick="goPage('p-l1-quiz')">↳ Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l1-lab" onclick="goPage('p-l1-lab')">↳ Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l2" onclick="goPage('p-l2')"><span class="sb-icon">🔍</span>Lesson 2: Debugging Failures</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-quiz" onclick="goPage('p-l2-quiz')">↳ Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l2-lab" onclick="goPage('p-l2-lab')">↳ Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l3" onclick="goPage('p-l3')"><span class="sb-icon">📊</span>Lesson 3: Production Monitoring</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-quiz" onclick="goPage('p-l3-quiz')">↳ Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l3-lab" onclick="goPage('p-l3-lab')">↳ Lab</button>
+    <div class="sb-div"></div>
+    <button class="sb-btn" id="sbi-l4" onclick="goPage('p-l4')"><span class="sb-icon">🛡️</span>Lesson 4: Alerting &amp; Incident Response</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-quiz" onclick="goPage('p-l4-quiz')">↳ Quiz</button>
+    <button class="sb-btn sb-sub" id="sbi-l4-lab" onclick="goPage('p-l4-lab')">↳ Lab</button>
+    <div class="sb-div"></div>
+  </div>
+  <button class="sb-test" id="sbi-mt" onclick="goPage('p-mt')">⚡ Module Test</button>
+</nav>
+
+<div class="main">
+
+<!-- ============================================================ LESSON 1 ============================================================ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 1: Tracing Agent Runs</h1>
+    <div class="tagline">Structured traces, span hierarchies, and the observability primitives that let you replay exactly what your agent did — and why.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In March 2023, Klarna deployed an AI agent handling customer service inquiries at scale. Within weeks, the team discovered the agent was occasionally routing refund requests into a loop — re-querying the same order data and never resolving the ticket. The failure was invisible in aggregate metrics: average handle time looked fine because most tickets completed normally. Only when engineers added per-run distributed tracing — capturing each tool call, its latency, its output, and its relationship to the next step — did the loop become visible as a span that repeated dozens of times on specific order IDs. The fix took 20 minutes once the trace was in hand. Finding the problem without tracing had taken three weeks.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">What a Trace Actually Is</h2>
+    <div class="section-body">
+      <p>A <strong>trace</strong> is the complete record of a single agent run — every decision, every tool call, every LLM invocation — organized as a tree of <strong>spans</strong>. Each span captures one unit of work: its start time, end time, inputs, outputs, and any structured metadata you attach. The root span represents the entire run; child spans represent sub-steps.</p>
+      <p>The dominant standard is <strong>OpenTelemetry (OTel)</strong>, a vendor-neutral specification maintained by the CNCF. OTel defines trace IDs (128-bit identifiers unique to a run), span IDs (64-bit identifiers per span), and a propagation mechanism that threads those IDs through HTTP headers, queue messages, or function arguments so spans from different services still assemble into one coherent tree.</p>
+      <p>For LLM agents specifically, the community has converged on a set of semantic conventions: spans for LLM calls should carry <code>llm.model</code>, <code>llm.prompt_tokens</code>, <code>llm.completion_tokens</code>, and <code>llm.temperature</code> as attributes. Tool-call spans should carry the tool name, the raw arguments passed, and the raw return value. These conventions make traces queryable across frameworks.</p>
+      <div class="callout-box">
+        <div class="callout-label">Key Primitive</div>
+        <p>A trace ID ties every span in one agent run together. Without it, you have logs — a flat list of events. With it, you have a graph — a structured history you can traverse, filter, and replay.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Instrumenting an Agent with OTel</h2>
+    <div class="section-body">
+      <p>Instrumentation means wrapping your agent's execution units in span-creation calls. With the Python OTel SDK, you obtain a tracer from the global provider and use it as a context manager. The pattern looks like:</p>
+      <ul class="ul-body">
+        <li>Create a root span for the entire agent run, attaching the user's request as an attribute.</li>
+        <li>For each LLM call, create a child span. Record the model name, token counts from the response, and the finish reason.</li>
+        <li>For each tool call, create a sibling child span under the LLM span that triggered it. Record tool name, arguments (truncated to a safe length), and the result or exception.</li>
+        <li>Use span events (point-in-time annotations) for notable moments: "retrieved 12 documents", "retrying after rate limit", "tool returned empty result".</li>
+        <li>Set span status to ERROR and record the exception if any step throws, so failure spans are automatically queryable.</li>
+      </ul>
+      <p>Frameworks like LangChain, LlamaIndex, and CrewAI all expose callback hooks that let you attach OTel spans without modifying core logic. LangSmith (LangChain's hosted tracing product), Arize Phoenix, and Weights &amp; Biases Weave all ingest OTel traces and render the span tree visually. The span hierarchy maps directly onto the agent's reasoning graph — seeing it laid out makes loops, dead ends, and unexpectedly deep recursion immediately apparent.</p>
+      <div class="callout-box">
+        <div class="callout-label">Sampling Strategy</div>
+        <p>In high-volume production, tracing every run is expensive. A common approach: trace 100% of runs that result in an error or that exceed a latency threshold; sample 5–10% of successful runs for baseline health. Store full traces for 7 days; store aggregated span metrics (counts, p99 latency) indefinitely.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Span Attributes Worth Capturing</h2>
+    <div class="section-body">
+      <p>Not all attributes are equally valuable. Based on post-mortem analyses from production agent deployments, the highest-signal attributes are:</p>
+      <ul class="ul-body">
+        <li><strong>session_id / conversation_id</strong> — links traces for multi-turn interactions, essential for debugging state-corruption bugs that only manifest over multiple turns.</li>
+        <li><strong>agent.step_number</strong> — the ordinal position of this step in the run; makes loops detectable by querying for runs where max step_number exceeds a threshold.</li>
+        <li><strong>tool.name + tool.error_code</strong> — allows you to build a tool-reliability dashboard showing which tools fail most frequently and under what conditions.</li>
+        <li><strong>llm.prompt_tokens + llm.completion_tokens</strong> — the primary cost signal; aggregate by user/org to build cost attribution.</li>
+        <li><strong>retrieval.query + retrieval.num_results</strong> — for RAG agents, captures whether retrieval is returning meaningful context or consistently coming back empty.</li>
+      </ul>
+      <p>One attribute teams consistently underinvest in: <strong>agent.decision_rationale</strong> — a short string extracted from the model's chain-of-thought before it calls a tool. This is the single most useful debugging aid when a trace shows the agent made a bad decision: you can read the rationale and immediately see whether it reasoned incorrectly or received bad data.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 1 QUIZ ============================================================ -->
+<div class="page" id="p-l1-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. What is the relationship between a trace and its spans?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">A trace is a single span annotated with a timestamp.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">A trace is a tree of spans, where each span captures one unit of work within the run.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Spans are summaries of traces created after the run completes.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">A trace and a span are the same thing; the terms are interchangeable.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. A trace is the full tree; spans are the individual nodes in that tree, each representing one discrete unit of work (one LLM call, one tool invocation, etc.).</div>
+    <div class="quiz-feedback wrong">✗ Not quite. A trace is the complete tree of all spans in one agent run — think of the trace as the container and spans as its nodes.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. The Klarna agent loop case study illustrates which key insight about aggregate metrics?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Aggregate metrics are always sufficient to catch production bugs.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Latency spikes always surface loops before tracing is needed.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">A rare but serious failure can be invisible in aggregate stats when most runs succeed normally.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Loops only occur in stateless agents with no memory.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Because the majority of tickets resolved normally, the per-ticket loop was hidden in averages — per-run tracing was required to surface it.</div>
+    <div class="quiz-feedback wrong">✗ The case study shows the opposite: aggregate handle time looked fine even while specific runs were looping dozens of times.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. Which attribute is described as the single most useful aid when an agent makes a bad decision?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">llm.completion_tokens</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">tool.error_code</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">retrieval.num_results</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">agent.decision_rationale — a short string from the model's chain-of-thought before a tool call.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Reading the rationale tells you immediately whether the agent reasoned incorrectly or received bad data — collapsing a long debugging session into seconds.</div>
+    <div class="quiz-feedback wrong">✗ Those attributes are valuable for cost and reliability, but agent.decision_rationale is flagged as the highest-signal attribute for understanding bad decisions.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Lab</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 1 LAB ============================================================ -->
+<div class="page" id="p-l1-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lab 1: Designing a Trace Schema</h1>
+    <div class="tagline">Work with an AI coach to design a complete OTel span schema for a real agent architecture.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're instrumenting a research agent that: (1) accepts a user question, (2) generates search queries, (3) calls a web-search tool multiple times, (4) synthesizes results with an LLM, and (5) returns a cited answer. Design the full trace schema.</p>
+    <ol>
+      <li>Describe the agent's steps to the coach and ask what spans you need and what attributes each span should carry.</li>
+      <li>Ask about sampling strategy for a volume of ~50,000 runs/day.</li>
+      <li>Ask the coach to critique your proposed schema for any gaps or over-instrumentation.</li>
+    </ol>
+    <div class="lab-prompt">Start by describing the research agent architecture to the coach and asking: "What spans and attributes should I define for this agent's OTel trace schema?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🤖 Observability Coach</span>
+      <span class="chat-badge">Lab 1</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l1"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l1" rows="2" placeholder="Describe your agent and ask about span design…"></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 2 ============================================================ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 2: Debugging Agent Failures</h1>
+    <div class="tagline">A structured methodology for diagnosing silent failures, wrong outputs, and tool errors — from trace to root cause.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2024, Air Canada's automated refund agent incorrectly told a passenger named Jake Moffatt that he could apply for a bereavement fare retroactively — advice that contradicted Air Canada's own policy. Air Canada argued in court that the chatbot was a "separate legal entity" responsible for its own statements. The court rejected that argument, ruling Air Canada liable for $812.02. What made this failure so damaging was its silence: the agent produced a confident, fluent, plausible-sounding answer. No exception was thrown. No error was logged. Without structured evaluation — comparing agent outputs against ground-truth policy documents — the wrong answer was indistinguishable from a correct one in any conventional monitoring system.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Four Failure Modes of Agents</h2>
+    <div class="section-body">
+      <p>Agent failures cluster into four categories, each requiring a different debugging approach:</p>
+      <ul class="ul-body">
+        <li><strong>Hard failures</strong> — exceptions, API errors, tool timeouts. These are the easiest to catch: set span status to ERROR, attach the exception, alert on error rate. The debugger's job is simply to find the offending span and trace the input that triggered it.</li>
+        <li><strong>Soft failures (hallucinations)</strong> — the agent produces a confident wrong answer, as in the Air Canada case. No exception is thrown. Detection requires evaluation: LLM-as-judge scoring against a rubric, or comparison against a ground-truth corpus. The trace alone won't reveal the failure; you need an evaluation layer on top of it.</li>
+        <li><strong>Behavioral drift</strong> — outputs are individually acceptable but have shifted over weeks. Caused by upstream model updates, changing data distributions, or accumulated prompt changes. Detected by tracking output distributions over time: sentiment, length, tool-call frequency, citation count.</li>
+        <li><strong>Loop / stuck-state failures</strong> — the agent cycles between steps without terminating, as in the Klarna case. Detected by querying traces for runs where agent.step_number exceeds a maximum threshold, or where the same tool is called with identical arguments more than N times.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Debugging Priority Order</div>
+        <p>Fix hard failures first (they break functionality entirely), then instrument for soft failures (they cause liability), then build drift detection (they erode quality invisibly). Teams that reverse this order spend months polishing outputs while missing critical errors.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">A Trace-Driven Root Cause Methodology</h2>
+    <div class="section-body">
+      <p>When a failure report arrives, the structured process is:</p>
+      <ul class="ul-body">
+        <li><strong>Step 1 — Isolate the trace.</strong> Find the trace ID from the failing run. If the failure was reported by a user, you need session_id or conversation_id indexed in your trace store to look it up. This is why those attributes are non-negotiable.</li>
+        <li><strong>Step 2 — Identify the first ERROR or anomalous span.</strong> Sort spans by start time and find the earliest span that either errored or produced unexpected output. Failures almost always cascade — fixing the root cause eliminates downstream errors automatically.</li>
+        <li><strong>Step 3 — Read the inputs, outputs, and rationale of that span.</strong> For an LLM span, look at the exact prompt (including retrieved context) and the exact completion. For a tool span, look at the exact arguments and the exact return value. The failure is almost always immediately obvious at this level.</li>
+        <li><strong>Step 4 — Reproduce the failure deterministically.</strong> Re-run the exact same inputs against the same model with the same tools. If you can't reproduce it, increase temperature=0 for the reproduction and freeze any non-deterministic tool calls with recorded responses. Reproducibility is a prerequisite for a fix.</li>
+        <li><strong>Step 5 — Write a regression test.</strong> Encode the failing input/output pair as an eval case before writing the fix. This ensures the fix doesn't regress later.</li>
+      </ul>
+      <p>The most common time sink in agent debugging is Step 1 — engineers can't find the failing trace because the session wasn't indexed. The second most common is skipping Step 5, which means the same bug returns after a model update.</p>
+      <div class="callout-box">
+        <div class="callout-label">LLM-as-Judge for Soft Failures</div>
+        <p>For soft failures that don't throw exceptions, a lightweight evaluation pattern runs a second LLM call on every output: "Given this policy document and this agent response, did the agent accurately represent the policy? Answer YES or NO with a one-sentence reason." Log the verdict as a span attribute. Flag any NO verdicts for human review. This is the pattern that would have caught the Air Canada failure automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Structured Logging vs. Tracing</h2>
+    <div class="section-body">
+      <p>Tracing and logging are complementary, not redundant. <strong>Logs</strong> capture discrete events at a point in time with context attached. <strong>Traces</strong> capture the causal relationship between events across the full run duration. Both are necessary.</p>
+      <p>Structured logging means emitting logs as JSON objects rather than free text strings. Instead of <code>logger.info("Tool returned 5 results")</code>, you emit <code>logger.info("tool_results", extra={"tool": "web_search", "query": q, "num_results": 5, "trace_id": span.get_span_context().trace_id})</code>. The trace_id field links every log line to its parent trace — enabling you to jump from a trace view to the full log stream for that run in one click. This linkage is the single highest-leverage improvement most teams can make to their debugging workflow.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 2 QUIZ ============================================================ -->
+<div class="page" id="p-l2-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. What made the Air Canada chatbot failure particularly difficult to detect with conventional monitoring?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">The agent threw an unhandled exception that wasn't logged.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">The agent produced a confident, fluent answer that was factually wrong — no error was thrown or logged.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">The agent's latency spiked and triggered a timeout.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">The agent refused to answer the question entirely.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Soft failures like hallucinations are silent — the system behaves normally from a metrics standpoint while producing wrong and potentially harmful outputs.</div>
+    <div class="quiz-feedback wrong">✗ The failure was a soft failure: the agent returned a confident, fluent, wrong answer with no exception or error signal.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. In the trace-driven root cause methodology, what is the most common time sink that delays debugging?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Writing a regression test before the fix.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Engineers can't find the failing trace because the session wasn't indexed.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Setting temperature=0 for reproduction runs.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Reading the rationale attribute on the failing span.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Step 1 — isolating the trace — is blocked when sessions aren't indexed, which is why session_id is described as a non-negotiable attribute.</div>
+    <div class="quiz-feedback wrong">✗ The lesson identifies Step 1 (isolating the trace) as the most common time sink — specifically because the session wasn't indexed for lookup.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. What is the key benefit of attaching trace_id to structured log lines?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">It reduces the cost of storing logs in S3.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">It prevents the agent from entering a loop state.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">It links every log line to its parent trace, enabling a one-click jump from trace view to the full log stream for that run.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">It replaces the need for span attributes entirely.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Trace-log linkage collapses two separate investigations — "what happened in the trace?" and "what did the logs say?" — into a single workflow.</div>
+    <div class="quiz-feedback wrong">✗ The lesson describes trace_id in logs as enabling a one-click jump from the trace view to the full log stream — the highest-leverage workflow improvement for debugging.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Lab</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 2 LAB ============================================================ -->
+<div class="page" id="p-l2-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lab 2: Diagnosing a Failure from Trace Data</h1>
+    <div class="tagline">Practice the five-step root cause methodology on a realistic trace scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You've received a bug report: "The agent gave a customer wrong pricing information." You have access to the trace. Practice the full debugging methodology with your coach.</p>
+    <ol>
+      <li>Tell the coach the failure type (soft failure, no exception thrown) and ask which step of the methodology to start with and what to look for.</li>
+      <li>Ask the coach how you'd implement LLM-as-judge evaluation to catch this class of failure automatically.</li>
+      <li>Ask what regression test you should write before fixing the prompt.</li>
+    </ol>
+    <div class="lab-prompt">Start by telling the coach: "An agent returned wrong pricing information with no error thrown. I have the trace ID. Walk me through the root cause process."</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>🤖 Debugging Coach</span>
+      <span class="chat-badge">Lab 2</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l2"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l2" rows="2" placeholder="Describe the failure and start the diagnostic…"></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 3 ============================================================ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 3: Production Monitoring</h1>
+    <div class="tagline">Dashboards, metrics pipelines, and the operational signals that distinguish a healthy agent from one quietly failing at scale.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">When GitHub launched Copilot Workspace in 2024 — an agentic system that plans, codes, and tests multi-file changes — the engineering team described their observability stack in a post on the GitHub blog. They tracked three tiers of metrics: infrastructure metrics (API latency, error rates), LLM-specific metrics (token usage per workspace session, model selection distribution, cache hit rates), and quality metrics (did the agent's plan match the user's intent as rated by the user thumbs-up/down signal?). The quality metrics tier turned out to be the most valuable: it caught a regression after a model upgrade in hours rather than days, because the user satisfaction signal dropped measurably before any latency or error metric changed. The team credited the three-tier approach with enabling rapid safe iteration on a system handling tens of thousands of sessions per day.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Three-Tier Metrics Model</h2>
+    <div class="section-body">
+      <p>Production monitoring for agents requires three distinct metric tiers, each answering a different question:</p>
+      <ul class="ul-body">
+        <li><strong>Tier 1 — Infrastructure metrics:</strong> Is the system available and fast? Track API error rate, p50/p95/p99 latency per endpoint, queue depth for async runs, dependency health (model provider, vector DB, external APIs). These are the table-stakes metrics every production system needs.</li>
+        <li><strong>Tier 2 — LLM-specific metrics:</strong> Is resource consumption as expected? Track token usage (input + output) per run and per user, model selection distribution (which model is actually being called?), tool call frequency per run, context window utilization (are you hitting the limit?), and cache hit rates if you're using semantic caching.</li>
+        <li><strong>Tier 3 — Quality metrics:</strong> Is the agent doing the right thing? Track task completion rate (did the run end in a successful final answer or an abandonment?), explicit user feedback (thumbs up/down, re-queries), implicit signals (did the user immediately ask the same question again?), and automated eval scores from LLM-as-judge pipelines.</li>
+      </ul>
+      <div class="callout-box">
+        <div class="callout-label">Critical Insight</div>
+        <p>Quality metrics (Tier 3) almost always catch regressions before infrastructure metrics do. A model update that makes outputs subtly worse will show up as a drop in user satisfaction before it shows up in latency or error rate. Invest in Tier 3 first if you're resource-constrained.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Building a Metrics Pipeline</h2>
+    <div class="section-body">
+      <p>The metrics pipeline is the infrastructure that collects raw signal from your agent, aggregates it, and makes it queryable. A robust pipeline for agents typically has these stages:</p>
+      <ul class="ul-body">
+        <li><strong>Emission:</strong> Your instrumented agent emits OTel spans and structured logs. Span attributes carry the raw metric values (token counts, tool names, latency, eval scores).</li>
+        <li><strong>Collection:</strong> An OTel Collector runs as a sidecar or gateway. It receives spans, applies sampling rules, and fans out to multiple backends — a trace store (Jaeger, Tempo, LangSmith) for full traces, and a metrics backend (Prometheus, Datadog) for aggregated signals.</li>
+        <li><strong>Aggregation:</strong> In Prometheus, you define recording rules that aggregate raw span data into meaningful metrics: <code>agent_token_cost_total</code>, <code>agent_tool_error_rate</code>, <code>agent_task_completion_rate</code>. These are cheap to query and persist indefinitely.</li>
+        <li><strong>Visualization:</strong> Grafana dashboards present the three tiers in separate rows. Tier 1 at the top (infrastructure SLIs), Tier 2 in the middle (resource/cost), Tier 3 at the bottom (quality). The bottom row is the one engineers should check first when investigating a complaint.</li>
+      </ul>
+      <p>One architectural decision worth getting right early: store the raw trace_ids that contribute to each aggregated metric. This enables drill-down — clicking on a spike in the "tool error rate" chart and seeing the individual traces that caused it, rather than having to run a separate query. Grafana's "Explore" panel linked to Tempo supports exactly this workflow when trace IDs are included as label values.</p>
+      <div class="callout-box">
+        <div class="callout-label">Cost Attribution</div>
+        <p>Token costs are a first-class operational concern. Aggregate <code>llm.prompt_tokens + llm.completion_tokens</code> by user_id, org_id, and feature_name. Build a cost dashboard alongside quality. The two metrics together reveal whether quality improvements are worth their cost increase — the central question in any agent productionization decision.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Continuous Evaluation in Production</h2>
+    <div class="section-body">
+      <p>Static test suites run before deployment catch regressions in known failure modes. But agents encounter novel inputs in production that no static suite covers. Continuous evaluation — running automated quality checks on a sample of live production runs — is the only way to detect emergent quality issues.</p>
+      <p>The standard approach: after each agent run completes, asynchronously run 1–3 LLM-as-judge evaluations on the output. Score for: (1) factual groundedness — does the answer follow from the retrieved context? (2) instruction following — did the agent do what the user asked? (3) safety — does the output comply with content policies? Write the scores as span attributes on the root span. Aggregate into Tier 3 metrics. Alert if any score distribution shifts more than two standard deviations from baseline. This pattern was described by Anthropic's Applied team in their 2024 agent evaluation guidelines as the minimum viable continuous eval setup for production agents.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2-lab')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 3 QUIZ ============================================================ -->
+<div class="page" id="p-l3-quiz">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. Which metric tier caught a regression first in the GitHub Copilot Workspace case study?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Tier 1 — API latency increased noticeably.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Tier 2 — Token usage per session spiked.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Tier 3 — User satisfaction (thumbs up/down) dropped before any infrastructure metric changed.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Tier 1 — Error rate exceeded the SLA threshold.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. The quality metrics tier detected the regression in hours because user satisfaction dropped measurably before latency or error rates changed at all.</div>
+    <div class="quiz-feedback wrong">✗ The case study specifically credits Tier 3 quality metrics (user thumbs-up/down) for catching the regression before any infrastructure metric changed.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. Why is storing raw trace_ids alongside aggregated metrics valuable in a Grafana + Tempo setup?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">It enables drill-down from a chart spike directly to the individual traces that caused it, without a separate query.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">It reduces the storage cost of the trace backend.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">It allows the agent to read its own historical traces at runtime.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">It replaces the need for structured logging entirely.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Trace IDs as label values in Grafana allow a direct link from metric anomaly to the raw traces that caused it — collapsing investigation time significantly.</div>
+    <div class="quiz-feedback wrong">✗ The lesson describes trace_id storage as enabling drill-down: click a spike in a chart, see the specific traces responsible — no separate query needed.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. What are the three dimensions typically scored in a continuous evaluation LLM-as-judge pipeline?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Latency, cost, and token count.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Model version, temperature, and context length.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Factual groundedness, instruction following, and safety/content policy compliance.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Tool call frequency, retrieval precision, and output length.</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. These three dimensions — groundedness, instruction following, and safety — are described as the minimum viable continuous eval setup for production agents.</div>
+    <div class="quiz-feedback wrong">✗ The lesson lists factual groundedness, instruction following, and safety as the three evaluation dimensions for continuous production evaluation.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson 3</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3-lab')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Lab</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 3 LAB ============================================================ -->
+<div class="page" id="p-l3-lab">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lab 3: Designing a Three-Tier Dashboard</h1>
+    <div class="tagline">Design the metrics pipeline and Grafana dashboard layout for a production agent deployment.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You're responsible for the observability stack of a coding assistant agent handling ~20,000 sessions/day, using GPT-4o for generation and a vector database for code context retrieval.</p>
+    <ol>
+      <li>Ask the coach what specific metrics you should track in each of the three tiers for this agent type.</li>
+      <li>Ask how to design the aggregation pipeline so that metric spikes link back to individual traces.</li>
+      <li>Ask what a minimum viable continuous evaluation setup looks like for a coding assistant specifically.</li>
+    </ol>
+    <div class="lab-prompt">Start by asking: "I'm building a three-tier monitoring dashboard for a coding assistant agent with 20,000 sessions/day. What should I track in each tier?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🤖 Monitoring Coach</span>
+      <span class="chat-badge">Lab 3</span>
+    </div>
+    <div class="chat-msgs" id="msgs-l3"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="inp-l3" rows="2" placeholder="Ask about metrics, dashboards, and evaluation setup…"></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3-quiz')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz 3</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></button>
+  </div>
+</div>
+
+<!-- ============================================================ LESSON 4 ============================================================ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="age-chip">🎯 Advanced</div>
+    <h1>Lesson 4: Alerting &amp; Incident Response</h1>
+    <div class="tagline">Designing alert rules that don't cry wolf, building runbooks for agent-specific incidents, and the on-call practices that keep agentic systems safe.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In January 2024, a financial services firm's document-processing agent began producing subtly incorrect data extractions after their LLM provider silently updated the model behind a version alias. No alert fired. The quality degradation was caught three days later by a human reviewer noticing inconsistencies in processed documents. The post-mortem identified two root causes: (1) they had no alert on their Tier 3 quality metrics (they only alerted on Tier 1 error rates), and (2) their LLM provider's model version was not captured as a span attribute, so they couldn't even correlate the degradation onset with the model change in their traces. The firm subsequently published a detailed post-mortem (cited in the DAIR.AI newsletter, February 2024) describing the alerting gaps and the runbook they built to respond to future quality-regression incidents.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Alert Design for Agent Systems</h2>
+    <div class="section-body">
+      <p>The cardinal rule of alerting: <strong>alert on symptoms, not causes</strong>

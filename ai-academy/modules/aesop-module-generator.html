@@ -2023,22 +2023,18 @@ async function buildFullCourse() {
 
       // Auto-save to repo
       const isFoundations = course.isFoundations;
-      // Foundations non-English: flat folder module-{N}{lang} (e.g. module-1es)
-      // Electives non-English: nested subfolder (e.g. ai-governance/es/)
-      const chainFolderName = isFoundations
-        ? (selectedLang !== 'en' ? 'module-' + mn + selectedLang : 'module-' + mn)
-        : getFolderName(cid);
+      // Non-English: Foundations = module-1es (no hyphen), Electives = ai-governance-es (hyphen)
+      const baseFolderName = isFoundations ? 'module-' + mn : getFolderName(cid);
+      const chainFolderName = selectedLang !== 'en'
+        ? (isFoundations ? 'module-' + mn + selectedLang : baseFolderName + '-' + selectedLang)
+        : baseFolderName;
       const filename = isFoundations ? 'advanced-m' + mn + '.html' : getFilePrefix(cid) + '-m' + mn + '.html';
       let courseDir = await repoFolderHandle.getDirectoryHandle(chainFolderName, { create: true });
-      // Electives non-English: nest inside a language subfolder
-      if (selectedLang !== 'en' && !isFoundations) {
-        courseDir = await courseDir.getDirectoryHandle(selectedLang, { create: true });
-      }
       const fileHandle = await courseDir.getFileHandle(filename, { create: true });
       const writable = await fileHandle.createWritable();
       await writable.write(content);
       await writable.close();
-      const savePath = (!isFoundations && selectedLang !== 'en') ? chainFolderName + '/' + selectedLang + '/' + filename : chainFolderName + '/' + filename;
+      const savePath = chainFolderName + '/' + filename;
       log('Saved: ' + savePath);
       setModSaved(cid, mn, content.length);
       await obsidianCheckpoint('mod-complete', { n: mn, title: mod.title, chars: content.length.toLocaleString(), secs: modSecs });
@@ -2288,16 +2284,12 @@ async function downloadFile() {
       // Folder handle IS the modules folder — navigate to course folder name
       const course = COURSES.find(c => c.id === cid);
       const isFoundations = course && course.isFoundations;
-      // Foundations non-English: flat folder module-{N}{lang} (e.g. module-1es)
-      // Electives non-English: nested subfolder (e.g. ai-governance/es/)
-      const folderName = isFoundations
-        ? (selectedLang !== 'en' ? 'module-' + mn + selectedLang : 'module-' + mn)
-        : getFolderName(cid);
+      // Non-English: Foundations = module-1es (no hyphen), Electives = ai-governance-es (hyphen)
+      const baseFolderName = isFoundations ? 'module-' + mn : getFolderName(cid);
+      const folderName = selectedLang !== 'en'
+        ? (isFoundations ? 'module-' + mn + selectedLang : baseFolderName + '-' + selectedLang)
+        : baseFolderName;
       let courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: true });
-      // Electives non-English: nest inside a language subfolder
-      if (selectedLang !== 'en' && !isFoundations) {
-        courseDir = await courseDir.getDirectoryHandle(selectedLang, { create: true });
-      }
       const file = await courseDir.getFileHandle(generatedFilename, { create: true });
       const writable = await file.createWritable();
       await writable.write(generatedContent);

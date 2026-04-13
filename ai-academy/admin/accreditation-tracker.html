@@ -1,9 +1,9 @@
 <!doctype html>
-<!-- accreditation-tracker-v1.0.0 (admin-only, course-level fields) -->
+<!-- accreditation-tracker (admin-only, Firebase auth, course-level fields) -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Accreditation Tracker v1.0.0 — AESOP AI Academy</title>
+<title>Accreditation Tracker — AESOP AI Academy</title>
 <meta name="robots" content="noindex,nofollow">
 <style>
   :root { --bg:#0f172a; --fg:#e2e8f0; --muted:#94a3b8; --card:#1e293b; --border:#334155; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; }
@@ -34,28 +34,42 @@
   .status-pending { color:var(--warn); }
   .status-expired { color:var(--err); }
   .status-na { color:var(--muted); }
-  .badge { display:inline-block; padding:2px 6px; border-radius:10px; font-size:11px; font-weight:600; background:#0b1220; border:1px solid var(--border); }
   .summary { display:flex; gap:16px; padding:8px 24px; background:#0b1220; border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); flex-wrap:wrap; }
   .summary span b { color:var(--fg); }
-  .gate { max-width:360px; margin:80px auto; padding:24px; background:var(--card); border:1px solid var(--border); border-radius:8px; text-align:center; }
-  .gate input { width:100%; margin:12px 0; padding:8px 10px; background:#0f172a; color:var(--fg); border:1px solid var(--border); border-radius:6px; }
-  .gate button { width:100%; padding:8px; background:var(--accent); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; }
-  .gate .err { color:var(--err); font-size:12px; min-height:16px; }
   .footer { color:var(--muted); font-size:11px; padding:24px; text-align:center; }
   .saved { color:var(--ok); font-size:12px; opacity:0; transition:opacity .3s; }
   .saved.show { opacity:1; }
   .renewal-soon { background:rgba(245,158,11,.12); }
   .renewal-overdue { background:rgba(239,68,68,.18); }
+
+  /* Auth overlay (matches review/exam-qa.html pattern) */
+  .auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.97); display:flex; align-items:center; justify-content:center; z-index:9999; }
+  .auth-box { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); }
+  .auth-logo { font-size:32px; margin-bottom:8px; }
+  .auth-box h2 { margin:4px 0 6px; font-size:18px; }
+  .auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .auth-input { width:100%; padding:9px 11px; margin:6px 0; background:#0f172a; color:var(--fg); border:1px solid var(--border); border-radius:6px; font-size:14px; }
+  .auth-input:focus { outline:none; border-color:var(--accent); }
+  .auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--accent); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
+  .auth-btn:hover { filter:brightness(1.1); }
+  .auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
+  .auth-note { color:var(--muted); font-size:11px; margin-top:12px; }
 </style>
 </head>
 <body>
 
-<div id="gate" class="gate" style="display:none">
-  <h2 style="margin:0 0 4px">Admin Access</h2>
-  <div style="color:var(--muted); font-size:12px">This page tracks accreditation status per course. Admin only.</div>
-  <input id="passInput" type="password" placeholder="Passcode" autocomplete="off">
-  <button id="passBtn">Unlock</button>
-  <div id="passErr" class="err"></div>
+<!-- ── AUTH GATE ── -->
+<div class="auth-overlay" id="auth-overlay" style="display:none">
+  <div class="auth-box">
+    <div class="auth-logo">🔐</div>
+    <h2>AESOP Admin Access</h2>
+    <p>Sign in with your admin account to access the Accreditation Tracker.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Admin email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-note">Admin access only. Contact Scott if you need access.</div>
+  </div>
 </div>
 
 <div id="app" style="display:none">
@@ -66,7 +80,8 @@
     </div>
     <div>
       <span id="savedFlag" class="saved">Saved</span>
-      <button id="lockBtn" style="margin-left:12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">Lock</button>
+      <span id="userLabel" style="color:var(--muted);font-size:12px;margin-left:12px"></span>
+      <button id="signOutBtn" style="margin-left:12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">Sign out</button>
     </div>
   </header>
 
@@ -75,12 +90,12 @@
   <div class="toolbar">
     <input id="search" type="search" placeholder="Filter by title, id, body, notes...">
     <select id="statusFilter">
-      <option value="">All statuses</option>
+      <option value="__all__">All statuses</option>
       <option value="accredited">Accredited</option>
       <option value="pending">Pending</option>
       <option value="expired">Expired</option>
       <option value="na">N/A</option>
-      <option value="">— unset</option>
+      <option value="__unset__">— unset</option>
     </select>
     <select id="typeFilter">
       <option value="">All types</option>
@@ -113,55 +128,77 @@
   </main>
 </div>
 
+<!-- Firebase SDK + auth gate -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.firebasestorage.app",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Admin whitelist — match exam-qa.html
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && (ADMIN_EMAILS.length === 0 || ADMIN_EMAILS.includes(u.email));
+
+  const overlay = document.getElementById('auth-overlay');
+  const app$    = document.getElementById('app');
+  const errEl   = document.getElementById('auth-error');
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user && isAdmin(user)) {
+      overlay.style.display = 'none';
+      app$.style.display = 'block';
+      document.getElementById('userLabel').textContent = user.email || 'Signed in';
+      document.dispatchEvent(new CustomEvent('adminReady'));
+    } else if (user && !isAdmin(user)) {
+      overlay.style.display = 'flex';
+      app$.style.display = 'none';
+      errEl.textContent = 'This account does not have admin access.';
+    } else {
+      overlay.style.display = 'flex';
+      app$.style.display = 'none';
+    }
+  });
+</script>
+
 <script>
-const PASSCODE_HASH = 'aesop-admin-2026'; // simple shared passcode (not security — just a friction layer)
-const AUTH_KEY = 'accred_admin_auth_v1';
 const DATA_KEY = 'accred_tracker_v1';
 const REGISTRY_URL = '../modules/course-registry.json';
 
 const $ = sel => document.querySelector(sel);
-const gate = $('#gate'), app = $('#app');
 
-function isAuthed() {
-  return sessionStorage.getItem(AUTH_KEY) === '1' || localStorage.getItem(AUTH_KEY) === '1';
-}
-function authenticate(pass) {
-  if (pass === PASSCODE_HASH) {
-    sessionStorage.setItem(AUTH_KEY, '1');
-    localStorage.setItem(AUTH_KEY, '1');
-    return true;
-  }
-  return false;
-}
-function lock() {
-  sessionStorage.removeItem(AUTH_KEY);
-  localStorage.removeItem(AUTH_KEY);
-  location.reload();
-}
-
-function showGate() {
-  gate.style.display = 'block';
-  app.style.display = 'none';
-  setTimeout(() => $('#passInput').focus(), 50);
-}
-function showApp() {
-  gate.style.display = 'none';
-  app.style.display = 'block';
-  loadAndRender();
-}
-
-$('#passBtn').addEventListener('click', () => {
-  if (authenticate($('#passInput').value)) showApp();
-  else $('#passErr').textContent = 'Wrong passcode';
-});
-$('#passInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('#passBtn').click(); });
-$('#lockBtn').addEventListener('click', lock);
-
-// Tracker state ----------------------------------------------------
 let registry = null;
 let tracker = JSON.parse(localStorage.getItem(DATA_KEY) || '{}');
 let courses = [];
 let saveTimer = null;
+let booted = false;
 
 function saveTracker() {
   localStorage.setItem(DATA_KEY, JSON.stringify(tracker));
@@ -189,7 +226,6 @@ async function loadAndRender() {
       .map(([id, c]) => ({ id, title: c.title || id, type: c.type || '—' }))
       .sort((a,b) => (a.type||'').localeCompare(b.type||'') || a.title.localeCompare(b.title));
 
-    // populate type filter
     const types = [...new Set(courses.map(c => c.type))].sort();
     const tf = $('#typeFilter');
     types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; tf.appendChild(o); });
@@ -198,11 +234,11 @@ async function loadAndRender() {
 }
 
 function render() {
-  const q = $('#search').value.trim().toLowerCase();
+  const q  = $('#search').value.trim().toLowerCase();
   const sf = $('#statusFilter').value;
   const tf = $('#typeFilter').value;
   const today = new Date().toISOString().slice(0,10);
-  const soonCutoff = new Date(Date.now() + 60*86400000).toISOString().slice(0,10); // 60 days
+  const soonCutoff = new Date(Date.now() + 60*86400000).toISOString().slice(0,10);
 
   const tbody = $('#rows');
   tbody.innerHTML = '';
@@ -211,13 +247,8 @@ function render() {
 
   courses.forEach(c => {
     const r = getRow(c.id);
-    if (sf !== '' || $('#statusFilter').selectedIndex >= 0) {
-      // sf may be "" meaning unset; selectedIndex check disambiguates "All" vs "unset"
-    }
-    const sfOpt = $('#statusFilter');
-    const sfChosen = sfOpt.options[sfOpt.selectedIndex].text;
-    if (sfChosen === '— unset' && r.status !== '') return;
-    else if (sf && sfChosen !== '— unset' && r.status !== sf) return;
+    if (sf === '__unset__' && r.status !== '') return;
+    if (sf !== '__all__' && sf !== '__unset__' && r.status !== sf) return;
     if (tf && c.type !== tf) return;
     if (q) {
       const hay = (c.title + ' ' + c.id + ' ' + (r.body||'') + ' ' + (r.notes||'')).toLowerCase();
@@ -314,8 +345,11 @@ $('#clearBtn').addEventListener('click', () => {
   render();
 });
 
-// Boot
-if (isAuthed()) showApp(); else showGate();
+document.addEventListener('adminReady', () => {
+  if (booted) return;
+  booted = true;
+  loadAndRender();
+});
 </script>
 </body>
 </html>

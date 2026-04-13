@@ -927,17 +927,25 @@ const TIER_CONFIG = {
 
 let selectedTier = null, selectedLang = 'en', selectedLangName = 'English', generatedContent = '', generatedFilename = '';
 
-// Course IDs that are already live in electives-hub — exclude from dropdown
-// Source of truth: courses with a live "Enter Course →" link in courses.html
-const LIVE_COURSES = new Set([
-  'governance', 'society', 'ethics', 'building',
-  'ai-in-healthcare', 'ai-and-education', 'ai-leadership',
-  'building-ai-agents-i-use-cases', 'building-ai-agents-ii-skills',
-  'building-ai-agents-iii-tools', 'building-ai-agents-iv-openclaw',
-  'building-ai-agents-v-optimization',
-  'gpt_vs_claude_vs_gemini', 'ai_in_game_design_i',
-  'ai_risk_for_business_leaders'
-]);
+// Live-course set derived from course-registry.json (status === "live").
+// Source of truth is the registry — populated on init via loadLiveCoursesFromRegistry().
+// Kept as a mutable Set so activation flow can optimistically add new IDs in-session.
+const LIVE_COURSES = new Set();
+
+async function loadLiveCoursesFromRegistry() {
+  try {
+    const resp = await fetch('./course-registry.json', { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const registry = await resp.json();
+    LIVE_COURSES.clear();
+    for (const [cid, entry] of Object.entries(registry)) {
+      if (entry && entry.status === 'live') LIVE_COURSES.add(cid);
+    }
+    console.log('LIVE_COURSES loaded from registry:', LIVE_COURSES.size, 'courses');
+  } catch (e) {
+    console.warn('Could not load course-registry.json — LIVE_COURSES will be empty:', e.message);
+  }
+}
 
 // Registry metadata for electives-hub — maps course IDs to display config
 // Courses not listed here get auto-generated defaults on activation
@@ -982,6 +990,8 @@ function init() {
   selectedTier = 'advanced';
   const advRadio = document.querySelector('input[value="advanced"]');
   if (advRadio) advRadio.closest('.tier-radio').classList.add('selected');
+  // Populate LIVE_COURSES from registry, then re-render dropdown so markers appear
+  loadLiveCoursesFromRegistry().then(() => populateCourseDropdown());
 }
 
 function onCourseChange() {

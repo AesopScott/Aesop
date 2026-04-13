@@ -927,32 +927,47 @@ const TIER_CONFIG = {
 
 let selectedTier = null, selectedLang = 'en', selectedLangName = 'English', generatedContent = '', generatedFilename = '';
 
-// Live-course set derived from course-registry.json (status === "live").
-// Source of truth is the registry — populated on init via loadLiveCoursesFromRegistry().
-// Kept as a mutable Set so activation flow can optimistically add new IDs in-session.
-const LIVE_COURSES = new Set();
-
-// Language roster derived from registry._meta.languages — authoritative list of
-// all languages the system supports. Chips in the Language row are rendered from this.
+// ── REGISTRY: SINGLE SOURCE OF TRUTH ───────────────────────────────────
+// course-registry.json is the only authoritative list of live courses.
+// We cache the parsed JSON in REGISTRY and expose helpers (isLive, liveCids,
+// LIVE_COURSES) that always read from REGISTRY. The activation flow updates
+// REGISTRY in-memory immediately after writing the file, so the dropdown
+// stays in sync without a page reload.
+//
+// LIVE_COURSES is preserved as a backwards-compat alias and is implemented
+// as a getter that returns a fresh Set derived from REGISTRY on every read.
+let REGISTRY = {};
 let REGISTRY_LANGUAGES = [];
+
+function liveCids() {
+  return Object.entries(REGISTRY)
+    .filter(([cid, e]) => !cid.startsWith('_') && e && e.status === 'live')
+    .map(([cid]) => cid);
+}
+function isLive(cid) {
+  const e = REGISTRY[cid];
+  return !!(e && e.status === 'live');
+}
+// Back-compat: any code that does `LIVE_COURSES.has(x)`, `LIVE_COURSES.size`,
+// or `for (const cid of LIVE_COURSES)` still works because it gets a fresh
+// Set built from the registry every access.
+Object.defineProperty(window, 'LIVE_COURSES', {
+  get() { return new Set(liveCids()); }
+});
 
 async function loadLiveCoursesFromRegistry() {
   try {
     const resp = await fetch('./course-registry.json', { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const registry = await resp.json();
-    LIVE_COURSES.clear();
-    for (const [cid, entry] of Object.entries(registry)) {
-      if (cid.startsWith('_')) continue; // skip _meta and other reserved keys
-      if (entry && entry.status === 'live') LIVE_COURSES.add(cid);
-    }
-    if (registry._meta && Array.isArray(registry._meta.languages)) {
-      REGISTRY_LANGUAGES = registry._meta.languages;
+    REGISTRY = await resp.json();
+    if (REGISTRY._meta && Array.isArray(REGISTRY._meta.languages)) {
+      REGISTRY_LANGUAGES = REGISTRY._meta.languages;
       renderLanguageChipsFromRegistry();
     }
-    console.log('Registry loaded:', LIVE_COURSES.size, 'live courses;', REGISTRY_LANGUAGES.length, 'languages');
+    console.log('Registry loaded:', liveCids().length, 'live courses;', REGISTRY_LANGUAGES.length, 'languages');
   } catch (e) {
-    console.warn('Could not load course-registry.json — LIVE_COURSES will be empty:', e.message);
+    console.warn('Could not load course-registry.json — registry empty:', e.message);
+    REGISTRY = {};
   }
 }
 
@@ -1004,7 +1019,7 @@ function populateCourseDropdown() {
   [...COURSES].sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
     const o = document.createElement('option');
     o.value = c.id; o.textContent = c.name;
-    if (LIVE_COURSES.has(c.id)) o.textContent += ' ⟡'; // mark live courses
+    if (isLive(c.id)) o.textContent += ' ⟡'; // mark live courses (registry === "live")
     sel.appendChild(o);
   });
   if (prev) sel.value = prev; // restore selection if still available
@@ -2366,9 +2381,10 @@ async function manualActivate() {
       console.warn('Registry write failed (non-fatal):', e.message);
     }
   }
-  // After manual activation, mark as live in dropdown (keep selectable for re-activation)
+  // After manual activation, mark as live in dropdown (keep selectable for re-activation).
+  // No need to mutate a separate LIVE_COURSES Set — writeRegistryEntry already
+  // updated REGISTRY[cid] in-memory, and isLive() reads from REGISTRY directly.
   if (cid) {
-    LIVE_COURSES.add(cid);
     const opt = document.querySelector('#courseSelect option[value="' + cid + '"]');
     if (opt && !opt.textContent.includes('⟡')) opt.textContent += ' ⟡';
     document.getElementById('courseSelect').value = '';
@@ -2403,27 +2419,40 @@ async function writeRegistryEntry(cid) {
     desc: course.name + ' — AESOP AI Academy elective course.'
   };
 
-  // Read lesson titles from generated module HTML files
+  // Read lesson titles from generated module HTML files. Path resolution is
+  // delegated to resolveModulePath() so that foundations courses (which use
+  // per-module folders + version-suffix filenames) work the same as standard
+  // single-folder courses.
   const modules = [];
   for (const mod of course.modules) {
-    const regFilePrefix = getFilePrefix(cid);
-    const regFolderName = getFolderName(cid);
-    const filename = regFilePrefix + '-m' + mod.n + '.html';
+    const { folder: regFolderName, exactName, filenameRegex } = resolveModulePath(cid, mod.n);
     let lessons = [];
     try {
       const courseDir = await repoFolderHandle.getDirectoryHandle(regFolderName, { create: false });
-      const fh = await courseDir.getFileHandle(filename);
-      const file = await fh.getFile();
-      const html = await file.text();
-      // Extract lesson titles from lesson-hero h1s inside lesson pages (p-l1..p-lN)
-      for (let i = 1; i <= 8; i++) {
-        const re = new RegExp('id="p-l' + i + '"[\\s\\S]*?<h1>([^<]+)</h1>');
-        const m = html.match(re);
-        if (m) lessons.push(m[1].trim());
-        else break; // stop at first missing lesson
+      // Try exact filename first, then scan for version-suffix variants
+      let html = '';
+      try {
+        const fh = await courseDir.getFileHandle(exactName);
+        html = await (await fh.getFile()).text();
+      } catch(_) {
+        for await (const [name, h] of courseDir.entries()) {
+          if (h.kind === 'file' && filenameRegex.test(name)) {
+            html = await (await h.getFile()).text();
+            break;
+          }
+        }
+      }
+      if (html) {
+        // Extract lesson titles from lesson-hero h1s inside lesson pages (p-l1..p-lN)
+        for (let i = 1; i <= 8; i++) {
+          const re = new RegExp('id="p-l' + i + '"[\\s\\S]*?<h1>([^<]+)</h1>');
+          const m = html.match(re);
+          if (m) lessons.push(m[1].trim());
+          else break;
+        }
       }
     } catch(e) {
-      // Module file not found — use generic titles
+      // Module folder not found — use generic titles
     }
     if (lessons.length === 0) lessons = ['Lesson 1','Lesson 2','Lesson 3','Lesson 4'];
     modules.push({
@@ -2434,7 +2463,10 @@ async function writeRegistryEntry(cid) {
     });
   }
 
-  const folderName = getFolderName(cid);
+  // For foundations courses, the public hub URL is the dedicated foundations
+  // page (e.g. /ai-academy/modules/foundations_advanced/) rather than a
+  // per-module folder. Other courses use their single course folder.
+  const folderName = course.isFoundations ? cid : getFolderName(cid);
   const entry = {
     id: cid,
     title: course.name,
@@ -2472,6 +2504,11 @@ async function writeRegistryEntry(cid) {
   const writable = await writeHandle.createWritable();
   await writable.write(JSON.stringify(registry, null, 2));
   await writable.close();
+
+  // Mirror the change into the in-memory REGISTRY so that isLive(cid),
+  // liveCids(), and the LIVE_COURSES getter reflect the new entry without
+  // requiring a page reload.
+  REGISTRY = registry;
 
   console.log('Registry updated for', cid);
 }
@@ -2539,9 +2576,12 @@ async function runPostActivationAudit(cid) {
   }
 
   // ── 2. GENERATOR CONFIG CHECKS ────────────────────────────────────
-  if (LIVE_COURSES.has(cid))
-    pass('LIVE_COURSES contains CID', cid);
-  else fail('LIVE_COURSES contains CID', cid + ' not in LIVE_COURSES — will still appear in dropdown');
+  // Source of truth is the registry. Reload it from disk so this check
+  // reflects what was actually written, not stale in-memory state.
+  await loadLiveCoursesFromRegistry();
+  if (isLive(cid))
+    pass('Registry status === live', cid);
+  else fail('Registry status === live', cid + ' not marked live in course-registry.json — will not appear in dropdown on next reload');
 
   const meta = REGISTRY_META[cid];
   if (meta) pass('REGISTRY_META entry', 'icon ' + meta.icon + '  accent ' + meta.accent);
@@ -2558,23 +2598,37 @@ async function runPostActivationAudit(cid) {
   }
 
   // ── 3. FILE CHECKS (local via repoFolderHandle) ───────────────────
-  const folderName = getFolderName(cid);
-  const filePrefix = getFilePrefix(cid);
-  let courseDir = null;
-
-  try {
-    courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
-    pass('Course folder exists', folderName + '/');
-  } catch(e) {
-    fail('Course folder exists', 'Missing folder: ' + folderName + '/');
+  // For foundations courses, each module lives in its own `module-N/` folder
+  // with version-suffix filenames; resolveModulePath() abstracts that so the
+  // checks below work uniformly for any course.
+  if (course.isFoundations) {
+    pass('Course folder layout', 'foundations: per-module folders (module-1…N)');
+  } else {
+    const folderName = getFolderName(cid);
+    try {
+      await repoFolderHandle.getDirectoryHandle(folderName, { create: false });
+      pass('Course folder exists', folderName + '/');
+    } catch(e) {
+      fail('Course folder exists', 'Missing folder: ' + folderName + '/');
+    }
   }
 
-  if (courseDir) {
+  if (true) {
     for (const mod of course.modules) {
-      const fname = filePrefix + '-m' + mod.n + '.html';
+      const { folder: modFolder, exactName, filenameRegex } = resolveModulePath(cid, mod.n);
+      let html = '', fname = exactName;
       try {
-        const fh = await courseDir.getFileHandle(fname);
-        const html = await (await fh.getFile()).text();
+        const dir = await repoFolderHandle.getDirectoryHandle(modFolder, { create: false });
+        // Try exact name, then version-suffix glob
+        let fh = null;
+        try { fh = await dir.getFileHandle(exactName); }
+        catch(_) {
+          for await (const [name, h] of dir.entries()) {
+            if (h.kind === 'file' && filenameRegex.test(name)) { fh = h; fname = name; break; }
+          }
+        }
+        if (!fh) throw new Error('No file matching ' + filenameRegex + ' in ' + modFolder + '/');
+        html = await (await fh.getFile()).text();
 
         // injection format
         const hasTabStrip = html.includes('class="tab-strip"') || html.includes("class='tab-strip'");
@@ -3235,11 +3289,42 @@ function getFilePrefix(cid) {
   return COURSE_FOLDER_MAP[cid]?.prefix || cid;
 }
 
-// Find a module file in a directory handle, handling version suffixes.
-// Tries exact match first, then scans for pattern: [prefix]-m[n]*.html
-async function findModuleFile(dirHandle, cid, moduleNum) {
+// ── COURSE-AWARE PATH RESOLUTION ──────────────────────────────────────
+// Foundations courses (English Foundations, Arabic Foundations, etc.) live
+// inside per-module folders (`module-1/`, `module-2/`, …) with filenames like
+// `advanced-m{n}-*.html` or `m{n}-advanced-*.html`. Every other course has
+// one folder per course with `{prefix}-m{n}.html` inside.
+//
+// resolveModulePath() returns { folder, exactName, filenameRegex } so any
+// caller (audit, panel evaluator, registry writer) can use the same logic.
+function isFoundationsCid(cid) {
+  const c = (typeof COURSES !== 'undefined') ? COURSES.find(x => x.id === cid) : null;
+  return !!(c && c.isFoundations);
+}
+
+function resolveModulePath(cid, mn, opts) {
+  opts = opts || {};
+  const tier = opts.tier || 'advanced'; // foundations courses default to advanced tier files
+  if (isFoundationsCid(cid)) {
+    return {
+      folder: 'module-' + mn,
+      exactName: tier + '-m' + mn + '.html',
+      // accept both `advanced-m3-v3-...html` and `m1-advanced-v18.5-...html`
+      filenameRegex: new RegExp('^(?:' + tier + '-m' + mn + '|m' + mn + '-' + tier + ')(?:[-.][^/]*)?\\.html$', 'i')
+    };
+  }
   const prefix = getFilePrefix(cid);
-  const exactName = prefix + '-m' + moduleNum + '.html';
+  return {
+    folder: getFolderName(cid),
+    exactName: prefix + '-m' + mn + '.html',
+    filenameRegex: new RegExp('^' + prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-m' + mn + '(?:[-.][^/]*)?\\.html$', 'i')
+  };
+}
+
+// Find a module file in a directory handle, handling version suffixes.
+// Tries exact match first, then scans for the resolved filename regex.
+async function findModuleFile(dirHandle, cid, moduleNum) {
+  const { exactName, filenameRegex } = resolveModulePath(cid, moduleNum);
 
   // Try exact match first
   try {
@@ -3247,10 +3332,9 @@ async function findModuleFile(dirHandle, cid, moduleNum) {
     return fh;
   } catch(e) { /* not found — try pattern */ }
 
-  // Scan directory for files matching [prefix]-m[n]-*.html (version suffix)
-  const pattern = prefix + '-m' + moduleNum;
+  // Scan directory for any matching file
   for await (const [name, handle] of dirHandle.entries()) {
-    if (handle.kind === 'file' && name.startsWith(pattern) && name.endsWith('.html')) {
+    if (handle.kind === 'file' && filenameRegex.test(name)) {
       return handle;
     }
   }
@@ -3421,21 +3505,27 @@ async function runPanelEvaluation(cid, courseName) {
     return null;
   }
 
-  const folderName = getFolderName(cid);
-  log('Fetching file list from GitHub: ' + GITHUB_BASE + '/' + folderName + '/');
-
-  let githubFiles;
-  try {
-    githubFiles = await listGitHubModuleFiles(githubPat, folderName);
-    log('Found ' + githubFiles.length + ' module files on GitHub:');
-    githubFiles.forEach(f => log('  · ' + f.name));
-  } catch(e) {
-    log('ERROR: Could not list files in ' + folderName + '/ on GitHub — ' + e.message);
-    return null;
+  // Foundations courses don't have one course folder — every module lives
+  // in its own `module-N/` folder. For non-foundations courses we list once;
+  // for foundations we list per-module on demand inside the loop.
+  let githubFiles = [];
+  let folderName = course.isFoundations ? null : getFolderName(cid);
+  if (!course.isFoundations) {
+    log('Fetching file list from GitHub: ' + GITHUB_BASE + '/' + folderName + '/');
+    try {
+      githubFiles = await listGitHubModuleFiles(githubPat, folderName);
+      log('Found ' + githubFiles.length + ' module files on GitHub:');
+      githubFiles.forEach(f => log('  · ' + f.name));
+    } catch(e) {
+      log('ERROR: Could not list files in ' + folderName + '/ on GitHub — ' + e.message);
+      return null;
+    }
+  } else {
+    log('Foundations course — will list each module-N/ folder on GitHub on demand.');
   }
 
   const prefix = getFilePrefix(cid);
-  log('Course ID: ' + cid + ' | Folder: ' + folderName + ' | File prefix: ' + prefix);
+  log('Course ID: ' + cid + ' | Layout: ' + (course.isFoundations ? 'per-module folders' : (folderName + ' / prefix ' + prefix)));
 
   let grandTotal = {};
   reviewers.forEach(r => { grandTotal[r.name] = { total: 0, count: 0 }; });
@@ -3448,16 +3538,30 @@ async function runPanelEvaluation(cid, courseName) {
     log('');
     log('── Evaluating ' + modName + ' ──');
 
+    // Per-module path resolution — works for both layouts
+    const { folder: modFolder, exactName, filenameRegex } = resolveModulePath(cid, mn);
+    let filesForThisModule = githubFiles;
+    if (course.isFoundations) {
+      try {
+        filesForThisModule = await listGitHubModuleFiles(githubPat, modFolder);
+      } catch(e) {
+        log('  SKIP: Could not list ' + modFolder + '/ on GitHub — ' + e.message);
+        continue;
+      }
+    }
+
     // Fetch module HTML from GitHub
     let moduleHtml = '';
-    const fileName = findModuleInList(githubFiles, cid, mn);
+    let fileName = (filesForThisModule.find(f => f.name === exactName) || {}).name
+                || (filesForThisModule.find(f => filenameRegex.test(f.name)) || {}).name
+                || (course.isFoundations ? null : findModuleInList(filesForThisModule, cid, mn));
     if (!fileName) {
-      log('  SKIP: No matching file for module ' + mn + ' — looking for "' + prefix + '-m' + mn + '.html" in file list');
+      log('  SKIP: No matching file for module ' + mn + ' in ' + modFolder + '/ (looking for ' + filenameRegex + ')');
       continue;
     }
     try {
-      moduleHtml = await fetchModuleFromGitHub(githubPat, folderName, fileName);
-      log('  Fetched: ' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
+      moduleHtml = await fetchModuleFromGitHub(githubPat, modFolder, fileName);
+      log('  Fetched: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
     } catch(e) {
       log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
       continue;
@@ -3626,7 +3730,7 @@ async function populateEvalDropdown() {
   const needsEval = [];
   const hasEval = [];
 
-  for (const cid of LIVE_COURSES) {
+  for (const cid of liveCids()) {
     const course = COURSES.find(c => c.id === cid);
     if (!course) continue;
     const evalInfo = evalIndex[cid];

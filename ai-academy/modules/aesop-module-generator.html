@@ -1280,7 +1280,7 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     'Module ' + mod.n + ': ' + mod.title,
     'MODULE_ID: ' + moduleId,
     'File: ' + filePrefix + '-m' + mod.n + '.html',
-    'Path: /ai-academy/modules/' + folderName + '/',
+    'Path: /ai-academy/modules/' + ((selectedLang && selectedLang !== 'en') ? (selectedLang + '/') : '') + folderName + '/',
     lessonList ? 'Lessons: ' + lessonList : '',
     '',
     'NARRATIVE RULE: ' + narrativeRule,
@@ -1970,7 +1970,7 @@ async function buildFullCourse() {
     await tw.close();
     await repoFolderHandle.removeEntry(testFile.name);
   } catch(writeErr) {
-    showStatus('error', 'Folder write test FAILED — click "Set Folder" and re-select your ai-academy folder. (' + writeErr.message + ')');
+    showStatus('error', 'Folder write test FAILED — click "Set Folder" and re-select /ai-academy/modules/ (non-English builds auto-descend into {lang}/). (' + writeErr.message + ')');
     repoFolderHandle = null;
     coursesFolderHandle = null;
     return;
@@ -2075,18 +2075,25 @@ async function buildFullCourse() {
 
       // Auto-save to repo
       const isFoundations = course.isFoundations;
-      // New i18n convention: non-English builds save into /{lang}/ai-academy/modules/.
-      // For non-English, point "Set Folder" at /{lang}/ai-academy/modules/ and the folder
-      // name is identical to English (no -es / -lang suffix on the folder itself).
+      // i18n convention: ALL builds — English and otherwise — save under
+      // /ai-academy/modules/.  Point "Set Folder" at /ai-academy/modules/ ONCE
+      // and the generator adds a language subfolder ({lang}/) for non-English.
+      // English folder name and non-English folder name under {lang}/ are identical.
       const baseFolderName = isFoundations ? 'module-' + mn : getFolderName(cid);
       const chainFolderName = baseFolderName;
       const filename = isFoundations ? 'advanced-m' + mn + '.html' : getFilePrefix(cid) + '-m' + mn + '.html';
-      let courseDir = await repoFolderHandle.getDirectoryHandle(chainFolderName, { create: true });
+      // For non-English, descend into {lang}/ first.
+      let writeRoot = repoFolderHandle;
+      if (selectedLang && selectedLang !== 'en') {
+        writeRoot = await repoFolderHandle.getDirectoryHandle(selectedLang, { create: true });
+      }
+      let courseDir = await writeRoot.getDirectoryHandle(chainFolderName, { create: true });
       const fileHandle = await courseDir.getFileHandle(filename, { create: true });
       const writable = await fileHandle.createWritable();
       await writable.write(content);
       await writable.close();
-      const savePath = chainFolderName + '/' + filename;
+      const langPrefix = (selectedLang && selectedLang !== 'en') ? (selectedLang + '/') : '';
+      const savePath = langPrefix + chainFolderName + '/' + filename;
       log('Saved: ' + savePath);
       setModSaved(cid, mn, content.length);
       await obsidianCheckpoint('mod-complete', { n: mn, title: mod.title, chars: content.length.toLocaleString(), secs: modSecs });
@@ -2205,7 +2212,7 @@ async function generate() {
     await tw.close();
     await repoFolderHandle.removeEntry(testFile.name);
   } catch(writeErr) {
-    showStatus('error', 'Folder write test FAILED — click "Set Folder" and re-select your ai-academy folder. (' + writeErr.message + ')');
+    showStatus('error', 'Folder write test FAILED — click "Set Folder" and re-select /ai-academy/modules/ (non-English builds auto-descend into {lang}/). (' + writeErr.message + ')');
     repoFolderHandle = null;
     coursesFolderHandle = null;
     return;
@@ -2332,14 +2339,17 @@ async function downloadFile() {
   if (repoFolderHandle) {
     const saveBtn = document.getElementById('saveBtn');
     try {
-      // Folder handle IS the modules folder — navigate to course folder name.
-      // For non-English, "Set Folder" should point at /{lang}/ai-academy/modules/;
-      // folder name is identical to English under that language root.
+      // Folder handle IS /ai-academy/modules/.  For non-English, descend into
+      // {lang}/ first; folder name under that is identical to the English one.
       const course = COURSES.find(c => c.id === cid);
       const isFoundations = course && course.isFoundations;
       const baseFolderName = isFoundations ? 'module-' + mn : getFolderName(cid);
       const folderName = baseFolderName;
-      let courseDir = await repoFolderHandle.getDirectoryHandle(folderName, { create: true });
+      let writeRoot = repoFolderHandle;
+      if (selectedLang && selectedLang !== 'en') {
+        writeRoot = await repoFolderHandle.getDirectoryHandle(selectedLang, { create: true });
+      }
+      let courseDir = await writeRoot.getDirectoryHandle(folderName, { create: true });
       const file = await courseDir.getFileHandle(generatedFilename, { create: true });
       const writable = await file.createWritable();
       await writable.write(generatedContent);

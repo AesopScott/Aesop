@@ -169,19 +169,10 @@ def build(lang, src, dst, catalog_dir='i18n'):
     for start, end, rep in replacements:
         out = out[:start] + rep + out[end:]
 
-    # Rewrite site-internal links so /ai-academy/... becomes /{lang}/ai-academy/...
-    # Only touches href/src attributes that start with /ai-academy/ or are exactly /ai-academy.
-    # Leaves external URLs, anchors, and already-prefixed lang URLs alone.
-    def rewrite_link(m):
-        attr, quote, url = m.group(1), m.group(2), m.group(3)
-        # Skip if already prefixed with this (or any) lang code
-        if re.match(r'^/[a-z]{2}/', url):
-            return m.group(0)
-        new_url = '/' + lang + url
-        return f'{attr}={quote}{new_url}{quote}'
-
-    link_pattern = re.compile(r'(href|src|action)=(["\'])(/ai-academy(?:/[^"\']*)?)\2')
-    out = link_pattern.sub(rewrite_link, out)
+    # Note: no automatic link rewriting. Built pages live at
+    # ai-academy/modules/{lang}/<relpath>, so absolute "/ai-academy/..." hrefs in
+    # the English source are left intact (they point at the canonical English
+    # sibling pages). If/when per-language targets exist, rewrite here.
 
     pathlib.Path(dst).parent.mkdir(parents=True, exist_ok=True)
     with open(dst, 'w', encoding='utf-8') as f:

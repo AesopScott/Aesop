@@ -24,7 +24,7 @@ Translatable content:
 - `<meta name="description"|"keywords" content="...">`
 - `<html lang="...">` (auto-set to target language)
 
-Site-internal links starting with `/ai-academy/...` are rewritten to `/{lang}/ai-academy/...`.
+Built pages live under `ai-academy/modules/{lang}/<relpath>`. Internal absolute links like `/ai-academy/foo.html` in the source are **not** rewritten — they continue to point at the canonical English siblings. When per-language target pages exist, rewriting can be re-enabled in `scripts/i18n_build.py`.
 
 ## Workflow
 
@@ -44,7 +44,7 @@ Site-internal links starting with `/ai-academy/...` are rewritten to `/{lang}/ai
 3. **Build** any single language:
 
    ```bash
-   python3 scripts/i18n_build.py es ai-academy/courses.html es/ai-academy/courses.html
+   python3 scripts/i18n_build.py es ai-academy/courses.html ai-academy/modules/es/courses.html
    ```
 
 4. **Build all** languages in one shot:

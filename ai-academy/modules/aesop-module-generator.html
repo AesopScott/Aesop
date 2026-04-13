@@ -1827,6 +1827,41 @@ function buildFoundationsSystemPrompt(course, mod, lang, langName) {
 
 let chainRunning = false;
 
+// ── Obsidian Structured Checkpoint ─────────────────────────────────
+// Posts a markdown checkpoint block to GEN MOD/working queue.md
+// so builds can be tracked & debugged across sessions.
+async function obsidianCheckpoint(type, data) {
+  const obsKey = (document.getElementById('obsidianKey')?.value || '').trim();
+  if (!obsKey) return;
+  const ts = new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+  let md = '';
+  if (type === 'course-start') {
+    md = '\n---\n### 🚀 Build Started — ' + data.course + '\n'
+       + '**Time:** ' + ts + '  \n'
+       + '**Tier:** ' + data.tier + ' | **Modules:** ' + data.totalMods + ' | **Lang:** ' + data.lang + '  \n'
+       + '**Status:** ⏳ In Progress  \n\n'
+       + '| Mod | Title | Status | Chars | Time |\n'
+       + '|-----|-------|--------|-------|------|\n';
+  } else if (type === 'mod-complete') {
+    md = '| M' + data.n + ' | ' + data.title + ' | ✅ Saved | ' + data.chars + ' | ' + data.secs + 's |\n';
+  } else if (type === 'mod-error') {
+    md = '| M' + data.n + ' | ' + data.title + ' | ❌ FAILED | — | ' + data.secs + 's |\n'
+       + '\n> **Error:** ' + data.error + '\n';
+  } else if (type === 'course-complete') {
+    md = '\n**Status:** ✅ Complete — ' + data.totalMods + ' modules in ' + data.mins + ' min  \n'
+       + '**Activation:** ' + (data.activated ? '✅ Live' : '⚠️ Not activated') + '  \n---\n';
+  } else if (type === 'course-stopped') {
+    md = '\n**Status:** 🛑 Stopped at M' + data.stoppedAt + '/' + data.totalMods + '  \n---\n';
+  }
+  try {
+    await fetch('http://127.0.0.1:27123/vault/' + encodeURIComponent('GEN MOD/working queue.md'), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + obsKey, 'Content-Type': 'text/markdown', 'Content-Insertion-Position': 'end' },
+      body: md
+    });
+  } catch(e) { /* silent */ }
+}
+
 async function buildFullCourse() {
   const apiKey = document.getElementById('apiKey').value.trim();
   const cid = document.getElementById('courseSelect').value;
@@ -1880,6 +1915,7 @@ async function buildFullCourse() {
   log('=== BUILD FULL COURSE: ' + course.name + ' ===');
   log('Tier: ' + tc.label + ' | Modules: ' + totalMods + ' | Language: ' + selectedLangName + (selectedLang !== 'en' ? ' (' + selectedLang + ')' : ''));
   log('');
+  await obsidianCheckpoint('course-start', { course: course.name, tier: tc.label, totalMods, lang: selectedLangName });
 
   const chainStart = Date.now();
   let allSaved = true;
@@ -1965,6 +2001,7 @@ async function buildFullCourse() {
       await writable.close();
       const savePath = selectedLang !== 'en' ? chainFolderName + '/' + selectedLang + '/' + filename : chainFolderName + '/' + filename;
       log('Saved: ' + savePath);
+      await obsidianCheckpoint('mod-complete', { n: mn, title: mod.title, chars: content.length.toLocaleString(), secs: modSecs });
 
       // Update output area with latest
       generatedContent = content;
@@ -1975,8 +2012,10 @@ async function buildFullCourse() {
 
     } catch(err) {
       clearInterval(swInterval);
+      const errSecs = ((Date.now() - modStart) / 1000).toFixed(1);
       log('ERROR on M' + mn + ': ' + err.message);
       showStatus('error', 'Failed on M' + mn + ': ' + err.message);
+      await obsidianCheckpoint('mod-error', { n: mn, title: mod.title, secs: errSecs, error: err.message });
       allSaved = false;
       break;
     }
@@ -1991,6 +2030,10 @@ async function buildFullCourse() {
   const totalMins = ((Date.now() - chainStart) / 60000).toFixed(1);
   log('');
   log('=== COMPLETE: ' + totalMods + ' modules in ' + totalMins + ' min ===');
+
+  if (!allSaved && !chainRunning) {
+    await obsidianCheckpoint('course-stopped', { stoppedAt: document.getElementById('moduleSelect').value, totalMods });
+  }
 
   if (allSaved) {
     showStatus('info', 'All ' + totalMods + ' modules built and saved! Activating course in courses.html...');
@@ -2039,6 +2082,10 @@ async function buildFullCourse() {
       log('Evaluation error: ' + evalErr.message);
       showStatus('error', 'Evaluation failed: ' + evalErr.message);
     }
+
+    await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: true });
+  } else if (allSaved === false) {
+    await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
   }
 
   chainRunning = false;
@@ -2150,11 +2197,13 @@ async function generate() {
     const totalSecs = ((Date.now() - startTime) / 1000).toFixed(1);
     log('Time: ' + totalSecs + 's');
     showStatus('info', 'Done in ' + totalSecs + 's — ' + generatedFilename + ' ready to save');
+    await obsidianCheckpoint('mod-complete', { n: mn, title: mod.title, chars: content.length.toLocaleString(), secs: totalSecs });
 
   } catch(err) {
     const totalSecs = ((Date.now() - startTime) / 1000).toFixed(1);
     log('Error after ' + totalSecs + 's: ' + err.message);
     showStatus('error', 'Error: ' + err.message);
+    await obsidianCheckpoint('mod-error', { n: mn, title: mod.title, secs: totalSecs, error: err.message });
   }
 
   clearInterval(swInterval);
@@ -2843,7 +2892,46 @@ function showStatus(type, msg) {
 }
 
 function showLog(t) { const el = document.getElementById('progressLog'); el.classList.add('visible'); el.textContent = t; }
-function log(line) { const el = document.getElementById('progressLog'); el.textContent += line + '\n'; el.scrollTop = el.scrollHeight; }
+function log(line) {
+  const el = document.getElementById('progressLog');
+  el.textContent += line + '\n';
+  el.scrollTop = el.scrollHeight;
+  obsidianLogQueue.push(line);
+  flushObsidianLog();
+}
+
+// ── Obsidian Working-Queue Logger ──────────────────────────────────
+// Buffers log lines and flushes them to GEN MOD/working queue.md
+// via the Obsidian Local REST API (same key as the audit poster).
+const obsidianLogQueue = [];
+let obsidianFlushTimer = null;
+let obsidianFlushRunning = false;
+
+function flushObsidianLog() {
+  if (obsidianFlushTimer) return;                 // already scheduled
+  obsidianFlushTimer = setTimeout(async () => {
+    obsidianFlushTimer = null;
+    if (obsidianFlushRunning || obsidianLogQueue.length === 0) return;
+    obsidianFlushRunning = true;
+    const obsKey = (document.getElementById('obsidianKey')?.value || '').trim();
+    if (!obsKey) { obsidianFlushRunning = false; return; }
+    const batch = obsidianLogQueue.splice(0);      // grab everything queued
+    const text = batch.join('\n') + '\n';
+    try {
+      await fetch('http://127.0.0.1:27123/vault/' + encodeURIComponent('GEN MOD/working queue.md'), {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + obsKey,
+          'Content-Type': 'text/markdown',
+          'Content-Insertion-Position': 'end'
+        },
+        body: text
+      });
+    } catch(e) { /* silently drop — don't interrupt generation */ }
+    obsidianFlushRunning = false;
+    if (obsidianLogQueue.length) flushObsidianLog();  // more arrived while flushing
+  }, 500);   // debounce 500ms so rapid log() calls batch together
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PANEL EVALUATION ENGINE — Automated 4-reviewer course evaluation

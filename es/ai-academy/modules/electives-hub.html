@@ -484,13 +484,24 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--cream);color:var(--in
 // ═══════════════════════════════════════════════════════════
 let COURSES = [];
 
+let REGISTRY_LANGUAGES = []; // populated from registry._meta.languages
 async function loadCourseRegistry() {
   try {
     const resp = await fetch('/ai-academy/modules/course-registry.json?v=' + Date.now());
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const registry = await resp.json();
-    // Only load courses that are live (have a URL)
-    COURSES = Object.values(registry).filter(c => c.url && c.status === 'live');
+    // Pull _meta block for languages (schemaVersion 2+)
+    if (registry._meta && Array.isArray(registry._meta.languages)) {
+      REGISTRY_LANGUAGES = registry._meta.languages;
+      // Rebuild LANG_META from registry so the hub stays in sync with mod gen
+      for (const l of REGISTRY_LANGUAGES) {
+        LANG_META[l.code] = { flag: l.flag || '🌐', label: l.nativeName || l.name || l.code, urlPrefix: l.urlPrefix || '', dir: l.dir || 'ltr' };
+      }
+    }
+    // Only load live courses; skip _meta and any key prefixed with _
+    COURSES = Object.entries(registry)
+      .filter(([k, c]) => !k.startsWith('_') && c && c.url && c.status === 'live')
+      .map(([, c]) => c);
     console.log('Registry loaded:', COURSES.length, 'active courses from', Object.keys(registry).length, 'total');
   } catch(e) {
     console.error('Failed to load course registry:', e);
@@ -517,22 +528,20 @@ const STATE = {
 // ═══════════════════════════════════════════════════════════
 // LANGUAGE SUPPORT
 // ═══════════════════════════════════════════════════════════
+// LANG_META is seeded from registry._meta.languages during loadCourseRegistry().
+// Kept as a fallback in case registry load fails or for older cached builds.
 const LANG_META = {
-  en:{flag:'🇺🇸',label:'English'},
-  es:{flag:'🇪🇸',label:'Español'},
-  fr:{flag:'🇫🇷',label:'Français'},
-  de:{flag:'🇩🇪',label:'Deutsch'},
-  hi:{flag:'🇮🇳',label:'हिन्दी'},
-  ur:{flag:'🇵🇰',label:'اردو'},
-  zh:{flag:'🇨🇳',label:'中文'},
-  fa:{flag:'🇮🇷',label:'فارسی'},
-  ru:{flag:'🇷🇺',label:'Русский'},
-  ko:{flag:'🇰🇷',label:'한국어'},
-  ja:{flag:'🇯🇵',label:'日本語'},
-  ar:{flag:'🇸🇦',label:'العربية'},
-  sw:{flag:'🇰🇪',label:'Kiswahili'}
+  en:{flag:'🇺🇸',label:'English',urlPrefix:'',dir:'ltr'},
+  es:{flag:'🇪🇸',label:'Español',urlPrefix:'/es',dir:'ltr'}
 };
-let activeLang = localStorage.getItem('aesop-lang') || 'en';
+// Detect language from the URL path first (e.g. /es/ai-academy/... defaults to 'es'),
+// then fall back to stored preference, then English.
+function detectLangFromPath() {
+  const p = (typeof window !== 'undefined' && window.location && window.location.pathname) || '';
+  const m = p.match(/^\/([a-z]{2})\//i);
+  return m ? m[1].toLowerCase() : null;
+}
+let activeLang = detectLangFromPath() || localStorage.getItem('aesop-lang') || 'es';
 
 function setLang(lang, cId) {
   activeLang = lang;
@@ -893,11 +902,13 @@ function renderModuleFrame(cId, mId){
   const mNum=c.modules.indexOf(m)+1;
   // Derive filename from the course URL (e.g. /ai-academy/modules/ai-governance/ -> ai-governance-m1.html)
   const folder = c.url.replace(/\/+$/,'').split('/').pop();
-  // Language-aware URL: non-English loads from language subfolder (e.g. ai-governance/es/ai-governance-m1.html)
+  // Language-aware URL (new convention): {urlPrefix}{c.url}{folder}-mN.html
+  // e.g. /es/ai-academy/modules/ai-governance/ai-governance-m1.html
   const courseLangs = getCourseLangs(c);
   const lang = courseLangs.includes(activeLang) ? activeLang : 'en';
-  const langPath = lang !== 'en' ? `${lang}/` : '';
-  const url = `${c.url}${langPath}${folder}-m${mNum}.html`;
+  const langMeta = LANG_META[lang] || {urlPrefix: lang === 'en' ? '' : '/' + lang};
+  const urlPrefix = (typeof langMeta.urlPrefix === 'string') ? langMeta.urlPrefix : '';
+  const url = `${urlPrefix}${c.url}${folder}-m${mNum}.html`;
 
   // Show loading state
   document.getElementById('contentArea').innerHTML=`

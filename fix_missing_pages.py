@@ -11,8 +11,8 @@ MODULES_DIR = "/sessions/nifty-brave-edison/mnt/Aesop/ai-academy/modules"
 
 # Category 1: Missing p-lab3 (17 modules)
 CATEGORY_1_FILES = [
-    "ai_in_game_design_i/ai_in_game_design_i-m1.html",
-    "ai_in_game_design_i/ai_in_game_design_i-m2.html",
+    "ai-in-game-design-i/ai-in-game-design-i-m1.html",
+    "ai-in-game-design-i/ai-in-game-design-i-m2.html",
     "building-ai-agents-ii-skills/building-ai-agents-ii-skills-m3.html",
     "building-ai-agents-ii-skills/building-ai-agents-ii-skills-m4.html",
     "building-ai-agents-ii-skills/building-ai-agents-ii-skills-m6.html",
@@ -21,13 +21,13 @@ CATEGORY_1_FILES = [
     "building-ai-agents-iv-openclaw/building-ai-agents-iv-openclaw-m8.html",
     "building-ai-agents-v-optimization/building-ai-agents-v-optimization-m1.html",
     "building-ai-agents-v-optimization/building-ai-agents-v-optimization-m7.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m1.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m2.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m3.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m5.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m6.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m7.html",
-    "gpt_vs_claude_vs_gemini/gpt_vs_claude_vs_gemini-m8.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m1.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m2.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m3.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m5.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m6.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m7.html",
+    "gpt-vs-claude-vs-gemini/gpt-vs-claude-vs-gemini-m8.html",
 ]
 
 # Category 2: Finance modules missing all quizzes and labs (6 modules)

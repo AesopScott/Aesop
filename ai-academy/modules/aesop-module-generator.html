@@ -1002,6 +1002,7 @@ function onCourseChange() {
     o.value = m.n; o.textContent = 'M' + m.n + ': ' + m.title;
     ms.appendChild(o);
   });
+  refreshModuleDropdown();
 }
 
 function onModuleChange() {
@@ -1825,6 +1826,40 @@ function buildFoundationsSystemPrompt(course, mod, lang, langName) {
   ].join('\n');
 }
 
+// ── localStorage Module State ──────────────────────────────────────
+// Tracks which modules have been generated+saved per course.
+// Key: "modgen_{courseId}" → { lang: { modNum: {saved:true, chars:N, ts:ISO} } }
+function getModState(cid) {
+  try { return JSON.parse(localStorage.getItem('modgen_' + cid)) || {}; } catch(e) { return {}; }
+}
+function setModSaved(cid, mn, chars) {
+  const state = getModState(cid);
+  const lang = selectedLang || 'en';
+  if (!state[lang]) state[lang] = {};
+  state[lang][mn] = { saved: true, chars: chars, ts: new Date().toISOString() };
+  localStorage.setItem('modgen_' + cid, JSON.stringify(state));
+  refreshModuleDropdown();   // update ✅ markers
+}
+function clearModState(cid) {
+  localStorage.removeItem('modgen_' + cid);
+  refreshModuleDropdown();
+}
+function refreshModuleDropdown() {
+  const cid = document.getElementById('courseSelect').value;
+  if (!cid) return;
+  const state = getModState(cid);
+  const lang = selectedLang || 'en';
+  const langState = state[lang] || {};
+  const opts = document.querySelectorAll('#moduleSelect option');
+  opts.forEach(o => {
+    const mn = parseInt(o.value);
+    if (!mn) return;
+    // Strip any existing ✅ then re-add if saved
+    o.textContent = o.textContent.replace(/ ✅$/, '');
+    if (langState[mn] && langState[mn].saved) o.textContent += ' ✅';
+  });
+}
+
 let chainRunning = false;
 
 // ── Obsidian Structured Checkpoint ─────────────────────────────────
@@ -2001,6 +2036,7 @@ async function buildFullCourse() {
       await writable.close();
       const savePath = selectedLang !== 'en' ? chainFolderName + '/' + selectedLang + '/' + filename : chainFolderName + '/' + filename;
       log('Saved: ' + savePath);
+      setModSaved(cid, mn, content.length);
       await obsidianCheckpoint('mod-complete', { n: mn, title: mod.title, chars: content.length.toLocaleString(), secs: modSecs });
 
       // Update output area with latest
@@ -2270,6 +2306,7 @@ async function downloadFile() {
         }, 2500);
       }
       showStatus('info', 'Saved: ' + cid + '/' + generatedFilename);
+      setModSaved(cid, mn, generatedContent.length);
     } catch(e) {
       showStatus('error', 'Save failed: ' + e.message + ' — falling back to download');
       fallbackDownload();

@@ -3229,16 +3229,36 @@ const GITHUB_BASE = 'ai-academy/modules';
 
 // List module HTML files in a course folder on GitHub
 async function listGitHubModuleFiles(pat, folderName) {
+  resolvedGitHubFolder = '';  // reset each call
   const url = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + GITHUB_BASE + '/' + folderName;
-  const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } });
+  let resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } });
+  // Case-insensitive fallback: if 404, list parent and find matching folder
+  if (resp.status === 404) {
+    log('  Folder not found at exact path, trying case-insensitive match...');
+    const parentUrl = 'https://api.github.com/repos/' + GITHUB_REPO + '/contents/' + GITHUB_BASE;
+    const parentResp = await fetch(parentUrl, { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } });
+    if (parentResp.ok) {
+      const dirs = await parentResp.json();
+      const match = dirs.find(d => d.type === 'dir' && d.name.toLowerCase() === folderName.toLowerCase());
+      if (match) {
+        log('  Found matching folder: ' + match.name);
+        resolvedGitHubFolder = match.name;  // remember actual case for raw fetches
+        resp = await fetch(match.url, { headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' } });
+      }
+    }
+  }
   if (!resp.ok) throw new Error('GitHub API ' + resp.status + ': ' + (await resp.text()).substring(0, 200));
   const files = await resp.json();
   return files.filter(f => f.type === 'file' && f.name.endsWith('.html') && f.name.includes('-m'));
 }
 
 // Fetch a single module HTML file from GitHub (raw content)
+// Track the resolved GitHub folder name (set by listGitHubModuleFiles on case-insensitive match)
+let resolvedGitHubFolder = '';
+
 async function fetchModuleFromGitHub(pat, folderName, fileName) {
-  const url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + GITHUB_BASE + '/' + folderName + '/' + fileName;
+  const folder = resolvedGitHubFolder || folderName;
+  const url = 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/main/' + GITHUB_BASE + '/' + folder + '/' + fileName;
   const resp = await fetch(url, { headers: { 'Authorization': 'token ' + pat } });
   if (!resp.ok) throw new Error('GitHub raw fetch ' + resp.status + ' for ' + fileName);
   return await resp.text();

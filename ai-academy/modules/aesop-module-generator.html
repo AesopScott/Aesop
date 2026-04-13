@@ -932,6 +932,10 @@ let selectedTier = null, selectedLang = 'en', selectedLangName = 'English', gene
 // Kept as a mutable Set so activation flow can optimistically add new IDs in-session.
 const LIVE_COURSES = new Set();
 
+// Language roster derived from registry._meta.languages — authoritative list of
+// all languages the system supports. Chips in the Language row are rendered from this.
+let REGISTRY_LANGUAGES = [];
+
 async function loadLiveCoursesFromRegistry() {
   try {
     const resp = await fetch('./course-registry.json', { cache: 'no-store' });
@@ -939,12 +943,34 @@ async function loadLiveCoursesFromRegistry() {
     const registry = await resp.json();
     LIVE_COURSES.clear();
     for (const [cid, entry] of Object.entries(registry)) {
+      if (cid.startsWith('_')) continue; // skip _meta and other reserved keys
       if (entry && entry.status === 'live') LIVE_COURSES.add(cid);
     }
-    console.log('LIVE_COURSES loaded from registry:', LIVE_COURSES.size, 'courses');
+    if (registry._meta && Array.isArray(registry._meta.languages)) {
+      REGISTRY_LANGUAGES = registry._meta.languages;
+      renderLanguageChipsFromRegistry();
+    }
+    console.log('Registry loaded:', LIVE_COURSES.size, 'live courses;', REGISTRY_LANGUAGES.length, 'languages');
   } catch (e) {
     console.warn('Could not load course-registry.json — LIVE_COURSES will be empty:', e.message);
   }
+}
+
+// Render language chips in the "Language" selector row from REGISTRY_LANGUAGES.
+// Preserves current selection if the selected code is still supported.
+function renderLanguageChipsFromRegistry() {
+  if (!REGISTRY_LANGUAGES.length) return;
+  const row = document.getElementById('langChips') || document.querySelector('.lang-chips');
+  if (!row) return;
+  const currentLang = selectedLang || 'en';
+  row.innerHTML = REGISTRY_LANGUAGES.map(l => {
+    const sel = (l.code === currentLang) ? ' selected' : '';
+    const flag = l.flag || '';
+    const label = l.nativeName || l.name || l.code;
+    return '<button class="lang-chip' + sel + '" data-lang="' + l.code +
+      '" data-langname="' + (l.name || l.code) +
+      '" onclick="selectLang(this)"><span class="flag">' + flag + '</span> ' + label + '</button>';
+  }).join('');
 }
 
 // Registry metadata for electives-hub — maps course IDs to display config

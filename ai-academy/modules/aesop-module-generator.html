@@ -1511,7 +1511,7 @@ async function buildFullCourse() {
     userMsg += ' Output complete HTML only starting with <!DOCTYPE html>.';
 
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      const resp = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1528,7 +1528,7 @@ async function buildFullCourse() {
           ).join('\n'),
           messages: [{ role: 'user', content: userMsg }]
         })
-      });
+      }, { retries: 2, baseDelay: 15000, logFn: log });
 
       clearInterval(swInterval);
 
@@ -1596,8 +1596,8 @@ async function buildFullCourse() {
 
     // Brief pause between modules to avoid rate limits
     if (mn < totalMods) {
-      log('Pausing 3s before next module...');
-      await new Promise(r => setTimeout(r, 3000));
+      log('Pausing 8s before next module...');
+      await new Promise(r => setTimeout(r, 8000));
     }
   }
 
@@ -1742,7 +1742,7 @@ async function generate() {
   userMsg += ' Output complete HTML only starting with <!DOCTYPE html>.';
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1759,7 +1759,7 @@ async function generate() {
         ).join('\n'),
         messages: [{ role: 'user', content: userMsg }]
       })
-    });
+    }, { retries: 2, baseDelay: 15000, logFn: log });
 
     if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || 'API error ' + resp.status); }
     const data = await resp.json();
@@ -2684,6 +2684,33 @@ Return ONLY a JSON object with this exact structure:
 }
 
 Return ONLY valid JSON. No markdown fences, no preamble.`;
+}
+
+// ── RETRY WRAPPER FOR FETCH (handles "Failed to fetch" / rate limits) ─────
+async function fetchWithRetry(url, opts, { retries = 2, baseDelay = 15000, logFn = null } = {}) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const resp = await fetch(url, opts);
+      // Rate-limited (429) or overloaded (529) — retry after delay
+      if ((resp.status === 429 || resp.status === 529) && attempt < retries) {
+        const retryAfter = parseInt(resp.headers.get('retry-after') || '0', 10);
+        const wait = Math.max(retryAfter * 1000, baseDelay * (attempt + 1));
+        if (logFn) logFn('Rate limited (HTTP ' + resp.status + '). Waiting ' + (wait/1000).toFixed(0) + 's before retry ' + (attempt+1) + '/' + retries + '...');
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      return resp;
+    } catch(err) {
+      // "Failed to fetch" = network error, CORS, or timeout
+      if (attempt < retries) {
+        const wait = baseDelay * (attempt + 1);
+        if (logFn) logFn('Network error: ' + err.message + '. Waiting ' + (wait/1000).toFixed(0) + 's before retry ' + (attempt+1) + '/' + retries + '...');
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 // ── API CALLERS FOR EACH REVIEWER ──────────────────────────────────────────

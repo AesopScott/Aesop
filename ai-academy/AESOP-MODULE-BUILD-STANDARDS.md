@@ -596,6 +596,7 @@ Universal values (all tiers):
         <div class="age-chip">{Emoji} {Tier Label}</div>
         <h1>Lesson 1: {Title}</h1>
         <p class="tagline">One-sentence framing.</p>
+        <p class="lesson-question">{Short reflection question, under 15 words}</p>
       </div>
       <!-- story-scene or case-study -->
       <!-- lesson-section blocks -->
@@ -788,6 +789,8 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 .age-chip{display:inline-flex;align-items:center;gap:6px;font-size:1.1rem;font-weight:800;color:var(--accent);background:rgba({ACCENT_RGB},0.1);border:1px solid rgba({ACCENT_RGB},0.25);border-radius:20px;padding:4px 12px;margin-bottom:14px;}
 .lesson-hero h1{font-family:'Cinzel',serif;font-size:2.8rem;font-weight:900;color:var(--text);line-height:1.2;margin-bottom:10px;}
 .lesson-hero .tagline{font-size:1.45rem;color:var(--muted);line-height:1.7;max-width:680px;}
+.sb-question{padding:10px 16px 8px;font-size:1.05rem;font-style:italic;color:var(--gold);line-height:1.5;border-top:1px solid var(--border);margin-top:6px;}
+.lesson-question{font-size:1.25rem;font-weight:700;font-style:italic;color:var(--gold);margin-top:12px;line-height:1.6;max-width:680px;}
 .mt-hero{padding:40px 40px 24px;border-bottom:1px solid var(--border);}
 .mt-hero h1{font-family:'Cinzel',serif;font-size:2.6rem;font-weight:900;color:var(--gold);margin-bottom:10px;}
 .mt-hero p{font-size:1.4rem;color:var(--muted);}
@@ -1059,6 +1062,36 @@ Open immediately: "{Exact opening question}"
 
 ---
 
+### 2.9b Guiding Questions (Mandatory for Non-English Modules)
+
+Every non-English module must include two types of guiding questions:
+
+**Module-level question (sidebar):**
+Place a `<div class="sb-question">` after the `sb-tier-chip` in the sidebar header. This is a single overarching question that frames the entire module's theme. Keep it under 15 words.
+
+```html
+<div class="sb-tier-chip">🎯 Advanced</div>
+<div class="sb-question">What can AI do and what can't it do?</div>
+```
+
+**Lesson-level question (lesson hero):**
+Place a `<p class="lesson-question">` after the tagline in each lesson-hero. One short, focused reflection question per lesson — under 15 words, one concept only.
+
+```html
+<p class="tagline">One-sentence framing.</p>
+<p class="lesson-question">Is an AI assistant really intelligent?</p>
+```
+
+**Question design rules:**
+- Under 15 words
+- One single concept per question
+- Direct and immediately understandable
+- Provokes thought without being compound or convoluted
+- BAD: "Why do you think it's fundamental that people understand AI works the same way in both cases but we must treat it differently?"
+- GOOD: "Can a machine learn just by seeing examples?"
+
+---
+
 ### 2.10 Foundations QA Checklist
 
 - [ ] Version comment at top updated: `<!-- v{X}.{Y}.{Z} -->`
@@ -1089,6 +1122,9 @@ Open immediately: "{Exact opening question}"
 - [ ] `LESSON_MAP` covers all lesson IDs plus `m{N}-test`
 - [ ] Proxy URL is `https://playagame.ai/claude-proxy.php`
 - [ ] Model is `claude-sonnet-4-20250514`
+- [ ] (Non-English) `sb-question` div present in sidebar header after `sb-tier-chip`
+- [ ] (Non-English) `lesson-question` paragraph present in every lesson-hero after tagline
+- [ ] All guiding questions are under 15 words and focus on a single concept
 - [ ] Back link points to `/ai-academy/`
 - [ ] `<nav class="sidebar">` — not `<aside>`
 - [ ] `<div class="main">` — not `<main>`

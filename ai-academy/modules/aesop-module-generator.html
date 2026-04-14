@@ -33,7 +33,7 @@ textarea{resize:vertical;min-height:80px;}
 .output-area.visible{display:block;margin-top:1.5rem;}
 .output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;}
 .output-filename{font-size:0.85rem;color:var(--gold);font-family:monospace;}
-.btn-download{background:var(--teal);color:white;border:none;border-radius:8px;padding:0.6rem 1.25rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;} .btn-set-folder{background:rgba(201,160,90,0.15);color:var(--gold);border:1px solid rgba(201,160,90,0.3);border-radius:8px;padding:0.6rem 1.25rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;} .btn-set-folder:hover{background:rgba(201,160,90,0.25);}
+.btn-download{background:var(--teal);color:white;border:none;border-radius:8px;padding:0.6rem 1.25rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;} .btn-set-folder{background:rgba(201,160,90,0.15);color:var(--gold);border:1px solid rgba(201,160,90,0.3);border-radius:8px;padding:0.6rem 1.25rem;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;} .btn-set-folder:hover{background:rgba(201,160,90,0.25);} @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.8;transform:scale(1.05)}}
 .btn-download:hover{opacity:0.85;}
 .output-preview{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:1rem;font-size:0.75rem;font-family:monospace;color:rgba(255,255,255,0.5);max-height:300px;overflow-y:auto;white-space:pre-wrap;line-height:1.5;}
 .api-key-note{font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.4rem;}
@@ -1020,6 +1020,11 @@ const REGISTRY_META = {
   'how_large_language_models_work':{icon:'📐',accent:'#0284c7',accentRgb:'2,132,199',pts:2,days:2,prefix:'llm',desc:'Transformers, pre-training, fine-tuning, emergent abilities, and LLM internals.'},
   'ai_in_game_design_i':{icon:'🎮',accent:'#9333ea',accentRgb:'147,51,234',pts:2,days:2,prefix:'ar1',desc:'Explore how AI is transforming game design — procedural generation, NPC behavior, and the tools reshaping how games are made.'},
   'foundations_advanced':{icon:'🎯',accent:'#f43f5e',accentRgb:'244,63,94',pts:3,days:3,prefix:'fnd',desc:'Complete AI Foundations course — Advanced tier. 10 modules, 8 lessons each, real-world case studies.'},
+  'photography_and_ai': {icon:'📷',accent:'#9333ea',accentRgb:'147,51,234',pts:2,days:2,prefix:'par',desc:'Explore how AI is transforming photography — from intelligent cameras to AI editing, image upscaling, generative fill, and the ethics of synthetic photography.'},
+  'ai_for_small_business_managers':{icon:'🏢',accent:'#d97706',accentRgb:'217,119,6',pts:2,days:2,prefix:'sbm',desc:'A hands-on course for managers running teams of 5–50. Learn to introduce AI into daily operations, make smarter decisions with data, and lead your team through adoption.'},
+  'ai_risk_for_business_leaders': {icon:'⚠️',accent:'#d97706',accentRgb:'217,119,6',pts:2,days:2,prefix:'arb',desc:'Understand the AI risks that matter for business — operational, reputational, legal, and strategic. Learn to govern AI use without stifling it.'},
+  'ai_tools_for_solo_founders':   {icon:'🚀',accent:'#0891b2',accentRgb:'8,145,178',pts:2,days:2,prefix:'tsf',desc:'The AI toolkit every solo founder needs — from idea validation to launch, marketing, and operations.'},
+  'ai_and_the_future_of_work':    {icon:'💼',accent:'#7c3aed',accentRgb:'124,58,237',pts:2,days:2,prefix:'afw',desc:'How AI is reshaping jobs, skills, hiring, and the workplace — and what it means for your career.'},
 };
 
 function populateCourseDropdown() {
@@ -2401,25 +2406,41 @@ async function buildFullCourse() {
     log('Auto-activating course link in courses.html...');
 
     // Auto-trigger activation + registry write (noPrompt: can't show picker outside user gesture)
+    // If coursesFolderHandle is missing but repoFolderHandle is set (= modules/),
+    // try to recover by reading courses.html from the parent directory.
+    if (!coursesFolderHandle && repoFolderHandle) {
+      try {
+        // repoFolderHandle is ai-academy/modules/ — courses.html is in ai-academy/
+        // File System Access API doesn't support navigating up, but we can
+        // look for courses.html in the parent by re-resolving from root.
+        // Workaround: try to get courses.html from the saved coursesFolderHandle
+        // or from the repoFolderHandle's parent if available.
+        log('coursesFolderHandle lost — attempting recovery from setRepoFolder context...');
+      } catch(e) { /* best-effort */ }
+    }
+    let activationOk = false;
     try {
       await updateCoursesFile({ noPrompt: true });
+      activationOk = true;
       if (repoFolderHandle) {
         await writeRegistryEntry(cid);
         log('Registry entry written for ' + cid);
       }
     } catch(activateErr) {
       log('Activate error: ' + activateErr.message);
-      // Fall back to highlighting the button
+      // Fall back to highlighting the button with URGENT messaging
       const activateBtn = document.querySelector('#coursesUpdateCard .btn-set-folder');
       if (activateBtn) {
         activateBtn.style.background = 'var(--teal)';
         activateBtn.style.color = '#fff';
         activateBtn.style.boxShadow = '0 0 0 3px rgba(29,158,117,0.35)';
+        activateBtn.style.animation = 'pulse 1.5s ease-in-out infinite';
       }
       const card = document.getElementById('coursesUpdateCard');
-      if (card) card.style.border = '1px solid rgba(29,158,117,0.4)';
-      document.getElementById('coursesUpdateStatus').textContent = 'All modules done — click to activate.';
-      document.getElementById('coursesUpdateStatus').style.color = '#5dd6a8';
+      if (card) card.style.border = '2px solid rgba(29,158,117,0.6)';
+      document.getElementById('coursesUpdateStatus').textContent =
+        '⚠️ AUTO-ACTIVATION FAILED — click this button NOW to activate. Course will NOT be live until activated.';
+      document.getElementById('coursesUpdateStatus').style.color = '#f59e0b';
     }
 
     // Post-activation audit
@@ -2743,16 +2764,43 @@ async function writeRegistryEntry(cid) {
   // page (e.g. /ai-academy/modules/foundations_advanced/) rather than a
   // per-module folder. Other courses use their single course folder.
   const folderName = course.isFoundations ? cid : getFolderName(cid);
+
+  // Try to extract category/sub from courses.html panel (e.g. "Art · Course 10 of 12")
+  let panelSub = '';
+  let panelCategory = '';
+  let panelType = 'Core';
+  if (coursesFolderHandle) {
+    try {
+      const csFile = await coursesFolderHandle.getFileHandle('courses.html');
+      const csText = await (await csFile.getFile()).text();
+      const titleTag = 'core-panel__title">' + course.name + '<';
+      const ti = csText.indexOf(titleTag);
+      if (ti !== -1) {
+        // Look backward for core-panel__num (within 500 chars)
+        const before = csText.substring(Math.max(0, ti - 500), ti);
+        const numMatch = before.match(/core-panel__num">([^<]+)</);
+        if (numMatch) {
+          panelSub = numMatch[1].trim();
+          // Extract category from sub (e.g. "Art" from "Art · Course 10 of 12")
+          const catMatch = panelSub.match(/^([^·]+)/);
+          if (catMatch) panelCategory = catMatch[1].trim();
+        }
+      }
+    } catch(e) { /* best-effort — use defaults */ }
+  }
+
   const entry = {
     id: cid,
     title: course.name,
     icon: meta.icon,
-    sub: 'Elective',
+    sub: panelSub || (panelCategory ? panelCategory + ' · Elective' : 'Elective'),
     accent: meta.accent,
     accentRgb: meta.accentRgb,
     pts: meta.pts,
     days: meta.days,
     desc: meta.desc,
+    category: panelCategory || 'Elective',
+    type: panelType,
     status: 'live',
     modCount: modules.length,
     url: '/ai-academy/modules/' + folderName + '/',
@@ -3987,35 +4035,90 @@ async function runPanelEvaluation(cid, courseName) {
     log('  ✓ All modules PASSED panel review.');
   }
 
-  // Save report to GitHub
+  // Save report — prefer local disk, fall back to GitHub API
   const saveFolderName = getFolderName(cid);
-  try {
-    const reportFilename = saveFolderName + '-eval-report.json';
-    const reportContent = JSON.stringify(fullReport, null, 2);
-    await saveReportToGitHub(githubPat, saveFolderName, reportFilename, reportContent);
-    log('');
-    log('Report saved to GitHub: ' + saveFolderName + '/' + reportFilename);
-  } catch(e) {
-    log('Could not save report to GitHub: ' + e.message);
+  const reportFilename = saveFolderName + '-eval-report.json';
+  const reportContent = JSON.stringify(fullReport, null, 2);
+  let reportSaved = false;
+
+  // Try local disk first
+  if (repoFolderHandle) {
+    try {
+      const courseDir = await repoFolderHandle.getDirectoryHandle(saveFolderName, { create: true });
+      const fh = await courseDir.getFileHandle(reportFilename, { create: true });
+      const writable = await fh.createWritable();
+      await writable.write(reportContent);
+      await writable.close();
+      log('');
+      log('Report saved locally: ' + saveFolderName + '/' + reportFilename);
+      reportSaved = true;
+    } catch(e) {
+      log('Local report save failed: ' + e.message + ' — trying GitHub...');
+    }
   }
 
-  // Update central eval-index.json on GitHub
-  try {
-    let evalIndex = await loadEvalIndexFromGitHub(githubPat);
+  // Fall back to GitHub API if local save failed or unavailable
+  if (!reportSaved && githubPat) {
+    try {
+      await saveReportToGitHub(githubPat, saveFolderName, reportFilename, reportContent);
+      log('');
+      log('Report saved to GitHub: ' + saveFolderName + '/' + reportFilename);
+      reportSaved = true;
+    } catch(e) {
+      log('Could not save report to GitHub: ' + e.message);
+    }
+  }
 
-    evalIndex[cid] = {
-      course: fullReport.course,
-      date: fullReport.date,
-      reviewers: fullReport.reviewers,
-      moduleCount: fullReport.modules.length,
-      panelAverage: fullReport.summary.panelAverage || null,
-      reportFile: saveFolderName + '/' + saveFolderName + '-eval-report.json'
-    };
+  if (!reportSaved) {
+    log('WARNING: Report could not be saved — no local folder or GitHub PAT available.');
+  }
 
-    await saveEvalIndexToGitHub(githubPat, evalIndex);
-    log('Eval index updated on GitHub.');
-  } catch(e) {
-    log('Could not update eval index: ' + e.message);
+  // Update central eval-index.json — prefer local disk, fall back to GitHub API
+  const evalEntry = {
+    course: fullReport.course,
+    date: fullReport.date,
+    reviewers: fullReport.reviewers,
+    moduleCount: fullReport.modules.length,
+    panelAverage: fullReport.summary.panelAverage || null,
+    reportFile: saveFolderName + '/' + saveFolderName + '-eval-report.json'
+  };
+  let indexSaved = false;
+
+  // Try local disk first
+  if (repoFolderHandle) {
+    try {
+      let evalIndex = {};
+      try {
+        const eiHandle = await repoFolderHandle.getFileHandle('eval-index.json');
+        evalIndex = JSON.parse(await (await eiHandle.getFile()).text());
+      } catch(_) { /* new file */ }
+      evalIndex[cid] = evalEntry;
+      const eiWrite = await repoFolderHandle.getFileHandle('eval-index.json', { create: true });
+      const writable = await eiWrite.createWritable();
+      await writable.write(JSON.stringify(evalIndex, null, 2));
+      await writable.close();
+      log('Eval index updated locally.');
+      indexSaved = true;
+    } catch(e) {
+      log('Local eval index save failed: ' + e.message + ' — trying GitHub...');
+    }
+  }
+
+  // Fall back to GitHub API
+  if (!indexSaved && githubPat) {
+    try {
+      let evalIndex = await loadEvalIndexFromGitHub(githubPat);
+      evalIndex[cid] = evalEntry;
+      await saveEvalIndexToGitHub(githubPat, evalIndex);
+      log('Eval index updated on GitHub.');
+      indexSaved = true;
+    } catch(e) {
+      log('Could not update eval index: ' + e.message);
+    }
+  }
+
+  if (!indexSaved) {
+    log('WARNING: Eval index could not be updated — no local folder or GitHub PAT available.');
   }
 
   return fullReport;

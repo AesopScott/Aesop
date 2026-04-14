@@ -89,7 +89,7 @@ textarea{resize:vertical;min-height:80px;}
     </div>
     <div class="api-key-note">Stored in memory only — never sent anywhere except their respective APIs. Reviewers without keys will be skipped.</div>
     <div class="form-group" style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">
-      <label>GitHub PAT — Required for course evaluation (reads module files from repo)</label>
+      <label>GitHub PAT — Used for evaluation fallback &amp; saving reports (local folder preferred when set)</label>
       <input type="password" id="githubPat" placeholder="ghp_..." />
     </div>
     <div class="form-group" style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">
@@ -764,6 +764,16 @@ const COURSES = [
     {n:6,title:'Proof of Concept Design',sub:'Running a rigorous PoC that actually predicts production performance'},
     {n:7,title:'Vendor Risk Monitoring',sub:'Ongoing governance — how to track vendor health and catch problems early'},
     {n:8,title:'Build vs. Buy Decision Framework',sub:'When to procure, when to build, and how to make the case either way'},
+  ]},
+  { id:'ai_for_small_business_managers', name:'AI for Small Business Managers', modules:[
+    {n:1,title:'The AI-Ready Manager',sub:'What AI actually means for small business — cutting through the hype to find real value'},
+    {n:2,title:'Auditing Your Operations for AI',sub:'Identifying the repetitive tasks, bottlenecks, and decisions where AI can make an immediate impact'},
+    {n:3,title:'AI-Assisted Hiring and Team Management',sub:'Screening candidates, onboarding new hires, scheduling, and performance tracking with AI support'},
+    {n:4,title:'Customer Experience and Retention',sub:'Using AI to personalize service, handle inquiries, and turn data into loyalty'},
+    {n:5,title:'Inventory, Logistics, and Supply Chain',sub:'Demand forecasting, stock optimization, and vendor management powered by AI'},
+    {n:6,title:'Budgeting, Pricing, and Financial Decisions',sub:'AI tools for cash flow forecasting, dynamic pricing, and expense analysis'},
+    {n:7,title:'Leading Your Team Through AI Adoption',sub:'Change management, training plans, and building a culture that embraces AI instead of fearing it'},
+    {n:8,title:'Building Your Small Business AI Playbook',sub:'Putting it all together — a 90-day roadmap for rolling out AI across your business'},
   ]},
   { id:'building-ai-agents-i-use-cases', name:'Building AI Agents I — Use Cases', modules:[
     {n:1,title:'What Is an AI Agent',sub:'Agents vs. tools vs. assistants — precise definitions and why they matter'},
@@ -3510,9 +3520,15 @@ async function runPanelEvaluation(cid, courseName) {
   };
 
   const githubPat = document.getElementById('githubPat').value.trim();
-  if (!githubPat) {
-    log('ERROR: GitHub PAT required to fetch module files. Enter it in the API Keys section.');
+  const useLocal = !!repoFolderHandle;  // prefer local disk when folder is set
+
+  if (!useLocal && !githubPat) {
+    log('ERROR: Either set a repo folder or provide a GitHub PAT to fetch module files.');
     return null;
+  }
+
+  if (useLocal) {
+    log('Reading modules from local folder (repo folder is set).');
   }
 
   // Foundations courses don't have one course folder — every module lives
@@ -3520,7 +3536,7 @@ async function runPanelEvaluation(cid, courseName) {
   // for foundations we list per-module on demand inside the loop.
   let githubFiles = [];
   let folderName = course.isFoundations ? null : getFolderName(cid);
-  if (!course.isFoundations) {
+  if (!useLocal && !course.isFoundations) {
     log('Fetching file list from GitHub: ' + GITHUB_BASE + '/' + folderName + '/');
     try {
       githubFiles = await listGitHubModuleFiles(githubPat, folderName);
@@ -3530,7 +3546,7 @@ async function runPanelEvaluation(cid, courseName) {
       log('ERROR: Could not list files in ' + folderName + '/ on GitHub — ' + e.message);
       return null;
     }
-  } else {
+  } else if (!useLocal) {
     log('Foundations course — will list each module-N/ folder on GitHub on demand.');
   }
 
@@ -3550,30 +3566,59 @@ async function runPanelEvaluation(cid, courseName) {
 
     // Per-module path resolution — works for both layouts
     const { folder: modFolder, exactName, filenameRegex } = resolveModulePath(cid, mn);
-    let filesForThisModule = githubFiles;
-    if (course.isFoundations) {
+
+    // ── Try local disk first when repoFolderHandle is available ──
+    let moduleHtml = '';
+    let fileName = '';
+    if (useLocal) {
       try {
-        filesForThisModule = await listGitHubModuleFiles(githubPat, modFolder);
+        const localFile = await findModuleFile(
+          course.isFoundations
+            ? await repoFolderHandle.getDirectoryHandle(modFolder, { create: false })
+            : await repoFolderHandle.getDirectoryHandle(folderName, { create: false }),
+          cid, mn
+        );
+        if (localFile) {
+          const file = await localFile.getFile();
+          moduleHtml = await file.text();
+          fileName = localFile.name;
+          log('  Read local: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
+        }
       } catch(e) {
-        log('  SKIP: Could not list ' + modFolder + '/ on GitHub — ' + e.message);
+        log('  Local read failed for module ' + mn + ': ' + e.message);
+      }
+    }
+
+    // ── Fall back to GitHub if local read didn't work ──
+    if (!moduleHtml && githubPat) {
+      let filesForThisModule = githubFiles;
+      if (course.isFoundations) {
+        try {
+          filesForThisModule = await listGitHubModuleFiles(githubPat, modFolder);
+        } catch(e) {
+          log('  SKIP: Could not list ' + modFolder + '/ on GitHub — ' + e.message);
+          continue;
+        }
+      }
+
+      fileName = (filesForThisModule.find(f => f.name === exactName) || {}).name
+                  || (filesForThisModule.find(f => filenameRegex.test(f.name)) || {}).name
+                  || (course.isFoundations ? null : findModuleInList(filesForThisModule, cid, mn));
+      if (!fileName) {
+        log('  SKIP: No matching file for module ' + mn + ' in ' + modFolder + '/ (looking for ' + filenameRegex + ')');
+        continue;
+      }
+      try {
+        moduleHtml = await fetchModuleFromGitHub(githubPat, modFolder, fileName);
+        log('  Fetched from GitHub: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
+      } catch(e) {
+        log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
         continue;
       }
     }
 
-    // Fetch module HTML from GitHub
-    let moduleHtml = '';
-    let fileName = (filesForThisModule.find(f => f.name === exactName) || {}).name
-                || (filesForThisModule.find(f => filenameRegex.test(f.name)) || {}).name
-                || (course.isFoundations ? null : findModuleInList(filesForThisModule, cid, mn));
-    if (!fileName) {
-      log('  SKIP: No matching file for module ' + mn + ' in ' + modFolder + '/ (looking for ' + filenameRegex + ')');
-      continue;
-    }
-    try {
-      moduleHtml = await fetchModuleFromGitHub(githubPat, modFolder, fileName);
-      log('  Fetched: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
-    } catch(e) {
-      log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
+    if (!moduleHtml) {
+      log('  SKIP: Could not read module ' + mn + ' from local disk or GitHub.');
       continue;
     }
 

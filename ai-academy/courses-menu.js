@@ -6,7 +6,8 @@
    ============================================================ */
 
 // ─── Mega-menu toggle ───────────────────────────────────────────────
-function toggleMegaMenu() {
+function toggleMegaMenu(evt) {
+  if (evt) evt.stopPropagation();          // prevent click-outside handler from immediately closing
   document.getElementById('megaTrigger').classList.toggle('open');
   document.getElementById('megaPanel').classList.toggle('open');
 }

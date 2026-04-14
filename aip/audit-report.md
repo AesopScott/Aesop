@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-13 11:59 UTC
+**Generated:** 2026-04-14 11:43 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 559 · **Warnings:** 568
+**Errors:** 518 · **Warnings:** 573
 
 ---
 
@@ -16,7 +16,7 @@
 
 ## Course Registry
 
-### Errors (485)
+### Errors (517)
 
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -495,100 +495,56 @@
 - 🔴 **MISSING_MODULE**: Registry module file `dv-14-m6.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `dv-14-m7.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `dv-14-m8.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m1.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m2.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m3.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m4.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m5.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m6.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m7.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-- 🔴 **MISSING_MODULE**: Registry module file `ai-and-the-future-of-work-m8.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m1.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m2.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m3.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m4.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m5.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m6.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m7.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_tools_for_solo_founders-m8.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m1.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m2.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m3.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m4.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m5.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m6.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m7.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_and_the_future_of_work-m8.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m1.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m2.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m3.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m4.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m5.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m6.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m7.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_in_game_design_i-m8.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m1.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m2.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m3.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m4.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m5.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m6.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m7.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `gpt_vs_claude_vs_gemini-m8.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m1.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m2.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m3.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m4.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m5.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m6.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_MODULE**: Registry module file `ai_risk_for_business_leaders-m7.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+- 🔴 **MISSING_DIR**: Registry course `foundations_advanced` references `/ai-academy/modules/foundations_advanced/` which does not exist
 
 
 ## Cross-References
 
-### Errors (2)
+### Errors (1)
 
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
-- 🔴 **ORPHAN_LINK**: Course `bu` is linked in courses.html but not defined in electives-hub or registry
 
 
 ## Live Site (aesopacademy.org)
-
-### Errors (72)
-
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m8.html`
 
 ### Warnings (429)
 
@@ -1025,8 +981,14 @@
 
 ## Module File Integrity
 
-### Warnings (139)
+### Warnings (144)
 
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m3.html` has no COURSE_ID constant
@@ -1035,12 +997,6 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m8.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m1.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m2.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m3.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m4.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m5.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-ethics-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-ethics-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-ethics-m3.html` has no COURSE_ID constant
@@ -1057,6 +1013,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-governance-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-governance-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-governance-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-healthcare-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-healthcare-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-healthcare-m3.html` has no COURSE_ID constant
@@ -1077,14 +1041,6 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-leadership-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-leadership-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-leadership-m6.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m1.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m2.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m3.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m4.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m5.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m6.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m7.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-risk-for-business-leaders-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-risk-for-business-leaders-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-risk-for-business-leaders-m3.html` has no COURSE_ID constant
@@ -1100,6 +1056,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-solo-founders-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-solo-founders-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-solo-founders-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-ai-agents-i-use-cases-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-ai-agents-i-use-cases-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-ai-agents-i-use-cases-m3.html` has no COURSE_ID constant
@@ -1148,6 +1105,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `building-with-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-with-ai-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-with-ai-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m3.html` has no COURSE_ID constant
@@ -1156,22 +1117,22 @@
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m8.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m10.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m1.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m2.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m3.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m4.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m5.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m6.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m7.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m8.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `advanced-m9.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `m1-advanced-v18.5-20260408.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `m2-advanced-v4-20260408.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 
 ---
 
 ## Summary
 
-**559 error(s) require attention:**
+**518 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1650,85 +1611,44 @@
 1. Registry module file `dv-14-m6.html` missing from ``
 1. Registry module file `dv-14-m7.html` missing from ``
 1. Registry module file `dv-14-m8.html` missing from ``
-1. Registry module file `ai-and-the-future-of-work-m1.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m2.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m3.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m4.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m5.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m6.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m7.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
-1. Registry module file `ai-and-the-future-of-work-m8.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_tools_for_solo_founders-m1.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m2.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m3.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m4.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m5.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m6.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m7.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_tools_for_solo_founders-m8.html` missing from `/ai-academy/modules/ai-tools-for-solo-founders/`
+1. Registry module file `ai_and_the_future_of_work-m1.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m2.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m3.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m4.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m5.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m6.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m7.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_and_the_future_of_work-m8.html` missing from `/ai-academy/modules/ai-and-the-future-of-work/`
+1. Registry module file `ai_in_game_design_i-m1.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m2.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m3.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m4.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m5.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m6.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m7.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `ai_in_game_design_i-m8.html` missing from `/ai-academy/modules/ai-in-game-design-i/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m1.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m2.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m3.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m4.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m5.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m6.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m7.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `gpt_vs_claude_vs_gemini-m8.html` missing from `/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+1. Registry module file `ai_risk_for_business_leaders-m1.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry module file `ai_risk_for_business_leaders-m2.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry module file `ai_risk_for_business_leaders-m3.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry module file `ai_risk_for_business_leaders-m4.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry module file `ai_risk_for_business_leaders-m5.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry module file `ai_risk_for_business_leaders-m6.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry module file `ai_risk_for_business_leaders-m7.html` missing from `/ai-academy/modules/ai-risk-for-business-leaders/`
+1. Registry course `foundations_advanced` references `/ai-academy/modules/foundations_advanced/` which does not exist
 1. Course `ai` is linked in courses.html but not defined in electives-hub or registry
-1. Course `bu` is linked in courses.html but not defined in electives-hub or registry
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/ar-1-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/am-1-m8.html`

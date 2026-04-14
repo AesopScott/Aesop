@@ -3934,47 +3934,47 @@ async function runPanelEvaluation(cid, courseName) {
     const prompt = buildEvalPrompt(moduleHtml, modName, courseName);
     const moduleResult = { module: modName, reviews: {} };
 
-    // Send to all reviewers in parallel
-    const results = await Promise.allSettled(
-      reviewers.map(async (r) => {
-        try {
-          log('  Sending to ' + r.name + '...');
-          const raw = await r.fn(prompt, r.key);
-          const parsed = parseEvalResponse(raw);
-          const total = calcTotalScore(parsed.scores);
-          const d5 = calcDimScore(parsed.scores, 5);
-          const verdict = getVerdict(total, d5);
+    // Send to each reviewer sequentially to avoid TPM rate limits
+    // (modules are ~16k tokens; parallel calls to 4 APIs easily exceed
+    // per-minute token caps, especially on ChatGPT's 30k TPM tier)
+    for (const r of reviewers) {
+      let result;
+      try {
+        log('  Sending to ' + r.name + '...');
+        const raw = await r.fn(prompt, r.key);
+        const parsed = parseEvalResponse(raw);
+        const total = calcTotalScore(parsed.scores);
+        const d5 = calcDimScore(parsed.scores, 5);
+        const verdict = getVerdict(total, d5);
 
-          log('  ' + r.name + ': ' + total + '/100 → ' + verdict.label +
-              (d5 < EVAL_RUBRIC.d5Override ? ' [D5 OVERRIDE: ' + d5 + '/20]' : ''));
+        log('  ' + r.name + ': ' + total + '/100 → ' + verdict.label +
+            (d5 < EVAL_RUBRIC.d5Override ? ' [D5 OVERRIDE: ' + d5 + '/20]' : ''));
 
-          return {
-            reviewer: r.name,
-            scores: parsed.scores,
-            notes: parsed.notes || '',
-            topIssue: parsed.top_issue || '',
-            dimScores: EVAL_RUBRIC.dimensions.map(d => ({
-              dim: d.id, name: d.name, score: calcDimScore(parsed.scores, d.id), max: d.max
-            })),
-            total: total,
-            d5Score: d5,
-            verdict: verdict
-          };
-        } catch(err) {
-          log('  ' + r.name + ' ERROR: ' + err.message);
-          return { reviewer: r.name, error: err.message };
-        }
-      })
-    );
-
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value) {
-        moduleResult.reviews[r.value.reviewer] = r.value;
-        if (!r.value.error) {
-          grandTotal[r.value.reviewer].total += r.value.total;
-          grandTotal[r.value.reviewer].count += 1;
-        }
+        result = {
+          reviewer: r.name,
+          scores: parsed.scores,
+          notes: parsed.notes || '',
+          topIssue: parsed.top_issue || '',
+          dimScores: EVAL_RUBRIC.dimensions.map(d => ({
+            dim: d.id, name: d.name, score: calcDimScore(parsed.scores, d.id), max: d.max
+          })),
+          total: total,
+          d5Score: d5,
+          verdict: verdict
+        };
+      } catch(err) {
+        log('  ' + r.name + ' ERROR: ' + err.message);
+        result = { reviewer: r.name, error: err.message };
       }
+
+      moduleResult.reviews[result.reviewer] = result;
+      if (!result.error) {
+        grandTotal[result.reviewer].total += result.total;
+        grandTotal[result.reviewer].count += 1;
+      }
+
+      // Brief pause between reviewers to let token buckets refill
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
     // Calculate panel average for this module

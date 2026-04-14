@@ -996,6 +996,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI and the Future of Work course. Stay on topic. Warmly redirect off-topic questions back to the course material.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are an expert in labour economics and automation research assisting students studying AI and the future of work. Your role is to help learners deeply understand the key empirical studies from Lesson 1: the Frey-Osborne (2013) occupation-level methodology and its 47% figure; the Arntz, Gregory, and Zierahn OECD (2016) task-level replication and its 9% figure; the McKinsey Global Institute (2017) work-activities approach and its distinction between automatable activities and fully automatable occupations; Acemoglu and Restrepo\'s robot exposure research and the local labour market effects they found; James Bessen\'s ATM-teller case as an illustration of task recomposition; and the Eloundou et al. (2023) GPT-4 exposure paper and its finding that high-wage, high-education workers face the highest LLM task exposure. Explain methodological differences clearly. Correct misconceptions precisely. Use specific numbers from the studies. Do not speculate beyond the published evidence base.',
 
@@ -1038,65 +1050,55 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  chatSetLoading(labId,true);
-  var thinking=chatThinking(labId);
-  try{
-    var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'');
-    var body=JSON.stringify({
-      messages:chatHistories[labId],
-      system_prompt:sysPrompt,
-      max_tokens:1024
-    });
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:body
-    });
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
-    var data=await resp.json();
-    var aiText='';
-    if(data&&data.content&&data.content[0]&&data.content[0].text){
-      aiText=data.content[0].text;
-    } else if(data&&data.text){
-      aiText=data.text;
-    } else if(data&&data.completion){
-      aiText=data.completion;
-    } else if(data&&data.choices&&data.choices[0]){
-      aiText=data.choices[0].message?data.choices[0].message.content:data.choices[0].text;
-    } else {
-      aiText='I received an unexpected response format. Please try again.';
-    }
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    chatAppend(labId,'ai',aiText);
-    chatHistories[labId].push({role:'assistant',content:aiText});
-    chatExchanges[labId]++;
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
     if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
       labSignaled[labId]=true;
-      window.parent.postMessage({
-        type:'labComplete',
-        courseId:COURSE_ID,
-        moduleId:MODULE_ID,
-        lessonId:labId,
-        exchangeCount:chatExchanges[labId]
-      },'*');
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  } catch(err){
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    var errDiv=document.createElement('div');
-    errDiv.className='chat-error';
-    errDiv.textContent='Connection error: '+err.message+'. Please try again.';
-    var msgs=document.getElementById('msgs-'+labId);
-    if(msgs){ msgs.appendChild(errDiv); msgs.scrollTop=msgs.scrollHeight; }
-    chatHistories[labId].pop();
-  } finally {
-    chatSetLoading(labId,false);
-    if(inp) inp.focus();
+    return;
   }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
 }
 
 function chatReset(labId){

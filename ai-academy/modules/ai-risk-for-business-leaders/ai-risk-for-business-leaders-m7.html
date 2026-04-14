@@ -1050,6 +1050,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI Risk for Business Leaders course, Module 7: Building an AI Risk Framework. You help business leaders understand AI risk governance concepts through direct, substantive engagement. Stay on topic. If asked about unrelated subjects, warmly redirect to AI risk management themes.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1: 'This is Lab 1: Framework Foundations. The learner has just studied why AI risk frameworks exist, the gap between AI deployment and governance, the structure of the NIST AI RMF (Govern, Map, Measure, Manage), ISO/IEC 42001, the EU AI Act governance requirements, and the six structural elements of a mature AI risk framework. Real-world cases covered include: Samsung ChatGPT IP leak (March 2023), Air Canada chatbot legal liability case, and the Dutch SyRI welfare fraud AI ruling (2021). Your role is to help learners deepen their understanding of framework rationale and structure, apply concepts to their specific organizational contexts, make the internal business case for AI governance investment, and understand the distinction between a framework and a compliance checklist. Be specific and practical. Use real examples from documented cases when relevant. Help learners draft talking points, explore specific framework components, or compare governance standards. If a learner describes their industry or organizational context, tailor your guidance accordingly.',
 
@@ -1092,58 +1104,55 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
   chatSetLoading(labId,true);
-  var thinking=chatThinking(labId);
-  try{
-    var systemPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI risk management assistant for AESOP AI Academy.');
-    var response=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        messages:chatHistories[labId],
-        system_prompt:systemPrompt,
-        max_tokens:1024
-      })
-    });
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    if(!response.ok){
-      var errText=await response.text();
-      chatAppend(labId,'ai','I encountered an error connecting to the AI service. Please try again in a moment.');
-      chatHistories[labId].pop();
-    } else {
-      var data=await response.json();
-      var aiText='';
-      if(data&&data.content&&data.content[0]&&data.content[0].text){
-        aiText=data.content[0].text;
-      } else if(data&&data.text){
-        aiText=data.text;
-      } else if(data&&data.completion){
-        aiText=data.completion;
-      } else if(data&&data.message&&data.message.content&&data.message.content[0]){
-        aiText=data.message.content[0].text||JSON.stringify(data);
-      } else {
-        aiText='I received a response but could not parse it. Please try again.';
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
       }
-      chatHistories[labId].push({role:'assistant',content:aiText});
-      chatAppend(labId,'ai',aiText);
-      chatExchanges[labId]++;
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
       if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
         labSignaled[labId]=true;
         window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
       }
     }
-  } catch(e){
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    chatAppend(labId,'ai','Connection error. Please check your network and try again.');
-    chatHistories[labId].pop();
   }
   chatSetLoading(labId,false);
-  if(inp) inp.focus();
 }
 
 function chatReset(labId){

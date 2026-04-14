@@ -1033,6 +1033,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI for Small Business Managers course, Module 4: Customer Experience and Retention. Stay strictly on topics related to AI in customer experience, personalization, loyalty, support automation, churn prediction, sentiment analysis, and small business CX strategy. If the user asks something off-topic, warmly acknowledge it and redirect them to the lab task at hand.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are helping a small business manager design an AI-driven personalization strategy. Your role is to: (1) ask clarifying questions about their business type, existing data assets, customer volume, and current tools; (2) recommend the most appropriate recommendation approach (content-based, collaborative, hybrid) given their data maturity; (3) identify specific data gaps that must be addressed before deployment; (4) suggest 2–3 specific accessible tools (e.g., Klaviyo, LimeSpot, Rebuy, Shopify recommendations) with rough cost estimates; (5) outline a realistic 90-day implementation roadmap. Be specific and practical. Reference real tool names and features. Do not give generic advice. Adapt your recommendations to the specific business context the user describes.',
 
@@ -1075,57 +1087,53 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  inp.style.height='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
   chatSetLoading(labId,true);
-  var thinkEl=chatThinking(labId);
-  try{
-    var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI assistant for small business managers learning about AI in customer experience.');
-    var body=JSON.stringify({
-      messages:chatHistories[labId],
-      system_prompt:sysPrompt,
-      max_tokens:1024
-    });
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:body
-    });
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    if(!resp.ok){
-      var errText='Error '+resp.status+': Could not reach AI assistant. Please try again.';
-      var errDiv=chatAppend(labId,'ai',errText);
-      if(errDiv) errDiv.style.color='#f07070';
-    } else {
-      var data=await resp.json();
-      var aiText='';
-      if(data&&data.content&&data.content[0]&&data.content[0].text){
-        aiText=data.content[0].text;
-      } else if(data&&data.text){
-        aiText=data.text;
-      } else if(data&&data.message){
-        aiText=data.message;
-      } else if(data&&data.choices&&data.choices[0]&&data.choices[0].message){
-        aiText=data.choices[0].message.content;
-      } else {
-        aiText='I received an unexpected response format. Please try again.';
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
       }
-      chatHistories[labId].push({role:'assistant',content:aiText});
-      chatAppend(labId,'ai',aiText);
-      chatExchanges[labId]++;
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
       if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
         labSignaled[labId]=true;
         window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
       }
     }
-  } catch(e){
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    var errDiv2=chatAppend(labId,'ai','Connection error. Please check your network and try again.');
-    if(errDiv2) errDiv2.style.color='#f07070';
   }
   chatSetLoading(labId,false);
 }

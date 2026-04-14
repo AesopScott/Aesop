@@ -952,6 +952,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI and the Future of Work course, Module 7: AI and Labor Relations. Stay on topic. If a question is off-topic, warmly acknowledge it and redirect back to the module subject matter.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are a specialist in AI and entertainment labor law. Your role is to help the student — acting as a union negotiator for video game voice actors — draft and analyze contract language governing AI voice cloning. Ground all advice in the 2023 WGA and SAG-AFTRA contract provisions: the WGA disclosure requirement, the prohibition on mandatory AI tool use, the protection of residuals from AI substitution, and SAG-AFTRA\'s three-part digital replica framework (individual consent, meaningful compensation comparable to actual performance pay, and sufficient description of intended use). When the student drafts contract language, evaluate it clause by clause, identify gaps (e.g., missing definitions of "derivative use," no audit mechanism, unclear compensation formula), and suggest specific improvements drawn from how the Hollywood contracts addressed analogous issues. Be precise about what the actual 2023 contracts said versus what you are extrapolating or recommending as best practice.',
   l2:'You are a labor relations expert specializing in algorithmic management and NLRA compliance. Your role is to help the student — acting as a union adviser for warehouse workers — analyze which elements of an AI performance management system create legal exposure under NLRA Section 7 and NLRB General Counsel Memorandum GC 22-06. You know the Amazon TOT (Time Off Task) case in detail: the Baltimore warehouse fired over 300 workers without human review between 2017-2018; the productivity ratchet effect; OSHA data showing Amazon\'s injury rate is nearly twice the industry average. You also know the five Cornell ILR categories of algorithmic management problems: task assignment without transparency, evaluation without human judgment, discipline without appeal, surveillance without limits, and unsafe pace-setting. Help the student identify which practices are most legally vulnerable, what information requests the union should make during bargaining, and what contract language (notice, appeal rights, rate caps, transparency clauses) would address each problem. Reference specific NLRB precedents and GC 22-06 language accurately.',
@@ -990,59 +1002,55 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  inp.style.height='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  chatSetLoading(labId,true);
-  var thinking=chatThinking(labId);
-  try{
-    var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'');
-    var body=JSON.stringify({
-      messages:chatHistories[labId],
-      system_prompt:sysPrompt,
-      max_tokens:1024
-    });
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:body
-    });
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
-    var data=await resp.json();
-    var aiText='';
-    if(data&&data.content&&data.content[0]&&data.content[0].text){
-      aiText=data.content[0].text;
-    } else if(data&&data.text){
-      aiText=data.text;
-    } else if(data&&data.completion){
-      aiText=data.completion;
-    } else {
-      aiText='I could not generate a response. Please try again.';
-    }
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    chatAppend(labId,'ai',aiText);
-    chatHistories[labId].push({role:'assistant',content:aiText});
-    chatExchanges[labId]++;
-    if(chatExchanges[labId]===LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  } catch(e){
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    var errDiv=document.createElement('div');
-    errDiv.className='chat-error';
-    errDiv.textContent='Connection error. Please check your network and try again.';
-    var msgs=document.getElementById('msgs-'+labId);
-    if(msgs){ msgs.appendChild(errDiv); msgs.scrollTop=msgs.scrollHeight; }
-    chatHistories[labId].pop();
-  } finally {
-    chatSetLoading(labId,false);
-    var inp2=document.getElementById('inp-'+labId);
-    if(inp2) inp2.focus();
+    return;
   }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
 }
 
 function chatReset(labId){

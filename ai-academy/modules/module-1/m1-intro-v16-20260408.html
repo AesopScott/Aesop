@@ -458,6 +458,18 @@ var chatHistories={l1: [], l2: [], l3: [], l4: []};
 var chatExchanges={l1: 0, l2: 0, l3: 0, l4: 0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy. Stay strictly on topic. If the student goes off-topic, warmly redirect.\n\n';
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={  l1:`You are a friendly AI helper for AESOP AI Academy, Ages 7-8, Module 1 Lab 1. Students name helpers and you classify as rule-followers or pattern-learners. Use simple words (1-2 syllable when possible), analogies, and a curious explorer tone. Reference Jordan and LIBREX when natural. Keep responses SHORT — 2-3 simple sentences per point. Stay on topic. If off-topic, gently redirect: 'That's fun! But let's get back to our helper investigation!'`,
   l2:`You are a helper hunt assistant for AESOP AI Academy, Ages 7-8, Module 1 Lab 2. Students describe activities and you identify AI helpers. Classify as fun vs important. Simple words, short sentences, curious tone. Reference Jordan and LIBREX. 2-3 short sentences. Stay on topic. If off-topic: 'Fun thought! Let's get back to our helper hunt!'`,
   l3:`You are a friendly fact-checking assistant for AESOP AI Academy, Ages 7-8, Module 1 Lab 3. Students test your accuracy on things they know. Be honest when caught in errors. Simple words, very short responses (2-3 sentences). Warm, encouraging. Reference Jordan and LIBREX. Stay on topic. If off-topic: 'Great question! But let's keep checking my guesses!'`,
@@ -465,7 +477,59 @@ var LAB_SYSTEM_PROMPTS={  l1:`You are a friendly AI helper for AESOP AI Academy,
 function chatAppend(labId,role,text){var msgs=document.getElementById('msgs-'+labId);if(!msgs)return;var div=document.createElement('div');div.className='chat-msg '+(role==='user'?'user':'ai');div.innerHTML=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
 function chatThinking(labId){var msgs=document.getElementById('msgs-'+labId);if(!msgs)return null;var div=document.createElement('div');div.className='chat-msg thinking';div.textContent='Thinking…';msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;}
 function chatSetLoading(labId,l){var btn=document.getElementById('send-'+labId);var inp=document.getElementById('inp-'+labId);if(btn)btn.disabled=l;if(inp)inp.disabled=l;}
-async function chatSend(labId){var inp=document.getElementById('inp-'+labId);if(!inp)return;var text=inp.value.trim();if(!text)return;inp.value='';inp.style.height='auto';chatAppend(labId,'user',text);chatHistories[labId].push({role:'user',content:text});chatSetLoading(labId,true);var thinkEl=chatThinking(labId);var chat=document.getElementById('chat-'+labId);var ee=chat?chat.querySelector('.chat-error'):null;if(ee)ee.remove();try{var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});if(thinkEl)thinkEl.remove();if(!res.ok){var e=await res.json().catch(function(){return{};});throw new Error(e.error||'Server error '+res.status);}var data=await res.json();var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';chatHistories[labId].push({role:'assistant',content:reply});chatAppend(labId,'ai',reply);chatExchanges[labId]=(chatExchanges[labId]||0)+1;var lk='m1-l'+labId.replace('l','');if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[lk]){labSignaled[lk]=true;window.parent.postMessage({type:'labComplete',lessonId:lk,groupId:GROUP_ID,exchangeCount:chatExchanges[labId]},'*');}}catch(err){if(thinkEl)thinkEl.remove();chatHistories[labId].pop();var errDiv=document.createElement('div');errDiv.className='chat-error';errDiv.textContent='⚠ '+(err.message||'Connection error.');if(chat)chat.appendChild(errDiv);}chatSetLoading(labId,false);var inpEl=document.getElementById('inp-'+labId);if(inpEl)inpEl.focus();}
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
+}
 function chatReset(labId){chatHistories[labId]=[];var msgs=document.getElementById('msgs-'+labId);if(!msgs)return;msgs.innerHTML='';var div=document.createElement('div');div.className='chat-msg ai';div.textContent='Conversation reset.';msgs.appendChild(div);}
 function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
 document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){ta.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});});

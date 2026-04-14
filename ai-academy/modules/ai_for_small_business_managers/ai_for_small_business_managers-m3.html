@@ -986,6 +986,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI for Small Business Managers, Module 3: AI-Assisted Hiring and Team Management. Stay focused on this topic. If the user goes off-topic, warmly redirect them back to hiring, team management, job descriptions, interview guides, onboarding, scheduling, or AI hiring policy.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are helping a small business manager write an effective AI-assisted job description. Guide the user to provide a structured brief covering: (1) what the person does in the first 30 days, (2) hard requirements vs. trainable skills, (3) schedule and physical demands, (4) compensation range, (5) why recent hires failed or left, and (6) one-word culture descriptor. Once you have enough information, draft a specific, legally clean job description. Then offer to add knock-out screening questions that are job-related and EEOC-compliant. Flag any language that could imply age, gender, or other protected-class bias. Emphasize that AI drafts are starting points — the manager must edit for accuracy.',
   l2:'You are helping a small business manager build a structured interview guide and résumé scoring rubric. Ask the user for their job title and 3–5 key criteria for the role. Then generate: (1) five STAR-format behavioral interview questions (Situation, Task, Action, Result), (2) three role-specific technical questions, and (3) a 1–5 scoring rubric for each question. If the user pastes a résumé excerpt, evaluate it against stated criteria fairly and flag any assessment that feels demographic rather than skill-based. Remind the user that AI cannot make final hiring decisions, explain how to audit their screening outputs for demographic patterns, and note the Amazon 2018 cautionary case if bias risk comes up.',
@@ -1024,59 +1036,55 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  var thinkEl=chatThinking(labId);
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
   chatSetLoading(labId,true);
-  try{
-    var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI assistant for small business hiring and team management.');
-    var body=JSON.stringify({
-      messages:chatHistories[labId],
-      system_prompt:sysPrompt,
-      max_tokens:1024
-    });
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:body
-    });
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    if(!resp.ok){
-      var errText='Error '+resp.status+'. Please try again.';
-      chatAppend(labId,'ai',errText);
-      chatHistories[labId].push({role:'assistant',content:errText});
-    } else {
-      var data=await resp.json();
-      var aiText='';
-      if(data&&data.content&&data.content[0]&&data.content[0].text){
-        aiText=data.content[0].text;
-      } else if(data&&data.choices&&data.choices[0]&&data.choices[0].message){
-        aiText=data.choices[0].message.content;
-      } else if(data&&data.text){
-        aiText=data.text;
-      } else {
-        aiText='I received an unexpected response format. Please try again.';
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
       }
-      chatAppend(labId,'ai',aiText);
-      chatHistories[labId].push({role:'assistant',content:aiText});
-      chatExchanges[labId]++;
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
       if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
         labSignaled[labId]=true;
         window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
       }
     }
-  } catch(e){
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    var errMsg='Connection error. Please check your network and try again.';
-    chatAppend(labId,'ai',errMsg);
-    chatHistories[labId].push({role:'assistant',content:errMsg});
   }
   chatSetLoading(labId,false);
-  var inpFocus=document.getElementById('inp-'+labId);
-  if(inpFocus) inpFocus.focus();
 }
 
 function chatReset(labId){

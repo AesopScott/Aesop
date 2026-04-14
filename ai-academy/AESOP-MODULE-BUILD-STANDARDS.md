@@ -422,6 +422,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
 
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
@@ -430,13 +442,9 @@ async function chatSend(labId){
   inp.value='';
   chatHistories[labId].push({role:'user',content:text});
   chatAppend(labId,'user',text);
-  chatSetLoading(labId,true);
-  try{
-    var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
-    if(!res.ok) throw new Error('Server error '+res.status);
-    var data=await res.json();
-    var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
     chatHistories[labId].push({role:'assistant',content:reply});
     chatAppend(labId,'ai',reply);
     chatExchanges[labId]=(chatExchanges[labId]||0)+1;
@@ -444,18 +452,55 @@ async function chatSend(labId){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  }catch(err){
-    chatAppend(labId,'error','⚠ '+(err.message||'Connection error.'));
-    chatHistories[labId].pop();
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
   }
   chatSetLoading(labId,false);
 }
 
 function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
-function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;document.getElementById('msgs-'+labId).innerHTML='';}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;_offlineMode[labId]=false;_fallbackIdx[labId]=0;document.getElementById('msgs-'+labId).innerHTML='';}
 function chatAppend(labId,role,text){var el=document.createElement('div');el.className='chat-msg '+role;el.textContent=text;var msgs=document.getElementById('msgs-'+labId);msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
 function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
 ```
+
+**Fallback behavior:**
+- On first API failure, retries once after 1.5s
+- If both attempts fail, switches lab to **practice mode** with generic Socratic responses
+- Student sees: "⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab."
+- Practice mode responses guide the student through reflection/analysis regardless of topic
+- Lab completion still fires at `LAB_COMPLETE_THRESHOLD` exchanges — no student is blocked
+- `chatReset()` clears offline mode, allowing a fresh API attempt
 
 ---
 
@@ -915,6 +960,18 @@ function answer(btn, result, qId) {
 let chatHistories = {}, chatExchanges = {};
 const LAB_THRESHOLD = 3;
 
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+
 function initLab(labId) {
   if (chatHistories[labId]) return;
   chatHistories[labId] = [];
@@ -925,26 +982,34 @@ function initLab(labId) {
 async function sendOpener(labId) {
   const btn = document.getElementById('send-' + labId);
   if (btn) btn.disabled = true;
-  try {
-    const res = await fetch('https://playagame.ai/claude-proxy.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        system: LAB_PROMPTS[labId],
-        messages: [{ role: 'user', content: '[Begin immediately with your opening question.]' }]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'Connection error.';
-    chatHistories[labId].push({ role: 'assistant', content: text });
-    addMsg(labId, 'ai', text);
-  } catch(e) {
-    addMsg(labId, 'ai', 'Connection error. Please reload.');
-  } finally {
-    if (btn) btn.disabled = false;
+  for (var _attempt = 0; _attempt < 2; _attempt++) {
+    try {
+      const res = await fetch('https://playagame.ai/claude-proxy.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          system: LAB_PROMPTS[labId],
+          messages: [{ role: 'user', content: '[Begin immediately with your opening question.]' }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || 'Connection error.';
+      chatHistories[labId].push({ role: 'assistant', content: text });
+      addMsg(labId, 'ai', text);
+      if (btn) btn.disabled = false;
+      return;
+    } catch(e) {
+      if (_attempt < 1) { await new Promise(r => setTimeout(r, 1500)); continue; }
+      _offlineMode[labId] = true; _fallbackIdx[labId] = 0;
+      addMsg(labId, 'error', '\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb = "Welcome to practice mode! Share your thoughts on this topic, and I'll guide you through the key questions for this lab.";
+      chatHistories[labId].push({ role: 'assistant', content: fb });
+      addMsg(labId, 'ai', fb);
+    }
   }
+  if (btn) btn.disabled = false;
 }
 
 async function chatSend(labId) {
@@ -958,35 +1023,60 @@ async function chatSend(labId) {
   if (!chatHistories[labId]) { chatHistories[labId] = []; chatExchanges[labId] = 0; }
   chatHistories[labId].push({ role: 'user', content: txt });
   addMsg(labId, 'user', txt);
-  const thinking = addMsg(labId, 'thinking', 'Thinking...');
-  try {
-    const res = await fetch('https://playagame.ai/claude-proxy.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        system: LAB_PROMPTS[labId],
-        messages: chatHistories[labId]
-      })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || 'Error.';
-    chatHistories[labId].push({ role: 'assistant', content: text });
-    thinking.remove();
-    addMsg(labId, 'ai', text);
+  /* Offline mode — use fallback immediately */
+  if (_offlineMode[labId]) {
+    var reply = _fallbackReply(labId);
+    chatHistories[labId].push({ role: 'assistant', content: reply });
+    addMsg(labId, 'ai', reply);
     chatExchanges[labId]++;
     if (chatExchanges[labId] >= LAB_THRESHOLD && !labSignaled[labId]) {
       labSignaled[labId] = true;
       window.parent.postMessage({ type: 'labComplete', lessonId: 'm{N}-' + labId, groupId: GROUP_ID, exchangeCount: chatExchanges[labId] }, '*');
     }
-  } catch(e) {
-    thinking.remove();
-    addMsg(labId, 'ai', 'Error. Please try again.');
-  } finally {
-    btn.disabled = false;
-    inp.focus();
+    btn.disabled = false; inp.focus();
+    return;
   }
+  const thinking = addMsg(labId, 'thinking', 'Thinking...');
+  for (var _attempt = 0; _attempt < 2; _attempt++) {
+    try {
+      const res = await fetch('https://playagame.ai/claude-proxy.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          system: LAB_PROMPTS[labId],
+          messages: chatHistories[labId]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || 'Error.';
+      chatHistories[labId].push({ role: 'assistant', content: text });
+      thinking.remove();
+      addMsg(labId, 'ai', text);
+      chatExchanges[labId]++;
+      if (chatExchanges[labId] >= LAB_THRESHOLD && !labSignaled[labId]) {
+        labSignaled[labId] = true;
+        window.parent.postMessage({ type: 'labComplete', lessonId: 'm{N}-' + labId, groupId: GROUP_ID, exchangeCount: chatExchanges[labId] }, '*');
+      }
+      btn.disabled = false; inp.focus();
+      return;
+    } catch(e) {
+      if (_attempt < 1) { await new Promise(r => setTimeout(r, 1500)); continue; }
+      thinking.remove();
+      _offlineMode[labId] = true; _fallbackIdx[labId] = 0;
+      addMsg(labId, 'error', '\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb = _fallbackReply(labId);
+      chatHistories[labId].push({ role: 'assistant', content: fb });
+      addMsg(labId, 'ai', fb);
+      chatExchanges[labId]++;
+      if (chatExchanges[labId] >= LAB_THRESHOLD && !labSignaled[labId]) {
+        labSignaled[labId] = true;
+        window.parent.postMessage({ type: 'labComplete', lessonId: 'm{N}-' + labId, groupId: GROUP_ID, exchangeCount: chatExchanges[labId] }, '*');
+      }
+    }
+  }
+  btn.disabled = false; inp.focus();
 }
 
 function addMsg(labId, role, text) {

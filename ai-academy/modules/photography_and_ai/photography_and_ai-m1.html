@@ -986,6 +986,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy, Photography and AI course, Module 1: AI in the Camera. You help students understand computational photography, AI autofocus, scene recognition, and AI super-resolution. Stay on topic. If the student goes off-topic, warmly redirect them back to the lesson subject.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are assisting a student exploring Lesson 1: Computational Photography and HDR+ pipeline. The lesson covered: Google HDR+ burst-and-merge pipeline (Hasinoff et al., SIGGRAPH 2016), Apple Neural Engine for semantic segmentation, Google Night Sight (Liba et al., 2018) and its tripod/hand-held training-pair methodology, and Huawei P20 Pro dual monochrome/color approach. Help students understand how these pipelines work mechanically, what their visual artifacts look like (ghosting, halo merging, over-smoothed textures, artificial tone curves), when to shoot RAW to bypass the pipeline, and the creative and technical trade-offs involved. Use accurate technical language. Give specific, grounded answers. When discussing artifacts, be precise about which part of the pipeline produces them.',
   l2:'You are assisting a student exploring Lesson 2: AI Autofocus — from phase detection to neural tracking. The lesson covered: contrast-detection AF, phase-detection AF (PDAF), Sony Real-time Eye AF and animal-eye tracking (Alpha 9 II, 2019), Canon Dual Pixel AF (EOS 70D, 2013) and the EOS R3 deep-learning subject recognition, Sony BIONZ XR AI processing unit (Alpha 1, 2021), Nikon Z9 multi-category subject detection, and Fujifilm X-H2S cascade classifier approach. Help students understand the engineering trade-offs between speed, accuracy, and power consumption in on-camera AI inference; how eye-tracking training data shapes creative assumptions; practical techniques for overriding AI autofocus when its assumptions conflict with creative intent (pre-registration, half-press locking, manual override); and how different manufacturers resolve the thermal and compute constraints of on-body AI processing.',
@@ -1024,57 +1036,56 @@ function chatSetLoading(labId,loading){
 
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
-  if(!inp)return;
-  var text=(inp.value||'').trim();
-  if(!text)return;
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
   inp.value='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  chatSetLoading(labId,true);
-  var thinking=chatThinking(labId);
-  try{
-    var body={
-      messages:chatHistories[labId],
-      system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),
-      max_tokens:1024
-    };
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    var data=await resp.json();
-    var reply='';
-    if(data&&data.content&&data.content[0]&&data.content[0].text){
-      reply=data.content[0].text;
-    } else if(data&&data.text){
-      reply=data.text;
-    } else if(data&&data.completion){
-      reply=data.completion;
-    } else {
-      reply='I received an unexpected response format. Please try again.';
-    }
-    if(thinking&&thinking.parentNode)thinking.parentNode.removeChild(thinking);
-    chatAppend(labId,'ai',reply);
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
     chatHistories[labId].push({role:'assistant',content:reply});
-    chatExchanges[labId]++;
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
     if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  } catch(e){
-    if(thinking&&thinking.parentNode)thinking.parentNode.removeChild(thinking);
-    var errDiv=document.createElement('div');
-    errDiv.className='chat-error';
-    errDiv.textContent='Connection error: '+e.message+'. Please try again.';
-    var msgs=document.getElementById('msgs-'+labId);
-    if(msgs){msgs.appendChild(errDiv);msgs.scrollTop=msgs.scrollHeight;}
-    chatHistories[labId].pop();
-  } finally {
-    chatSetLoading(labId,false);
-    if(inp)inp.focus();
+    return;
   }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
 }
 
 function chatReset(labId){

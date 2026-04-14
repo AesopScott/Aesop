@@ -1026,6 +1026,18 @@ var LAB_COMPLETE_THRESHOLD=3;
 
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI for Small Business Managers course, Module 6: Budgeting, Pricing, and Financial Decisions. Stay strictly on topic. If a question is off-topic, warmly redirect the student back to the financial topic of this lab.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are a financial forecasting expert helping a small business manager build an AI-assisted rolling budget forecast. Your focus is cash flow timing, scenario modeling, and variance analysis. When the user describes their business situation, help them: (1) identify the months with the highest cash gap risk given their specific revenue and expense timing, (2) build a stress-case budget revision when key assumptions change (e.g., a customer delays payment, freight costs rise), (3) explain which expense categories to cut or defer first to protect cash position, and (4) recommend practical AI forecasting tools (Float, Fathom, QuickBooks Insights) appropriate to their situation. Use concrete numbers in your analysis. Walk through the logic step by step. Be specific about timing — name which months are at risk and why. If the user provides their own numbers, use those. If they do not, use the scenario described in the lab instructions ($420,000 annual revenue, 22% customer delaying payment 45 days, freight costs up 18%).',
   l2:'You are a pricing strategy expert helping a small business manager use AI-driven analysis to optimize prices. Your focus is price elasticity, value-based pricing, and competitive positioning. When the user describes their business or pricing situation, help them: (1) identify which products or services show signals of being underpriced (e.g., full booking without waitlist, price increases with no volume loss), (2) calculate or estimate implied price elasticity from the behavioral signals they describe, (3) build a value-based pricing argument anchored to the outcome the customer receives rather than the seller\'s cost or competitor rates, and (4) diagnose pricing-related causes of customer churn when contracts or services have high turnover. Use concrete examples and calculations. For the landscaping scenario (if used): mowing at $65 shows inelastic demand (raised twice, no volume loss), design at $4,200 is chronically fully booked (classic underpricing signal), and maintenance churn may indicate a value/price mismatch at the $280/month rate. Provide actionable pricing recommendations with specific dollar figures.',
@@ -1065,46 +1077,53 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  chatSetLoading(labId,true);
-  var thinkEl=chatThinking(labId);
-  try{
-    var systemPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI financial assistant for small business managers.');
-    var body=JSON.stringify({
-      messages:chatHistories[labId],
-      system_prompt:systemPrompt,
-      max_tokens:1024
-    });
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:body
-    });
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
-    var data=await resp.json();
-    var aiText=(data.content&&data.content[0]&&data.content[0].text)||
-               (data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||
-               (data.text)||'I encountered an issue. Please try again.';
-    if(thinkEl) thinkEl.remove();
-    chatAppend(labId,'ai',aiText);
-    chatHistories[labId].push({role:'assistant',content:aiText});
-    chatExchanges[labId]++;
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
     if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  } catch(e){
-    if(thinkEl) thinkEl.remove();
-    var errDiv=document.createElement('div');
-    errDiv.className='chat-error';
-    errDiv.textContent='Connection error: '+e.message+'. Please try again.';
-    var msgs=document.getElementById('msgs-'+labId);
-    if(msgs){msgs.appendChild(errDiv);msgs.scrollTop=msgs.scrollHeight;}
-    chatHistories[labId].pop();
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
   }
   chatSetLoading(labId,false);
 }

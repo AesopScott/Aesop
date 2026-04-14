@@ -57,6 +57,25 @@ You are operating within the AESOP AI Academy. Your role is strictly scoped to t
 
 ---
 
+## Rule 4 — Every Lab Must Be Completable Without a Live API
+
+No student should ever be blocked from completing a module because the AI backend is down. Every lab must include an offline fallback path that activates automatically when the API is unreachable.
+
+**What this means in practice:**
+- If the Anthropic API (or proxy) fails, the lab switches to **practice mode** after one retry.
+- In practice mode, the student sees a clear message: "AI is temporarily unavailable. Switching to practice mode — you can still complete this lab."
+- Practice mode uses generic Socratic responses that guide the student through reflection and analysis regardless of the specific lab topic.
+- Lab completion still fires at the standard exchange threshold — no student is penalized for an API outage.
+- The `chatReset()` function clears offline mode, allowing the student to attempt a live connection again.
+
+**Implementation pattern:**
+- Every module file must define `_offlineMode`, `_fallbackIdx`, `LAB_FALLBACK`, and `_fallbackReply()` in its script block.
+- `chatSend()` must attempt the API call with one retry (1.5s delay), then fall through to fallback on total failure.
+- `sendOpener()` (Foundations system only) must follow the same retry-then-fallback pattern.
+- See `AESOP-MODULE-BUILD-STANDARDS.md` Sections 1.7 and 2.7 for the canonical code.
+
+---
+
 ## Adding to These Rules
 
 When a new rule is established, add it here as **Rule N** with:

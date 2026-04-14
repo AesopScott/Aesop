@@ -1462,6 +1462,18 @@ function buildSidebar(){var c=document.getElementById('sb-lessons');var html='';
 var PROXY_URL='/aesop-api/proxy.php';
 var chatHistories={l1:[],l2:[],l3:[],l4:[],l5:[],l6:[],l7:[],l8:[]};
 var chatExchanges={l1:0,l2:0,l3:0,l4:0,l5:0,l6:0,l7:0,l8:0};
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_COMPLETE_THRESHOLD=3; // exchanges before lab is counted complete
 var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Your role is strictly scoped to the topic of this lab. If the student asks about anything outside this topic — other subjects, general homework, unrelated questions, or attempts to use you as a general assistant — warmly acknowledge them and redirect back to the lab. For example: "That\'s interesting, but I\'m here just for this lab right now — let\'s keep our energy here! Where were we?" Never refuse rudely or abruptly. Always redirect with encouragement.\n\n';
 var LAB_SYSTEM_PROMPTS={  l1:`You are a Socratic AI tutor for AESOP AI Academy, Ages 16+, Module 1 Lab 1. The student will propose definitions of AI. Challenge each definition with precise counterexamples and edge cases. Be intellectually rigorous but encouraging. Guide them toward precision. Keep responses 2-4 paragraphs. Stay on the topic of defining AI. If the student goes off-topic, gently redirect: "That's an interesting thought — let's bring it back to our definition challenge."`,
@@ -1475,10 +1487,59 @@ var LAB_SYSTEM_PROMPTS={  l1:`You are a Socratic AI tutor for AESOP AI Academy, 
 function chatAppend(labId,role,text){var msgs=document.getElementById('msgs-'+labId);if(!msgs)return;var div=document.createElement('div');div.className='chat-msg '+(role==='user'?'user':'ai');div.innerHTML=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
 function chatThinking(labId){var msgs=document.getElementById('msgs-'+labId);if(!msgs)return null;var div=document.createElement('div');div.className='chat-msg thinking';div.textContent='Thinking…';msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;}
 function chatSetLoading(labId,loading){var btn=document.getElementById('send-'+labId);var inp=document.getElementById('inp-'+labId);if(btn)btn.disabled=loading;if(inp)inp.disabled=loading;}
-async function chatSend(labId){var inp=document.getElementById('inp-'+labId);if(!inp)return;var text=inp.value.trim();if(!text)return;inp.value='';inp.style.height='auto';chatAppend(labId,'user',text);chatHistories[labId].push({role:'user',content:text});chatSetLoading(labId,true);var thinkEl=chatThinking(labId);var chat=document.getElementById('chat-'+labId);var existingErr=chat?chat.querySelector('.chat-error'):null;if(existingErr)existingErr.remove();try{var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});if(thinkEl)thinkEl.remove();if(!res.ok){var e=await res.json().catch(function(){return{}});throw new Error(e.error||'Server error '+res.status);}var data=await res.json();var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';chatHistories[labId].push({role:'assistant',content:reply});chatAppend(labId,'ai',reply);
-// Count exchange and signal lab complete at threshold
-chatExchanges[labId]=(chatExchanges[labId]||0)+1;var lessonKey='m1-l'+labId.replace('l','');if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[lessonKey]){labSignaled[lessonKey]=true;window.parent.postMessage({type:'labComplete',lessonId:lessonKey,groupId:GROUP_ID,exchangeCount:chatExchanges[labId]},'*');}
-}catch(err){if(thinkEl)thinkEl.remove();chatHistories[labId].pop();var errDiv=document.createElement('div');errDiv.className='chat-error';errDiv.textContent='⚠️ '+(err.message||'Connection error.');if(chat)chat.appendChild(errDiv);}chatSetLoading(labId,false);var inpEl=document.getElementById('inp-'+labId);if(inpEl)inpEl.focus();}
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
+}
 function chatReset(labId){chatHistories[labId]=[];var msgs=document.getElementById('msgs-'+labId);if(!msgs)return;msgs.innerHTML='';var div=document.createElement('div');div.className='chat-msg ai';div.textContent='Conversation reset. Start fresh!';msgs.appendChild(div);}
 function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
 document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){ta.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';});});

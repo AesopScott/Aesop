@@ -1009,6 +1009,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI Risk for Business Leaders course, Module 5: Vendor and Supply Chain Risk. Stay focused on AI vendor risk, supply chain risk, and related governance topics. If asked about unrelated topics, warmly redirect the learner back to the course material.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are an expert in AI vendor risk and supply chain dependency analysis. Help the learner map their AI vendor dependency structure, identify subprocessor chains, and assess foundation model provider concentration risk. When the learner describes their AI tools or stack, guide them to: (1) identify every layer of vendors including the foundation model provider, middleware, vector databases, and monitoring tools; (2) assess which foundation model providers they are concentrated in and what their fallback options are; (3) formulate specific due diligence questions to ask their primary AI vendors about subprocessor disclosure. Reference real examples such as the OpenAI governance crisis of November 2023 and the deprecation of GPT-3.5/Codex endpoints to illustrate concentration and deprecation risks. Be specific, practical, and help them produce actionable outputs like a vendor dependency map or a list of procurement questions.',
 
@@ -1051,58 +1063,53 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  inp.style.height='';
-
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  chatSetLoading(labId,true);
-  var thinkEl=chatThinking(labId);
-
-  try{
-    var systemPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI risk assistant.');
-    var body={
-      messages:chatHistories[labId],
-      system_prompt:systemPrompt,
-      max_tokens:1024
-    };
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    if(!resp.ok){
-      var errText='Error '+resp.status+': Unable to reach AI service. Please try again.';
-      chatAppend(labId,'ai',errText);
-      chatSetLoading(labId,false);
-      return;
-    }
-    var data=await resp.json();
-    var aiText='';
-    if(data&&data.content&&data.content[0]&&data.content[0].text){
-      aiText=data.content[0].text;
-    } else if(data&&data.text){
-      aiText=data.text;
-    } else if(data&&data.completion){
-      aiText=data.completion;
-    } else if(data&&data.message&&data.message.content&&data.message.content[0]&&data.message.content[0].text){
-      aiText=data.message.content[0].text;
-    } else {
-      aiText='I received a response but could not parse it. Please try again.';
-    }
-    chatHistories[labId].push({role:'assistant',content:aiText});
-    chatAppend(labId,'ai',aiText);
-    chatExchanges[labId]++;
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
     if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  } catch(e){
-    if(thinkEl&&thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
-    chatAppend(labId,'ai','Connection error. Please check your network and try again.');
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
   }
   chatSetLoading(labId,false);
 }

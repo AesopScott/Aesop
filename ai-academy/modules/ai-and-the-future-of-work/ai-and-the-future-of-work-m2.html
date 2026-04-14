@@ -929,6 +929,18 @@ var chatExchanges={l1:0,l2:0,l3:0,l4:0};
 var LAB_COMPLETE_THRESHOLD=3;
 var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI and the Future of Work course, Module 2: Task Automation vs. Job Automation. Stay strictly on topic. If asked something unrelated, warmly redirect to the module subject.\n\n';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={
   l1:'You are a task decomposition assistant for Module 2, Lesson 1. Your job is to help students apply the Autor-Levy-Murnane (ALM) task framework to real occupations. When given a job title, break it into 8–12 specific, discrete tasks. For each task, classify it as: (a) Routine Cognitive, (b) Routine Manual, (c) Non-Routine Cognitive — Analytic, (d) Non-Routine Cognitive — Interpersonal, or (e) Non-Routine Manual. Explain briefly why each task falls into that category and what that means for its automation susceptibility. Use specific, concrete language. Avoid vague generalizations. Reference the distinction between task automation (one task within a job is automated) and job automation (the entire role is eliminated) in your analysis. When students push back or ask follow-up questions, engage rigorously with the task-level evidence.',
 
@@ -971,56 +983,53 @@ function chatSetLoading(labId,loading){
 async function chatSend(labId){
   var inp=document.getElementById('inp-'+labId);
   if(!inp) return;
-  var text=(inp.value||'').trim();
+  var text=inp.value.trim();
   if(!text) return;
   inp.value='';
-  chatAppend(labId,'user',text);
   chatHistories[labId].push({role:'user',content:text});
-  chatSetLoading(labId,true);
-  var thinking=chatThinking(labId);
-  try{
-    var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI assistant for AESOP AI Academy.');
-    var body=JSON.stringify({
-      messages:chatHistories[labId],
-      system_prompt:sysPrompt,
-      max_tokens:1024
-    });
-    var resp=await fetch(PROXY_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:body
-    });
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    if(!resp.ok){
-      var errText='Error '+resp.status+': '+resp.statusText;
-      try{ var errData=await resp.json(); errText=errData.error||errText; }catch(e){}
-      chatAppend(labId,'ai','Sorry, I encountered an error: '+errText);
-      chatSetLoading(labId,false);
-      return;
-    }
-    var data=await resp.json();
-    var aiMsg='';
-    if(data.content&&data.content[0]&&data.content[0].text){
-      aiMsg=data.content[0].text;
-    } else if(data.choices&&data.choices[0]&&data.choices[0].message){
-      aiMsg=data.choices[0].message.content;
-    } else if(data.response){
-      aiMsg=data.response;
-    } else if(data.message){
-      aiMsg=data.message;
-    } else {
-      aiMsg='I received a response but could not parse it. Please try again.';
-    }
-    chatHistories[labId].push({role:'assistant',content:aiMsg});
-    chatAppend(labId,'ai',aiMsg);
-    chatExchanges[labId]++;
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
     if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  } catch(err){
-    if(thinking&&thinking.parentNode) thinking.parentNode.removeChild(thinking);
-    chatAppend(labId,'ai','Network error: '+err.message+'. Please check your connection and try again.');
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
   }
   chatSetLoading(labId,false);
 }

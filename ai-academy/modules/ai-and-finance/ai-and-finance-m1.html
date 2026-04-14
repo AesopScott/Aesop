@@ -950,6 +950,18 @@ var lessonSignaled={},quizSignaled={},labSignaled={};
 var PAGE_TO_LESSON={'p-l1':'l1','p-l1-quiz':'l1','p-l1-lab':'l1','p-l2':'l2','p-l2-quiz':'l2','p-l2-lab':'l2','p-l3':'l3','p-l3-quiz':'l3','p-l3-lab':'l3','p-l4':'l4','p-l4-quiz':'l4','p-l4-lab':'l4'};
 var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
 
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
 var LAB_SYSTEM_PROMPTS={"l1": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l2": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l3": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l4": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI & Finance cp1-m1, L4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response."};
 
 function goPage(id){
@@ -1030,13 +1042,9 @@ async function chatSend(labId){
   inp.value='';
   chatHistories[labId].push({role:'user',content:text});
   chatAppend(labId,'user',text);
-  chatSetLoading(labId,true);
-  try{
-    var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:chatHistories[labId],system_prompt:LAB_SYSTEM_PROMPTS[labId]||'',max_tokens:1024})});
-    if(!res.ok) throw new Error('Server error '+res.status);
-    var data=await res.json();
-    var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
     chatHistories[labId].push({role:'assistant',content:reply});
     chatAppend(labId,'ai',reply);
     chatExchanges[labId]=(chatExchanges[labId]||0)+1;
@@ -1044,9 +1052,38 @@ async function chatSend(labId){
       labSignaled[labId]=true;
       window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
     }
-  }catch(err){
-    chatAppend(labId,'error','⚠ '+(err.message||'Connection error.'));
-    chatHistories[labId].pop();
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
   }
   chatSetLoading(labId,false);
 }

@@ -89,7 +89,7 @@ textarea{resize:vertical;min-height:80px;}
     </div>
     <div class="api-key-note">Stored in memory only — never sent anywhere except their respective APIs. Reviewers without keys will be skipped.</div>
     <div class="form-group" style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">
-      <label>GitHub PAT — Required for course evaluation (reads module files from repo)</label>
+      <label>GitHub PAT — Used for evaluation fallback &amp; saving reports (local folder preferred when set)</label>
       <input type="password" id="githubPat" placeholder="ghp_..." />
     </div>
     <div class="form-group" style="margin-top:0.75rem;border-top:1px solid rgba(255,255,255,0.08);padding-top:0.75rem;">
@@ -3510,9 +3510,15 @@ async function runPanelEvaluation(cid, courseName) {
   };
 
   const githubPat = document.getElementById('githubPat').value.trim();
-  if (!githubPat) {
-    log('ERROR: GitHub PAT required to fetch module files. Enter it in the API Keys section.');
+  const useLocal = !!repoFolderHandle;  // prefer local disk when folder is set
+
+  if (!useLocal && !githubPat) {
+    log('ERROR: Either set a repo folder or provide a GitHub PAT to fetch module files.');
     return null;
+  }
+
+  if (useLocal) {
+    log('Reading modules from local folder (repo folder is set).');
   }
 
   // Foundations courses don't have one course folder — every module lives
@@ -3520,7 +3526,7 @@ async function runPanelEvaluation(cid, courseName) {
   // for foundations we list per-module on demand inside the loop.
   let githubFiles = [];
   let folderName = course.isFoundations ? null : getFolderName(cid);
-  if (!course.isFoundations) {
+  if (!useLocal && !course.isFoundations) {
     log('Fetching file list from GitHub: ' + GITHUB_BASE + '/' + folderName + '/');
     try {
       githubFiles = await listGitHubModuleFiles(githubPat, folderName);
@@ -3530,7 +3536,7 @@ async function runPanelEvaluation(cid, courseName) {
       log('ERROR: Could not list files in ' + folderName + '/ on GitHub — ' + e.message);
       return null;
     }
-  } else {
+  } else if (!useLocal) {
     log('Foundations course — will list each module-N/ folder on GitHub on demand.');
   }
 
@@ -3550,30 +3556,59 @@ async function runPanelEvaluation(cid, courseName) {
 
     // Per-module path resolution — works for both layouts
     const { folder: modFolder, exactName, filenameRegex } = resolveModulePath(cid, mn);
-    let filesForThisModule = githubFiles;
-    if (course.isFoundations) {
+
+    // ── Try local disk first when repoFolderHandle is available ──
+    let moduleHtml = '';
+    let fileName = '';
+    if (useLocal) {
       try {
-        filesForThisModule = await listGitHubModuleFiles(githubPat, modFolder);
+        const localFile = await findModuleFile(
+          course.isFoundations
+            ? await repoFolderHandle.getDirectoryHandle(modFolder, { create: false })
+            : await repoFolderHandle.getDirectoryHandle(folderName, { create: false }),
+          cid, mn
+        );
+        if (localFile) {
+          const file = await localFile.getFile();
+          moduleHtml = await file.text();
+          fileName = localFile.name;
+          log('  Read local: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
+        }
       } catch(e) {
-        log('  SKIP: Could not list ' + modFolder + '/ on GitHub — ' + e.message);
+        log('  Local read failed for module ' + mn + ': ' + e.message);
+      }
+    }
+
+    // ── Fall back to GitHub if local read didn't work ──
+    if (!moduleHtml && githubPat) {
+      let filesForThisModule = githubFiles;
+      if (course.isFoundations) {
+        try {
+          filesForThisModule = await listGitHubModuleFiles(githubPat, modFolder);
+        } catch(e) {
+          log('  SKIP: Could not list ' + modFolder + '/ on GitHub — ' + e.message);
+          continue;
+        }
+      }
+
+      fileName = (filesForThisModule.find(f => f.name === exactName) || {}).name
+                  || (filesForThisModule.find(f => filenameRegex.test(f.name)) || {}).name
+                  || (course.isFoundations ? null : findModuleInList(filesForThisModule, cid, mn));
+      if (!fileName) {
+        log('  SKIP: No matching file for module ' + mn + ' in ' + modFolder + '/ (looking for ' + filenameRegex + ')');
+        continue;
+      }
+      try {
+        moduleHtml = await fetchModuleFromGitHub(githubPat, modFolder, fileName);
+        log('  Fetched from GitHub: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
+      } catch(e) {
+        log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
         continue;
       }
     }
 
-    // Fetch module HTML from GitHub
-    let moduleHtml = '';
-    let fileName = (filesForThisModule.find(f => f.name === exactName) || {}).name
-                || (filesForThisModule.find(f => filenameRegex.test(f.name)) || {}).name
-                || (course.isFoundations ? null : findModuleInList(filesForThisModule, cid, mn));
-    if (!fileName) {
-      log('  SKIP: No matching file for module ' + mn + ' in ' + modFolder + '/ (looking for ' + filenameRegex + ')');
-      continue;
-    }
-    try {
-      moduleHtml = await fetchModuleFromGitHub(githubPat, modFolder, fileName);
-      log('  Fetched: ' + modFolder + '/' + fileName + ' (' + Math.round(moduleHtml.length / 1024) + ' KB)');
-    } catch(e) {
-      log('  SKIP: Could not fetch ' + fileName + ' — ' + e.message);
+    if (!moduleHtml) {
+      log('  SKIP: Could not read module ' + mn + ' from local disk or GitHub.');
       continue;
     }
 

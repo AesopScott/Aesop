@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<!-- v1.0.1 | 2026-04-14 -->
+<!-- development-log (admin-only, Firebase auth) -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Development Log — AESOP AI Academy</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+<link rel="stylesheet" href="/academy-theme.css">
+<link rel="stylesheet" href="/academy-dark-mode.css">
+<style>
+/* ─── AUTH OVERLAY ─────────────────────────────────────── */
+.auth-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.97);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+}
+.auth-box {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 12px; padding: 32px; width: 380px; max-width: 92vw;
+  text-align: center; box-shadow: 0 12px 48px rgba(0,0,0,0.25);
+}
+.auth-logo { font-size: 36px; margin-bottom: 8px; }
+.auth-box h2 { margin: 4px 0 6px; font-size: 20px; font-family: var(--heading); color: var(--navy); }
+.auth-box p { color: var(--ink-muted); font-size: 13px; margin: 0 0 18px; }
+.auth-input {
+  width: 100%; padding: 10px 12px; margin: 6px 0;
+  background: var(--cream); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 14px; font-family: var(--body);
+}
+.auth-input:focus { outline: none; border-color: var(--gold); }
+.auth-btn {
+  width: 100%; padding: 10px; margin-top: 10px;
+  background: var(--gold); color: var(--white); border: 0;
+  border-radius: 8px; font-weight: 600; cursor: pointer;
+  font-size: 14px; font-family: var(--body);
+  transition: filter 0.2s;
+}
+.auth-btn:hover { filter: brightness(1.08); }
+.auth-error { color: #ef4444; font-size: 12px; min-height: 16px; margin-top: 8px; }
+.auth-note { color: var(--ink-muted); font-size: 11px; margin-top: 14px; }
+
+/* ─── DARK MODE AUTH ──────────────────────────────────── */
+[data-theme="dark"] .auth-box { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .auth-box h2 { color: #e2e8f0; }
+[data-theme="dark"] .auth-box p { color: #94a3b8; }
+[data-theme="dark"] .auth-input { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+[data-theme="dark"] .auth-input:focus { border-color: var(--gold); }
+[data-theme="dark"] .auth-note { color: #64748b; }
+
+/* ─── PAGE LAYOUT ─────────────────────────────────────── */
+body { padding-top: 0; }
+.dev-header {
+  background: var(--navy); color: var(--cream);
+  padding: 40px 24px 32px; text-align: center;
+  border-bottom: 3px solid var(--gold);
+}
+.dev-header h1 {
+  font-family: var(--heading); font-size: 2rem; margin: 0 0 6px;
+  color: var(--gold-light);
+}
+.dev-header .subtitle {
+  font-family: var(--body); font-size: 0.95rem; color: var(--cream);
+  opacity: 0.8;
+}
+.dev-header .meta-bar {
+  margin-top: 14px; display: flex; justify-content: center; align-items: center;
+  gap: 16px; flex-wrap: wrap; font-size: 0.82rem; color: var(--cream); opacity: 0.65;
+}
+.dev-header .back-link {
+  position: absolute; top: 16px; left: 20px;
+  color: var(--gold-light); text-decoration: none; font-size: 0.85rem;
+  font-family: var(--body);
+}
+.dev-header .back-link:hover { text-decoration: underline; }
+.dev-header .sign-out-btn {
+  position: absolute; top: 16px; right: 20px;
+  background: transparent; border: 1px solid rgba(250,248,244,0.3);
+  color: var(--cream); padding: 4px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 0.78rem; font-family: var(--body);
+}
+.dev-header .sign-out-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.dev-stats {
+  display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+  padding: 20px 24px; background: var(--cream);
+  border-bottom: 1px solid var(--border);
+}
+.dev-stat {
+  text-align: center; font-family: var(--body);
+}
+.dev-stat .num {
+  font-size: 1.8rem; font-weight: 700; color: var(--navy);
+  font-family: var(--heading);
+}
+.dev-stat .label {
+  font-size: 0.75rem; color: var(--ink-muted); text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-theme="dark"] .dev-stats { background: #0f172a; border-color: #1e293b; }
+[data-theme="dark"] .dev-stat .num { color: var(--gold-light); }
+[data-theme="dark"] .dev-stat .label { color: #94a3b8; }
+
+/* ─── TIMELINE ────────────────────────────────────────── */
+.dev-container {
+  max-width: 900px; margin: 0 auto; padding: 32px 24px 80px;
+}
+.day-block {
+  margin-bottom: 36px;
+}
+.day-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  cursor: pointer; user-select: none;
+}
+.day-header:hover .day-date { color: var(--gold); }
+.day-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--gold); flex-shrink: 0;
+}
+.day-date {
+  font-family: var(--heading); font-size: 1.25rem; font-weight: 600;
+  color: var(--navy); transition: color 0.2s;
+}
+.day-count {
+  font-family: var(--body); font-size: 0.78rem; color: var(--ink-muted);
+  background: var(--cream); border: 1px solid var(--border);
+  border-radius: 20px; padding: 2px 10px;
+}
+.day-chevron {
+  margin-left: auto; font-size: 1.1rem; color: var(--ink-muted);
+  transition: transform 0.25s;
+}
+.day-block.collapsed .day-chevron { transform: rotate(-90deg); }
+.day-block.collapsed .day-items { display: none; }
+
+[data-theme="dark"] .day-date { color: #e2e8f0; }
+[data-theme="dark"] .day-count { background: #1e293b; border-color: #334155; color: #94a3b8; }
+
+.day-items {
+  list-style: none; padding: 0; margin: 0 0 0 6px;
+  border-left: 2px solid var(--border-light);
+}
+.day-items li {
+  position: relative; padding: 6px 0 6px 24px;
+  font-family: var(--body); font-size: 0.92rem; color: var(--ink);
+  line-height: 1.45;
+}
+.day-items li::before {
+  content: '';
+  position: absolute; left: -5px; top: 14px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--cream); border: 2px solid var(--border);
+}
+.day-items li:hover::before { border-color: var(--gold); background: var(--gold-pale); }
+
+[data-theme="dark"] .day-items { border-left-color: #334155; }
+[data-theme="dark"] .day-items li { color: #cbd5e1; }
+[data-theme="dark"] .day-items li::before { background: #1e293b; border-color: #475569; }
+[data-theme="dark"] .day-items li:hover::before { border-color: var(--gold); background: #2a2000; }
+
+/* ─── CATEGORY TAGS ───────────────────────────────────── */
+.tag {
+  display: inline-block; font-size: 0.68rem; font-weight: 600;
+  padding: 1px 7px; border-radius: 4px; margin-right: 6px;
+  vertical-align: middle; text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.tag-fix { background: #fef2f2; color: #dc2626; }
+.tag-feat { background: #f0fdf4; color: #16a34a; }
+.tag-infra { background: #eff6ff; color: #2563eb; }
+.tag-content { background: #fefce8; color: #ca8a04; }
+.tag-marketing { background: #fdf4ff; color: #a855f7; }
+.tag-ops { background: #f0fdfa; color: #0d9488; }
+
+[data-theme="dark"] .tag-fix { background: #3b1111; color: #fca5a5; }
+[data-theme="dark"] .tag-feat { background: #0a2e14; color: #86efac; }
+[data-theme="dark"] .tag-infra { background: #0c1a33; color: #93c5fd; }
+[data-theme="dark"] .tag-content { background: #2a2000; color: #fde047; }
+[data-theme="dark"] .tag-marketing { background: #2e1042; color: #d8b4fe; }
+[data-theme="dark"] .tag-ops { background: #0a2724; color: #5eead4; }
+
+/* ─── DARK MODE TOGGLE (standalone) ───────────────────── */
+.dm-toggle {
+  position: fixed; bottom: 20px; right: 20px;
+  background: var(--navy); color: var(--gold); border: 1px solid var(--gold);
+  width: 42px; height: 42px; border-radius: 50%;
+  font-size: 18px; cursor: pointer; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.dm-toggle:hover { transform: scale(1.1); }
+[data-theme="dark"] .dm-toggle { background: #1e293b; border-color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- ── AUTH GATE ── -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">🛠️</div>
+    <h2>Development Log</h2>
+    <p>Sign in with your admin account to view the development history.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Admin email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-note">Admin access only. Contact Scott if you need access.</div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app" style="display:none">
+  <div class="dev-header" style="position:relative;">
+    <a href="/" class="back-link">← Back to Home</a>
+    <button class="sign-out-btn" id="signOutBtn">Sign Out</button>
+    <h1>Development Log</h1>
+    <div class="subtitle">AESOP AI Academy — Build History</div>
+    <div class="meta-bar">
+      <span id="userLabel"></span>
+      <span>·</span>
+      <span id="totalDays">0 days tracked</span>
+      <span>·</span>
+      <span id="totalEntries">0 entries</span>
+    </div>
+  </div>
+
+  <div class="dev-stats">
+    <div class="dev-stat"><div class="num" id="statDays">0</div><div class="label">Days</div></div>
+    <div class="dev-stat"><div class="num" id="statEntries">0</div><div class="label">Entries</div></div>
+    <div class="dev-stat"><div class="num" id="statFixes">0</div><div class="label">Fixes</div></div>
+    <div class="dev-stat"><div class="num" id="statFeatures">0</div><div class="label">Features</div></div>
+  </div>
+
+  <div class="dev-container" id="timeline"></div>
+</div>
+
+<button class="dm-toggle" id="dmToggle" title="Toggle dark mode">☀️</button>
+
+<!-- Firebase SDK + auth gate -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBvZQFNL-zThgCcpFuMEVXFd9G6MVQcVjo",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.appspot.com",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:63ca4374e5d5be1c81ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && (ADMIN_EMAILS.length === 0 || ADMIN_EMAILS.includes(u.email));
+
+  const overlay = document.getElementById('auth-overlay');
+  const appEl   = document.getElementById('app');
+  const errEl   = document.getElementById('auth-error');
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user && isAdmin(user)) {
+      overlay.style.display = 'none';
+      appEl.style.display = 'block';
+      document.getElementById('userLabel').textContent = user.email || 'Signed in';
+      renderTimeline();
+    } else if (user && !isAdmin(user)) {
+      overlay.style.display = 'flex';
+      appEl.style.display = 'none';
+      errEl.textContent = 'This account does not have admin access.';
+    } else {
+      overlay.style.display = 'flex';
+      appEl.style.display = 'none';
+    }
+  });
+</script>
+
+<script>
+/* ─── DEVELOPMENT LOG DATA ────────────────────────────── */
+const DEV_LOG = {
+  "2026-04-11": [
+    "Placeholder Panel Restored (Take 2)",
+    "Brighter Course Detail Text",
+    "Reverted Dropdown 'Select Course' Changes",
+    "Placeholder Course Panel on courses.html",
+    "Dropdown Default Text: 'Select Course'",
+    "Transcript Panel Float Fix (Correction)",
+    "Transcript Panel Repositioning on courses.html",
+    "Scheduled Repo Sync Check (Automated)",
+    "LinkedIn Post Rewrite for Aesop AI Academy Group",
+    "LinkedIn Group Setup Playbook for AESOP Academy",
+    "Redone Sitewide Filename/Directory Standardization",
+    "Sitemap SEO Audit & Rebuild",
+    "Sitewide Filename/Directory Standardization (One-Pass Fix)",
+    "Weekly Site Audit Scheduled Task Created",
+    "Sitewide Filename & ID Audit + Mismatch Analysis",
+    "Updated aesop-git-sync Task with Self-Configuring Credentials"
+  ],
+  "2026-04-12": [
+    "AI News Page Created with Daily Automated Publishing",
+    "Parent/Teacher Dashboard: Initial Build",
+    "Parent/Teacher Dashboard: Dark Mode Fix & Full Flow Testing",
+    "Activate Dashboard Card on Homepage",
+    "Added Development Warning Banner to Homepage",
+    "Site-Wide Style Audit of Aesop Academy",
+    "Executed All Style Audit Fixes",
+    "Multilingual Module Generator Implementation",
+    "Multilingual Course Building Discussion",
+    "Language Switcher Added to Course Delivery (Electives Hub)",
+    "Spanish Language Toggle Added to Foundations Course",
+    "Added Foundations Advanced Course to Module Generator",
+    "Fix: Show Live Courses in Generator for Non-English Builds",
+    "Fixed Non-English Folder Naming Convention in Mod Gen",
+    "Foundations Non-English Naming Convention Changed",
+    "Module Generator TDZ Fix + Site-Wide Mastery Test Fixes",
+    "Module Generator Obsidian Logging + Bug Analysis",
+    "Generator Script-Breaking Bug Fix",
+    "Generator max_tokens Fix + Audit Flexibility",
+    "Registry Audit: Fixed 3 Missing Live Courses + Case-Insensitive GitHub Lookup",
+    "Added localStorage Module Completion Tracking",
+    "AI News: Education Focus Added",
+    "AI News Task Updated: 4-6 Articles Daily",
+    "AI News Hero Title Dark Mode Fix",
+    "AI News Page Dark Mode Fix",
+    "Fixed Dev Banner Covering Nav",
+    "Increased Font Size Slider Range in Training Modules",
+    "Fixed Invisible Quiz Questions & Broken Course Registry JSON",
+    "Fixed Quiz Always Showing Wrong Feedback + Git Lock Cleanup",
+    "Fixed Spanish Quiz Feedback Showing Answers",
+    "Activated AI Risk for Business Leaders",
+    "Lab Chat Windows Doubled in Height",
+    "Fix Light Mode Contrast on Panel Scoring Dashboard",
+    "AI Security Module Files Truncated + Audit Failures",
+    "LinkedIn Blurb for AI News Page Launch",
+    "LinkedIn Post for Tech Investor Group",
+    "Aesop Investor Outreach Copy",
+    "Nonprofit Terminology Correction for Outreach Copy",
+    "Facebook Groups Research for AESOP Posting",
+    "YouTube Weekly Video Schedule Created",
+    "30-Day Facebook Posting Schedule Created",
+    "30-Day Social Media Video Schedule (TikTok + Instagram)",
+    "Instagram 30-Day Plan Rewritten to Picture-Driven + Funny/Smart",
+    "Social Media Schedule Rewrite: Solo Talking Head for Parents",
+    "Git Sync Tasks Finalized (Clone-Based)",
+    "Fixed Scheduled Git Sync Task",
+    "Git Sync Fix Resolved",
+    "Git Sync Still Prompting — Fixed Again",
+    "Scheduled Git Sync Failing (Network Unreachable)",
+    "Scheduled Repo Sync Check (Automated)",
+    "Scheduled Task: repo-sync-check (BLOCKED)",
+    "Updated repo-sync-check Task Prompt"
+  ],
+  "2026-04-13": [
+    "Migration finished + Phase 5 (accreditation-tracker rebuild) shipped",
+    "Accreditation tracker: passcode to Firebase email/password auth",
+    "Spanish Site Scaffolding + /es/ i18n Convention Established",
+    "/es/ and /hi/ shell-page translations (home + hub)",
+    "Spanish/EN electives hubs aligned with registry-driven i18n",
+    "ES Enter Course links routed to /es/ hub",
+    "Hindi Foundations Activation Complete",
+    "Hindi Husk Cleanup Pushed",
+    "Aesop multilang (/es/, /hi/) switch + Foundations route fixes",
+    "M1/M2/M3 Advanced restored + hub URL map wired to real filenames",
+    "Clarification: ES/HI = 10 Advanced modules by design",
+    "Mod gen refactor: registry-driven LIVE_COURSES",
+    "Mod gen LIVE_COURSES fix",
+    "Mod gen / registry drift (AI Risk for Business Leaders)",
+    "foundations_advanced audit failures fixed; LIVE_COURSES retired in favor of registry-as-truth",
+    "Registry: _meta.languages roster + mod-gen chip render",
+    "courses.html live-page validation",
+    "AI Risk for Business Leaders live check",
+    "Filename versioning convention: keep version IN the HTML, not the URL",
+    "Removed dev-tracker, linked Accreditation next to QA Courses",
+    "Stripped dead DEV CALENDAR block from both courses.html",
+    "Fixed Select Course Dropdown on Courses Page",
+    "Fixed AIP Draft Review 404 + Cleared Stuck Rebase",
+    "Aesop Repo Moving Out of OneDrive",
+    "Recovered Crashed Weekly Site Audit; Phases 1-2 Done",
+    "daily-ai-news: Stuck Session False Alarm",
+    "Cleared git locks",
+    "Post-push review (commit b7a54e7 'Various')",
+    "LinkedIn API Access Inquiry",
+    "TODO: pre-commit hook for course-registry.json"
+  ],
+  "2026-04-14": [
+    "Implemented Lab Offline Fallback System (198 modules patched)",
+    "Lab Executability Feedback: No API Fallback",
+    "Sequential Reviewer Calls to Avoid Rate Limits",
+    "Mobile Site Build (/m/) — English Only",
+    "New Comprehensive Sitemap.xml (1303 lines)",
+    "Shareable Article Pages + Daily News Run",
+    "Added AI for Small Business Managers course to courses.html",
+    "Activated Photography and AI + AI for Small Business Managers",
+    "Status Check: Two Newest Courses (Photography & Small Business)",
+    "Module Generator Activation + Eval Save Fixes",
+    "Fixed mod gen evaluation failing to read freshly generated modules",
+    "Restored 7 Missing Functions in Module Generator",
+    "Extracted Course Data to JSON + Fixed SyntaxError in Module Generator",
+    "Foreign Language Linguistic Quality Guidelines in Module Generator",
+    "Added Pregunta Central + Lesson Questions to All ES Modules",
+    "Added Guiding Questions to AR + HI + Updated Mod Gen Tool",
+    "Translated courses.html subtitle into Arabic, Hindi, Spanish",
+    "Translated Foundations course card text into Arabic, Hindi, Spanish",
+    "Translated AI Mastery Certifications table into Arabic, Hindi, Spanish",
+    "Translated hero buttons + fixed Arabic hero overflow",
+    "Added NOT AVAILABLE banner to foreign language courses pages",
+    "Corrected repo path for translations",
+    "Select Course Button Fix (4th time) + Mobile Site Build",
+    "Select Course Button Fix Deployed + AI in Customer Service Check",
+    "Forum Chat Auto-Scroll Fix",
+    "AESOP GTM & Distribution Strategy Deep Dive",
+    "LinkedIn Post for AI Tools for Solo Founders Course",
+    "Meeting Reminder: Screen Flash Script",
+    "Recurring Corrupt Git Index — Root Cause + Permanent Fix",
+    "Git Index Corruption Fix (Permanent — hooks installed)",
+    "Git Repo Corruption Fix (Post-Rebase)",
+    "Git Rebase Ghost Issue Resolved",
+    "Git Lock File Cleanup (3 locks)",
+    "Updated Startup Git Lock Cleanup",
+    "Updated Personal Preferences with Git Index Fix",
+    "Aesop Repo Path Correction",
+    "Sandbox Proxy Blocking GitHub API",
+    "DIRECTIVE: Never Attempt GitHub API Calls in Sandbox",
+    "Migrated all scheduled tasks to v3 (repo-based)",
+    "Migrated daily-ai-news to v3",
+    "daily-ai-news-v2 Scheduled Task Update Blocked",
+    "Git sync migrated to v4 (fully autonomous)",
+    "Scheduled Tasks Added to Repo + Git Cleanup",
+    "Reviewed and Re-enabled aesop-git-sync-v2",
+    "Scheduled: Aesop Git Sync Health Check",
+    "Removed Forums Directory (Discord Replacement)"
+  ]
+};
+
+/* ─── AUTO-CATEGORIZE ENTRIES ─────────────────────────── */
+const CATEGORIES = [
+  { tag: 'fix',       label: 'FIX',       patterns: /\bfix(ed|es|ing)?\b|bug|broken|corrupt|cleanup|cleared|restored|reverted|correction/i },
+  { tag: 'infra',     label: 'INFRA',     patterns: /\bgit\b|lock|index|rebase|sync|scheduled|deploy|migration|migrated|sandbox|proxy|hooks?|repo\b/i },
+  { tag: 'feat',      label: 'FEAT',      patterns: /\b(build|built|created|added|activated|implemented|new)\b|mobile site|dashboard|fallback|tracker/i },
+  { tag: 'content',   label: 'CONTENT',   patterns: /\btranslat|i18n|multilingual|spanish|arabic|hindi|module|course|foundations|pregunta|lesson|guiding question/i },
+  { tag: 'marketing', label: 'MARKETING', patterns: /\blinkedin|facebook|instagram|youtube|tiktok|social media|investor|outreach|GTM|distribution/i },
+  { tag: 'ops',       label: 'OPS',       patterns: /\baudit|style|sitemap|SEO|registry|filename|standardiz|directive|preferences|path correction/i },
+];
+
+function categorize(text) {
+  for (const cat of CATEGORIES) {
+    if (cat.patterns.test(text)) return cat;
+  }
+  return null;
+}
+
+/* ─── RENDER ──────────────────────────────────────────── */
+function renderTimeline() {
+  const container = document.getElementById('timeline');
+  const dates = Object.keys(DEV_LOG).sort().reverse();
+  let totalEntries = 0, totalFixes = 0, totalFeatures = 0;
+
+  let html = '';
+  for (const date of dates) {
+    const items = DEV_LOG[date];
+    totalEntries += items.length;
+
+    const d = new Date(date + 'T12:00:00');
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+    let listHtml = '';
+    for (const item of items) {
+      const cat = categorize(item);
+      const tagHtml = cat ? `<span class="tag tag-${cat.tag}">${cat.label}</span>` : '';
+      if (cat && cat.tag === 'fix') totalFixes++;
+      if (cat && cat.tag === 'feat') totalFeatures++;
+      listHtml += `<li>${tagHtml}${escHtml(item)}</li>\n`;
+    }
+
+    html += `
+      <div class="day-block">
+        <div class="day-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="day-dot"></div>
+          <div class="day-date">${dayName}</div>
+          <div class="day-count">${items.length} item${items.length !== 1 ? 's' : ''}</div>
+          <div class="day-chevron">▾</div>
+        </div>
+        <ul class="day-items">${listHtml}</ul>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+
+  document.getElementById('statDays').textContent = dates.length;
+  document.getElementById('statEntries').textContent = totalEntries;
+  document.getElementById('statFixes').textContent = totalFixes;
+  document.getElementById('statFeatures').textContent = totalFeatures;
+  document.getElementById('totalDays').textContent = dates.length + ' days tracked';
+  document.getElementById('totalEntries').textContent = totalEntries + ' entries';
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ─── DARK MODE ───────────────────────────────────────── */
+const dmBtn = document.getElementById('dmToggle');
+const saved = localStorage.getItem('aesop_dark_mode');
+if (saved === 'true' || (!saved && window.matchMedia('(prefers-color-scheme:dark)').matches)) {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  dmBtn.textContent = '🌙';
+}
+dmBtn.addEventListener('click', () => {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('aesop_dark_mode', !isDark);
+  dmBtn.textContent = isDark ? '☀️' : '🌙';
+});
+</script>
+</body>
+</html>

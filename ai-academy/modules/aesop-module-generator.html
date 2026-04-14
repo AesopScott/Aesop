@@ -181,9 +181,13 @@ textarea{resize:vertical;min-height:80px;}
   <div id="progressLog" class="progress-log"></div>
 
 
-  <div style="display:flex;gap:0.75rem;">
+  <div style="display:flex;gap:0.75rem;align-items:stretch;">
     <button class="btn-generate" id="generateBtn" onclick="generate()" style="flex:1;">Generate Module</button>
     <button class="btn-generate" id="chainBtn" onclick="buildFullCourse()" style="flex:1;background:var(--teal);color:#fff;" title="Generate and save all modules automatically">Build Full Course</button>
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:60px;">
+      <label for="resumeFrom" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted,#8892b0);line-height:1;">Resume</label>
+      <input type="number" id="resumeFrom" min="1" value="1" style="width:48px;text-align:center;padding:4px;border:1px solid var(--border,#1e3a5f);border-radius:4px;background:var(--surface,#112240);color:var(--text,#ccd6f6);font-size:0.85rem;" title="Start building from this module number (skips earlier modules)">
+    </div>
   </div>
 
   <div class="output-area" id="outputArea">
@@ -1476,16 +1480,20 @@ async function buildFullCourse() {
   chainBtn.disabled = true;
   chainRunning = true;
 
+  // Resume support — start from specified module (default 1)
+  const resumeFrom = Math.max(1, Math.min(totalMods, parseInt(document.getElementById('resumeFrom').value) || 1));
+
   showLog('');
   log('=== BUILD FULL COURSE: ' + course.name + ' ===');
   log('Tier: ' + tc.label + ' | Modules: ' + totalMods + ' | Language: ' + selectedLangName + (selectedLang !== 'en' ? ' (' + selectedLang + ')' : ''));
+  if (resumeFrom > 1) log('Resuming from Module ' + resumeFrom + ' (skipping M1–M' + (resumeFrom - 1) + ')');
   log('');
-  await obsidianCheckpoint('course-start', { course: course.name, tier: tc.label, totalMods, lang: selectedLangName });
+  await obsidianCheckpoint('course-start', { course: course.name, tier: tc.label, totalMods, lang: selectedLangName, resumeFrom });
 
   const chainStart = Date.now();
   let allSaved = true;
 
-  for (let mn = 1; mn <= totalMods; mn++) {
+  for (let mn = resumeFrom; mn <= totalMods; mn++) {
     if (!chainRunning) { log('Stopped.'); break; }
 
     // Update module select to current
@@ -1588,7 +1596,8 @@ async function buildFullCourse() {
       clearInterval(swInterval);
       const errSecs = ((Date.now() - modStart) / 1000).toFixed(1);
       log('ERROR on M' + mn + ': ' + err.message);
-      showStatus('error', 'Failed on M' + mn + ': ' + err.message);
+      showStatus('error', 'Failed on M' + mn + ': ' + err.message + ' — Resume field set to M' + mn + ', click Build Full Course to retry.');
+      document.getElementById('resumeFrom').value = mn;
       await obsidianCheckpoint('mod-error', { n: mn, title: mod.title, secs: errSecs, error: err.message });
       allSaved = false;
       break;
@@ -1602,8 +1611,9 @@ async function buildFullCourse() {
   }
 
   const totalMins = ((Date.now() - chainStart) / 60000).toFixed(1);
+  const builtCount = totalMods - resumeFrom + 1;
   log('');
-  log('=== COMPLETE: ' + totalMods + ' modules in ' + totalMins + ' min ===');
+  log('=== COMPLETE: ' + (resumeFrom > 1 ? builtCount + ' of ' + totalMods : totalMods) + ' modules in ' + totalMins + ' min ===');
 
   if (!allSaved && !chainRunning) {
     await obsidianCheckpoint('course-stopped', { stoppedAt: document.getElementById('moduleSelect').value, totalMods });
@@ -1682,6 +1692,7 @@ async function buildFullCourse() {
   generateBtn.disabled = false;
   chainBtn.disabled = false;
   chainBtn.textContent = 'Build Full Course';
+  if (allSaved) document.getElementById('resumeFrom').value = 1;
 }
 
 async function generate() {

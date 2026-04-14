@@ -388,7 +388,7 @@ const REPO_OWNER  = 'AesopScott';
 const REPO_NAME   = 'Aesop';
 const DRAFTS_PATH = 'aip/drafts';
 // GitHub PAT — only needed for write operations (approve/reject)
-// Reads use unauthenticated GitHub API (public repo)
+// Reads use site-local index.json (no API needed)
 let GH_TOKEN = sessionStorage.getItem('aip_gh_token') || '';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -406,12 +406,12 @@ async function loadDrafts() {
   const container = document.getElementById('drafts-container');
 
   try {
-    // List all files in aip/drafts/
-    const listRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}`);
-    if (!listRes.ok) throw new Error(`GitHub API: ${listRes.status}`);
-    const files = await listRes.json();
+    // Load from site-local index (no GitHub API needed for reads)
+    const indexRes = await fetch(`../${DRAFTS_PATH}/index.json`);
+    if (!indexRes.ok) throw new Error(`Could not load draft index (${indexRes.status})`);
+    const fileList = await indexRes.json();
 
-    const jsonFiles = files.filter(f => f.name.endsWith('.json'));
+    const jsonFiles = fileList.filter(f => f.endsWith('.json') && f !== 'index.json');
     if (jsonFiles.length === 0) {
       container.innerHTML = '<div class="state-msg">No drafts yet. The agent runs every Monday.</div>';
       updateSubtitle(0);
@@ -419,12 +419,12 @@ async function loadDrafts() {
       return;
     }
 
-    // Fetch each draft JSON
+    // Fetch each draft JSON from the site directly
     const drafts = await Promise.all(jsonFiles.map(async f => {
-      const res = await fetch(f.download_url);
+      const res = await fetch(`../${DRAFTS_PATH}/${f}`);
       const data = await res.json();
-      data._filename = f.name;
-      data._sha = f.sha;
+      data._filename = f;
+      data._sha = '';  // SHA fetched on-demand for write operations
       return data;
     }));
 
@@ -504,6 +504,14 @@ async function setStatus(filename, newStatus) {
   draft.status = newStatus;
 
   try {
+    // Fetch current SHA from API (needed for write operations)
+    if (!draft._sha) {
+      const metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`);
+      if (!metaRes.ok) throw new Error(`Could not fetch file SHA: ${metaRes.status}`);
+      const meta = await metaRes.json();
+      draft._sha = meta.sha;
+    }
+
     // Update the JSON file in the repo
     const updated = { ...draft };
     delete updated._filename;

@@ -1064,7 +1064,8 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         throw new Error('Claude: ' + (e.error?.message || resp.status));
       }
       const data = await resp.json();
-      return data.content[0]?.text || '';
+      const usage = data.usage ? { input: data.usage.input_tokens || 0, output: data.usage.output_tokens || 0 } : null;
+      return { text: data.content[0]?.text || '', usage };
     }
 
     async function callGemini(prompt, apiKey) {
@@ -1085,7 +1086,9 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       // We need the LAST text part, not the first.
       const parts = data.candidates?.[0]?.content?.parts || [];
       const textParts = parts.filter(p => p.text != null);
-      return textParts.length > 0 ? textParts[textParts.length - 1].text : '';
+      const um = data.usageMetadata;
+      const usage = um ? { input: um.promptTokenCount || 0, output: um.candidatesTokenCount || 0, thinking: um.thoughtsTokenCount || 0 } : null;
+      return { text: textParts.length > 0 ? textParts[textParts.length - 1].text : '', usage };
     }
 
     async function callPerplexity(prompt, apiKey) {
@@ -1107,7 +1110,9 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         throw new Error('Perplexity: ' + (e.error?.message || resp.status));
       }
       const data = await resp.json();
-      return data.choices?.[0]?.message?.content || '';
+      const u = data.usage;
+      const usage = u ? { input: u.prompt_tokens || 0, output: u.completion_tokens || 0 } : null;
+      return { text: data.choices?.[0]?.message?.content || '', usage };
     }
 
     function parseEvalResponse(raw) {
@@ -1752,7 +1757,8 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       }
 
       let grandTotal = {};
-      reviewers.forEach(r => { grandTotal[r.name] = { total: 0, count: 0 }; });
+      let tokenUsage = {};
+      reviewers.forEach(r => { grandTotal[r.name] = { total: 0, count: 0 }; tokenUsage[r.name] = { input: 0, output: 0, thinking: 0 }; });
       // Seed grandTotal from existing modules (for resumed runs)
       if (fullReport.modules) {
         for (const mod of fullReport.modules) {
@@ -1828,7 +1834,17 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
             let result;
             let raw;
             try {
-              raw = await r.fn(prompt, r.apiKey);
+              const response = await r.fn(prompt, r.apiKey);
+              raw = response.text;
+              if (response.usage) {
+                tokenUsage[r.name].input += response.usage.input;
+                tokenUsage[r.name].output += response.usage.output;
+                if (response.usage.thinking) tokenUsage[r.name].thinking += response.usage.thinking;
+                const tkIn = response.usage.input.toLocaleString();
+                const tkOut = response.usage.output.toLocaleString();
+                const tkThink = response.usage.thinking ? ' + ' + response.usage.thinking.toLocaleString() + ' thinking' : '';
+                logLine('    Tokens: ' + tkIn + ' in / ' + tkOut + ' out' + tkThink, 'info');
+              }
               const parsed = parseEvalResponse(raw);
               const total = calcTotalScore(parsed.scores);
               const d5 = calcDimScore(parsed.scores, 5);
@@ -1942,6 +1958,26 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
           fullReport.summary.panelAverage = panelAvg;
           logLine('  PANEL AVERAGE: ' + panelAvg + '/100', 'info');
         }
+
+        // Token usage summary
+        logLine('', 'info');
+        logLine('═══════════════════════════════════════════════════', 'info');
+        logLine('  TOKEN USAGE', 'info');
+        logLine('═══════════════════════════════════════════════════', 'info');
+        let totalTokensAll = 0;
+        const tokenSummary = {};
+        for (const [name, tk] of Object.entries(tokenUsage)) {
+          const total = tk.input + tk.output + tk.thinking;
+          if (total > 0) {
+            const thinkStr = tk.thinking ? ' + ' + tk.thinking.toLocaleString() + ' thinking' : '';
+            logLine('  ' + name + ': ' + tk.input.toLocaleString() + ' in / ' + tk.output.toLocaleString() + ' out' + thinkStr + ' = ' + total.toLocaleString() + ' total', 'info');
+            totalTokensAll += total;
+            tokenSummary[name] = { input: tk.input, output: tk.output, thinking: tk.thinking || 0, total: total };
+          }
+        }
+        logLine('  TOTAL: ' + totalTokensAll.toLocaleString() + ' tokens', 'info');
+        fullReport.tokenUsage = tokenSummary;
+        fullReport.totalTokens = totalTokensAll;
 
         // Final save to GitHub
         logLine('', 'info');

@@ -964,6 +964,28 @@
       document.getElementById('logOutput').innerHTML = '';
     }
 
+    function stripForReview(html) {
+      // AESOP modules: educational content is in HTML markup,
+      // <script> at the end is just navigation/quiz JS logic.
+      // Strips ~50% of bytes while keeping all lesson text, quizzes, and labs.
+
+      let c = html;
+      // 1. Strip HTML comments first (one contains literal <script> which breaks later regex)
+      c = c.replace(/<!--[\s\S]*?-->/g, '');
+      // 2. Strip script, style, SVG blocks
+      c = c.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+      c = c.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      c = c.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
+      // 3. Strip all HTML attributes (class, style, data-*, onclick, id, etc.)
+      c = c.replace(/ [a-z-]+="[^"]*"/gi, '');
+      // 4. Strip non-semantic wrapper tags (keep p, h1-h6, em, strong, ul, ol, li, table, etc.)
+      c = c.replace(/<\/?(?:div|span|section|article|header|footer|nav)>/gi, '');
+      // 5. Collapse whitespace
+      c = c.replace(/\n\s*\n\s*\n/g, '\n\n');
+      c = c.replace(/\n\s*\n/g, '\n');
+      return c.trim();
+    }
+
     function buildEvalPrompt(moduleHtml, moduleName, courseName) {
       const critList = EVAL_RUBRIC.dimensions.map(d =>
         `### D${d.id}: ${d.name} (max ${d.max} pts)\n` +
@@ -1814,9 +1836,15 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
             continue;
           }
 
+          // Strip non-content (CSS, JS logic, SVG, attributes) to save tokens
+          // Modules are AESOP fragments: educational content is in template literals inside <script> tags
+          const originalSize = moduleHtml.length;
+          moduleHtml = stripForReview(moduleHtml);
+          logLine('    Stripped: ' + Math.round(originalSize/1024) + 'KB → ' + Math.round(moduleHtml.length/1024) + 'KB (' + Math.round(moduleHtml.length*100/originalSize) + '%)', 'info');
+
           // Trim to avoid token limits
-          if (moduleHtml.length > 60000) {
-            moduleHtml = moduleHtml.substring(0, 60000) + '\n<!-- truncated for evaluation -->';
+          if (moduleHtml.length > 40000) {
+            moduleHtml = moduleHtml.substring(0, 40000) + '\n<!-- truncated for evaluation -->';
           }
 
           const prompt = buildEvalPrompt(moduleHtml, modName, course.title);

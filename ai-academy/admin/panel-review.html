@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.10 | 2026-04-14 -->
+<!-- v1.0.11 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1070,10 +1070,23 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       let text = raw.trim();
       // Strip markdown fences
       text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+
+      // 1. Try parsing raw text directly (works for clean JSON from JSON-mode APIs)
+      try {
+        const direct = JSON.parse(text);
+        if (direct.scores) return direct;
+      } catch(_) {}
+
+      // 2. Extract JSON object and try parsing it clean
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON found in response');
+      try {
+        const extracted = JSON.parse(jsonMatch[0]);
+        if (extracted.scores) return extracted;
+      } catch(_) {}
+
+      // 3. Apply regex cleanup for messy LLM output (non-JSON-mode)
       let jsonStr = jsonMatch[0];
-      // Clean common LLM JSON quirks
       jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');              // trailing commas
       jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');                  // single-line comments
       jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');            // block comments
@@ -1087,28 +1100,19 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       try {
         parsed = JSON.parse(jsonStr);
       } catch(e1) {
-        // Second attempt: extract score values more aggressively
-        try {
-          // Replace any non-numeric value after a colon in score contexts with just the leading number
-          let fixed = jsonStr.replace(/("c\d+")\s*:\s*"?(\d+)[^,}\n]*/g, '$1: $2');
-          fixed = fixed.replace(/,\s*([\]}])/g, '$1');
-          parsed = JSON.parse(fixed);
-        } catch(e2) {
-          // Last resort: try to extract just the scores object
-          const scoresMatch = jsonStr.match(/"scores"\s*:\s*(\{[\s\S]*\})\s*(?:,\s*"|\s*\})/);
-          if (scoresMatch) {
-            let scStr = scoresMatch[1];
-            // Aggressively clean score values to just numbers
-            scStr = scStr.replace(/("c\d+")\s*:\s*"?(\d+)[^,}\n]*/g, '$1: $2');
-            scStr = scStr.replace(/,\s*([\]}])/g, '$1');
-            try {
-              parsed = { scores: JSON.parse(scStr) };
-            } catch(e3) {
-              throw new Error(e1.message);
-            }
-          } else {
+        // Last resort: extract just the scores object
+        const scoresMatch = jsonStr.match(/"scores"\s*:\s*(\{[\s\S]*\})\s*(?:,\s*"|\s*\})/);
+        if (scoresMatch) {
+          let scStr = scoresMatch[1];
+          scStr = scStr.replace(/("c\d+")\s*:\s*"?(\d+)[^,}\n]*/g, '$1: $2');
+          scStr = scStr.replace(/,\s*([\]}])/g, '$1');
+          try {
+            parsed = { scores: JSON.parse(scStr) };
+          } catch(e3) {
             throw new Error(e1.message);
           }
+        } else {
+          throw new Error(e1.message);
         }
       }
       if (!parsed.scores) throw new Error('Missing scores in response');

@@ -29,6 +29,8 @@ CHUNK_OVERLAP     = 50    # word overlap between chunks
 EMBED_BATCH       = 20    # vectors per Voyage API call (larger = fewer calls)
 UPSERT_BATCH      = 50    # vectors per Pinecone upsert
 EMBED_DELAY       = 0.5   # seconds between embedding batches (rate limit guard)
+UPSERT_DELAY      = 1.0   # seconds between Pinecone upsert batches
+UPSERT_RETRIES    = 5     # max retries per upsert batch on 429/5xx
 
 # ── HTML PARSING ─────────────────────────────────────────────────────────────
 
@@ -195,7 +197,7 @@ def main():
 
     print(f"  Embedding complete in {time.time() - embed_start:.0f}s")
 
-    # Upsert to Pinecone in batches
+    # Upsert to Pinecone in batches with retry on rate limits
     print("\nUpserting to Pinecone...")
     for batch_start in range(0, len(all_vectors), UPSERT_BATCH):
         batch = all_vectors[batch_start : batch_start + UPSERT_BATCH]
@@ -203,9 +205,23 @@ def main():
             (v["id"], v["embedding"], v["metadata"])
             for v in batch
         ]
-        index.upsert(vectors=upsert_data)
+
+        for attempt in range(UPSERT_RETRIES):
+            try:
+                index.upsert(vectors=upsert_data)
+                break
+            except Exception as e:
+                err_str = str(e)
+                if ("429" in err_str or "Too Many Requests" in err_str or "500" in err_str or "503" in err_str) and attempt < UPSERT_RETRIES - 1:
+                    wait = min(3 * 2 ** attempt, 60)
+                    print(f"    Pinecone rate limited, retrying in {wait}s... (attempt {attempt + 1})")
+                    time.sleep(wait)
+                    continue
+                raise
+
         done = min(batch_start + UPSERT_BATCH, len(all_vectors))
         print(f"  Upserted {done}/{len(all_vectors)}")
+        time.sleep(UPSERT_DELAY)
 
     # Final stats
     stats = index.describe_index_stats()

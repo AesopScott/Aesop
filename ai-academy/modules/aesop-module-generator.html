@@ -202,6 +202,25 @@ textarea{resize:vertical;min-height:80px;}
 </div>
 
 <script>
+/* ── fetchWithRetry: retries transient network / 529 / 5xx errors ── */
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const resp = await fetch(url, options);
+      if (resp.ok || resp.status < 500) return resp;   // success or client error — don't retry
+      if (attempt === maxRetries) return resp;          // last attempt — return whatever we got
+      const wait = Math.min(1000 * 2 ** (attempt - 1), 8000);
+      console.warn(`fetchWithRetry: HTTP ${resp.status}, retrying in ${wait}ms (${attempt}/${maxRetries})`);
+      await new Promise(r => setTimeout(r, wait));
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      const wait = Math.min(1000 * 2 ** (attempt - 1), 8000);
+      console.warn(`fetchWithRetry: network error, retrying in ${wait}ms (${attempt}/${maxRetries})`, err);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+}
+
 /* COURSES and REGISTRY_META are loaded from courses-data.json at init time.
    Keeping them in a separate JSON file prevents data loss from file truncation
    during edits to this HTML. */

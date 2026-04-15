@@ -1303,14 +1303,32 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         logLine(`Found ${courseData.length} live courses`, 'success');
 
         // Try to load existing eval reports for each course
+        // Use GitHub API (not relative URL) so we always get the latest version
+        // even if Cloudflare/CDN is caching stale files
         logLine('Checking existing eval reports...', 'info');
+        const pat = document.getElementById('apiKeyGitHub')?.value?.trim();
         for (const course of courseData) {
           const folder = getFolderName(course.id);
           const reportName = folder + '-eval-report.json';
           try {
-            const rResp = await fetch('../modules/' + folder + '/' + reportName);
-            if (rResp.ok) {
-              course._evalReport = await rResp.json();
+            if (pat) {
+              // Fetch from GitHub API for freshest data
+              const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_BASE}/${folder}/${reportName}`;
+              const rResp = await fetch(apiUrl, {
+                headers: { 'Authorization': 'token ' + pat, 'Accept': 'application/vnd.github.v3+json' }
+              });
+              if (rResp.ok) {
+                const rData = await rResp.json();
+                if (rData.content) {
+                  course._evalReport = JSON.parse(atob(rData.content.replace(/\n/g, '')));
+                }
+              }
+            } else {
+              // Fallback to relative URL if no PAT
+              const rResp = await fetch('../modules/' + folder + '/' + reportName);
+              if (rResp.ok) {
+                course._evalReport = await rResp.json();
+              }
             }
           } catch(e) { /* no report yet */ }
         }

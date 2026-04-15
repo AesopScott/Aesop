@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.6 | 2026-04-14 -->
+<!-- v1.0.7 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1053,10 +1053,30 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
 
     function parseEvalResponse(raw) {
       let text = raw.trim();
+      // Strip markdown fences
       text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON found in response');
-      const parsed = JSON.parse(jsonMatch[0]);
+      let jsonStr = jsonMatch[0];
+      // Clean common LLM JSON quirks
+      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');          // trailing commas
+      jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');              // single-line comments
+      jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');        // block comments
+      jsonStr = jsonStr.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // unquoted keys
+      jsonStr = jsonStr.replace(/:\s*'([^']*)'/g, ': "$1"');    // single-quoted values
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch(e) {
+        // Last resort: try to extract just the scores object
+        const scoresMatch = jsonStr.match(/"scores"\s*:\s*(\{[\s\S]*?\})\s*[,}]/);
+        if (scoresMatch) {
+          let scStr = scoresMatch[1].replace(/,\s*([\]}])/g, '$1');
+          parsed = { scores: JSON.parse(scStr) };
+        } else {
+          throw new Error(e.message);
+        }
+      }
       if (!parsed.scores) throw new Error('Missing scores in response');
       return parsed;
     }

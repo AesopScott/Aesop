@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.8 | 2026-04-14 -->
+<!-- v1.0.9 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1070,22 +1070,41 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       if (!jsonMatch) throw new Error('No JSON found in response');
       let jsonStr = jsonMatch[0];
       // Clean common LLM JSON quirks
-      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');          // trailing commas
-      jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');              // single-line comments
-      jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');        // block comments
-      jsonStr = jsonStr.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":'); // unquoted keys
-      jsonStr = jsonStr.replace(/:\s*'([^']*)'/g, ': "$1"');    // single-quoted values
+      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');              // trailing commas
+      jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');                  // single-line comments
+      jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');            // block comments
+      jsonStr = jsonStr.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');  // unquoted keys
+      jsonStr = jsonStr.replace(/:\s*'([^']*)'/g, ': "$1"');        // single-quoted values
+      jsonStr = jsonStr.replace(/:\s*(\d+)\s*\/\s*\d+/g, ': $1');   // "4/5" → 4
+      jsonStr = jsonStr.replace(/:\s*(\d+)\s*\([^)]*\)/g, ': $1');  // "4 (good)" → 4
+      jsonStr = jsonStr.replace(/:\s*(\d+)\s*-\s*[A-Za-z][^\n,}]*/g, ': $1'); // "4 - excellent" → 4
+
       let parsed;
       try {
         parsed = JSON.parse(jsonStr);
-      } catch(e) {
-        // Last resort: try to extract just the scores object
-        const scoresMatch = jsonStr.match(/"scores"\s*:\s*(\{[\s\S]*?\})\s*[,}]/);
-        if (scoresMatch) {
-          let scStr = scoresMatch[1].replace(/,\s*([\]}])/g, '$1');
-          parsed = { scores: JSON.parse(scStr) };
-        } else {
-          throw new Error(e.message);
+      } catch(e1) {
+        // Second attempt: extract score values more aggressively
+        try {
+          // Replace any non-numeric value after a colon in score contexts with just the leading number
+          let fixed = jsonStr.replace(/("c\d+")\s*:\s*"?(\d+)[^,}\n]*/g, '$1: $2');
+          fixed = fixed.replace(/,\s*([\]}])/g, '$1');
+          parsed = JSON.parse(fixed);
+        } catch(e2) {
+          // Last resort: try to extract just the scores object
+          const scoresMatch = jsonStr.match(/"scores"\s*:\s*(\{[\s\S]*\})\s*(?:,\s*"|\s*\})/);
+          if (scoresMatch) {
+            let scStr = scoresMatch[1];
+            // Aggressively clean score values to just numbers
+            scStr = scStr.replace(/("c\d+")\s*:\s*"?(\d+)[^,}\n]*/g, '$1: $2');
+            scStr = scStr.replace(/,\s*([\]}])/g, '$1');
+            try {
+              parsed = { scores: JSON.parse(scStr) };
+            } catch(e3) {
+              throw new Error(e1.message);
+            }
+          } else {
+            throw new Error(e1.message);
+          }
         }
       }
       if (!parsed.scores) throw new Error('Missing scores in response');
@@ -1515,8 +1534,9 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
             await waitIfPaused();
             logLine('  Sending to ' + r.name + '...', 'info');
             let result;
+            let raw;
             try {
-              const raw = await r.fn(prompt, r.apiKey);
+              raw = await r.fn(prompt, r.apiKey);
               const parsed = parseEvalResponse(raw);
               const total = calcTotalScore(parsed.scores);
               const d5 = calcDimScore(parsed.scores, 5);
@@ -1539,6 +1559,7 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
               };
             } catch(err) {
               logLine('  ' + r.name + ' ERROR: ' + err.message, 'error');
+              if (raw) logLine('  Raw response (first 200 chars): ' + raw.substring(0, 200), 'warn');
               result = { reviewer: r.name, error: err.message };
             }
 

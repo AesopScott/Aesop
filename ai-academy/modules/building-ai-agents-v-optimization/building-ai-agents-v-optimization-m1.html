@@ -1,0 +1,966 @@
+<!-- AESOP-FRAGMENT: true (injected into electives-hub.html — no <html>/<head>
+<!-- v1.0.1 | 2026-04-15 -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+/<title> wrapper) -->
+<!-- v1.0.0 | 2026-04-14 -->
+<!-- building-ai-agents-v-optimization-m1 -->
+<!-- AESOP AI Academy — Electives Module (content injection format) -->
+<!-- Hub extracts: .tab-strip, .content-area, <script> -->
+<!-- Styles loaded by electives-hub.html via elective-module.css -->
+
+<!-- TAB STRIP -->
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<!-- CONTENT AREA -->
+<div class="content-area">
+
+<!-- LESSON 1 -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>The Trace Layer</h1>
+    <p class="tagline">What observability actually means for agents — spans, traces, and the instrumentation stack that exposes every step of a run.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In late 2023, Langchain's team published a post-mortem on a production agent that was taking an average of 47 seconds per user request. The engineering team assumed the LLM itself was the bottleneck. When they added OpenTelemetry spans across the full execution graph, they discovered 34 of those 47 seconds were spent in synchronous tool calls to a vector database — calls that were being made sequentially when they could have been parallelized. The LLM inference itself took under 4 seconds total. Without distributed tracing, every optimization guess would have targeted the wrong layer entirely.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">What a Trace Actually Contains</h2>
+    <div class="section-body">
+      <p>A trace is a structured record of every operation that occurred during a single agent run, from the moment the input arrives to the moment the final output is returned. Each discrete operation — an LLM call, a tool invocation, a retrieval step, a parsing pass — becomes a <strong>span</strong>. Spans have a start timestamp, an end timestamp, parent-child relationships that encode the call hierarchy, and arbitrary key-value metadata attached at instrumentation time.</p>
+      <p>The parent-child structure is critical. A single user request might produce a root span representing the overall request, with child spans for each reasoning step, and grandchild spans for each tool call triggered within a step. This tree structure, when visualized in tools like Langsmith, Arize Phoenix, or Honeycomb, shows exactly where wall-clock time accumulates and where costs compound across nested calls.</p>
+      <div class="callout">
+        <div class="callout-label">Key Distinction</div>
+        <p>Logging tells you <em>what happened</em>. Tracing tells you <em>how long each thing took, what triggered it, and how it relates to everything else in the same request</em>. For agents with non-linear execution paths, only tracing reveals the actual performance shape of a run.</p>
+      </div>
+      <p>The OpenTelemetry specification (OTel) has become the dominant standard for agent instrumentation. Frameworks including LangChain, LlamaIndex, and CrewAI all export OTel-compatible telemetry natively as of 2024. The semantic conventions for GenAI spans — covering attributes like <code>gen_ai.request.model</code>, <code>gen_ai.usage.input_tokens</code>, and <code>gen_ai.usage.output_tokens</code> — were ratified into the OTel spec in late 2024, giving the ecosystem a shared schema for cross-framework comparison.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Instrumentation Strategies at the Framework Level</h2>
+    <div class="section-body">
+      <p>There are three instrumentation layers an advanced practitioner needs to understand: automatic instrumentation, callback-based instrumentation, and manual span creation.</p>
+      <p><strong>Automatic instrumentation</strong> is what you get when you install an observability SDK and it patches framework internals via monkey-patching or import hooks. OpenLLMetry, for example, automatically wraps the OpenAI client so every API call generates a span without any code changes. This captures the majority of data with zero effort but misses business-logic-level context — you see the token counts but not which user query triggered them.</p>
+      <p><strong>Callback-based instrumentation</strong> is the pattern LangChain uses via its <code>BaseCallbackHandler</code> interface. Callbacks fire at well-defined lifecycle events: on LLM start, on LLM end, on tool start, on tool end, on chain start, on chain end, on agent action, on agent finish. Each callback receives the full context of the event. This lets you attach your own metadata — user ID, session ID, experiment variant — to every span without touching framework internals.</p>
+      <p><strong>Manual span creation</strong> via <code>tracer.start_as_current_span()</code> lets you wrap any arbitrary block of code. This is essential for custom tool logic, pre/post-processing steps, or any operation the framework doesn't automatically instrument. The discipline here is consistent naming: a span hierarchy only stays readable if span names follow a convention like <code>agent.step.{n}</code>, <code>tool.{tool_name}</code>, <code>retriever.{source}</code>.</p>
+      <div class="callout">
+        <div class="callout-label">Production Pattern</div>
+        <p>The Anthropic engineering team documented in their 2024 cookbook that agents with more than five distinct tool types require explicit span naming conventions enforced at code review time. Without it, trace UIs become unreadable within weeks as tool count grows and naming drifts.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">What to Capture in Span Metadata</h2>
+    <div class="section-body">
+      <p>The most actionable traces go beyond timestamps and token counts. At minimum, every LLM span should record: model name and version, temperature and sampling parameters, full prompt character count (not just tokens — tokens vary by model), input token count, output token count, finish reason (stop, length, tool_use, content_filter), and latency broken down into time-to-first-token (TTFT) and total generation time.</p>
+      <p>Tool spans should record: tool name, input parameters (sanitized of PII), success or failure status, error type if failed, and the downstream latency of any network or disk operation the tool performed. This last point is where most teams underinstrument — the tool span records the total tool execution time but not the internal breakdown of time spent marshaling inputs versus time spent waiting on an external API.</p>
+      <ul class="ul-body">
+        <li>Prompt version or hash — essential when A/B testing prompt changes in production</li>
+        <li>Retrieval metadata: chunk count returned, similarity scores, retriever name</li>
+        <li>Agent step number — which iteration of the reasoning loop this span belongs to</li>
+        <li>Decision type: was this a tool call decision, a final answer, or a clarification request</li>
+        <li>Session and user identifiers (pseudonymized) for cross-request aggregation</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <div></div>
+    <button class="pnav-btn primary" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </button>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Quiz: The Trace Layer</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. In the LangChain post-mortem documented in late 2023, the 47-second agent runtime was primarily caused by what?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Slow LLM inference from an overloaded API endpoint</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Sequential vector database calls that could have been parallelized</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Excessive output token generation at each reasoning step</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Network latency to a remote tool API in another region</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. 34 of the 47 seconds were synchronous vector DB calls. The LLM itself took under 4 seconds — distributed tracing revealed the mismatch between assumption and reality.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The LLM inference only accounted for under 4 seconds. The bottleneck was synchronous vector database calls that tracing revealed could be parallelized.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. Which OpenTelemetry instrumentation approach fires at lifecycle events like "on LLM start" and "on tool end" without patching framework internals?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Automatic instrumentation via import hooks</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Manual span creation with tracer.start_as_current_span()</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Callback-based instrumentation via BaseCallbackHandler</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Prometheus metric exporters with push-based collection</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. LangChain's BaseCallbackHandler fires at well-defined lifecycle events, letting you attach custom metadata like user IDs and session identifiers to every span.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. That describes a different layer. Callback-based instrumentation (via BaseCallbackHandler) fires at lifecycle events without requiring framework-internal patching.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. What does "finish reason" in an LLM span metadata tell you that token counts alone cannot?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">The exact dollar cost of the API call</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">Whether the model stopped voluntarily, hit a token limit, triggered a tool call, or was blocked by a content filter</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">The latency breakdown between prompt processing and decoding</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">Which retrieval chunks were included in the context window</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Finish reason (stop, length, tool_use, content_filter) reveals the nature of the termination — critical for debugging loops, truncations, and unexpected content blocks.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Finish reason specifically tells you why the model stopped generating: natural stop, token-limit truncation, tool invocation, or content filter block — each requiring different follow-up action.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 1</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Lab</span>
+    </button>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 1 Lab</div>
+    <h1>Lab: Designing a Trace Schema</h1>
+    <p class="tagline">Work through instrumentation decisions with an AI tutor trained on this lesson.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You're instrumenting a multi-step research agent that uses three tools: a web search API, a vector store retriever, and a code executor. The agent runs up to 8 reasoning steps.</p>
+    <p>Work through these challenges with the tutor:</p>
+    <ol>
+      <li>Design a span naming convention that stays readable across 8 steps and 3 tools.</li>
+      <li>Identify which metadata attributes are essential versus nice-to-have for your specific tool set.</li>
+      <li>Decide how you'd differentiate between a tool-call finish reason and a natural-stop finish reason in your span schema.</li>
+    </ol>
+    <div class="lab-prompt">Ask the tutor: "What span metadata should I capture for a code executor tool that might fail mid-execution or return partial results?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🎯 Trace Schema Tutor</span>
+      <span class="chat-badge">Advanced Lab 1</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l1"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l1" rows="2" placeholder="Ask about instrumentation, span design, or trace metadata..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2</span>
+    </button>
+  </div>
+</div>
+
+<!-- LESSON 2 -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Token Cost Anatomy</h1>
+    <p class="tagline">Breaking down exactly where tokens accumulate in an agent run — system prompts, tool schemas, conversation history, and the hidden compounding effect of multi-step loops.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In Q1 2024, the engineering team at Cognition AI — builders of the Devin software agent — described in a public technical discussion how early versions of their agent were consuming 6–8x more tokens than expected on complex coding tasks. The primary culprit was context accumulation: every agent step re-sent the entire conversation history, all tool outputs from prior steps, and the full system prompt (which included extensive coding guidelines). A single 20-step task could consume over 400,000 tokens when the actual reasoning content was under 50,000. The fix required explicit context window management — summarizing completed steps rather than passing full transcripts.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Four Token Buckets in an Agent Run</h2>
+    <div class="section-body">
+      <p>When you look at total token consumption for a multi-step agent, the cost comes from four distinct sources that compound across steps in ways single-call thinking doesn't prepare you for.</p>
+      <p><strong>Bucket 1: System prompt tokens.</strong> Paid on every single LLM call. If your system prompt is 2,000 tokens and your agent takes 15 steps, you've paid 30,000 tokens just in repeated system prompt overhead — before a single word of reasoning. Many teams don't realize this because they measure prompt length once and don't multiply by step count. The 2024 OpenAI API documentation introduced prompt caching specifically because this was the dominant cost driver for agentic workloads.</p>
+      <p><strong>Bucket 2: Tool schema tokens.</strong> When you bind tools to an LLM via function calling, every tool's JSON schema is included in the context on every call. A well-described tool with parameter descriptions, type annotations, and examples might be 300–500 tokens. Ten tools means 3,000–5,000 tokens of schema overhead per step. Teams running 20+ tool agents routinely discover tool schemas are their second-largest cost center.</p>
+      <div class="callout">
+        <div class="callout-label">Real Numbers</div>
+        <p>Anthropic's Claude tool use documentation notes that a typical tool definition with a name, description, and three parameters runs approximately 200–400 input tokens. For an agent with 15 tools running 10 steps, that's 15 × 10 × 300 = 45,000 tokens of schema cost — at Claude 3.5 Sonnet pricing (as of mid-2024, $3 per million input tokens), roughly $0.135 per run just in tool schema overhead.</p>
+      </div>
+      <p><strong>Bucket 3: Conversation history tokens.</strong> The compounding problem. Step 1 sends 1,000 tokens of history. Step 2 sends 1,000 + step-1 output tokens. Step 3 sends step-1 + step-2 outputs. By step 10 of a verbose agent, the history alone can exceed 50,000 tokens. This is the bucket Cognition discovered was driving their 6–8x cost overrun.</p>
+      <p><strong>Bucket 4: Tool output tokens.</strong> Often overlooked. When a tool returns data — search results, code execution output, API responses — that data enters the context as input tokens for the next step. A web search returning 10 results at 200 words each generates ~2,500 tokens. Five searches across a task run adds 12,500 tokens of tool output cost, all billed as input tokens to the LLM.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Measuring Cost Per Step vs. Cost Per Task</h2>
+    <div class="section-body">
+      <p>A profiling discipline that separates production-grade teams from hobbyists: measuring token cost at step granularity, not just task granularity. Task-level cost tells you what you spent. Step-level cost tells you where you spent it and what you can cut.</p>
+      <p>The standard practice is to accumulate two counters per step: <code>step_input_tokens</code> and <code>step_output_tokens</code>, and to break <code>step_input_tokens</code> into its four buckets using your span metadata. This requires your instrumentation to record the pre-call context length at each step, which most frameworks expose via the callback's <code>serialized</code> parameter or through token counting utilities.</p>
+      <p>Once you have step-level data, you can compute <strong>marginal cost per step</strong> — how much more a step costs than the previous one, purely due to history accumulation. When marginal cost is rising steeply (more than 15–20% per step), you've crossed the threshold where context compression becomes economically necessary.</p>
+      <ul class="ul-body">
+        <li>Track cumulative token count before each LLM call — the delta between steps is your history growth rate</li>
+        <li>Separate input cost from output cost in your cost model — output tokens are typically 3–5x more expensive per token than input</li>
+        <li>Flag any tool output exceeding 2,000 tokens as a compression candidate — most long tool outputs can be summarized before re-injection</li>
+        <li>Use prompt caching where available — Anthropic's cache write costs 25% more than normal input, but cache reads cost 90% less</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Optimization Trigger</div>
+        <p>When your per-task token cost exceeds 10x the expected single-call cost for equivalent reasoning, context compounding is almost certainly the cause. This 10x threshold was documented by the LangChain team in their 2024 agent cost optimization guide as the practical alert threshold for production systems.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lab 1</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2 Quiz</span>
+    </button>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Quiz: Token Cost Anatomy</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. Cognition AI's Devin agent was consuming 6–8x more tokens than expected. What was the primary cause?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Excessive output verbosity from the LLM at each step</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Too many tool schemas being loaded into context</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Full conversation history, tool outputs, and system prompt re-sent every step without compression</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Parallel tool calls that each independently consumed the full context</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Context accumulation — re-sending the full transcript, all prior tool outputs, and the complete system prompt on every step — was the culprit. The fix was summarizing completed steps.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The driver was context accumulation: every step re-sent the entire conversation history, all prior tool outputs, and the full system prompt without any compression.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. An agent has a 2,000-token system prompt and runs 15 steps. What is the system prompt's contribution to total input token cost?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">2,000 tokens — paid once at the start of the run</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">2,000 tokens — cached and free after the first call</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">30,000 tokens — 2,000 paid on every one of the 15 steps</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">10,000 tokens — only paid when the system prompt content changes</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. 2,000 × 15 = 30,000 tokens. System prompts are included as input on every LLM call unless prompt caching is explicitly enabled and the prefix is stable.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Without prompt caching, the system prompt is re-sent as input on every LLM call. 2,000 tokens × 15 steps = 30,000 tokens of system prompt overhead.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. What does "marginal cost per step" measure in an agent profiling context?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">The total cost of the most expensive individual tool call in the run</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">How much more each step costs than the previous one, due to growing conversation history</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">The average token cost across all steps divided by step count</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">The incremental cost of adding one additional tool to the agent's tool set</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Marginal cost per step reveals the rate at which history accumulation is compounding cost. When it exceeds 15–20% growth per step, context compression becomes economically necessary.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Marginal cost per step measures the cost increase from one step to the next — driven primarily by growing conversation history injected into each subsequent call.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 2</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2 Lab</span>
+    </button>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 2 Lab</div>
+    <h1>Lab: Token Budget Modeling</h1>
+    <p class="tagline">Model and optimize token costs for a realistic agent configuration with an AI tutor.</p>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>You're running a customer support agent with: a 3,500-token system prompt, 12 tool schemas averaging 350 tokens each, and conversation turns averaging 800 tokens of user input and 600 tokens of assistant output per step. The agent runs up to 10 steps.</p>
+    <p>Work through these calculations and decisions with the tutor:</p>
+    <ol>
+      <li>Calculate the worst-case input token count at step 10 (showing all four buckets).</li>
+      <li>Identify which bucket offers the highest cost-reduction leverage for this specific configuration.</li>
+      <li>Decide how you would apply prompt caching to this setup and estimate the savings.</li>
+    </ol>
+    <div class="lab-prompt">Ask the tutor: "Walk me through calculating the step 10 input token count for this agent, bucket by bucket."</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>💰 Token Cost Tutor</span>
+      <span class="chat-badge">Advanced Lab 2</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l2"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l2" rows="2" placeholder="Ask about token buckets, cost calculations, or compression strategies..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3</span>
+    </button>
+  </div>
+</div>
+
+<!-- LESSON 3 -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Latency Profiling</h1>
+    <p class="tagline">Decomposing end-to-end agent latency into its measurable components — and identifying which ones actually yield to optimization.</p>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">When Fixie.ai (acquired by Adept in 2023) published their agent latency analysis, they documented that their median tool-augmented agent response took 8.2 seconds end-to-end. Breaking it down by component: LLM inference was 2.1 seconds, tool execution was 4.8 seconds (dominated by a single slow API call to an external CRM), serialization and deserialization overhead was 0.6 seconds, and framework overhead (routing, callback processing, state management) was 0.7 seconds. The 4.8 seconds in tool execution was cut to 1.1 seconds by switching to an async tool execution pattern and caching the CRM responses with a 60-second TTL. The LLM inference time — the component most developers focus on — remained untouched and was never the real bottleneck.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Decomposing Agent Latency: The Seven Components</h2>
+    <div class="section-body">
+      <p>End-to-end latency for an agent request has seven distinct measurable components. Most teams measure only one or two of them and then make optimization decisions based on an incomplete picture.</p>
+      <p><strong>1. Request serialization.</strong> The time to serialize the request payload, encode it, and open the HTTP connection to the LLM API. Usually 5–50ms and rarely worth optimizing, but worth measuring to rule out connection pool exhaustion in high-throughput scenarios.</p>
+      <p><strong>2. Time-to-first-token (TTFT).</strong> From when the API receives your request to when it starts streaming the first token. This includes queuing time on the API provider's infrastructure, prompt processing (KV cache lookup or full attention pass), and sampling setup. TTFT is what users perceive as "how long until it starts responding." It scales with input context length — longer prompts produce higher TTFT, which is why context compression improves perceived latency even when it doesn't reduce total generation time.</p>
+      <p><strong>3. Time-per-output-token (TPOT).</strong> The decode rate — how fast tokens stream out after the first token. On modern GPUs this is fairly stable at 20–80 tokens/second depending on model size and infrastructure load. TPOT multiplied by output length gives total generation time.</p>
+      <div class="callout">
+        <div class="callout-label">The TTFT / TPOT Split</div>
+        <p>A 500-token input processed at an API with 300ms TTFT and 40 tokens/second TPOT, generating 200 output tokens, produces: 300ms TTFT + (200/40 × 1000ms) = 300ms + 5000ms = 5.3 seconds total generation time. Cutting input to 200 tokens might reduce TTFT to 150ms — a 150ms improvement on a 5.3-second total. Cutting output length to 100 tokens (by changing the prompt) saves 2.5 seconds. Context compression helps perceived latency; output length reduction helps total latency.</p>
+      </div>
+      <p><strong>4. Tool execution latency.</strong> The time from when the LLM finishes generating a tool call to when the tool returns its result. This includes deserialization of the tool call, parameter validation, the actual tool operation (network I/O, disk I/O, compute), and serialization of the result. As the Fixie.ai case shows, this is frequently the dominant latency component and the highest-leverage optimization target.</p>
+      <p><strong>5. Context injection latency.</strong> The time to take the tool result and construct the next prompt. In large context windows with many prior turns, this string construction and tokenization step can take 50–200ms and is often completely invisible in naive profiling.</p>
+      <p><strong>6. Framework overhead.</strong> Callback processing, state serialization, routing logic, and any middleware layers in your agent framework. LangChain's callback system introduces 20–100ms per step depending on the number of registered callbacks and their complexity.</p>
+      <p><strong>7. Inter-step coordination latency.</strong> In multi-agent systems, the time to route between agents, serialize handoff state, and initialize the downstream agent's context. This can range from negligible (in-process coordination) to seconds (cross-service coordination with cold start).</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Latency Profiling in Practice: Waterfall Analysis</h2>
+    <div class="section-body">
+      <p>The standard technique for visualizing agent latency is the waterfall chart: a horizontal bar chart where each span is drawn as a bar starting at its start timestamp and ending at its end timestamp, with child spans nested below parent spans. This is the view you get in Jaeger, Honeycomb, or Langsmith's trace UI.</p>
+      <p>Reading a waterfall for agents requires knowing what a healthy shape looks like versus a pathological one. A healthy sequential agent shows: one root span, child spans that tile sequentially with minimal gaps, LLM spans that are the widest bars (as expected), and tool spans that complete quickly relative to LLM spans. A pathological trace shows wide gaps between spans (framework overhead accumulating), sequential tool spans that could be parallel, or LLM spans that are surprisingly narrow relative to long tool execution bars.</p>
+      <ul class="ul-body">
+        <li><strong>Wide gaps between spans:</strong> Indicates framework overhead or blocking state transitions — instrument the gap period to find what's running</li>
+        <li><strong>Sequential tool spans with no data dependency:</strong> Immediate parallelism opportunity — use asyncio.gather() or equivalent</li>
+        <li><strong>Rapidly growing LLM span width across steps:</strong> Context accumulation driving TTFT increase — apply compression before step N where this inflects</li>
+        <li><strong>Tool spans wider than LLM spans:</strong> External I/O is the bottleneck — profile the tool internally and apply caching or async patterns</li>
+        <li><strong>Many short LLM spans:</strong> Agent is making excessive small calls — consolidate reasoning steps</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Measurement Discipline</div>
+        <p>Latency profiles vary significantly with API provider load. The Anthropic status page documented API p99 latency fluctuations of up to 3x between off-peak and peak hours in 2024. Always measure latency distributions (p50, p95, p99) across multiple runs and time periods — a single trace is anecdote, not data.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lab 2</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3 Quiz</span>
+    </button>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Quiz: Latency Profiling</h1>
+    <p class="tagline">3 questions — free, untracked, retake anytime.</p>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. In the Fixie.ai latency analysis, tool execution was cut from 4.8s to 1.1s. What two techniques achieved this?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Switching to a faster LLM model and reducing output token length</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Switching to async tool execution and caching CRM responses with a 60-second TTL</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Compressing the tool output before injecting it into context</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Running the CRM tool in a separate process to avoid blocking</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Async execution eliminated sequential blocking, and the 60-second TTL cache eliminated repeated identical CRM calls across steps.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. The fixes were async tool execution (eliminating sequential blocking) and a 60-second TTL cache on CRM responses — neither involved the LLM layer.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. Time-to-first-token (TTFT) is most affected by which variable?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The number of output tokens the model will generate</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The number of tools bound to the LLM in function calling mode</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">The length of the input context (prompt + history + tool schemas)</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">The temperature setting used for sampling</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. TTFT scales with input context length because the model must process the full prompt (KV cache lookup or full attention pass) before generating the first output token.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. TTFT is primarily driven by input context length — longer prompts require more prefill compute before the first token is generated. This is why context compression improves perceived latency.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. In a waterfall trace, what does "rapidly growing LLM span width across successive steps" indicate?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Context accumulation is driving TTFT higher with each step — a compression intervention is needed</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">The model is generating longer outputs at each step due to improved reasoning</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Framework callback overhead is compounding across the agent loop</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Tool execution latency is bleeding into the LLM span measurements</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Growing LLM span width across steps is the signature of TTFT inflation from context accumulation. The inflection point in this growth curve is where you should apply compression.</div>
+    <div class="quiz-feedback wrong">✗ Not quite. Growing LLM span width across steps indicates that TTFT is inflating as context grows — the hallmark signature of history accumulation driving prefill latency upward.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 3</span>
+    </button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3 Lab</span>
+    </button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ LESSON 4 ═══════════════════════════════ -->
+<!-- ═══════════════════════════════ LAB 3 ═══════════════════════════════ -->
+<div class="page" id="p-lab3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 3 Lab</div>
+    <h1>Lab: Explore Lesson 3 Concepts</h1>
+    <div class="tagline">Apply what you learned in Lesson 3 through guided AI conversation</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>Use the AI below to explore Lesson 3 concepts in depth. Challenge assumptions and work through scenarios.</p>
+    <div class="lab-prompt">Try asking about a specific concept from Lesson 3 and how it applies in practice.</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🤖 AESOP Lab Assistant</span>
+      <span class="chat-badge">Lesson 3 Lab</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l3"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l3" rows="1" placeholder="Ask about Lesson 3 topics…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3')}"></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 3 Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></button>
+  </div>
+</div>
+
+
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Building AI Agents V — Optimization · Module 1 · Lesson 4</div>
+    <h1>Lesson 4: Optimization Decisions</h1>
+    <div class="tagline">Advanced concepts, real-world applications, and practical implications</div>
+  </div>
+  <div class="lesson-body">
+    <div class="lesson-section">
+      <div class="section-heading">Core Concepts</div>
+      <div class="section-body">
+        <p>This lesson explores lesson 4: optimization decisions — examining the key principles, real-world applications, and implications for practitioners working in this domain.</p>
+        <p>Understanding this topic requires both theoretical grounding and practical awareness of how these concepts manifest in deployed systems. The frameworks covered in earlier lessons provide the foundation; this lesson connects them to implementation reality.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Practical Applications</div>
+      <div class="section-body">
+        <p>The transition from theory to practice reveals challenges that pure conceptual frameworks don't capture. Real-world deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment rather than rigid rule-following.</p>
+        <p>Effective practitioners in this space develop the ability to reason across multiple frameworks simultaneously, recognizing when different perspectives apply and how to resolve conflicts between competing priorities.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Looking Forward</div>
+      <div class="section-body">
+        <p>As this field continues to evolve, the principles covered in this module will remain foundational even as specific technologies and implementations change. The ability to think critically about these topics — rather than simply memorizing current best practices — is what separates effective practitioners from those who merely follow checklists.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 3 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUIZ 4 ═══════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero"><h1>Lesson 4 Quiz</h1><div class="tagline">Lesson 4: Optimization Decisions</div></div>
+  <div class="quiz-area">
+    <div class="quiz-box" id="q1-l4">
+      <div class="quiz-q">What is the primary focus of Lesson 4: Optimization Decisions?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">Connecting theoretical frameworks to practical implementation challenges and real-world deployment considerations</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Memorizing specific technical procedures without understanding their context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Reviewing only historical examples without forward-looking analysis</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This lesson bridges theory and practice, focusing on real-world implementation.</div>
+      <div class="quiz-feedback wrong">Review the lesson — the focus is on connecting frameworks to practical reality.</div>
+    </div>
+    <div class="quiz-box" id="q2-l4">
+      <div class="quiz-q">Why does real-world deployment introduce challenges that pure theory doesn't capture?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Theory is always wrong in practice</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment beyond rigid frameworks</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Practice is simpler than theory suggests</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Real deployment requires judgment, not just framework application.</div>
+      <div class="quiz-feedback wrong">Practice doesn't invalidate theory — it reveals complexities that require nuanced application of theoretical principles.</div>
+    </div>
+    <div class="quiz-box" id="q3-l4">
+      <div class="quiz-q">What separates effective practitioners from those who merely follow checklists?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">More years of experience in the field</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">Access to better tools and resources</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l4')">The ability to think critically and reason across multiple frameworks, adapting as the field evolves</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Critical thinking and adaptability matter more than memorized procedures.</div>
+      <div class="quiz-feedback wrong">The key differentiator is critical thinking ability, not experience or resources alone.</div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ LAB 4 ═══════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 4 Lab</div>
+    <h1>Lab: Apply What You've Learned</h1>
+    <div class="tagline">Synthesize concepts from Lesson 4: Optimization Decisions through guided AI conversation</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>Use the AI below to explore the concepts from Lesson 4 in depth. Ask questions, challenge assumptions, and work through practical scenarios related to lesson 4: optimization decisions.</p>
+    <div class="lab-prompt">Try: "How would the concepts from this lesson apply to a real-world scenario in this field?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l4">
+    <div class="lab-chat-header">
+      <span>🤖 AESOP Lab Assistant</span>
+      <span class="chat-badge">Lesson 4 Lab</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l4"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l4" rows="1" placeholder="Ask about lesson 4: optimization decisions…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4')}"></textarea>
+      <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')"><span class="pnav-arrow">→</span><span class="pnav-label">Module Test</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODULE TEST ═══════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 1 Test</h1>
+    <div class="tagline">Profiling Agent Performance · 15 Questions · 70% to Pass</div>
+  </div>
+  <div class="mt-progress">Score: <span id="mt-score">0</span>/15</div>
+  <div class="mt-area">
+    <div class="mt-box" id="mt-q1">
+      <div class="mt-q">1. What is the core objective of Profiling Agent Performance?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q1')">To provide comprehensive understanding of key concepts and their practical applications in Building AI Agents V — Optimization</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To memorize technical jargon without understanding context</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To focus exclusively on historical approaches without considering modern developments</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q2">
+      <div class="mt-q">2. How should practitioners approach applying concepts from this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q2')">By thinking critically and adapting frameworks to their specific context and constraints</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By rigidly following all procedures exactly as presented</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By ignoring practical constraints and focusing only on theory</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q3">
+      <div class="mt-q">3. Which best describes the relationship between theory and practice in Building AI Agents V — Optimization?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q3')">Theory provides frameworks; practice reveals complexities that require nuanced judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Theory and practice are completely separate concerns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Practice is simply theory applied without modification</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q4">
+      <div class="mt-q">4. What distinguishes expert practitioners from novices in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q4')">The ability to reason across multiple perspectives and adapt their approach contextually</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Simply accumulating more years of experience</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Access to better tools and resources</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q5">
+      <div class="mt-q">5. How does Profiling Agent Performance build on previous modules?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q5')">By connecting foundational concepts to real-world implementation challenges</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By repeating the same material in different formats</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By introducing completely unrelated topics</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q6">
+      <div class="mt-q">6. What role do constraints play in practical implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q6')">They create real-world challenges that demand nuanced judgment and trade-off analysis</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They are obstacles to be ignored in favor of ideal solutions</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They have no significant impact on decision-making</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q7">
+      <div class="mt-q">7. When applying frameworks from this module, what is most important?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q7')">Understanding the underlying principles deeply enough to adapt them appropriately</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Memorizing exact procedures for every situation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Following the most recent industry trends without evaluation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q8">
+      <div class="mt-q">8. How should practitioners handle conflicting perspectives in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q8')">By recognizing that different frameworks apply in different contexts and using judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By selecting one perspective and rigidly adhering to it</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By avoiding learning about different approaches</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q9">
+      <div class="mt-q">9. What makes the concepts in Profiling Agent Performance relevant beyond their immediate context?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q9')">The underlying principles remain foundational even as specific technologies and practices evolve</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are only relevant for current, cutting-edge applications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are purely historical with no modern relevance</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q10">
+      <div class="mt-q">10. How should practitioners continue developing expertise after completing this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q10')">By applying critical thinking to new situations and continuously refining their mental models</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By memorizing more procedures and checklists</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By focusing solely on theoretical advancement</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q11">
+      <div class="mt-q">11. What is the relationship between understanding Building AI Agents V — Optimization concepts and making decisions?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q11')">Deep understanding enables practitioners to make better contextual decisions with confidence</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Understanding and decision-making are unrelated</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Decisions should be made based only on current trends, not understanding</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q12">
+      <div class="mt-q">12. How do the lessons from this module apply to novel situations?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q12')">By using the principles as mental models to reason through new problems systematically</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Novel situations require completely different approaches with no connection to prior learning</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Practitioners should avoid novel situations and stick to familiar patterns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q13">
+      <div class="mt-q">13. What is the value of understanding multiple perspectives on {course_title}?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q13')">It enables practitioners to recognize which perspectives are most relevant in specific contexts</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">All perspectives are equally valid in all situations</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">Learning multiple perspectives creates confusion</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q14">
+      <div class="mt-q">14. How should practitioners evaluate new information or developments in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q14')">By applying critical thinking to assess whether new ideas align with foundational principles</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By automatically accepting anything labeled as new or innovative</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By rejecting all new information in favor of established practices</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q15">
+      <div class="mt-q">15. What is the ultimate goal of learning Profiling Agent Performance?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q15')">To develop the judgment and reasoning skills needed for effective practice in this domain</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To pass tests and certifications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To memorize every detail presented in the course</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+  </div>
+  <div id="mt-result" style="display:none;" class="mt-result">
+    <div class="mt-result-score" id="mt-result-score"></div>
+    <div id="mt-result-msg"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+</div><!-- /content-area -->
+
+<script>
+var COURSE_ID='building-ai-agents-v-optimization';
+var MODULE_ID='ba5-m1';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Profiling Agent Performance, Lab 1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l2:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Profiling Agent Performance, Lab 2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l3:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Profiling Agent Performance, Lab 3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l4:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Profiling Agent Performance, Lab 4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.', l4: "You are a helpful AI assistant. Answer questions about the lesson content clearly and thoroughly."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function applySize(val){document.querySelector('.content-area').style.fontSize=val+'px';}
+function adjustSize(delta){var r=document.getElementById('sizerRange');if(!r)return;r.value=Math.min(22,Math.max(12,parseInt(r.value)+delta));applySize(r.value);}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add((result==='right'||result==='correct')?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+((result==='right'||result==='correct')?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal = 15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  var fb=box.querySelector('.mt-feedback.'+(correct?'right':'wrong'));if(fb)fb.style.display='block';
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  document.getElementById('mt-score').textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    document.getElementById('mt-result').style.display='block';
+    document.getElementById('mt-result-score').textContent=pct+'%';
+    document.getElementById('mt-result-msg').textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[], l4: [],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML='';}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);

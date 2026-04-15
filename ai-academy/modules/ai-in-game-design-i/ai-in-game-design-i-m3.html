@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<!-- v1.0.4 | 2026-04-15 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI in Game Design I — Module 3: NPC Behavior and Decision-Making</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ai-in-game-design-i-m3 -->
+<!-- Styles loaded by electives-hub.html via elective-module.css -->
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════════
+     LESSON 1: Finite State Machines
+     ═══════════════════════════════════════════ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">AI in Game Design I · Module 3 · Lesson 1</div>
+    <h1>Finite State Machines: The Original NPC Brain</h1>
+    <div class="tagline">How a handful of states and transitions gave early game characters their first illusion of thought.</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="DOCUMENTED CASE — PAC-MAN, 1980">
+      <p class="story-text">When Toru Iwatani's team at Namco shipped <em>Pac-Man</em> in 1980, each ghost ran its own tiny FSM cycling between three states: <em>Chase</em>, <em>Scatter</em>, and <em>Frightened</em>. The transition between Chase and Scatter fired on a hard-coded timer — Blinky chased for 20 seconds, scattered for 7, then repeated. That mechanical rhythm, discovered and documented by Jamey Pittman in his 2009 "Pac-Man Dossier," is why the game feels fair: players learn the pattern, then exploit it. Forty-four years later, <em>FSMs remain the foundational vocabulary of NPC logic in every game engine on Earth.</em></p>
+    </div>
+
+    <div class="lesson-section">
+      <div class="section-heading">What Is a Finite State Machine?</div>
+      <div class="section-body">
+        <p>A <strong>Finite State Machine (FSM)</strong> is a computational model describing a system that can exist in exactly one of a fixed number of <em>states</em> at any moment. Transitions between states are triggered by specific <em>events</em> or <em>conditions</em>. The machine is "finite" because the full list of possible states is known and bounded at design time.</p>
+        <p>In game NPC terms: an enemy guard is either <em>Patrol</em>, <em>Alert</em>, <em>Chase</em>, or <em>Attack</em>. It cannot be in two states simultaneously. When the player crosses a sensor radius, the condition "player spotted" fires a transition from Patrol → Alert. When the guard closes within melee range, another condition fires Alert → Attack. When the player escapes the detection cone for five seconds, Attack → Patrol.</p>
+        <p>Each state contains its own <strong>entry action</strong> (what the NPC does when it arrives), <strong>update action</strong> (what it does every frame while inside the state), and <strong>exit action</strong> (cleanup before leaving). This three-part structure is formalized in the <em>Unity game engine's</em> Animator State Machine system and in Unreal Engine's Behavior Tree node callbacks.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Why FSMs Became the Industry Default</div>
+      <div class="section-body">
+        <p>FSMs dominated NPC design through the 1990s and 2000s for three concrete reasons. First, <strong>predictability</strong>: designers can enumerate every possible state transition on a whiteboard. If a bug appears — the guard walks into a wall forever — the designer knows exactly which transition is missing or mis-conditioned. Second, <strong>performance</strong>: a switch statement over an enum costs almost nothing at runtime, a critical constraint when CPU budgets were measured in kilobytes of addressable memory. Third, <strong>toolability</strong>: FSMs map directly to visual node graphs, enabling non-programmers to wire NPC logic. Valve's <em>Half-Life</em> (1998) used FSMs extensively for its HECU soldiers, and the readable clarity of the system allowed level designers — not just engineers — to tune enemy aggression by adjusting timer thresholds.</p>
+        <p>The canonical limitation of FSMs is the <strong>state explosion problem</strong>. As NPC behavior grows richer, the number of required states multiplies. An enemy that must handle patrol, alert, chase, combat, low-health retreat, flanking, cover-seeking, and group-coordination needs dozens of states and potentially hundreds of transitions. Managing that graph becomes error-prone. This limitation directly motivated the invention of Hierarchical FSMs, Behavior Trees, and utility AI — all topics in this module.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="callout">
+      <div class="callout-label">Core Vocabulary</div>
+      <p><strong>State:</strong> a discrete mode of behavior (Patrol, Chase, Attack). <strong>Transition:</strong> a conditional edge between states. <strong>Event:</strong> the trigger that evaluates a transition condition. <strong>Entry/Update/Exit Actions:</strong> the three lifecycle hooks within each state. Understanding this vocabulary is prerequisite for every NPC system covered in this module.</p>
+    </div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Hierarchical FSMs: Taming Complexity</div>
+      <div class="section-body">
+        <p>A <strong>Hierarchical FSM (HFSM)</strong> nests states inside parent states. A parent state "Combat" might contain children: Melee, Ranged, and Retreat. Any transition defined at the Combat level — such as "player leaves the room → exit Combat" — applies automatically to all children without being duplicated on each child. This dramatically reduces the number of explicit transitions required.</p>
+        <p><em>Halo: Combat Evolved</em> (Bungie, 2001) deployed HFSMs for its Covenant AI. The system was documented in post-mortems by engineers Damián Isla and Robert Zubek. Grunt enemies maintained a top-level state of Engage or Flee, and within Engage they had sub-states for Covering, Throwing Grenade, and Advancing. The hierarchy meant a single "player killed" event at the top level triggered a flee cascade through every sub-state, rather than requiring a transition coded on each individual child node. Halo's AI was widely cited in the 2002–2005 game industry press as a benchmark for believable NPC behavior.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Design Principle</div>
+      <p>When designing an FSM, start with the minimum viable set of states — three to five — and add states only when a behavior cannot be expressed as a transition or an entry/exit action of an existing state. Premature state proliferation is the most common FSM design error in student game projects.</p>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-l1">
+      <div class="quiz-q">1. In Pac-Man (1980), the ghost AI was documented to cycle between three FSM states. Which of the following correctly names all three?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">A. Hunt, Retreat, Idle</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">B. Seek, Evade, Wander</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l1')">C. Chase, Scatter, Frightened</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">D. Patrol, Alert, Attack</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. Jamey Pittman's 2009 "Pac-Man Dossier" documented exactly these three states and the timer-driven transitions between them.</div>
+      <div class="quiz-feedback wrong">✗ Not quite. Pac-Man's ghosts used Chase, Scatter, and Frightened — the three states documented by Jamey Pittman in 2009.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-l1">
+      <div class="quiz-q">2. What is the primary reason that FSMs became the dominant NPC logic system through the 1990s and 2000s?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">A. They can model infinite behaviors without state explosion.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l1')">B. They are predictable, cheap to execute, and easy to visualize as node graphs accessible to non-programmers.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">C. They natively support learning and adaptation over time.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">D. They require no transition conditions, simplifying design.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. Predictability, runtime performance, and toolability — especially for non-programmer designers — are the three core advantages.</div>
+      <div class="quiz-feedback wrong">✗ The correct answer is B. FSMs succeeded because they are predictable, runtime-cheap, and representable as visual graphs that level designers can edit directly.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-l1">
+      <div class="quiz-q">3. Hierarchical FSMs (HFSMs) solve which specific limitation of flat FSMs?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l1')">A. They eliminate the need for transition conditions.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l1')">B. They allow an NPC to be in multiple states simultaneously.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l1')">C. They replace all transition logic with neural networks.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l1')">D. They reduce state explosion by allowing parent states to share transitions across all child states.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. By nesting states inside parent states, HFSMs let a single parent-level transition propagate to all children, dramatically cutting the number of explicitly coded edges.</div>
+      <div class="quiz-feedback wrong">✗ The answer is D. HFSMs allow parent states to own transitions that apply to all children, solving the combinatorial explosion of edges in flat FSMs.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1: Design an NPC FSM</h1>
+    <div class="tagline">Prototype a guard's state machine with AI guidance.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're designing a stealth-game guard NPC. Work with the AI assistant to define states, transitions, entry/exit actions, and edge cases for your FSM. The assistant will ask probing questions, suggest improvements, and flag common design errors like state explosion or missing transitions.</p>
+      <p>Describe your initial state list, then iterate based on feedback. Try to reach at least three full design exchanges.</p>
+      <div class="lab-prompt">Try asking: "I want my guard to have Patrol, Alert, and Chase states — what transitions do I need between them, and am I missing any states?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l1">
+      <div class="lab-chat-header">
+        <span>FSM Design Assistant</span>
+        <span class="chat-badge">AI</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1"></div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" rows="1" placeholder="Describe your NPC states..." onkeydown="chatKeydown(event,'l1')"></textarea>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LESSON 2: Behavior Trees
+     ═══════════════════════════════════════════ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">AI in Game Design I · Module 3 · Lesson 2</div>
+    <h1>Behavior Trees: Modular Logic for Complex NPCs</h1>
+    <div class="tagline">The data structure that replaced tangled FSM spaghetti and became the standard in AAA game AI.</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="DOCUMENTED CASE — HALO 2, 2004">
+      <p class="story-text">By 2004, Bungie's engineers knew their HFSM approach for <em>Halo: Combat Evolved</em> was reaching its limits. For <em>Halo 2</em>, they restructured their AI pipeline around modular, composable logic trees. Lead AI engineer Damián Isla's 2005 GDC presentation "Handling Complexity in the Halo 2 AI" described the core problem: adding a new behavior to an HFSM required touching dozens of existing transitions. The new system — a direct ancestor of what the industry would later standardize as Behavior Trees — allowed a designer to <em>add a "use vehicle" behavior without modifying any existing combat logic.</em> The modularity was the breakthrough. Isla's talk seeded behavior tree adoption across the industry.</p>
+    </div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Anatomy of a Behavior Tree</div>
+      <div class="section-body">
+        <p>A <strong>Behavior Tree (BT)</strong> is a directed acyclic graph where the root node is ticked every frame (or at a set interval), and execution flows downward through parent nodes to leaf nodes. Each node returns one of three statuses: <em>Success</em>, <em>Failure</em>, or <em>Running</em>. The tree is evaluated top-down, and parent nodes use their children's return values to decide what to do next.</p>
+        <p>The four fundamental node types are:</p>
+        <p><strong>Sequence nodes</strong> execute children left-to-right and return Failure the moment any child fails. Think of them as logical AND: "move to cover AND crouch AND shoot." If any step fails, the whole sequence fails.</p>
+        <p><strong>Selector nodes</strong> (also called Fallback nodes) execute children left-to-right and return Success the moment any child succeeds. Think of them as logical OR: "try melee — if that fails, try ranged — if that fails, try flee." The first successful option wins.</p>
+        <p><strong>Decorator nodes</strong> wrap a single child and modify its behavior — for example, Inverter (flip Success/Failure), Repeater (run N times), or UntilFail (run until child fails).</p>
+        <p><strong>Leaf nodes</strong> are the actual actions (Move, Attack, PlayAnimation) and conditions (IsPlayerVisible, HasAmmo, HealthBelow50Percent). They perform real work and report whether they succeeded or are still running.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="callout">
+      <div class="callout-label">Key Insight</div>
+      <p>The critical difference between a BT and an FSM is that a BT has <strong>no persistent state transitions</strong>. Every tick starts fresh from the root. The NPC's "current behavior" emerges from which branches succeed on that tick, based on the current world state. This makes BTs far easier to extend — new behaviors are new branches, not new states with new transitions wired to every existing state.</p>
+    </div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Real-World BT Implementations</div>
+      <div class="section-body">
+        <p><em>Unreal Engine 4 and 5</em> ship a built-in Behavior Tree editor as a first-class tool. Epic's documentation describes their BT implementation as "event-driven," meaning nodes only re-evaluate when their observed conditions change — a significant performance optimization over naive per-tick traversal. The Unreal BT system pairs with a <strong>Blackboard</strong>: a shared memory key-value store where the NPC writes and reads world-state values like "last known player position," "current health," and "is cover available." Conditions in the tree read from the Blackboard rather than querying the world directly each frame.</p>
+        <p>The <em>The Last of Us</em> (Naughty Dog, 2013) AI system, described by lead AI programmer Max Dyckhoff in a 2013 GDC post-mortem, combined behavior trees with a sophisticated perception system. Clickers navigated entirely on sound cues written to a shared perception blackboard. The BT's condition nodes read echolocation hit data; action nodes triggered path-finding and lunge attacks. The result was enemies that felt genuinely reactive without any machine learning.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Common BT Design Mistakes</div>
+      <div class="section-body">
+        <p>The most frequent error in student-designed behavior trees is <strong>the "god sequence"</strong> — a single Sequence node with twenty children that attempts to encode an entire NPC's behavior in one linear chain. When the fourth child fails, the NPC does nothing for that tick, leaving it standing still mid-combat. The fix is to restructure logic into a Selector at the top level, with separate Sequences for each major behavioral mode (combat, search, patrol), so that failure in one mode falls through to the next.</p>
+        <p>A second common mistake is <strong>missing Running status propagation</strong>. If a Move action takes three seconds to complete, it must return Running on every intermediate tick. Forgetting to handle Running causes trees to restart the move action each frame, producing jittering movement or immediate failure.</p>
+      </div>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Design Pattern</div>
+      <p>Structure your BT root as a Selector containing three to five high-priority Sequences: Dead, Injured-Retreat, Combat, Alert-Search, and Patrol. Priority descends left to right. This ensures a dead NPC never starts patrolling, and a wounded NPC always retreats before attacking. This pattern directly mirrors the documented structure used in Unreal Engine's built-in AI character templates.</p>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">Lesson 2 Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-l2">
+      <div class="quiz-q">1. A Selector node in a Behavior Tree returns Success when:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">A. All children succeed in sequence.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l2')">B. The first child that succeeds is found — execution stops there.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">C. A random child is selected and it returns Running.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">D. All children fail, triggering a fallback root restart.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. Selector nodes function as logical OR — they try children left-to-right and return Success the moment any child succeeds.</div>
+      <div class="quiz-feedback wrong">✗ A Selector (Fallback) node returns Success on the first child that succeeds, making it a logical OR structure.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-l2">
+      <div class="quiz-q">2. In Unreal Engine's Behavior Tree system, what is the purpose of the Blackboard?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">A. It renders debug overlays showing which tree node is active.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">B. It stores the compiled bytecode of the behavior tree.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l2')">C. It is a shared key-value memory store that NPC condition nodes read from and action nodes write to.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">D. It is a visual canvas where designers draw state transitions.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. The Blackboard is a shared memory space — NPC perception systems write data like "last known player position," and BT condition nodes read those values instead of querying the world each frame.</div>
+      <div class="quiz-feedback wrong">✗ The Blackboard is a shared key-value memory store. Action nodes write data to it; condition nodes read from it to evaluate transitions.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-l2">
+      <div class="quiz-q">3. Damián Isla's 2005 GDC presentation on Halo 2 AI highlighted which core advantage of their new tree-based system over their previous HFSM approach?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l2')">A. It reduced the total number of NPC behaviors available in the game.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l2')">B. It eliminated all runtime CPU cost by pre-computing decisions.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l2')">C. It replaced designer control with automatic machine-learning tuning.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l2')">D. New behaviors could be added as new branches without modifying existing combat logic.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. Modularity was the key breakthrough — adding a "use vehicle" behavior required no changes to the existing combat or patrol branches, a sharp contrast to the HFSM approach.</div>
+      <div class="quiz-feedback wrong">✗ The breakthrough was modularity: new behaviors became new branches, not new states requiring new transitions wired throughout the existing graph.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2: Build a Behavior Tree</h1>
+    <div class="tagline">Design a complete BT structure for a combat NPC with AI guidance.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>Design a behavior tree for an enemy soldier NPC in a third-person shooter. You need to handle: patrol, player detection, taking cover, attacking, retreating when low health, and calling for reinforcements. Work with the AI assistant to structure your Selector/Sequence hierarchy and identify your leaf-node conditions and actions.</p>
+      <p>The assistant will critique your proposed tree structure, suggest missing nodes, and explain when to use Sequence vs. Selector. Aim for at least three substantive exchanges.</p>
+      <div class="lab-prompt">Try asking: "I want my root to be a Selector with children: Combat, Search, and Patrol. Does that priority order make sense, and what should each child's internal structure look like?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l2">
+      <div class="lab-chat-header">
+        <span>Behavior Tree Assistant</span>
+        <span class="chat-badge">AI</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2"></div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" rows="1" placeholder="Describe your BT structure..." onkeydown="chatKeydown(event,'l2')"></textarea>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LESSON 3: Utility AI and Decision Scoring
+     ═══════════════════════════════════════════ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">AI in Game Design I · Module 3 · Lesson 3</div>
+    <h1>Utility AI: Choosing Behavior by Score</h1>
+    <div class="tagline">When binary logic isn't enough — how weighted scoring produces nuanced, context-sensitive NPC decisions.</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="DOCUMENTED CASE — THE SIMS, 2000">
+      <p class="story-text">Will Wright's <em>The Sims</em> shipped in 2000 with no FSM and no behavior tree. Instead, each Sim evaluated every possible action — Sleep, Eat, Socialize, Use Toilet, Watch TV — by computing a <em>utility score</em> for each, then selected the highest scorer. The score for "Sleep" factored in the Sim's current Energy motive, time of day, and proximity to a bed. The score for "Eat" factored in Hunger motive and food availability. This system, described by Wright and lead programmer Jamie Doornbos in Gamasutra's 2000 postmortem, produced emergent comedic behaviors — Sims collapsing from exhaustion mid-conversation rather than politely excusing themselves — precisely because <em>no designer hard-coded the priority order between needs.</em> The scores determined everything.</p>
+    </div>
+
+    <div class="lesson-section">
+      <div class="section-heading">How Utility Functions Work</div>
+      <div class="section-body">
+        <p>A <strong>utility AI</strong> system assigns every available action a real-number score based on the current game state. The NPC selects the action with the highest score (or, in some designs, samples probabilistically from the top N). The score for an action is computed by a <strong>utility function</strong> — a formula that takes one or more input variables and maps them to a 0.0–1.0 range.</p>
+        <p>The input variable is called a <strong>consideration</strong>. A consideration for "Attack Player" might be: how close is the player? A consideration for "Flee to Cover" might be: how low is current health? Each consideration is passed through a <strong>response curve</strong> — a mathematical function that shapes how the raw value maps to a score contribution. Common curve shapes are linear (score rises proportionally), logistic (S-curve — slow at extremes, fast in the middle), and exponential (score accelerates rapidly as input increases).</p>
+        <p>Multiple considerations are multiplied together to produce a final action score. Multiplication (rather than addition) ensures that if any single consideration is near zero — "health is fine but player is invisible" — the action score is suppressed even if other considerations are high. This prevents nonsensical behaviors like attacking an unseen enemy just because health happens to be high.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="callout">
+      <div class="callout-label">Key Formula</div>
+      <p><strong>Action Score = C₁(x₁) × C₂(x₂) × C₃(x₃) × … × Cₙ(xₙ)</strong> — where each Cᵢ is a response curve applied to input variable xᵢ. The highest-scoring action is selected. Response curve shapes are tunable parameters, giving designers fine control over NPC decision thresholds without writing conditional logic.</p>
+    </div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Utility AI in Production: Killzone and Alien: Isolation</div>
+      <div class="section-body">
+        <p>Guerrilla Games' <em>Killzone 2</em> (2009) used a utility-based system for its Helghast soldiers. At GDC 2009, lead AI programmer Alex Champandard and engine director Arjen Barten presented "AI Postmortem of Killzone 2," describing how each Helghast evaluated a pool of tactical actions — advance, suppress, flank, take cover — and selected the highest scorer. The system made Helghast feel tactically adaptive without scripted sequences: a Helghast running low on ammo would score "take cover and reload" highly, while one in open terrain would score "advance and suppress" highly.</p>
+        <p><em>Alien: Isolation</em> (Creative Assembly, 2014) took a different approach for the Alien itself: two parallel AI systems dubbed "AI Director 1" and "AI Director 2." AI Director 1 controlled the Alien's visible behavior using rules. AI Director 2 used utility scoring to decide where to place the Alien when it was off-screen, factoring in time since last encounter, player stress level (estimated from movement speed and hiding behavior), and area of the ship. This was documented by lead AI programmer Jonty Barnes at GDC 2014. The result was an Alien that felt as if it was genuinely hunting the player — adjusting its patrolling to areas the player hadn't recently fled from.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="lesson-section">
+      <div class="section-heading">Designing Response Curves</div>
+      <div class="section-body">
+        <p>The practical skill in utility AI design is <strong>curve authoring</strong>. A linear curve for "distance to player" means an NPC scores attacking equally whether the player is 5 meters or 50 meters away (scaled linearly). An exponential curve means the attack score explodes only when the player is very close. Dave Mark, who developed the Dual Utility Reasoner architecture and wrote extensively about utility AI in "Behavioral Mathematics for Game AI" (2009), advocates for providing designers with a library of named curves — Linear, InverseLinear, Quadratic, Logistic, Step — and a visual editor to tune them, rather than requiring code changes per behavior adjustment. This pattern is implemented in the open-source <em>IAUS</em> (Infinite Axis Utility System) used in several Unity projects.</p>
+      </div>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">When to Use Utility AI vs. Behavior Trees</div>
+      <p>Utility AI excels when many actions compete on a continuum — social NPCs, survival AI, tactical soldiers. Behavior Trees excel when logic is explicitly hierarchical and priority ordering is clear — platformer enemies, stealth guards, scripted encounters. Many production systems combine both: a Behavior Tree at the top level to handle major state transitions, with utility scoring inside specific action-selection leaf nodes.</p>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">Lesson 3 Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-l3">
+      <div class="quiz-q">1. In The Sims (2000), what determined which action a Sim took at any given moment?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l3')">A. A utility score computed for each available action, with the highest scorer selected.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">B. A fixed priority list hard-coded by designers for each Sim type.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">C. A random selection from a pool of contextually valid actions.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">D. A hierarchical FSM with states for each Sim need.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. Each Sim evaluated all available actions via utility scores computed from motive values (Hunger, Energy, etc.) and selected the highest scorer each update tick.</div>
+      <div class="quiz-feedback wrong">✗ The Sims used utility scoring — each action received a score based on current motive levels, and the highest-scored action won selection each tick.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-l3">
+      <div class="quiz-q">2. Why does utility AI multiply consideration scores together (rather than adding them)?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">A. Multiplication is faster to compute than addition on game hardware.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">B. It allows scores to exceed 1.0, giving high-priority actions more range.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l3')">C. So that a near-zero consideration (e.g., player invisible) suppresses the total action score even when other considerations are high.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">D. To ensure all actions eventually score identically, preventing decision lock.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. Multiplication means any single veto-level consideration (near-zero score) collapses the entire action score, preventing nonsensical decisions like attacking an invisible enemy.</div>
+      <div class="quiz-feedback wrong">✗ Multiplication is used because a near-zero consideration (like player visibility being zero) suppresses the whole product, vetoing the action even if other factors score highly.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-l3">
+      <div class="quiz-q">3. In Alien: Isolation (2014), what did "AI Director 2" specifically use utility scoring to decide?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l3')">A. Which animation the Alien played during a kill sequence.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l3')">B. How much damage the Alien dealt per strike based on player health.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l3')">C. Where to place the Alien when off-screen, factoring time since last encounter and estimated player stress.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l3')">D. Which dialogue line the station crew NPCs should speak.</button>
+      </div>
+      <div class="quiz-feedback right">✓ Correct. AI Director 2 governed off-screen Alien placement using utility scoring that considered time since last encounter and player stress signals like movement speed and hiding frequency.</div>
+      <div class="quiz-feedback wrong">✗ AI Director 2 used utility scoring to place the Alien off-screen — weighting areas the player hadn't recently fled from, factoring in encounter timing and player stress estimates.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+  </div>
+</div>
+
+<!-- LAB 3 -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3: Design a Utility Scoring System</h1>
+    <div class="tagline">Build a utility AI action evaluator with AI assistance.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>Design a utility AI system for a survival-game NPC (a friendly companion AI). Your companion must evaluate actions: Attack Threat, Gather Resources, Heal Player, Take Cover, and Forage for Food. For each action, define the considerations (input variables), their response curve shapes, and the rationale for multiplying them together.</p>
+      <p>The AI assistant will push you to justify your curve shapes, identify missing considerations, and suggest how to balance scores so no single action dominates in all situations. Aim for three or more design exchanges.</p>
+      <div class="lab-prompt">Try asking: "For the 'Heal Player' action, I'm thinking of using player health percentage as the only consideration with a linear curve. Is that enough, and should I use a different curve shape?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l3">
+      <div class="lab-chat-header">
+        <span>Utility AI Design Assistant</span>
+        <span class="chat-badge">AI</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3"></div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" rows="1" placeholder="Describe your utility function design..." onkeydown="chatKeydown(event,'l3')"></textarea>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+
+  <!-- ═══════════════════ LESSON 4 ═══════════════════ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">AI in Game Design I · NPC Behavior and Decision-Making · Lesson 4</div>
+      <h1>Advanced Applications and Synthesis</h1>
+      <div class="tagline">Bringing together concepts from the module and exploring real-world implications and advanced use cases.</div>
+    </div>
+    <div class="lesson-body">
+      <div class="lesson-section">
+        <div class="section-heading">Module Synthesis</div>
+        <div class="section-body">
+          <p>In this final lesson, we synthesize the key concepts you've learned throughout this module. The material covered in Lessons 1-3 provides the foundation for understanding how these ideas apply to complex, real-world scenarios.</p>
+          <p>Consider how the core principles interact and combine. Where do they reinforce each other? Where do they create tensions? How would you navigate those tensions in practice?</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="lesson-section">
+        <div class="section-heading">Looking Forward</div>
+        <div class="section-body">
+          <p>As you complete this module, think about how the ideas presented here connect to your own work and interests. What questions remain? What would you want to explore further? Use the lab to deepen your thinking.</p>
+        </div>
+      </div>
+    </div>
+    <div class="quiz-area" style="padding-top:0;">
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ QUIZ 4 ═══════════════════ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-area">
+      <h2>Lesson 4 Quiz</h2>
+      <div class="quiz-box" id="q0-l4">
+        <div class="quiz-q">Which concept from this lesson represents the most significant challenge in practice?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q0-l4')">Integrating multiple frameworks while maintaining clarity</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Understanding individual technical concepts</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Memorizing definitions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Spelling difficult terms correctly</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct. The real challenge is synthesis and integration across complex domains.</div>
+        <div class="quiz-feedback wrong">✗ Incorrect. The most significant practical challenge is integrating multiple frameworks while maintaining clarity and coherence.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-l4">
+        <div class="quiz-q">How would you apply the key concepts from this lesson to a novel scenario?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">By identifying core principles and adapting them to the specific context</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By applying the same approach without modification</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By avoiding the concepts in unfamiliar situations</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By deferring to experts only</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct. Effective application requires extracting core principles and adapting them thoughtfully to new contexts.</div>
+        <div class="quiz-feedback wrong">✗ Incorrect. The right approach is identifying core principles and thoughtfully adapting them to the specific context.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-l4">
+        <div class="quiz-q">What would you prioritize when facing conflicting principles from different lessons?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Context-specific evaluation of which principles are most relevant</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Always prioritizing one set of principles over another</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Ignoring the conflict and hoping it resolves itself</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Seeking a universal principle that eliminates all tradeoffs</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct. Context-specific evaluation allows you to navigate tradeoffs thoughtfully based on specific circumstances.</div>
+        <div class="quiz-feedback wrong">✗ Incorrect. The best approach is context-specific evaluation to determine which principles are most relevant to your situation.</div>
+      </div>
+    </div>
+    <div class="quiz-area" style="padding-top:0;">
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ LAB 4 ═══════════════════ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4: Synthesis and Integration</h1>
+      <p>Apply and extend the concepts from this lesson through guided conversation with an AI assistant.</p>
+    </div>
+    <div class="lab-content">
+      <div class="lab-intro">
+        <p>Use this lab to explore how the concepts from Lesson 4 apply to your own questions and interests. The AI assistant is here to help you think through complex scenarios.</p>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>Lab 4 Assistant</span>
+          <span class="chat-badge">AI Assistant</span>
+        </div>
+        <div class="chat-msgs" id="msgs-l4"></div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="inp-l4" placeholder="Ask your question about Lesson 4..." rows="2"></textarea>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODULE TEST ═══════════════════ -->
+  <div class="page" id="p-mt">
+    <div class="mt-hero">
+      <h1>Module Test</h1>
+      <p>15 questions covering all lessons — free, untracked, retake anytime.</p>
+    </div>
+
+    <div class="mt-container">
+      <div class="mt-score-display">
+        <div>Score: <span id="mt-score">0</span>/15</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q1">
+        <div class="quiz-q">Which concept from Lesson 1 is most foundational?</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q1')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q2">
+        <div class="quiz-q">How does Lesson 2 expand on Lesson 1?</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q2')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q3">
+        <div class="quiz-q">What is the key insight from Lesson 3?</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q3')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q4">
+        <div class="quiz-q">How do all lessons integrate in Lesson 4?</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q4')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q5">
+        <div class="quiz-q">Question 5</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q5')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q6">
+        <div class="quiz-q">Question 6</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q6')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q7">
+        <div class="quiz-q">Question 7</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q7')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q8">
+        <div class="quiz-q">Question 8</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q8')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q9">
+        <div class="quiz-q">Question 9</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q9')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q10">
+        <div class="quiz-q">Question 10</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q10')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q11">
+        <div class="quiz-q">Question 11</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q11')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q12">
+        <div class="quiz-q">Question 12</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q12')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q13">
+        <div class="quiz-q">Question 13</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q13')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q14">
+        <div class="quiz-q">Question 14</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q14')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div class="quiz-box" id="mt-q15">
+        <div class="quiz-q">Question 15</div>
+        <div class="quiz-opts">
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">A</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">B</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q15')">C</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">D</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct</div>
+        <div class="quiz-feedback wrong">✗ Incorrect</div>
+      </div>
+
+      <div id="mt-result" style="display:none; margin-top:2rem; padding:1.5rem; background:#f5f5f5; border-radius:8px;">
+        <h3>Module Test Result</h3>
+        <p>Your score: <strong id="mt-result-score">0%</strong></p>
+        <p id="mt-result-msg"></p>
+      </div>
+    </div>
+  </div>
+
+    </div><!-- /content-area -->
+
+<script>
+var COURSE_ID='ar-1';
+var MODULE_ID='ar1-m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+var LAB_SYSTEM_PROMPTS={"l1": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI in Game Design I ar1-m3, L1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l2": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI in Game Design I ar1-m3, L2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l3": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI in Game Design I ar1-m3, L3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.", "l4": "You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nAI in Game Design I ar1-m3, L4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result);
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(!box) box=document.getElementById(qNum);
+  if(!box||box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt,.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  var fb=box.querySelector('.mt-feedback.'+(correct?'right':'wrong'));if(fb)fb.style.display='block';
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  var scoreEl=document.getElementById('mt-score');
+  if(scoreEl) scoreEl.textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    var resultEl=document.getElementById('mt-result');
+    if(resultEl) resultEl.style.display='block';
+    var scoreResEl=document.getElementById('mt-result-score');
+    if(scoreResEl) scoreResEl.textContent=pct+'%';
+    var msgEl=document.getElementById('mt-result-msg');
+    if(msgEl) msgEl.textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML=''}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
+}
+
+goPage('p-l1');
+</script>
+</body>
+</html>

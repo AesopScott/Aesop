@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-14 -->
+<!-- v1.0.3 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -666,6 +666,7 @@
           document.getElementById('authOverlay').style.display = 'none';
           document.getElementById('app').style.display = 'block';
           await loadApiKeys();
+          window._adminReady = true;
           document.dispatchEvent(new CustomEvent('adminReady', { detail: { user } }));
         } else {
           document.getElementById('authOverlay').style.display = 'flex';
@@ -701,6 +702,8 @@
     };
 
     window.loadApiKeys = async function() {
+      // Try Firestore first, fall back to localStorage
+      let loaded = false;
       try {
         const docRef = doc(db, 'config', 'api-keys');
         const docSnap = await getDoc(docRef);
@@ -711,9 +714,21 @@
           document.getElementById('apiKeyOpenAI').value = data.openai || '';
           document.getElementById('apiKeyPerplexity').value = data.perplexity || '';
           document.getElementById('apiKeyGitHub').value = data.github || '';
+          loaded = true;
         }
       } catch (e) {
-        console.error('Failed to load API keys:', e);
+        console.warn('Firestore unavailable, using localStorage:', e.message);
+      }
+      if (!loaded) {
+        // Fall back to localStorage
+        try {
+          const saved = JSON.parse(localStorage.getItem('aesop_review_keys') || '{}');
+          document.getElementById('apiKeyAnthropic').value = saved.anthropic || '';
+          document.getElementById('apiKeyGemini').value = saved.gemini || '';
+          document.getElementById('apiKeyOpenAI').value = saved.openai || '';
+          document.getElementById('apiKeyPerplexity').value = saved.perplexity || '';
+          document.getElementById('apiKeyGitHub').value = saved.github || '';
+        } catch(e) {}
       }
     };
 
@@ -721,23 +736,25 @@
       const btn = document.getElementById('saveKeysBtn');
       const indicator = document.getElementById('savedIndicator');
       btn.disabled = true;
+      const keys = {
+        anthropic: document.getElementById('apiKeyAnthropic').value,
+        gemini: document.getElementById('apiKeyGemini').value,
+        openai: document.getElementById('apiKeyOpenAI').value,
+        perplexity: document.getElementById('apiKeyPerplexity').value,
+        github: document.getElementById('apiKeyGitHub').value
+      };
+      // Always save to localStorage as backup
+      try { localStorage.setItem('aesop_review_keys', JSON.stringify(keys)); } catch(e) {}
+      // Try Firestore
       try {
         const docRef = doc(db, 'config', 'api-keys');
-        await setDoc(docRef, {
-          anthropic: document.getElementById('apiKeyAnthropic').value,
-          gemini: document.getElementById('apiKeyGemini').value,
-          openai: document.getElementById('apiKeyOpenAI').value,
-          perplexity: document.getElementById('apiKeyPerplexity').value,
-          github: document.getElementById('apiKeyGitHub').value
-        });
-        indicator.classList.add('show');
-        setTimeout(() => indicator.classList.remove('show'), 2000);
+        await setDoc(docRef, keys);
       } catch (e) {
-        console.error('Failed to save API keys:', e);
-        alert('Failed to save keys: ' + e.message);
-      } finally {
-        btn.disabled = false;
+        console.warn('Firestore save failed (using localStorage):', e.message);
       }
+      indicator.classList.add('show');
+      setTimeout(() => indicator.classList.remove('show'), 2000);
+      btn.disabled = false;
     };
 
     document.getElementById('saveKeysBtn').addEventListener('click', () => saveApiKeys());
@@ -1462,10 +1479,15 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
     window.toggleSection = toggleSection;
     window.toggleLogPanel = toggleLogPanel;
 
-    addEventListener('adminReady', () => {
+    // Handle race condition: adminReady may fire before this listener registers
+    document.addEventListener('adminReady', () => {
       clearLog();
       loadCourses();
     });
+    if (window._adminReady) {
+      clearLog();
+      loadCourses();
+    }
   </script>
 </body>
 </html>

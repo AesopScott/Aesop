@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.9 | 2026-04-14 -->
+<!-- v1.0.10 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1015,7 +1015,11 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         throw new Error('Gemini: ' + (e.error?.message || resp.status));
       }
       const data = await resp.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      // Gemini 2.5 "thinking" models return multiple parts: thinking first, then the actual output.
+      // We need the LAST text part, not the first.
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const textParts = parts.filter(p => p.text != null);
+      return textParts.length > 0 ? textParts[textParts.length - 1].text : '';
     }
 
     async function callOpenAI(prompt, apiKey) {

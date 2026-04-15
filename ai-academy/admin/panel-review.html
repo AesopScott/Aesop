@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-14 -->
+<!-- v1.0.6 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1107,12 +1107,21 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
     }
 
     async function fetchModuleFromGitHub(pat, folderName, fileName) {
-      const url = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/${GITHUB_BASE}/${folderName}/${fileName}`;
+      // Use Contents API (not raw.githubusercontent.com) to avoid CORS preflight blocks
+      const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_BASE}/${folderName}/${fileName}`;
       const resp = await fetchWithRetry(url, {
-        headers: { 'Authorization': 'token ' + pat }
+        headers: {
+          'Authorization': 'token ' + pat,
+          'Accept': 'application/vnd.github.v3+json'
+        }
       });
       if (!resp.ok) throw new Error('Failed to fetch module: ' + resp.status);
-      return resp.text();
+      const data = await resp.json();
+      // Contents API returns base64-encoded content
+      if (data.content) {
+        return atob(data.content.replace(/\n/g, ''));
+      }
+      throw new Error('No content in API response');
     }
 
     function findModuleInList(files, cid, moduleNum) {

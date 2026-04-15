@@ -559,6 +559,31 @@
     .expand-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 6px; transition: transform 0.2s; }
     .expand-btn:hover { color: var(--accent); }
     .expand-btn.open { transform: rotate(90deg); }
+    .notes-btn { padding: 4px 10px; background: var(--border); color: var(--fg); border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500; margin-left: 6px; transition: background 0.2s; }
+    .notes-btn:hover { background: var(--accent); color: var(--bg); }
+
+    /* Notes modal */
+    .notes-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+    .notes-modal { background: var(--card); border: 1px solid var(--border); border-radius: 10px; width: 90%; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; }
+    .notes-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .notes-modal-header h2 { font-size: 16px; font-weight: 700; }
+    .notes-close-btn { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1; }
+    .notes-close-btn:hover { color: var(--err); }
+    .notes-modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .notes-mod-section { margin-bottom: 20px; }
+    .notes-mod-section:last-child { margin-bottom: 0; }
+    .notes-mod-title { font-weight: 700; font-size: 14px; color: var(--accent); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+    .notes-reviewer { margin-bottom: 12px; }
+    .notes-reviewer-name { font-weight: 700; font-size: 12px; display: inline-block; padding: 2px 8px; border-radius: 3px; margin-bottom: 4px; }
+    .notes-reviewer-name.claude { background: #d4a574; color: #000; }
+    .notes-reviewer-name.gemini { background: #4285f4; color: #fff; }
+    .notes-reviewer-name.chatgpt { background: #10a37f; color: #fff; }
+    .notes-reviewer-name.perplexity { background: #7c3aed; color: #fff; }
+    .notes-text { font-size: 13px; color: var(--fg); line-height: 1.6; margin-top: 4px; }
+    .notes-issue { font-size: 12px; color: var(--warn); margin-top: 4px; font-weight: 500; }
+    .notes-score-tag { font-size: 11px; color: var(--muted); margin-left: 8px; }
+    .notes-copy-btn { padding: 6px 14px; background: var(--accent); color: var(--bg); border: none; border-radius: 4px; font-weight: 600; font-size: 12px; cursor: pointer; margin-left: auto; }
+    .notes-copy-btn:hover { opacity: 0.9; }
 
     @media (max-width: 768px) {
       .header {
@@ -1397,6 +1422,7 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
 
         const hasReport = rpt && rpt.modules && rpt.modules.length > 0;
         const expandBtn = hasReport ? `<button class="expand-btn" id="exp-${course.id}" onclick="toggleDetail('${course.id}')" title="Show details">▶</button>` : '';
+        const notesBtn = hasReport ? `<button class="notes-btn" onclick="showNotesModal('${course.id}')" title="View reviewer notes">📝 Notes</button>` : '';
 
         return `
           <tr id="row-${course.id}">
@@ -1408,6 +1434,7 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
             <td>
               <button class="run-review-btn" id="btn-${course.id}" onclick="runCourseReview('${course.id}')">Run Review</button>
               ${startFromHtml}
+              ${notesBtn}
             </td>
           </tr>
           <tr class="detail-row" id="detail-${course.id}" style="display:none;">
@@ -1506,6 +1533,115 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       return html.join('');
     }
     window.toggleDetail = toggleDetail;
+
+    function reviewerCssClass(name) {
+      const n = name.toLowerCase();
+      if (n.includes('claude')) return 'claude';
+      if (n.includes('gemini')) return 'gemini';
+      if (n.includes('chatgpt') || n.includes('openai')) return 'chatgpt';
+      if (n.includes('perplexity')) return 'perplexity';
+      return '';
+    }
+
+    function showNotesModal(courseId) {
+      const course = courseData.find(c => c.id === courseId);
+      if (!course || !course._evalReport) return;
+      const rpt = course._evalReport;
+
+      // Remove existing modal if any
+      const existing = document.getElementById('notesOverlay');
+      if (existing) existing.remove();
+
+      const html = ['<div class="notes-overlay" id="notesOverlay" onclick="if(event.target===this)closeNotesModal()">'];
+      html.push('<div class="notes-modal">');
+      html.push('<div class="notes-modal-header">');
+      html.push(`<h2>📝 ${course.icon || ''} ${course.title} — Reviewer Notes</h2>`);
+      html.push('<div><button class="notes-copy-btn" onclick="copyAllNotes(\'' + courseId + '\')">📋 Copy All</button>');
+      html.push('<button class="notes-close-btn" onclick="closeNotesModal()" title="Close">&times;</button></div>');
+      html.push('</div>');
+      html.push('<div class="notes-modal-body">');
+
+      for (const mod of rpt.modules) {
+        const reviews = mod.reviews || {};
+        const revArr = typeof reviews === 'object' && !Array.isArray(reviews)
+          ? Object.values(reviews) : (Array.isArray(reviews) ? reviews : []);
+        const hasNotes = revArr.some(r => !r.error && (r.notes || r.topIssue));
+        if (!hasNotes) continue;
+
+        html.push('<div class="notes-mod-section">');
+        html.push(`<div class="notes-mod-title">${mod.module}${mod.panelAverage != null ? ' — Panel Avg: ' + mod.panelAverage + '/100' : ''}</div>`);
+
+        for (const rev of revArr) {
+          if (rev.error || (!rev.notes && !rev.topIssue)) continue;
+          const cls = reviewerCssClass(rev.reviewer);
+          const scoreTag = rev.total != null ? `<span class="notes-score-tag">${rev.total}/100 · ${rev.verdict?.label || ''}</span>` : '';
+
+          html.push('<div class="notes-reviewer">');
+          html.push(`<span class="notes-reviewer-name ${cls}">${rev.reviewer}</span>${scoreTag}`);
+          if (rev.notes) {
+            html.push(`<div class="notes-text">${rev.notes.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`);
+          }
+          if (rev.topIssue && rev.topIssue.toLowerCase() !== 'none') {
+            html.push(`<div class="notes-issue">⚠ Top issue: ${rev.topIssue.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`);
+          }
+          html.push('</div>');
+        }
+
+        html.push('</div>');
+      }
+
+      html.push('</div></div></div>');
+      document.body.insertAdjacentHTML('beforeend', html.join(''));
+    }
+
+    function closeNotesModal() {
+      const el = document.getElementById('notesOverlay');
+      if (el) el.remove();
+    }
+
+    function copyAllNotes(courseId) {
+      const course = courseData.find(c => c.id === courseId);
+      if (!course || !course._evalReport) return;
+      const rpt = course._evalReport;
+      const lines = [];
+      lines.push('# ' + (course.icon || '') + ' ' + course.title + ' — Panel Review Notes');
+      lines.push('Date: ' + (rpt.date ? new Date(rpt.date).toLocaleDateString() : 'N/A'));
+      if (rpt.summary?.panelAverage != null) lines.push('Panel Average: ' + rpt.summary.panelAverage + '/100');
+      lines.push('');
+
+      for (const mod of rpt.modules) {
+        const reviews = mod.reviews || {};
+        const revArr = typeof reviews === 'object' && !Array.isArray(reviews)
+          ? Object.values(reviews) : (Array.isArray(reviews) ? reviews : []);
+
+        lines.push('## ' + mod.module + (mod.panelAverage != null ? ' (' + mod.panelAverage + '/100)' : ''));
+        lines.push('');
+
+        for (const rev of revArr) {
+          if (rev.error) {
+            lines.push('**' + rev.reviewer + ':** Error — ' + rev.error);
+            continue;
+          }
+          lines.push('**' + rev.reviewer + '** — ' + (rev.total || '?') + '/100 · ' + (rev.verdict?.label || ''));
+          if (rev.notes) lines.push(rev.notes);
+          if (rev.topIssue && rev.topIssue.toLowerCase() !== 'none') lines.push('> ⚠ Top issue: ' + rev.topIssue);
+          lines.push('');
+        }
+        lines.push('---');
+        lines.push('');
+      }
+
+      navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        const btn = event.target;
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy All'; }, 2000);
+      });
+    }
+
+    window.showNotesModal = showNotesModal;
+    window.closeNotesModal = closeNotesModal;
+    window.copyAllNotes = copyAllNotes;
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNotesModal(); });
 
     // ── Pause / Stop controls ──
     let _reviewPaused = false;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.4 | 2026-04-14 -->
+<!-- v1.0.5 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -312,6 +312,33 @@
       cursor: not-allowed;
     }
 
+    .pause-btn {
+      padding: 10px 16px;
+      background: #f59e0b;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: none;
+    }
+    .pause-btn:hover { opacity: 0.9; }
+    .pause-btn.stop { background: #ef4444; color: #fff; }
+
+    .copy-log-btn {
+      padding: 10px 16px;
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: none;
+    }
+    .copy-log-btn:hover { opacity: 0.9; }
+
     .course-table {
       width: 100%;
       border-collapse: collapse;
@@ -597,6 +624,9 @@
       <div class="section-content">
         <div class="toolbar">
           <button class="run-all-btn" id="runAllBtn">Run All Reviews</button>
+          <button class="pause-btn" id="pauseBtn" onclick="togglePause()">⏸ Pause</button>
+          <button class="pause-btn stop" id="stopBtn" onclick="stopReview()">⏹ Stop</button>
+          <button class="copy-log-btn" id="copyLogBtn" onclick="copyLogToClipboard()">📋 Copy Log</button>
         </div>
         <div id="courseTableContainer">
           <table class="course-table">
@@ -1250,13 +1280,76 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       }).join('');
     }
 
+    // ── Pause / Stop controls ──
+    let _reviewPaused = false;
+    let _reviewAborted = false;
+    let _reviewRunning = false;
+
+    function showReviewControls(running) {
+      _reviewRunning = running;
+      document.getElementById('pauseBtn').style.display = running ? 'inline-block' : 'none';
+      document.getElementById('stopBtn').style.display = running ? 'inline-block' : 'none';
+      document.getElementById('copyLogBtn').style.display = running ? 'none' : (document.getElementById('logOutput').textContent.trim() ? 'inline-block' : 'none');
+      document.getElementById('runAllBtn').disabled = running;
+      if (!running) {
+        _reviewPaused = false;
+        _reviewAborted = false;
+        document.getElementById('pauseBtn').textContent = '⏸ Pause';
+        document.getElementById('pauseBtn').classList.remove('stop');
+      }
+    }
+
+    function togglePause() {
+      _reviewPaused = !_reviewPaused;
+      const btn = document.getElementById('pauseBtn');
+      if (_reviewPaused) {
+        btn.textContent = '▶ Resume';
+        btn.classList.add('stop');
+        logLine('⏸ Paused — click Resume to continue.', 'warn');
+      } else {
+        btn.textContent = '⏸ Pause';
+        btn.classList.remove('stop');
+        logLine('▶ Resumed.', 'info');
+      }
+    }
+
+    function stopReview() {
+      _reviewAborted = true;
+      _reviewPaused = false;
+      logLine('⏹ Stopping after current operation...', 'error');
+    }
+
+    async function waitIfPaused() {
+      while (_reviewPaused && !_reviewAborted) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+      if (_reviewAborted) throw new Error('REVIEW_ABORTED');
+    }
+
+    function copyLogToClipboard() {
+      const lines = document.getElementById('logOutput').innerText;
+      // Format as markdown for Obsidian
+      const date = new Date().toISOString().split('T')[0];
+      const md = '```\n' + lines + '\n```';
+      navigator.clipboard.writeText(md).then(() => {
+        const btn = document.getElementById('copyLogBtn');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy Log'; }, 2000);
+      });
+    }
+
+    window.togglePause = togglePause;
+    window.stopReview = stopReview;
+    window.copyLogToClipboard = copyLogToClipboard;
+
     async function runCourseReview(courseId) {
-      // Open log panel and clear
+      const isBatchRun = _reviewRunning;
+      // Open log panel; only clear if this is a standalone run
       document.getElementById('logPanel').classList.remove('collapsed');
-      clearLog();
+      if (!isBatchRun) { clearLog(); showReviewControls(true); }
 
       const course = courseData.find(c => c.id === courseId);
-      if (!course) { logLine('Course not found: ' + courseId, 'error'); return; }
+      if (!course) { logLine('Course not found: ' + courseId, 'error'); if (!isBatchRun) showReviewControls(false); return; }
 
       // Disable the button during review
       const btn = document.getElementById('btn-' + courseId);
@@ -1267,10 +1360,10 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       logLine('═══════════════════════════════════════════════════', 'info');
 
       const pat = document.getElementById('apiKeyGitHub').value.trim();
-      if (!pat) { logLine('GitHub PAT required to fetch modules and save reports.', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Run Review'; } return; }
+      if (!pat) { logLine('GitHub PAT required to fetch modules and save reports.', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Run Review'; } showReviewControls(false); return; }
 
       const reviewers = getActiveReviewers();
-      if (reviewers.length === 0) { logLine('No API keys provided — add at least one reviewer key.', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Run Review'; } return; }
+      if (reviewers.length === 0) { logLine('No API keys provided — add at least one reviewer key.', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Run Review'; } showReviewControls(false); return; }
       logLine('Active reviewers: ' + reviewers.map(r => r.name).join(', '), 'info');
 
       const folderName = getFolderName(courseId);
@@ -1297,6 +1390,8 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         logLine('Found ' + htmlFiles.length + ' module files on GitHub.', 'success');
 
         for (let mi = 0; mi < totalMods; mi++) {
+          await waitIfPaused();
+
           const mn = mi + 1;
           const modTitle = course.modules?.[mi]?.title || ('Module ' + mn);
           const modName = 'M' + mn + ': ' + modTitle;
@@ -1336,6 +1431,7 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
 
           // Send to each reviewer sequentially
           for (const r of reviewers) {
+            await waitIfPaused();
             logLine('  Sending to ' + r.name + '...', 'info');
             let result;
             try {
@@ -1426,9 +1522,14 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         renderCourseTable();
         logLine('Review complete!', 'success');
       } catch(e) {
-        logLine('Review failed: ' + e.message, 'error');
+        if (e.message === 'REVIEW_ABORTED') {
+          logLine('⏹ Review stopped by user.', 'warn');
+        } else {
+          logLine('Review failed: ' + e.message, 'error');
+        }
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = 'Run Review'; }
+        if (!isBatchRun) showReviewControls(false);
       }
     }
 
@@ -1460,19 +1561,24 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
 
       if (incomplete.length === 0) {
         logLine('All courses have complete reviews!', 'success');
+        showReviewControls(false);
         return;
       }
 
       logLine('Running reviews for ' + incomplete.length + ' incomplete courses...', 'info');
       for (const course of incomplete) {
+        if (_reviewAborted) break;
         await runCourseReview(course.id);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        if (!_reviewAborted) await new Promise(resolve => setTimeout(resolve, 2000));
       }
-      logLine('All reviews complete!', 'success');
+      if (!_reviewAborted) logLine('All reviews complete!', 'success');
+      showReviewControls(false);
     }
 
     document.getElementById('runAllBtn').addEventListener('click', () => {
       document.getElementById('logPanel').classList.remove('collapsed');
+      clearLog();
+      showReviewControls(true);
       runAllReviews();
     });
 

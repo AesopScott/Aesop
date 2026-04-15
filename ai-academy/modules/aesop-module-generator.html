@@ -203,19 +203,25 @@ textarea{resize:vertical;min-height:80px;}
 
 <script>
 /* ── fetchWithRetry: retries transient network / 529 / 5xx errors ── */
-async function fetchWithRetry(url, options, maxRetries = 3) {
+/* 3rd arg: number OR options object { retries, baseDelay, logFn } */
+async function fetchWithRetry(url, options, retryOpts = 3) {
+  const maxRetries = (typeof retryOpts === 'object') ? (retryOpts.retries ?? 3) : retryOpts;
+  const baseDelay  = (typeof retryOpts === 'object') ? (retryOpts.baseDelay ?? 1000) : 1000;
+  const logFn      = (typeof retryOpts === 'object') ? retryOpts.logFn : null;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const resp = await fetch(url, options);
       if (resp.ok || resp.status < 500) return resp;   // success or client error — don't retry
       if (attempt === maxRetries) return resp;          // last attempt — return whatever we got
-      const wait = Math.min(1000 * 2 ** (attempt - 1), 8000);
-      console.warn(`fetchWithRetry: HTTP ${resp.status}, retrying in ${wait}ms (${attempt}/${maxRetries})`);
+      const wait = Math.min(baseDelay * 2 ** (attempt - 1), 60000);
+      const msg = `fetchWithRetry: HTTP ${resp.status}, retrying in ${wait}ms (${attempt}/${maxRetries})`;
+      logFn ? logFn(msg) : console.warn(msg);
       await new Promise(r => setTimeout(r, wait));
     } catch (err) {
       if (attempt === maxRetries) throw err;
-      const wait = Math.min(1000 * 2 ** (attempt - 1), 8000);
-      console.warn(`fetchWithRetry: network error, retrying in ${wait}ms (${attempt}/${maxRetries})`, err);
+      const wait = Math.min(baseDelay * 2 ** (attempt - 1), 60000);
+      const msg = `fetchWithRetry: network error, retrying in ${wait}ms (${attempt}/${maxRetries})`;
+      logFn ? logFn(msg) : console.warn(msg);
       await new Promise(r => setTimeout(r, wait));
     }
   }

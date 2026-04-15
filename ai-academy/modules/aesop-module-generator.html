@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- v1.0.0 | 2026-04-14 -->
 <!-- v1.0.0 | 2026-04-14 -->
+<!-- v1.0.0 | 2026-04-14 -->
 <html lang="en">
 <head>
 <!-- aesop-module-generator-v1.1.0 | AESOP AI Academy Module Builder | April 2026 -->
@@ -1454,7 +1455,7 @@ async function buildFullCourse() {
   } catch(writeErr) {
     showStatus('error', 'Folder write test FAILED — click "Set Folder" and re-select /ai-academy/modules/ (non-English builds auto-descend into {lang}/). (' + writeErr.message + ')');
     repoFolderHandle = null;
-    coursesFolderHandle = null;
+    // Don't clear coursesFolderHandle — it's a separate handle that may still be valid
     return;
   }
   // === END WRITE TEST ===
@@ -1468,6 +1469,7 @@ async function buildFullCourse() {
     try {
       showStatus('info', 'Select your ai-academy folder for courses.html activation...');
       coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      rootFolderHandle = coursesFolderHandle; // backup for recovery
     } catch(e) {
       if (e.name === 'AbortError') { showStatus('error', 'Folder selection cancelled.'); return; }
       showStatus('error', 'Could not access folder: ' + e.message); return;
@@ -1629,12 +1631,18 @@ async function buildFullCourse() {
     if (!coursesFolderHandle && repoFolderHandle) {
       try {
         // repoFolderHandle is ai-academy/modules/ — courses.html is in ai-academy/
-        // File System Access API doesn't support navigating up, but we can
-        // look for courses.html in the parent by re-resolving from root.
-        // Workaround: try to get courses.html from the saved coursesFolderHandle
-        // or from the repoFolderHandle's parent if available.
-        log('coursesFolderHandle lost — attempting recovery from setRepoFolder context...');
-      } catch(e) { /* best-effort */ }
+        // rootFolderHandle (set in setRepoFolder) should point to ai-academy/.
+        // Recover from it if available.
+        log('coursesFolderHandle lost — attempting recovery from rootFolderHandle...');
+        if (rootFolderHandle) {
+          // Verify we can still read from it
+          await rootFolderHandle.getFileHandle('courses.html');
+          coursesFolderHandle = rootFolderHandle;
+          log('Recovered coursesFolderHandle from rootFolderHandle');
+        }
+      } catch(e) {
+        log('Recovery failed: ' + e.message);
+      }
     }
     let activationOk = false;
     try {
@@ -1720,7 +1728,7 @@ async function generate() {
   } catch(writeErr) {
     showStatus('error', 'Folder write test FAILED — click "Set Folder" and re-select /ai-academy/modules/ (non-English builds auto-descend into {lang}/). (' + writeErr.message + ')');
     repoFolderHandle = null;
-    coursesFolderHandle = null;
+    // Don't clear coursesFolderHandle — it's a separate handle that may still be valid
     return;
   }
   // === END WRITE TEST ===
@@ -1817,6 +1825,7 @@ async function setRepoFolder() {
   try {
     // Ask user to select ai-academy folder — then navigate into modules
     coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+    rootFolderHandle = coursesFolderHandle; // backup for recovery
     // Navigate into modules subfolder for module saves
     try {
       repoFolderHandle = await coursesFolderHandle.getDirectoryHandle('modules', { create: false });
@@ -1885,6 +1894,7 @@ async function downloadFile() {
 }
 
 let coursesFolderHandle = null;
+let rootFolderHandle = null;  // backup of ai-academy/ handle for recovery
 
 async function manualActivate() {
   const cid = document.getElementById('courseSelect').value;
@@ -2388,12 +2398,22 @@ async function updateCoursesFile(opts) {
   try {
     // Reuse cached handle or ask once
     if (!coursesFolderHandle) {
+      // Try recovering from rootFolderHandle (backup set in setRepoFolder)
+      if (rootFolderHandle) {
+        try {
+          await rootFolderHandle.getFileHandle('courses.html');
+          coursesFolderHandle = rootFolderHandle;
+        } catch(_) { /* root handle stale or wrong dir */ }
+      }
+    }
+    if (!coursesFolderHandle) {
       if (opts.noPrompt) {
         // Called from auto-flow (no user gesture) — can't show picker
         throw new Error('No folder handle — click "Activate in courses.html" manually.');
       }
       statusEl.textContent = 'Select your ai-academy folder (contains courses.html)...';
       coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      rootFolderHandle = coursesFolderHandle;
     }
     statusEl.textContent = 'Reading courses.html...';
     let fileHandle;

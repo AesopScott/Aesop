@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Pipeline Design — Module 7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- rag_systems_from_scratch-m7 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.pipeline-diagram{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin:1.25rem 0;display:flex;flex-direction:column;gap:0.5rem;}
+.pipe-step{display:flex;align-items:center;gap:0.75rem;font-size:0.82rem;}
+.pipe-num{width:1.5rem;height:1.5rem;border-radius:50%;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.25);color:var(--accent);font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pipe-label{color:#a89f93;flex:1;}
+.pipe-arrow{color:var(--muted);font-size:0.8rem;text-align:center;padding-left:0.75rem;}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:1rem 0;}
+.compare-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:4px;padding:0.85rem 1rem;}
+.compare-card h5{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem;}
+.compare-card p{font-size:0.8rem;line-height:1.7;color:#6e6861;}
+@media(max-width:600px){.compare-grid{grid-template-columns:1fr;}}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1: End-to-End Pipeline Architecture ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 1</div>
+      <h1>End-to-End Pipeline Architecture</h1>
+      <div class="tagline">From raw document to grounded answer — every stage, every decision</div>
+      <div class="lesson-question">What actually happens between "upload your docs" and "here's your answer"?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — Bing Chat, February 2023">
+        <p class="story-text">When Microsoft launched Bing Chat on February 7, 2023, the public saw a chatbot. Engineers saw a live demonstration of a production RAG pipeline under stress. Within days, users discovered the system would sometimes <em>confabulate</em> details not in its retrieved context — a signal that the generation stage was overriding retrieval signals. The incident forced a public conversation about where, exactly, RAG pipelines can break.</p>
+        <p class="story-text">Understanding the full pipeline — not just retrieval or just generation — is how you avoid shipping the same failure in your own systems.</p>
+      </div>
+
+      <div class="section-heading">The Six Canonical Stages</div>
+      <div class="section-body">
+        <p>Every production RAG system passes data through six distinct stages. Treating any stage as a black box is how bugs become incidents.</p>
+      </div>
+
+      <div class="pipeline-diagram">
+        <div class="pipe-step"><div class="pipe-num">1</div><div class="pipe-label"><strong style="color:#c0b8af;">Ingestion</strong> — Documents are loaded, parsed, and normalized. PDFs, HTML, DOCX, database rows all become plain text.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">2</div><div class="pipe-label"><strong style="color:#c0b8af;">Chunking</strong> — Text is split into retrievable segments. Chunk boundaries determine what context the retriever can surface.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">3</div><div class="pipe-label"><strong style="color:#c0b8af;">Embedding</strong> — Each chunk is converted to a dense vector via an encoder model. This representation drives semantic search.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">4</div><div class="pipe-label"><strong style="color:#c0b8af;">Indexing</strong> — Vectors are stored in a vector database (Pinecone, Weaviate, pgvector, FAISS) alongside chunk metadata.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">5</div><div class="pipe-label"><strong style="color:#c0b8af;">Retrieval</strong> — At query time, the user query is embedded and compared to the index. Top-k chunks are returned.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">6</div><div class="pipe-label"><strong style="color:#c0b8af;">Generation</strong> — Retrieved chunks are injected into the LLM context window as a prompt. The model answers using that grounded context.</div></div>
+      </div>
+
+      <div class="section-heading">Online vs. Offline Pipeline Paths</div>
+      <div class="section-body">
+        <p>Stages 1–4 are <em>offline</em> (indexing time). They run once per document update and can be expensive. Stages 5–6 are <em>online</em> (query time). They run per user request and must be fast — typically under 500 ms for production systems.</p>
+        <p>This separation matters for architecture. You can iterate on your embedding model or chunking strategy independently of your generation prompt, as long as you re-index after offline changes. Many teams mistake slow query latency for a generation problem when the retrieval step is the bottleneck.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Production Reality</div>
+        <p>Elasticsearch's 2023 developer survey of 1,000+ RAG deployments found that 61% of teams reported their primary quality issues originated in the indexing pipeline (chunking and embedding), not in the LLM generation stage. Most debugging time is spent in the wrong place.</p>
+      </div>
+
+      <div class="section-heading">Data Flow and Metadata</div>
+      <div class="section-body">
+        <p>Each chunk should carry structured metadata alongside its vector: source document ID, page number, creation date, access control tags, chunk index within the document. This metadata enables <em>filtered retrieval</em> — e.g., "only search documents from Q3 2024" — without embedding those constraints into the semantic vector itself.</p>
+        <p>LlamaIndex (formerly GPT Index) formalized this pattern in its <strong>NodeWithScore</strong> abstraction, where every retrieved chunk is a node carrying both a relevance score and a metadata dict. LangChain uses a similar <strong>Document</strong> object with a <code style="color:#c0b8af;font-size:0.85em;">page_content</code> and <code style="color:#c0b8af;font-size:0.85em;">metadata</code> dict. Both frameworks converged on this design independently, which is a signal it reflects genuine production need.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Offline path</span><span class="kt-def">Stages run at index-build time: ingestion, chunking, embedding, storage. Can be batch-processed.</span></div>
+      <div class="key-term"><span class="kt-term">Online path</span><span class="kt-def">Stages run per query: retrieval and generation. Latency-sensitive.</span></div>
+      <div class="key-term"><span class="kt-term">Metadata filtering</span><span class="kt-def">Using structured fields (date, source, category) to pre-filter the index before semantic search runs.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Design Principle</div>
+        <p>Design your pipeline so that each stage can be swapped independently. If you couple your chunker to your embedder to your retriever, every experiment requires a full rewrite. The best production teams treat each stage as a replaceable component with a defined interface.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">End-to-End Pipeline Architecture · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq1">
+        <div class="quiz-q">Which pipeline stages run at <em>index time</em> rather than query time?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Retrieval and generation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq1')">Ingestion, chunking, embedding, and indexing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Only embedding</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Chunking and generation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Stages 1–4 form the offline pipeline. They run when documents are added or updated, not per user query.</div>
+        <div class="quiz-feedback wrong">Not quite. Retrieval and generation are online (query-time). The offline stages — ingestion through indexing — run when documents are processed.</div>
+      </div>
+
+      <div class="quiz-box" id="qq2">
+        <div class="quiz-q">What does metadata attached to each chunk primarily enable?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Faster embedding computation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Larger context windows</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq2')">Filtered retrieval using structured fields like date or source</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Smaller vector dimensionality</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Metadata fields (date, source, category) allow pre-filtering the index before semantic search, without encoding those constraints into the embedding itself.</div>
+        <div class="quiz-feedback wrong">Metadata doesn't affect embedding computation or context window size. Its primary value is enabling filtered retrieval using structured fields.</div>
+      </div>
+
+      <div class="quiz-box" id="qq3">
+        <div class="quiz-q">According to Elasticsearch's 2023 developer survey, where did most RAG quality issues originate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">In the LLM generation stage</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq3')">In the indexing pipeline — chunking and embedding</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">In network latency between components</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">In the vector database storage layer</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 61% of teams identified the indexing pipeline as the source of quality issues — meaning most debugging is spent on the wrong stage.</div>
+        <div class="quiz-feedback wrong">Counterintuitively, the survey found chunking and embedding — not generation — were most often to blame. Most teams debug the LLM first, which wastes time.</div>
+      </div>
+
+      <div class="quiz-box" id="qq4">
+        <div class="quiz-q">What does the Bing Chat February 2023 incident illustrate about RAG pipelines?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Vector databases are unreliable at scale</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Embedding models were not ready for production</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq4')">Generation can override retrieval signals, causing confabulation even in RAG systems</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Chunking strategies were poorly understood in 2023</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The incident showed that a generation model can ignore retrieved context and hallucinate — the pipeline only works when all stages are properly calibrated together.</div>
+        <div class="quiz-feedback wrong">The Bing Chat incident demonstrated that even with retrieval, generation can confabulate if the generation stage doesn't properly attend to the retrieved context.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Pipeline Stage Mapping</h1>
+      <div class="tagline">Diagnose a RAG system by mapping its stages</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You're consulting on a RAG deployment that returns irrelevant answers. The team says "the LLM is hallucinating." Your job is to systematically walk through the six pipeline stages to identify where the actual problem might be. Use the AI assistant to work through the diagnosis — describe what you'd check at each stage.</p>
+        <div class="lab-prompt">Start by describing one stage you'd investigate first, and what specific signals would tell you it's working correctly. Ask the assistant to challenge your reasoning or suggest what to check next.</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Pipeline Diagnosis Assistant</span>
+          <div class="chat-badge">RAG Stage Analysis</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Ready to help you debug this RAG pipeline. The team says the LLM is hallucinating — but remember, 61% of the time the real issue is upstream, in chunking or embedding. Which of the six stages do you want to start with, and what would a healthy signal look like there?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" rows="1" placeholder="Describe your diagnosis approach..."></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L2: Query Processing and Retrieval Strategies ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 2</div>
+      <h1>Query Processing and Retrieval Strategies</h1>
+      <div class="tagline">The retrieval stage determines what the LLM can possibly know</div>
+      <div class="lesson-question">How do you make sure the right chunks surface for every query type?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — Glean, Enterprise Search, 2022–2024">
+        <p class="story-text">Glean, the enterprise search startup that reached a $2.2 billion valuation in 2024, built its entire product around one insight: <em>keyword search fails for enterprise knowledge</em>. When employees ask "what did we decide about the Q3 budget?" a BM25 keyword index returns documents containing those words — not documents about that decision. Glean's retrieval layer combines semantic search with graph-based entity linking to surface the decision memo, not just the budget spreadsheet.</p>
+        <p class="story-text">The lesson for RAG designers: retrieval strategy is a product decision, not just an infrastructure one.</p>
+      </div>
+
+      <div class="section-heading">Three Retrieval Modes</div>
+      <div class="section-body">
+        <p>Production RAG systems use three retrieval modes, often in combination.</p>
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-card">
+          <h5>Sparse / Keyword</h5>
+          <p>BM25 and TF-IDF. Fast, interpretable, no ML required. Excels on exact-match queries like product codes, proper nouns, and legal terminology. Fails on synonyms and paraphrase.</p>
+        </div>
+        <div class="compare-card">
+          <h5>Dense / Semantic</h5>
+          <p>Embedding similarity (cosine or dot product). Captures meaning over exact terms. Excels on conceptual queries. Can miss rare terminology if not in training data.</p>
+        </div>
+        <div class="compare-card">
+          <h5>Hybrid</h5>
+          <p>Combines sparse and dense scores via Reciprocal Rank Fusion (RRF) or linear interpolation. Used by Elasticsearch 8.x, Pinecone hybrid search, and Weaviate. Best overall recall across query types.</p>
+        </div>
+        <div class="compare-card">
+          <h5>Reranking</h5>
+          <p>A cross-encoder (e.g., Cohere Rerank, BGE-Reranker) rescores the top-k results from a first-stage retriever. Dramatically improves precision at the cost of added latency.</p>
+        </div>
+      </div>
+
+      <div class="section-heading">Query Transformation Techniques</div>
+      <div class="section-body">
+        <p>Raw user queries are often poor retrieval inputs. Several techniques transform them before retrieval runs.</p>
+        <p><strong>HyDE (Hypothetical Document Embeddings)</strong>, introduced by Gao et al. in 2022, generates a hypothetical answer to the query using an LLM, then retrieves documents similar to that hypothetical. This sidesteps the query-document embedding mismatch — queries and documents often have different styles even when semantically related.</p>
+        <p><strong>Query decomposition</strong> breaks complex multi-part questions into sub-queries, retrieves for each independently, then merges results. LangChain's <em>MultiQueryRetriever</em> automates this by generating three query variants and union-merging their results.</p>
+        <p><strong>Step-back prompting</strong> (Google DeepMind, 2023) reformulates the query at a higher abstraction level. "What are the side effects of ibuprofen at 800mg?" becomes "What are NSAID pharmacokinetics?" — retrieving the foundational context before the specific one.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Benchmark Evidence</div>
+        <p>The BEIR benchmark (2021, Thakur et al.) tested 18 retrieval systems across 18 datasets. No single method dominated across all domains. Dense retrieval outperformed BM25 on semantic tasks; BM25 outperformed dense on exact-match domains like TREC-COVID. Hybrid systems achieved the highest average nDCG@10 across the full benchmark. This is why modern production systems almost always use hybrid retrieval.</p>
+      </div>
+
+      <div class="section-heading">Top-k Selection and Context Budget</div>
+      <div class="section-body">
+        <p>Retrieving k=3 is common in demos. Production systems typically retrieve k=20 at the first stage, then rerank to k=5 for the generation context window. The tradeoff: more retrieved chunks increase recall but inflate the prompt, increasing cost, latency, and the risk of <em>lost in the middle</em> — the documented tendency of LLMs to underweight context appearing in the middle of long prompts (Liu et al., 2023).</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">BM25</span><span class="kt-def">Best Match 25. A probabilistic keyword retrieval function. The default for Elasticsearch and OpenSearch.</span></div>
+      <div class="key-term"><span class="kt-term">RRF</span><span class="kt-def">Reciprocal Rank Fusion. Merges ranked lists by summing reciprocals of rank positions. Parameter-free and robust.</span></div>
+      <div class="key-term"><span class="kt-term">HyDE</span><span class="kt-def">Hypothetical Document Embeddings. Generate a fake answer, embed it, retrieve real documents similar to that embedding.</span></div>
+      <div class="key-term"><span class="kt-term">Lost-in-the-middle</span><span class="kt-def">LLMs systematically underweight context in the middle of long prompts. Put the most critical context first or last.</span></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Query Processing and Retrieval Strategies · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq5">
+        <div class="quiz-q">What does HyDE (Hypothetical Document Embeddings) do to improve retrieval?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">It compresses documents before embedding them</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq5')">It generates a hypothetical answer and retrieves documents similar to that hypothetical embedding</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">It reranks results using a cross-encoder after first-stage retrieval</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">It converts queries to keyword form before BM25 search</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HyDE sidesteps the query-document embedding mismatch by generating a fake answer that "looks like" a document, then embedding that instead of the sparse query.</div>
+        <div class="quiz-feedback wrong">HyDE generates a hypothetical answer to the query using an LLM, embeds that hypothetical, and retrieves real documents similar to it — bridging the query-document style gap.</div>
+      </div>
+
+      <div class="quiz-box" id="qq6">
+        <div class="quiz-q">What does the BEIR benchmark's results suggest about choosing a retrieval strategy?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Dense retrieval always outperforms BM25</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">BM25 is sufficient for all production use cases</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq6')">No single method dominates all domains; hybrid retrieval achieves the best average performance</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Reranking eliminates the need for first-stage retrieval</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BEIR showed dense beats BM25 on semantic tasks, BM25 beats dense on exact-match tasks, and hybrid systems achieved the highest average nDCG@10 across all 18 datasets.</div>
+        <div class="quiz-feedback wrong">BEIR's finding was that no method dominates across all domains — each has strengths. Hybrid retrieval achieved the best overall average, which is why most production systems use it.</div>
+      </div>
+
+      <div class="quiz-box" id="qq7">
+        <div class="quiz-q">What is the "lost-in-the-middle" problem identified by Liu et al. (2023)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Retrieved chunks are sometimes not stored to the vector database</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Chunking splits relevant sentences across chunk boundaries</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq7')">LLMs systematically underweight context appearing in the middle of long prompts</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Embedding models lose precision on long documents</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Liu et al. showed that even when the answer is in the context, if it's positioned in the middle of a long prompt, LLMs are less likely to use it. Critical context should go first or last.</div>
+        <div class="quiz-feedback wrong">The lost-in-the-middle problem is about LLM attention patterns: models underweight context in the middle of long prompts, even when it contains the correct answer.</div>
+      </div>
+
+      <div class="quiz-box" id="qq8">
+        <div class="quiz-q">What is Reciprocal Rank Fusion (RRF) used for?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Training cross-encoder reranking models</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq8')">Merging ranked lists from sparse and dense retrievers into a single hybrid ranking</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Compressing vectors to reduce storage costs</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Generating hypothetical documents for HyDE</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RRF combines ranked lists by summing 1/(rank + 60) for each document across all lists. It's parameter-free and robust, making it the default fusion method in Elasticsearch 8.x hybrid search.</div>
+        <div class="quiz-feedback wrong">RRF is a rank fusion algorithm. It takes the ranked output of sparse (BM25) and dense retrievers and merges them into a single list by summing reciprocals of rank positions.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Retrieval Strategy Selection</h1>
+      <div class="tagline">Choose and justify retrieval strategies for real query types</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You're building a RAG system for a legal research firm. Attorneys search for case law using three types of queries: (1) exact citation lookups like "42 U.S.C. § 1983", (2) conceptual queries like "cases about police immunity in excessive force claims", and (3) complex multi-part questions like "what did the Ninth Circuit decide about qualified immunity between 2018 and 2022 and how does it differ from the Fifth Circuit?"</p>
+        <div class="lab-prompt">Propose a retrieval strategy for each query type and explain why. The assistant will challenge your choices and ask you to consider tradeoffs. Aim for at least 3 exchanges to complete the lab.</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Retrieval Strategy Advisor</span>
+          <div class="chat-badge">Legal RAG System</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">You're designing retrieval for a legal research RAG system. Attorneys will search with exact citations, conceptual queries, and complex multi-part questions. Each query type has different characteristics that favor different retrieval strategies. Start with one query type and propose your approach — I'll push back on your reasoning and ask about tradeoffs.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" rows="1" placeholder="Propose a retrieval strategy..."></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L3: Prompt Engineering for RAG Generation ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 3</div>
+      <h1>Prompt Engineering for RAG Generation</h1>
+      <div class="tagline">How you structure the context determines what the model can do with it</div>
+      <div class="lesson-question">What separates a RAG prompt that grounds the model from one that doesn't?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — Perplexity AI, 2023–2024">
+        <p class="story-text">Perplexity AI's approach to RAG prompting became one of the most studied in the industry after the company published blog posts describing their <em>answer engine</em> architecture. Their key insight was that the prompt template, not the retrieval alone, determined whether users trusted the output. By structuring prompts to always cite retrieved sources inline — forcing the model to ground every claim — they reduced user-perceived hallucination rates dramatically compared to systems that simply prepended context without citation instructions.</p>
+      </div>
+
+      <div class="section-heading">The Anatomy of a RAG Prompt</div>
+      <div class="section-body">
+        <p>A production RAG prompt has four zones, and their order matters due to the lost-in-the-middle effect:</p>
+      </div>
+
+      <div class="pipeline-diagram">
+        <div class="pipe-step"><div class="pipe-num">A</div><div class="pipe-label"><strong style="color:#c0b8af;">System instruction</strong> — Role definition and behavior constraints. "You are a precise research assistant. Answer only from the provided context. If unsure, say so."</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">B</div><div class="pipe-label"><strong style="color:#c0b8af;">Retrieved context block</strong> — Numbered or labeled chunks. "Context [1]: ... Context [2]: ..." Labels enable inline citation.</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">C</div><div class="pipe-label"><strong style="color:#c0b8af;">Citation and grounding instruction</strong> — "Cite context numbers inline as [1], [2]. Do not use information not present in the context."</div></div>
+        <div class="pipe-arrow">↓</div>
+        <div class="pipe-step"><div class="pipe-num">D</div><div class="pipe-label"><strong style="color:#c0b8af;">User query</strong> — Placed last, closest to the generation point. Research by Anthropic engineers suggests positioning the query after context improves grounding.</div></div>
+      </div>
+
+      <div class="section-heading">Grounding Instructions That Work</div>
+      <div class="section-body">
+        <p>The most effective grounding instructions are <em>specific about failure modes</em>, not just general about accuracy. Compare these two system prompts:</p>
+        <p><strong>Weak:</strong> "Be accurate and helpful."</p>
+        <p><strong>Effective:</strong> "Answer using only the provided context. If the context does not contain enough information to answer the question, respond: 'The provided documents do not contain enough information to answer this question.' Do not infer, extrapolate, or use knowledge from your training data."</p>
+        <p>The effective version names the exact failure mode (using training knowledge instead of context) and provides a specific fallback response. This reduces hallucination by giving the model an explicit "safe exit" that avoids the pressure to generate something plausible.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Research Finding — Anthropic, 2023</div>
+        <p>In Anthropic's Constitutional AI follow-up work on Claude's RAG behavior, researchers found that prompts explicitly naming the fallback ("if unsure, say I don't have enough information") reduced confabulation by approximately 40% compared to prompts that only said "be accurate." The model needs a graceful exit, not just an instruction to succeed.</p>
+      </div>
+
+      <div class="section-heading">Context Structuring Strategies</div>
+      <div class="section-body">
+        <p><strong>Labeled chunks</strong> use identifiers like [Doc 1], [Source: policy_v3.pdf], or [Chunk 4 of 12] to help the model track which context element it's drawing from. Numbered labels enable inline citation in the output.</p>
+        <p><strong>Relevance ordering</strong> — given the lost-in-the-middle effect, place the highest-relevance chunk first, second-highest last, and lower-relevance chunks in the middle. This is counterintuitive but supported by Liu et al.'s experimental data across multiple LLMs.</p>
+        <p><strong>Context compression</strong> uses a smaller LLM to summarize or filter retrieved chunks before injection. LangChain's <em>ContextualCompressionRetriever</em> does this automatically. It reduces prompt tokens but adds latency and an additional failure point.</p>
+      </div>
+
+      <div class="section-heading">The Citation Requirement Pattern</div>
+      <div class="section-body">
+        <p>Requiring inline citations does more than improve transparency — it functions as a <em>reasoning constraint</em>. When the model must cite [2] for every claim, it's forced to locate a specific source for that claim before outputting it. Claims without a citable source are harder to generate. This is why Perplexity, Bing Chat, and Google's SGE all require citation in their answer templates.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Grounding instruction</span><span class="kt-def">Explicit prompt text that constrains the model to use only retrieved context and provides a fallback for insufficient information.</span></div>
+      <div class="key-term"><span class="kt-term">Context compression</span><span class="kt-def">Using a model to extract or summarize relevant portions of retrieved chunks before injection, reducing prompt length.</span></div>
+      <div class="key-term"><span class="kt-term">Citation requirement</span><span class="kt-def">Instructing the model to tag each claim with its source context number, functioning as a reasoning constraint against hallucination.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Rule</div>
+        <p>Never give the model a context block without also giving it explicit instructions for what to do when the context is insufficient. The model will fill the gap with training data unless you provide a specific alternative — and that alternative must be stated as a concrete response, not just a vague "be honest" instruction.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Prompt Engineering for RAG Generation · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq9">
+        <div class="quiz-q">Why does requiring inline citations function as a reasoning constraint against hallucination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">It limits the number of tokens the model can generate</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq9')">The model must locate a specific source for each claim, making unsupported claims harder to generate</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">It forces the model to use BM25 retrieval instead of semantic search</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">It compresses the context before generation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When a citation is required per claim, the model must identify a source context before outputting that claim. Claims without a citable context become structurally harder to generate — it's a built-in constraint.</div>
+        <div class="quiz-feedback wrong">Citations constrain reasoning, not token count. The model must locate and tag a source for each claim, which makes it harder to generate unsourced (hallucinated) statements.</div>
+      </div>
+
+      <div class="quiz-box" id="qq10">
+        <div class="quiz-q">Based on Anthropic's research, what reduces confabulation by approximately 40% compared to vague accuracy instructions?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">Using a larger context window</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">Increasing the number of retrieved chunks from 3 to 10</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq10')">Explicitly naming the fallback response when the context is insufficient</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">Using a reranker to improve retrieval precision</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Providing a specific fallback ("say I don't have enough information") gave the model a safe exit, reducing the pressure to generate something plausible from training data.</div>
+        <div class="quiz-feedback wrong">Anthropic's finding was about prompt design: explicitly naming the fallback response ("if unsure, say...") reduced confabulation ~40% more than just saying "be accurate."</div>
+      </div>
+
+      <div class="quiz-box" id="qq11">
+        <div class="quiz-q">Given the lost-in-the-middle effect, how should you order multiple retrieved chunks in the prompt?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Alphabetically by source document name</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Lowest relevance first, highest last</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq11')">Highest relevance first, second-highest last, lower relevance in the middle</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Random order to avoid any positional bias</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Liu et al. showed LLMs attend most to content at the beginning and end of long contexts. The "U-shaped" attention pattern means the most important chunks should be placed at the extremes.</div>
+        <div class="quiz-feedback wrong">The lost-in-the-middle effect means LLMs best attend to context at the start and end of a long prompt. Place highest-relevance first, second-highest last, and lower-relevance in the middle.</div>
+      </div>
+
+      <div class="quiz-box" id="qq12">
+        <div class="quiz-q">What is context compression in a RAG pipeline?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Reducing vector dimensions from 1536 to 768</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq12')">Using a model to extract or summarize relevant portions of retrieved chunks before they're injected into the prompt</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Compressing the embedding index to reduce storage costs</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Merging multiple user queries into one before retrieval</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Context compression uses a smaller LLM to filter or summarize retrieved chunks, reducing the tokens injected into the main model. LangChain's ContextualCompressionRetriever implements this automatically.</div>
+        <div class="quiz-feedback wrong">Context compression is about the prompt, not vectors. A smaller model processes retrieved chunks to extract only the relevant portions, reducing the main model's prompt length — at the cost of added latency.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — RAG Prompt Construction</h1>
+      <div class="tagline">Build and critique grounding prompts for a medical information system</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You're building a RAG system for a hospital that helps clinicians look up drug interaction information. The stakes are high: a hallucinated drug interaction could harm patients. You need to construct a prompt template that maximally grounds the model to retrieved context and handles the "I don't know" case explicitly.</p>
+        <div class="lab-prompt">Draft a system prompt (or the key sections of one) for this medical RAG system. Include: a role definition, grounding constraint, citation requirement, and fallback instruction. Share it with the assistant for critique and iteration. Aim for at least 3 exchanges.</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>Prompt Critique Assistant</span>
+          <div class="chat-badge">Medical RAG Grounding</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">You're constructing a RAG prompt for a clinical drug interaction system — high stakes, zero tolerance for hallucination. I'll critique your prompt design and push you to strengthen the grounding constraints. Start by drafting your system prompt or at least its key sections. What instructions will you give the model?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" rows="1" placeholder="Draft your RAG system prompt..."></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L4: Evaluation, Monitoring, and Iteration ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 4</div>
+      <h1>Evaluation, Monitoring, and Iteration</h1>
+      <div class="tagline">You cannot improve what you cannot measure — and RAG is notoriously hard to measure</div>
+      <div class="lesson-question">How do you know if your RAG pipeline is actually working, and how do you make it better?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — Notion AI, 2023">
+        <p class="story-text">When Notion launched Notion AI in February 2023, the team quickly discovered that internal user satisfaction surveys were a lagging indicator — they revealed problems weeks after they appeared. The engineering team, led by ML engineers who had previously worked on recommendation systems, implemented a real-time <em>faithfulness scoring</em> pipeline that evaluated every generated response against its retrieved context using a smaller judge model. Within three months, they reported a 23% reduction in reported hallucinations, not from changing the LLM, but from using the evaluations to identify and fix specific chunking failures in their workspace document indexer.</p>
+      </div>
+
+      <div class="section-heading">The RAG Evaluation Framework</div>
+      <div class="section-body">
+        <p>The dominant academic framework for RAG evaluation, codified by Es et al. in the RAGAS paper (2023), defines four core metrics that map directly to failure modes in the pipeline.</p>
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-card">
+          <h5>Faithfulness</h5>
+          <p>Are all claims in the answer supported by the retrieved context? Low faithfulness = the generation stage is hallucinating. Measured by decomposing the answer into claims and verifying each against context.</p>
+        </div>
+        <div class="compare-card">
+          <h5>Answer Relevance</h5>
+          <p>Does the answer address what the user actually asked? Low score = the answer is on-topic but doesn't answer the specific question. Often caused by vague retrieval or insufficient context.</p>
+        </div>
+        <div class="compare-card">
+          <h5>Context Precision</h5>
+          <p>What fraction of retrieved chunks are actually relevant to the query? Low precision = the retriever is returning noise that confuses the generator.</p>
+        </div>
+        <div class="compare-card">
+          <h5>Context Recall</h5>
+          <p>Does the retrieved context contain all information needed to answer the query? Low recall = the retriever is missing key chunks. Answers will be incomplete or incorrect even if faithful.</p>
+        </div>
+      </div>
+
+      <div class="section-heading">LLM-as-Judge Evaluation</div>
+      <div class="section-body">
+        <p>Human evaluation of RAG outputs is expensive and slow. The emerging standard is <em>LLM-as-judge</em>: using a separate LLM (often GPT-4 or Claude) to evaluate faithfulness, relevance, and context quality at scale. Zheng et al. (2023) at UC Berkeley showed in the MT-Bench paper that GPT-4 as judge agreed with human expert evaluators 80–85% of the time — comparable to inter-human agreement rates.</p>
+        <p>Tools like <strong>RAGAS</strong> (open source, 2023), <strong>TruLens</strong> (TruEra), and <strong>DeepEval</strong> automate LLM-as-judge evaluation pipelines. They generate evaluation datasets from your documents, run queries through your pipeline, score each response, and surface the lowest-scoring query types for debugging.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Industry Pattern</div>
+        <p>Cohere's RAG deployment team documented in their 2023 engineering blog that teams who implemented automated evaluation pipelines from week one shipped improvements 3x faster than teams that relied on manual review. The evaluation pipeline is infrastructure, not an afterthought — build it alongside the retrieval pipeline, not after launch.</p>
+      </div>
+
+      <div class="section-heading">What to Monitor in Production</div>
+      <div class="section-body">
+        <p><strong>Retrieval latency</strong> — p50, p95, p99 latency for the retrieval stage separately from generation. Spikes in retrieval latency usually indicate index fragmentation or vector database replication lag.</p>
+        <p><strong>Context utilization rate</strong> — What fraction of retrieved chunks does the model actually cite? If the model consistently ignores 4 of 5 retrieved chunks, your top-k is too high and you're wasting tokens.</p>
+        <p><strong>Unanswerable rate</strong> — What fraction of queries result in "I don't have enough information"? A sudden increase often indicates an indexing failure or a new query domain your corpus doesn't cover.</p>
+        <p><strong>Query distribution drift</strong> — Are users asking different types of questions over time? If your corpus covers product documentation but users start asking about pricing (not indexed), precision will collapse. Monitor embedding-space clustering of incoming queries.</p>
+      </div>
+
+      <div class="section-heading">The Improvement Loop</div>
+      <div class="section-body">
+        <p>Each RAGAS metric points to a different stage for improvement. Low faithfulness → fix generation (stronger grounding instructions, better prompt). Low context precision → fix retrieval (reranker, query transformation). Low context recall → fix chunking or indexing (chunk size, overlap, coverage gaps). This mapping turns evaluation from a grading exercise into a debugging tool.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">RAGAS</span><span class="kt-def">RAG Assessment framework. Open-source evaluation suite measuring faithfulness, answer relevance, context precision, and context recall.</span></div>
+      <div class="key-term"><span class="kt-term">LLM-as-judge</span><span class="kt-def">Using a separate LLM to evaluate the quality of RAG outputs at scale. Achieves 80–85% agreement with human experts per MT-Bench study.</span></div>
+      <div class="key-term"><span class="kt-term">Context utilization rate</span><span class="kt-def">The fraction of retrieved chunks the model actually references in its answer. Low rates indicate over-retrieval.</span></div>
+      <div class="key-term"><span class="kt-term">Unanswerable rate</span><span class="kt-def">The fraction of queries where the model correctly returns "I don't know." Sudden changes signal indexing failures or corpus gaps.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Closing Principle</div>
+        <p>The RAGAS metric that is lowest is where you spend your engineering time. The pipeline is only as strong as its weakest measured stage — and the unmeasured stage is always the weakest one, because you have no signal to improve it.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Evaluation, Monitoring, and Iteration · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq13">
+        <div class="quiz-q">In the RAGAS framework, low <em>context precision</em> indicates a problem in which pipeline stage?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">The generation stage is hallucinating</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">The chunking stage is producing overlapping segments</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq13')">The retriever is returning irrelevant chunks that confuse the generator</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">The embedding model is producing low-quality vectors</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Context precision measures what fraction of retrieved chunks are actually relevant. Low precision means the retriever is pulling in noise — fix with reranking or better query transformation, not by changing the LLM.</div>
+        <div class="quiz-feedback wrong">Context precision is about retrieval quality, not generation. Low precision means irrelevant chunks are being retrieved and injected into the prompt, potentially misleading the generator.</div>
+      </div>
+
+      <div class="quiz-box" id="qq14">
+        <div class="quiz-q">What did the MT-Bench study (Zheng et al., 2023) establish about LLM-as-judge evaluation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">LLM judges are unreliable because they share biases with the models they evaluate</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq14')">GPT-4 as judge agreed with human expert evaluators 80–85% of the time, comparable to inter-human agreement</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Smaller models outperform GPT-4 as judges for RAG evaluation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Human evaluation is 3x more accurate than LLM-as-judge for faithfulness</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The MT-Bench paper showed GPT-4 as judge agreed with human experts at rates similar to how much human experts agree with each other — validating LLM-as-judge as a scalable alternative to manual review.</div>
+        <div class="quiz-feedback wrong">MT-Bench showed LLM-as-judge is actually quite reliable — GPT-4 agreed with human experts 80–85% of the time, on par with inter-human agreement rates, making it a viable scalable alternative.</div>
+      </div>
+
+      <div class="quiz-box" id="qq15">
+        <div class="quiz-q">A sudden increase in the unanswerable rate typically signals what?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">The LLM's context window has been exceeded</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq15')">An indexing failure or a new query domain the corpus doesn't cover</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">The reranker is being too aggressive in filtering results</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">The embedding model has drifted from its training distribution</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Sudden spikes in "I don't know" responses typically mean either the corpus stopped updating (indexing failure) or users started asking about a domain not covered in the index — both require investigation outside the generation stage.</div>
+        <div class="quiz-feedback wrong">A sudden rise in unanswerable rate usually means the corpus doesn't cover what users are asking — either due to an indexing failure (documents not being processed) or a new query domain entering the system.</div>
+      </div>
+
+      <div class="quiz-box" id="qq16">
+        <div class="quiz-q">What does a low RAGAS <em>faithfulness</em> score specifically point to?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">The retriever is missing key chunks needed to answer the query</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">The chunks are too small and lack sufficient context</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq16')">The generation stage is producing claims not supported by the retrieved context</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">The user query is ambiguous and retrieves irrelevant results</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Faithfulness measures whether every claim in the answer is supported by retrieved context. Low faithfulness = the model is drawing on training knowledge instead of context — a generation-stage failure to be addressed through better grounding instructions.</div>
+        <div class="quiz-feedback wrong">Faithfulness is specifically about the generation stage: are all answer claims grounded in the retrieved context? Low faithfulness = hallucination at generation time. Fix with stronger grounding instructions and citation requirements.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — RAG Evaluation Design</h1>
+      <div class="tagline">Build an evaluation plan for a production RAG system</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've just launched a RAG-powered customer support system for a SaaS product. After two weeks in production, users are complaining that answers "feel off" but the CSAT scores haven't moved yet — the Notion AI problem. You need to design a systematic evaluation and monitoring plan using RAGAS metrics and LLM-as-judge techniques to identify the root cause before it affects CSAT.</p>
+        <div class="lab-prompt">Propose which RAGAS metrics to prioritize first and why, then describe what you'd do if each metric comes back low. The assistant will ask clarifying questions and challenge your prioritization. Aim for at least 3 exchanges to complete the lab.</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>Evaluation Design Advisor</span>
+          <div class="chat-badge">RAG Monitoring Strategy</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Users say answers "feel off" but you don't have data yet to pinpoint why. The four RAGAS metrics each point to different pipeline stages. Where do you start? Tell me which metric you'd measure first and why — I'll push back on your reasoning and ask what you'd do if it came back low versus high.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" rows="1" placeholder="Propose your evaluation approach..."></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 7 Test</h1>
+      <div class="tagline">RAG Pipeline Design · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt1">
+        <div class="quiz-q">1. Which two pipeline stages are considered "online" (query-time) in a RAG system?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">Retrieval and generation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Chunking and embedding</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Ingestion and indexing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Embedding and retrieval</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Retrieval and generation run per user query — they are latency-sensitive and must complete in milliseconds.</div>
+        <div class="quiz-feedback wrong">Retrieval and generation are the online stages. Ingestion, chunking, embedding, and indexing are offline — they run when documents are processed, not per query.</div>
+      </div>
+
+      <div class="quiz-box" id="mt2">
+        <div class="quiz-q">2. What is the primary purpose of attaching metadata to each document chunk?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Increasing vector dimensionality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">Enabling filtered retrieval using structured fields without embedding those constraints</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Improving embedding model accuracy</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Reducing chunk overlap during splitting</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Metadata fields like date, source, and category allow pre-filtering the index — e.g., "only search 2024 documents" — without encoding that constraint into the semantic vector.</div>
+        <div class="quiz-feedback wrong">Metadata enables filtered retrieval. Fields like date, source, or access-control tags let you restrict the search space before semantic comparison — they don't affect embedding quality.</div>
+      </div>
+
+      <div class="quiz-box" id="mt3">
+        <div class="quiz-q">3. What does BM25 stand for and what retrieval mode does it represent?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Binary Matching 25 — semantic retrieval</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">Best Match 25 — sparse/keyword retrieval</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Batch Mode 25 — hybrid retrieval</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Base Model 25 — dense retrieval</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BM25 (Best Match 25) is a probabilistic keyword ranking function — the sparse retrieval standard used by default in Elasticsearch and OpenSearch.</div>
+        <div class="quiz-feedback wrong">BM25 stands for Best Match 25. It's a sparse/keyword retrieval function — probabilistic, fast, and excellent for exact-match queries like product codes and proper nouns.</div>
+      </div>
+
+      <div class="quiz-box" id="mt4">
+        <div class="quiz-q">4. What finding from the BEIR benchmark justifies using hybrid retrieval in production?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Dense retrieval universally outperforms BM25 on all tasks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">BM25 is sufficient for all enterprise use cases</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">No single method dominated all 18 datasets; hybrid systems achieved the highest average nDCG@10</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Reranking alone achieves better results than any retrieval method</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BEIR tested 18 systems across 18 diverse datasets. Dense retrieval won on semantic tasks, BM25 on exact-match tasks, and hybrid systems achieved the best average across all domains.</div>
+        <div class="quiz-feedback wrong">BEIR showed domain-specific strengths for each method. Neither dense nor sparse universally dominates. Hybrid retrieval (combining both) achieved the highest average performance across all 18 test datasets.</div>
+      </div>
+
+      <div class="quiz-box" id="mt5">
+        <div class="quiz-q">5. HyDE was introduced to solve which specific retrieval problem?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Slow retrieval latency in large vector indexes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">High cost of embedding API calls</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">Query-document embedding mismatch — queries and documents have different styles even when semantically related</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Lack of citation support in LLM-generated answers</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HyDE bridges the gap by generating a hypothetical document-style answer to the query, then embedding that instead of the sparse query — resulting in embeddings that better match actual document embeddings.</div>
+        <div class="quiz-feedback wrong">HyDE targets the embedding mismatch: a user query is stylistically different from a document even when they're about the same topic. Embedding a hypothetical answer produces an embedding that better resembles real documents.</div>
+      </div>
+
+      <div class="quiz-box" id="mt6">
+        <div class="quiz-q">6. In a RAG prompt, where should the user query be positioned relative to the retrieved context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Before the context to orient the model</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">After the context, closest to the generation point</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Interleaved between context chunks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Position doesn't matter; only the system instruction placement matters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Placing the user query after the context — closest to where generation begins — improves grounding. Anthropic's engineering team found this ordering improves context utilization.</div>
+        <div class="quiz-feedback wrong">The query should be placed last, after the context block and citation instructions. This positions it closest to the generation point, which research suggests improves the model's use of the preceding context.</div>
+      </div>
+
+      <div class="quiz-box" id="mt7">
+        <div class="quiz-q">7. What does a "graceful exit" instruction do in a RAG system prompt?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">It tells the model to switch to a different retrieval strategy</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">It provides a specific fallback response when the context is insufficient, reducing confabulation pressure</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">It compresses the context before generation begins</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">It routes low-confidence queries to human review</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Providing a concrete fallback ("say I don't have enough information") gives the model a safe path that doesn't require generating something plausible from training data — reducing hallucination by ~40% per Anthropic's research.</div>
+        <div class="quiz-feedback wrong">A graceful exit instruction is a specific fallback response (e.g., "If the context doesn't contain enough information, respond: 'I don't have enough information'"). It removes the pressure to confabulate when context is insufficient.</div>
+      </div>
+
+      <div class="quiz-box" id="mt8">
+        <div class="quiz-q">8. Reciprocal Rank Fusion (RRF) is described as "parameter-free." What does this mean in practice?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">It requires no hardware to run</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">It doesn't use any ranking signals from the retrievers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">It doesn't require tuning weighting hyperparameters to combine ranked lists effectively</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">It outputs binary relevance scores rather than continuous scores</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Unlike linear interpolation (α × dense_score + (1-α) × sparse_score), RRF requires no weight tuning. It computes 1/(rank+60) for each document across each list and sums — robust across domains without tuning.</div>
+        <div class="quiz-feedback wrong">Parameter-free means RRF doesn't require you to tune a weight hyperparameter (like α in weighted sum fusion). It uses a fixed formula: sum of 1/(rank+60) across all ranked lists — effective without any domain-specific calibration.</div>
+      </div>
+
+      <div class="quiz-box" id="mt9">
+        <div class="quiz-q">9. What is the "lost-in-the-middle" effect, and who documented it?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Vector indexes lose precision for documents in the middle of a corpus — documented by Pinecone (2023)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">LLMs underweight context in the middle of long prompts — documented by Liu et al. (2023)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Chunking splits key sentences in the middle of paragraphs — documented by LangChain (2022)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Rerankers ignore documents ranked in the middle of first-stage results — documented by Cohere (2023)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Liu et al. (2023) showed across multiple LLMs that attention follows a U-shape — strongest at the beginning and end of context, weakest in the middle. This has direct implications for how you order retrieved chunks in prompts.</div>
+        <div class="quiz-feedback wrong">Liu et al. (2023) documented that LLMs show U-shaped attention over long contexts — strongest at the start and end, weakest in the middle. Critical retrieved chunks should be placed at the extremes, not sandwiched in the center.</div>
+      </div>
+
+      <div class="quiz-box" id="mt10">
+        <div class="quiz-q">10. What does RAGAS stand for and what does it measure?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Retrieval Accuracy and Generation Assessment Suite — measures only generation quality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">RAG Assessment — measures faithfulness, answer relevance, context precision, and context recall</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Ranked Answer and Graph Analysis System — measures knowledge graph quality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Retrieval Augmented Generation Automatic Scorer — measures only retrieval latency</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RAGAS (RAG Assessment) provides four metrics that map to different pipeline stages: faithfulness (generation), answer relevance (generation), context precision (retrieval), and context recall (retrieval + indexing).</div>
+        <div class="quiz-feedback wrong">RAGAS stands for RAG Assessment. It measures four metrics: faithfulness, answer relevance, context precision, and context recall — each pointing to a different stage of the RAG pipeline when they come back low.</div>
+      </div>
+
+      <div class="quiz-box" id="mt11">
+        <div class="quiz-q">11. What does low RAGAS context recall indicate about the pipeline?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">The generation stage is not using retrieved context</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">The retriever is returning irrelevant chunks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">The retrieved context is missing information needed to fully answer the query</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">The embedding model has low dimensional accuracy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Context recall measures whether all information needed to answer the query is present in the retrieved set. Low recall means key information exists in the corpus but wasn't retrieved — fix with better retrieval or improved chunking/indexing.</div>
+        <div class="quiz-feedback wrong">Context recall is about coverage: does the retrieved context contain what's needed? Low recall means relevant information exists in your corpus but wasn't retrieved — a retrieval or indexing problem, not a generation problem.</div>
+      </div>
+
+      <div class="quiz-box" id="mt12">
+        <div class="quiz-q">12. What did Elasticsearch's 2023 developer survey find about where RAG quality issues originate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">71% originated in the generation stage</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">61% originated in the indexing pipeline — chunking and embedding</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">50% originated in the vector database storage layer</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">80% originated in the user query formulation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 61% of reported RAG quality issues were traced to chunking and embedding — not the LLM. This means most debugging effort spent on the generation stage is misplaced.</div>
+        <div class="quiz-feedback wrong">Elasticsearch found 61% of quality issues came from the indexing pipeline (chunking and embedding). Despite this, most teams debug the LLM first — which is why having RAGAS metrics matters for directing effort correctly.</div>
+      </div>
+
+      <div class="quiz-box" id="mt13">
+        <div class="quiz-q">13. In the context of LLM-as-judge evaluation, what did the MT-Bench paper establish?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">LLM judges are biased toward longer answers and should not be used for RAG</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">GPT-4 as judge agreed with human experts 80–85% of the time, comparable to inter-human agreement</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Human evaluation is always necessary for faithfulness; LLM judges cannot detect hallucinations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Smaller models are more accurate judges than GPT-4 for domain-specific RAG</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Zheng et al. at UC Berkeley showed GPT-4 as judge agreed with human experts at rates similar to how much humans agree with each other — validating LLM-as-judge as a scalable, reliable evaluation method.</div>
+        <div class="quiz-feedback wrong">MT-Bench (Zheng et al., UC Berkeley, 2023) established that GPT-4 as judge reaches 80–85% agreement with human experts — on par with inter-human agreement — making LLM-as-judge a scalable and valid alternative to manual review.</div>
+      </div>
+
+      <div class="quiz-box" id="mt14">
+        <div class="quiz-q">14. What does a sudden drop in context utilization rate (the fraction of retrieved chunks the model cites) most likely indicate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The LLM's context window has been exceeded</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The embedding model has drifted from its original training distribution</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">The top-k value is too high — the system is retrieving more chunks than the model uses</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The reranker is filtering out all relevant results</button>
+        </div>
+        <div class="quiz-feedback right">Correct. If the model consistently ignores 4 of 5 retrieved chunks, the top-k is too high — you're wasting tokens on context the model doesn't use. Reduce k or improve retrieval precision.</div>
+        <div class="quiz-feedback wrong">Low context utilization typically means over-retrieval: the system fetches more chunks than the model actually needs, wasting prompt tokens. The fix is reducing top-k or improving retrieval precision so fewer, more relevant chunks are returned.</div>
+      </div>
+
+      <div class="quiz-box" id="mt15">
+        <div class="quiz-q">15. Step-back prompting (Google DeepMind, 2023) transforms a query by doing what?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Breaking it into multiple sub-queries and union-merging their results</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Generating a hypothetical answer and embedding it for retrieval</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Reformulating the query at a higher abstraction level to retrieve foundational context first</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Converting the query to keyword form before BM25 indexing</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Step-back prompting reframes specific queries at a higher abstraction level — e.g., "ibuprofen 800mg side effects" → "NSAID pharmacokinetics" — to retrieve the foundational knowledge that underlies the specific question.</div>
+        <div class="quiz-feedback wrong">Step-back prompting reformulates the query at a higher abstraction level. A specific question like "side effects of ibuprofen at 800mg?" becomes "NSAID pharmacokinetics?" — retrieving the foundational context before the specific answer.</div>
+      </div>
+
+      <div class="mt-score" id="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">Back to Start</button>
+    </div>
+  </div>
+
+</div><!-- /.content-area -->
+
+<script>
+var COURSE_ID='rag_systems_from_scratch';
+var MODULE_ID='rag-m7';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var key=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+key);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var key=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+key);
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert RAG systems engineer helping a student debug a RAG pipeline. The student is working through the six stages of a RAG pipeline (ingestion, chunking, embedding, indexing, retrieval, generation) to diagnose why a system returns irrelevant answers. The team blames the LLM, but the real problem is likely upstream. Push the student to think systematically: what signals indicate each stage is working? What does a failure look like at each stage? Challenge their reasoning. Ask follow-up questions. If they jump to generation first, redirect them upstream. Keep responses focused and under 120 words. Stay strictly on RAG pipeline diagnosis.',
+  l2:'You are a senior information retrieval engineer advising on RAG retrieval strategy for a legal research firm. The student must choose retrieval strategies for three query types: (1) exact citation lookups like "42 U.S.C. § 1983", (2) conceptual queries like "cases about police immunity", and (3) complex multi-part questions spanning circuits and time periods. Challenge their choices: ask why BM25 or dense retrieval is appropriate, what happens if they pick wrong, what hybrid would look like, and whether query decomposition or HyDE would help. Keep responses under 130 words and strictly on retrieval strategy for legal RAG.',
+  l3:'You are a prompt engineering expert reviewing RAG system prompts for a clinical drug interaction system. The student is drafting a prompt with a role definition, grounding constraint, citation requirement, and fallback instruction. Critique their draft: Is the grounding instruction specific enough? Does the fallback name the exact failure mode? Is the citation format actionable? Does the role constraint prevent the model from drawing on training knowledge? Push them to tighten every instruction. Give specific suggested rewrites when they draft something weak. Keep responses under 130 words and focused on RAG prompt engineering for high-stakes medical applications.',
+  l4:'You are a RAG systems evaluation expert helping a student design a monitoring plan for a production customer support RAG system. Users say answers "feel off" but CSAT scores haven\'t moved yet. The student should prioritize RAGAS metrics and explain what action each low score would trigger. Challenge their metric prioritization: why start with faithfulness vs. context precision? What does each low score tell you about which pipeline stage to fix? What\'s their LLM-as-judge setup? How do they create the evaluation dataset? Keep responses under 130 words and focused on RAG evaluation strategy using RAGAS metrics.'
+};
+
+var _fallbackSets={
+  l1:[
+    "Good start. Let's be systematic. What specific signal tells you the chunking stage is working correctly — what would you look for in the retrieved chunks?",
+    "If retrieval is returning chunks that look relevant but answers are still wrong, where does that point you in the pipeline? Think about what the generation stage receives.",
+    "You've identified a candidate stage. What's the cheapest test you could run to confirm it's the failure point before making changes?"
+  ],
+  l2:[
+    "Interesting choice. But consider this: for exact citation lookups like '42 U.S.C. § 1983', would a semantic embedding even recognize that as a legal citation versus a generic number string? What does that imply for your retrieval choice?",
+    "You're proposing dense retrieval for conceptual queries — reasonable. But what happens when a key legal concept uses different terminology across decades of case law? How does your strategy handle semantic drift in legal language?",
+    "Good thinking on the multi-part question. How would you structure the sub-queries for decomposition? And how do you merge the results without creating contradictions in the retrieved context?"
+  ],
+  l3:[
+    "Your role definition is a start, but it's generic. What specific failure mode does it prevent? 'Be a precise assistant' doesn't tell the model what to do when context is insufficient — what's the concrete fallback?",
+    "The citation format matters more than people think. '[Source 1]' versus '[1]' versus 'According to the drug monograph...' produce different generation behaviors. What format makes it hardest to generate an uncited claim?",
+    "You've written a grounding constraint, but it says 'use only provided context.' Does that explicitly prohibit using training knowledge, or does the model have wiggle room? Tighten the language."
+  ],
+  l4:[
+    "Starting with faithfulness is a reasonable choice. But here's the thing: if faithfulness is high but users still say answers feel off, which metric would you look at next and why?",
+    "Let's say context precision comes back at 0.4 — only 40% of retrieved chunks are relevant. Walk me through the specific changes you'd make to the pipeline. Would you adjust retrieval, reranking, or query transformation first?",
+    "Your evaluation plan needs a dataset. How do you generate evaluation questions for a customer support RAG system? And how do you get ground-truth answers to measure recall against?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var set=_fallbackSets[labId];
+  var idx=_fallbackIdx[labId]%set.length;
+  _fallbackIdx[labId]++;
+  return set[idx];
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function resetChat(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var greetings={
+    l1:"Ready to help you debug this RAG pipeline. The team says the LLM is hallucinating — but remember, 61% of the time the real issue is upstream, in chunking or embedding. Which of the six stages do you want to start with, and what would a healthy signal look like there?",
+    l2:"You're designing retrieval for a legal research RAG system. Attorneys will search with exact citations, conceptual queries, and complex multi-part questions. Each query type has different characteristics that favor different retrieval strategies. Start with one query type and propose your approach — I'll push back on your reasoning and ask about tradeoffs.",
+    l3:"You're constructing a RAG prompt for a clinical drug interaction system — high stakes, zero tolerance for hallucination. I'll critique your prompt design and push you to strengthen the grounding constraints. Start by drafting your system prompt or at least its key sections. What instructions will you give the model?",
+    l4:"Users say answers 'feel off' but you don't have data yet to pinpoint why. The four RAGAS metrics each point to different pipeline stages. Where do you start? Tell me which metric you'd measure first and why — I'll push back on your reasoning and ask what you'd do if it came back low versus high."
+  };
+  addMsg(labId,'ai',greetings[labId]||'How can I help?');
+  var btn=document.getElementById('send-'+labId);
+  var inp=document.getElementById('inp-'+labId);
+  if(btn) btn.disabled=false;
+  if(inp) inp.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  inp.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    inp.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:350,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an error generating a response.';
+      if(thinking&&thinking.parentNode) thinking.remove();
+      chatHistories[labId].push({role:'assistant',content:text});
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      inp.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      inp.disabled=false;
+      inp.focus();
+      return;
+    }
+  }
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({
+      type:'labComplete',
+      courseId:COURSE_ID,
+      moduleId:MODULE_ID,
+      lessonId:labId,
+      exchangeCount:chatExchanges[labId]
+    },'*');
+  }
+}
+
+document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){
+  ta.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&!e.shiftKey){
+      e.preventDefault();
+      var labId=ta.id.replace('inp-','');
+      chatSend(labId);
+    }
+  });
+});
+
+updateTabs();
+</script>
+
+</body>
+</html>

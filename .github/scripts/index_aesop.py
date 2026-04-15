@@ -7,6 +7,8 @@ and upserts vectors to Pinecone for RAG-based gap analysis.
 
 import os
 import re
+import sys
+import time
 import hashlib
 from pathlib import Path
 import requests
@@ -24,8 +26,9 @@ PINECONE_INDEX    = "aesop-academy"
 MODULES_DIR       = Path("ai-academy/modules")
 CHUNK_SIZE        = 500   # words per chunk
 CHUNK_OVERLAP     = 50    # word overlap between chunks
-EMBED_BATCH       = 5     # vectors per Voyage API call (keep small — chunks are large)
+EMBED_BATCH       = 20    # vectors per Voyage API call (larger = fewer calls)
 UPSERT_BATCH      = 50    # vectors per Pinecone upsert
+EMBED_DELAY       = 0.5   # seconds between embedding batches (rate limit guard)
 
 # ── HTML PARSING ─────────────────────────────────────────────────────────────
 
@@ -38,9 +41,12 @@ def extract_text_from_html(filepath):
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()
 
-    # Extract title from first h1 or <title>
+    # Extract title: prefer h1 over <title> (title can be malformed in fragments)
     title_tag = soup.find("h1") or soup.find("title")
     title = title_tag.get_text(strip=True) if title_tag else filepath.stem
+    # Safety: truncate absurdly long titles (malformed <title> in fragment files)
+    if len(title) > 120:
+        title = title[:120].rsplit(" ", 1)[0] + "…"
 
     # Get all visible text
     text = soup.get_text(separator=" ", strip=True)
@@ -65,32 +71,45 @@ def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
 
 # ── EMBEDDING ────────────────────────────────────────────────────────────────
 
-def embed_texts(texts, retries=3):
+def embed_texts(texts, retries=5):
     """Embed a batch of texts using Voyage-3 via VoyageAI REST API."""
-    import time
-
     for attempt in range(retries):
-        resp = requests.post(
-            "https://api.voyageai.com/v1/embeddings",
-            headers={
-                "Authorization": f"Bearer {VOYAGE_API_KEY}",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "voyage-3",
-                "input": texts,
-                "input_type": "document",
-            },
-            timeout=120,
-        )
+        try:
+            resp = requests.post(
+                "https://api.voyageai.com/v1/embeddings",
+                headers={
+                    "Authorization": f"Bearer {VOYAGE_API_KEY}",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "voyage-3",
+                    "input": texts,
+                    "input_type": "document",
+                },
+                timeout=120,
+            )
+        except requests.exceptions.RequestException as e:
+            if attempt < retries - 1:
+                wait = min(5 * 2 ** attempt, 60)
+                print(f"    Network error, retrying in {wait}s... ({e})")
+                time.sleep(wait)
+                continue
+            raise RuntimeError(f"Voyage network error after {retries} retries: {e}")
 
         if resp.status_code == 200:
             data = resp.json()["data"]
             return [item["embedding"] for item in data]
 
         if resp.status_code == 429 and attempt < retries - 1:
-            wait = (attempt + 1) * 5
+            # Exponential backoff: 5, 10, 20, 40s
+            wait = min(5 * 2 ** attempt, 60)
             print(f"    Rate limited, waiting {wait}s...")
+            time.sleep(wait)
+            continue
+
+        if resp.status_code >= 500 and attempt < retries - 1:
+            wait = min(5 * 2 ** attempt, 60)
+            print(f"    Server error ({resp.status_code}), retrying in {wait}s...")
             time.sleep(wait)
             continue
 
@@ -148,13 +167,15 @@ def main():
             })
 
     print(f"\nTotal chunks to index: {len(all_vectors)}")
+    print(f"Embedding batches: {len(all_vectors) // EMBED_BATCH + 1} (batch size {EMBED_BATCH})")
 
     if not all_vectors:
         print("No content to index.")
         return
 
-    # Embed in batches
+    # Embed in batches with rate limiting
     print("\nEmbedding chunks...")
+    embed_start = time.time()
     for batch_start in range(0, len(all_vectors), EMBED_BATCH):
         batch = all_vectors[batch_start : batch_start + EMBED_BATCH]
         texts = [v["text"] for v in batch]
@@ -164,7 +185,15 @@ def main():
             vec["embedding"] = emb
 
         done = min(batch_start + EMBED_BATCH, len(all_vectors))
-        print(f"  Embedded {done}/{len(all_vectors)}")
+        elapsed = time.time() - embed_start
+        # Print progress every 10 batches to keep log manageable
+        if (done // EMBED_BATCH) % 10 == 0 or done >= len(all_vectors):
+            print(f"  Embedded {done}/{len(all_vectors)} ({elapsed:.0f}s)")
+
+        # Rate limit guard
+        time.sleep(EMBED_DELAY)
+
+    print(f"  Embedding complete in {time.time() - embed_start:.0f}s")
 
     # Upsert to Pinecone in batches
     print("\nUpserting to Pinecone...")

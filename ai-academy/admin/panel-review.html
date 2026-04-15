@@ -535,6 +535,31 @@
       margin-bottom: 12px;
     }
 
+    /* ── Detail panel (expandable per-course) ── */
+    .detail-row td { padding: 0 !important; border-bottom: 1px solid var(--border); }
+    .detail-panel { padding: 16px 20px; background: rgba(15,23,42,0.6); }
+    .detail-panel .mod-block { margin-bottom: 20px; }
+    .detail-panel .mod-block:last-child { margin-bottom: 0; }
+    .mod-heading { font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+    .mod-heading .mod-verdict { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px; }
+    .reviewer-card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; }
+    .reviewer-card.has-error { opacity: 0.5; }
+    .rev-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .rev-name { font-weight: 700; font-size: 13px; }
+    .rev-score { font-weight: 700; font-size: 13px; color: var(--accent); }
+    .rev-verdict { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 3px; margin-left: 8px; }
+    .dim-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 11px; }
+    .dim-label { width: 130px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dim-bar-bg { flex: 1; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+    .dim-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .dim-val { width: 40px; text-align: right; color: var(--muted); }
+    .rev-notes { margin-top: 8px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .rev-notes strong { color: var(--warn); }
+    .rev-error { color: var(--err); font-size: 12px; font-style: italic; }
+    .expand-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 2px 6px; transition: transform 0.2s; }
+    .expand-btn:hover { color: var(--accent); }
+    .expand-btn.open { transform: rotate(90deg); }
+
     @media (max-width: 768px) {
       .header {
         flex-direction: column;
@@ -1352,9 +1377,12 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
           startFromHtml = `<select class="start-from-select" id="startFrom-${course.id}" title="Start from module..."><option value="1">From M1</option>${opts.slice(1)}</select>`;
         }
 
+        const hasReport = rpt && rpt.modules && rpt.modules.length > 0;
+        const expandBtn = hasReport ? `<button class="expand-btn" id="exp-${course.id}" onclick="toggleDetail('${course.id}')" title="Show details">▶</button>` : '';
+
         return `
           <tr id="row-${course.id}">
-            <td>${statusDot}</td>
+            <td>${expandBtn}${statusDot}</td>
             <td><span class="course-title">${course.icon || ''} ${course.title}</span></td>
             <td>${modCount || '—'}</td>
             <td><span class="last-reviewed">${lastReviewed}</span></td>
@@ -1364,9 +1392,102 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
               ${startFromHtml}
             </td>
           </tr>
+          <tr class="detail-row" id="detail-${course.id}" style="display:none;">
+            <td colspan="6">${hasReport ? buildDetailPanel(course) : ''}</td>
+          </tr>
         `;
       }).join('');
     }
+
+    function toggleDetail(courseId) {
+      const row = document.getElementById('detail-' + courseId);
+      const btn = document.getElementById('exp-' + courseId);
+      if (!row) return;
+      const visible = row.style.display !== 'none';
+      row.style.display = visible ? 'none' : 'table-row';
+      if (btn) btn.classList.toggle('open', !visible);
+    }
+
+    function verdictColor(verdict) {
+      if (!verdict) return '#94a3b8';
+      return verdict.color || '#94a3b8';
+    }
+
+    function dimBarColor(score, max) {
+      const pct = max > 0 ? score / max : 0;
+      if (pct >= 0.85) return 'var(--ok)';
+      if (pct >= 0.7) return '#eab308';
+      if (pct >= 0.55) return 'var(--warn)';
+      return 'var(--err)';
+    }
+
+    function buildDetailPanel(course) {
+      const rpt = course._evalReport;
+      if (!rpt || !rpt.modules || rpt.modules.length === 0) return '';
+      const html = ['<div class="detail-panel">'];
+
+      for (const mod of rpt.modules) {
+        const reviews = mod.reviews || {};
+        const revArr = typeof reviews === 'object' && !Array.isArray(reviews)
+          ? Object.values(reviews) : (Array.isArray(reviews) ? reviews : []);
+        const verdictLabel = mod.panelVerdict ? mod.panelVerdict.label : '';
+        const verdictClr = mod.panelVerdict ? verdictColor(mod.panelVerdict) : '';
+
+        html.push('<div class="mod-block">');
+        html.push(`<div class="mod-heading">${mod.module}`);
+        if (mod.panelAverage != null) {
+          html.push(` <span style="color:var(--muted);font-size:12px;font-weight:400;">${mod.panelAverage}/100</span>`);
+        }
+        if (verdictLabel) {
+          html.push(` <span class="mod-verdict" style="background:${verdictClr};color:#000;">${verdictLabel}</span>`);
+        }
+        html.push('</div>');
+
+        for (const rev of revArr) {
+          if (rev.error) {
+            html.push(`<div class="reviewer-card has-error"><div class="rev-header"><span class="rev-name">${rev.reviewer}</span><span class="rev-error">${rev.error}</span></div></div>`);
+            continue;
+          }
+
+          html.push('<div class="reviewer-card">');
+          html.push('<div class="rev-header">');
+          html.push(`<span class="rev-name">${rev.reviewer}</span>`);
+          html.push('<span>');
+          if (rev.total != null) html.push(`<span class="rev-score">${rev.total}/100</span>`);
+          if (rev.verdict) html.push(`<span class="rev-verdict" style="background:${verdictColor(rev.verdict)};color:#000;">${rev.verdict.label}</span>`);
+          html.push('</span></div>');
+
+          // Dimension bars
+          if (rev.dimScores && rev.dimScores.length > 0) {
+            for (const ds of rev.dimScores) {
+              const pct = ds.max > 0 ? Math.round((ds.score / ds.max) * 100) : 0;
+              html.push(`<div class="dim-bar-row">`);
+              html.push(`<span class="dim-label" title="D${ds.dim}: ${ds.name}">D${ds.dim} ${ds.name}</span>`);
+              html.push(`<div class="dim-bar-bg"><div class="dim-bar-fill" style="width:${pct}%;background:${dimBarColor(ds.score, ds.max)};"></div></div>`);
+              html.push(`<span class="dim-val">${ds.score}/${ds.max}</span>`);
+              html.push('</div>');
+            }
+          }
+
+          // Notes and top issue
+          if (rev.notes || rev.topIssue) {
+            html.push('<div class="rev-notes">');
+            if (rev.notes) html.push(rev.notes.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+            if (rev.topIssue && rev.topIssue !== 'none') {
+              html.push(`<br><strong>Top issue:</strong> ${rev.topIssue.replace(/</g, '&lt;').replace(/>/g, '&gt;')}`);
+            }
+            html.push('</div>');
+          }
+
+          html.push('</div>'); // reviewer-card
+        }
+        html.push('</div>'); // mod-block
+      }
+
+      html.push('</div>');
+      return html.join('');
+    }
+    window.toggleDetail = toggleDetail;
 
     // ── Pause / Stop controls ──
     let _reviewPaused = false;

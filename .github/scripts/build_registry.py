@@ -271,6 +271,19 @@ _MODULE_ID_PREFIXES = {
     "building-ai-agents-iii-tools": "ba3",
     "building-ai-agents-iv-openclaw": "ba4",
     "building-ai-agents-v-optimization": "ba5",
+    "prompt-engineering-for-developers": "pro",
+    "rag-systems-from-scratch": "rag",
+    "ai-and-the-future-of-work": "fow",
+    "ai-for-marketing-and-growth": "mkg",
+    "ai-for-small-business-managers": "sbm",
+    "ai-in-game-design-i": "gd1",
+    "ai-psychology-and-behavior": "psy",
+    "ai-risk-for-business-leaders": "rsk",
+    "ai-tools-for-solo-founders": "tsf",
+    "ai-security-and-red-teaming": "sec",
+    "building-an-ai-first-business": "baf",
+    "gpt-vs-claude-vs-gemini": "gcg",
+    "photography-and-ai": "pho",
 }
 
 # Map of course IDs whose folder name doesn't match the ID

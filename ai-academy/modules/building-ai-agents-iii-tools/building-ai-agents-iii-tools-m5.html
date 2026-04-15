@@ -1,0 +1,912 @@
+<!-- AESOP-FRAGMENT: true (injected into electives-hub.html — no <html>/<head>
+<!-- v1.0.1 | 2026-04-15 -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+/<title> wrapper) -->
+<!-- v1.0.0 | 2026-04-14 -->
+<!-- building-ai-agents-iii-tools-m5 -->
+<!-- AESOP AI Academy — Electives Module (content injection format) -->
+<!-- Hub extracts: .tab-strip, .content-area, <script> -->
+<!-- Styles loaded by electives-hub.html via elective-module.css -->
+
+<!-- TAB STRIP -->
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<!-- CONTENT AREA -->
+<div class="content-area">
+
+<!-- LESSON 1 -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>Authentication Strategies for Agent APIs</h1>
+    <div class="tagline">API keys, OAuth 2.0, and token lifecycle management — keeping agents securely credentialed at scale.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In March 2023, Samsung engineers discovered that internal source code and meeting notes had been leaked to OpenAI's servers after employees pasted confidential data directly into ChatGPT. The root cause was not malicious — it was a total absence of credential and data governance around an AI tool that had been adopted without a security framework. Samsung subsequently banned ChatGPT internally and began building private infrastructure. The incident forced the entire industry to confront a specific engineering question: when an AI agent calls external APIs on behalf of users, <em>how</em> those credentials are stored, scoped, and rotated is not an afterthought — it is the foundational design decision.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">API Keys: The Baseline and Its Limits</div>
+    <div class="section-body">
+      <p>API keys are strings — typically 32 to 64 random hex or base64 characters — that identify a calling application to a service. Every major third-party API (Stripe, Twilio, OpenWeatherMap, GitHub) issues them. They are simple to implement: include the key in an HTTP header (most commonly <code>Authorization: Bearer &lt;key&gt;</code> or a service-specific header like <code>X-API-Key</code>) and the request is authenticated.</p>
+      <p>For agents, the danger is that API keys are long-lived, service-wide credentials. A key stolen from an agent's environment variables grants the attacker full API access until the key is manually revoked. The 2022 Heroku breach demonstrated this: GitHub OAuth tokens stored in Heroku's infrastructure were exfiltrated, giving attackers access to thousands of private repositories before the compromise was detected. Heroku had to revoke all affected tokens en masse — a painful, manual recovery process that took weeks.</p>
+      <p>Best practices for key-based auth in agents: store keys in a secrets manager (AWS Secrets Manager, HashiCorp Vault, or GCP Secret Manager) rather than environment variables or code. Rotate keys on a schedule — 90-day rotation is a common baseline. Use the principle of least privilege: if the agent only needs to read data, provision a read-only key, not a full-access key. Log every key usage so anomalous call volumes surface immediately.</p>
+      <div class="callout">
+        <div class="callout-label">Critical Pattern</div>
+        <p>Never hardcode API keys in agent source code or include them in version control. GitHub's secret scanning feature automatically alerts repository owners when API keys from major providers are pushed — because this mistake is extraordinarily common. Treat every committed key as compromised the moment it is pushed.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">OAuth 2.0: Delegated Authority</div>
+    <div class="section-body">
+      <p>OAuth 2.0 is the dominant protocol for delegated authorization — scenarios where an agent acts on behalf of a specific user rather than as itself. The classic case: a scheduling agent that books calendar events needs a Google Calendar access token scoped specifically to that user's calendar. OAuth provides exactly this. The flow issues a short-lived access token (typically 1 hour) and a longer-lived refresh token. The agent presents the access token with each API call and uses the refresh token to obtain a new access token when it expires, without requiring the user to re-authenticate.</p>
+      <p>In 2021, Twitter's API v2 transition forced thousands of developer accounts to migrate from v1.1 OAuth 1.0a to OAuth 2.0. Applications that had been silently using long-lived OAuth 1.0a tokens suddenly had to implement token refresh logic. Many bots and agents broke during the transition — illustrating that token lifecycle management is not a set-and-forget concern. The agent must actively manage the refresh cycle, handle refresh token expiry (after which the user must re-authenticate entirely), and store tokens securely between sessions.</p>
+      <ul class="ul-body">
+        <li><strong>Authorization Code Flow</strong> — for agents with a human in the loop during initial setup; redirects through a browser for consent</li>
+        <li><strong>Client Credentials Flow</strong> — for machine-to-machine agents with no user context; the agent authenticates as itself</li>
+        <li><strong>Device Authorization Flow</strong> — for agents running on devices without browsers; user approves on a separate device</li>
+        <li><strong>Token Refresh</strong> — proactively refresh tokens before expiry (not after a 401 error) to avoid service interruption mid-task</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Scope Management</div>
+        <p>OAuth scopes are the permission lists attached to a token. Request only the scopes the agent actually needs. Google, Microsoft, and Salesforce all implement incremental authorization — you can request additional scopes as tasks require them rather than demanding every possible permission upfront. Overly broad scope requests increase both security risk and user trust erosion.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Service Accounts and Short-Lived Credentials</div>
+    <div class="section-body">
+      <p>For cloud-native agents — those running on AWS Lambda, GCP Cloud Run, or Azure Functions — the most secure authentication pattern avoids long-lived secrets entirely. Instead, the execution environment is granted an IAM role or service account. The cloud provider's metadata service issues short-lived credentials (often 15 minutes to 1 hour) that are automatically refreshed. The agent never stores a password or key; it simply assumes an identity the platform vouches for.</p>
+      <p>Google's Workload Identity Federation, introduced as GA in 2021, extended this model to non-Google workloads: an agent running on AWS can exchange an AWS IAM credential for a GCP access token without storing any GCP secrets at all. This federation approach is increasingly the standard for multi-cloud agent architectures. The engineering tradeoff is complexity during setup — the IAM role bindings, service account mappings, and trust configurations must be carefully defined — but the runtime security posture is significantly stronger than any stored-secret approach.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <div></div>
+    <button class="pnav-btn primary" onclick="goPage('p-q1')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 1 Quiz</span></button>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 1 Quiz</div>
+    <h1>Quiz: Auth Strategies</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. A developer accidentally commits an AWS API key to a public GitHub repository. What is the correct immediate response?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Delete the commit from git history and assume the key is safe</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Revoke the key immediately, then audit CloudTrail logs for unauthorized usage</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Make the repository private and monitor for suspicious charges</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Rotate the key on the next scheduled 90-day cycle</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The key must be treated as compromised the instant it is public. Revoking immediately and auditing logs is the only safe response — git history is often already scraped by automated bots within minutes of a push.</div>
+    <div class="quiz-feedback wrong">❌ A committed key is compromised the moment it is pushed. Automated scanning bots index GitHub continuously. Making the repo private or waiting for scheduled rotation leaves the key active and exploitable.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. Which OAuth 2.0 flow is most appropriate for an agent that runs as an autonomous background service with no user interaction during operation?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Authorization Code Flow</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Device Authorization Flow</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Client Credentials Flow</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Implicit Flow</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Client Credentials Flow is designed for machine-to-machine scenarios — the agent authenticates as itself using its own client ID and secret, with no user redirect required. Authorization Code requires a browser-based consent step intended for user delegation.</div>
+    <div class="quiz-feedback wrong">❌ Client Credentials Flow is the correct answer. It is specifically designed for server-to-server communication where no user is present. Authorization Code and Device Authorization both require human interaction at some point in the flow.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. What is the primary security advantage of cloud-native agents using IAM roles rather than stored API keys?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">IAM roles allow higher API rate limits than key-based auth</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">IAM role credentials never expire and require no management</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">IAM roles provide more detailed permission scoping than OAuth</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">The agent never stores a long-lived secret; credentials are auto-issued and short-lived</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. IAM role credentials are ephemeral — typically valid for 15 minutes to 1 hour — and issued dynamically by the cloud platform's metadata service. There is no stored secret to exfiltrate, which eliminates the most common credential compromise vector.</div>
+    <div class="quiz-feedback wrong">❌ The advantage is that no long-lived secret is ever stored. The platform issues short-lived credentials automatically. This removes the attack surface of stolen or leaked credentials entirely, which is the fundamental security improvement.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 1</span></button>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lab 1</div>
+    <h1>Lab: Designing Auth for a Multi-Service Agent</h1>
+    <div class="tagline">Practice choosing and structuring authentication strategies across real service types.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are designing authentication for an agent that integrates three services: a Stripe payment API, a Google Calendar API (acting on behalf of specific users), and an internal AWS-hosted analytics endpoint. Your AI coach will help you work through the auth strategy for each service.</p>
+    <div class="lab-prompt">Ask: "What auth pattern should I use for each of my three services, and what secrets management approach fits best for a production agent?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🔐 Auth Strategy Coach</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l1"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l1" rows="2" placeholder="Ask about auth patterns, token management, or secrets storage..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2</span></button>
+  </div>
+</div>
+
+<!-- LESSON 2 -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Rate Limits: Detection, Backoff, and Queuing</h1>
+    <div class="tagline">Every third-party API has a ceiling. Agents that hit it blindly break. Agents that anticipate it are production-grade.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In June 2021, Reddit's API infrastructure buckled under the load from third-party apps during a spike in traffic following a viral news cycle. Automated bots — many running without any rate-limit awareness — hammered endpoints until Reddit's systems began throttling indiscriminately, affecting legitimate users. Reddit subsequently introduced stricter API rate limits (100 calls per minute per OAuth client) and began enforcing them with hard 429 responses rather than silent drops. In 2023, when Reddit moved to a paid API model, the policy changes broke hundreds of bots overnight — those without robust retry and backoff logic simply died. The ones that survived were those whose developers had treated rate limits as a first-class engineering concern from the start.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Understanding Rate Limit Structures</div>
+    <div class="section-body">
+      <p>Rate limits exist in multiple dimensions simultaneously. A single API might enforce: requests per second (burst limit), requests per minute (sustained limit), requests per day (quota), and concurrent connections. Twitter's API v2, for example, uses a tiered system: the free tier allows 500,000 tweets per month read access; Basic tier allows 3,000 posts per month; and so on. Stripe enforces 100 read requests per second and 25 write requests per second per account in live mode. OpenAI's API uses tokens-per-minute limits that vary by model and tier — GPT-4 Turbo on tier 2 allows 450,000 TPM but only 5,000 RPM.</p>
+      <p>Agents must read and respect the rate limit headers returned by APIs. The standard headers, formalized in RFC 6585, include: <code>X-RateLimit-Limit</code> (the ceiling), <code>X-RateLimit-Remaining</code> (requests left in the current window), and <code>X-RateLimit-Reset</code> (Unix timestamp when the window resets). Some APIs use <code>Retry-After</code> on 429 responses instead. An agent that reads these headers and adjusts its call rate proactively will never hit a hard throttle; one that ignores them will eventually be blocked.</p>
+      <div class="callout">
+        <div class="callout-label">The 429 Response</div>
+        <p>HTTP 429 Too Many Requests is the standard throttle signal. The critical distinction is between a 429 with a <code>Retry-After</code> header (the server tells you exactly when to retry) and a 429 without one (you must back off exponentially). Never retry a 429 immediately — doing so compounds the problem and can get your API key banned entirely on some platforms.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Exponential Backoff with Jitter</div>
+    <div class="section-body">
+      <p>Exponential backoff is the standard algorithm for retrying after rate limit errors: wait 2^n seconds between retries, where n is the attempt number. After the first failure, wait 2 seconds. After the second, wait 4. After the third, 8. After the fourth, 16. Cap the backoff at a maximum (typically 64 or 128 seconds) and limit total retries (typically 5–7). This approach is mandated by Google's API client library guidelines and is the default behavior in AWS SDK retry logic.</p>
+      <p>Jitter is a critical addition. Without it, multiple agent instances that all hit the same rate limit at the same time will all retry at the same intervals — creating synchronized thundering herds that re-hit the ceiling in waves. AWS documented this problem in their 2015 "Exponential Backoff and Jitter" engineering post, demonstrating that adding random jitter (randomizing the wait time between 0 and the calculated backoff value) reduced retry collision rates by over 85%. The canonical implementation adds <code>random(0, min(cap, base * 2^attempt))</code> as the actual wait duration.</p>
+      <ul class="ul-body">
+        <li><strong>Full Jitter</strong> — sleep between 0 and the full calculated backoff; maximum spread, best for large distributed systems</li>
+        <li><strong>Equal Jitter</strong> — sleep for half the calculated backoff plus a random amount up to the other half; balances spread and minimum wait</li>
+        <li><strong>Decorrelated Jitter</strong> — sleep is <code>random(base, previous_sleep * 3)</code>; AWS's recommended variant for their SDK</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Request Queuing and Token Bucket Algorithms</div>
+    <div class="section-body">
+      <p>For agents that generate high API call volumes — a data pipeline agent processing thousands of records, for instance — reactive backoff is insufficient. The agent needs proactive rate management: a request queue with a built-in rate governor. The token bucket algorithm is the standard implementation. The bucket holds tokens equal to the rate limit. Each API call consumes one token. Tokens refill at the allowed rate (e.g., 10 per second for a 600 RPM limit). If the bucket is empty, the call waits rather than firing and failing.</p>
+      <p>In 2022, Notion's API team published their rate limit implementation details, noting that their 3 requests-per-second limit was enforced with a token bucket at their infrastructure layer. Third-party developers who implemented their own client-side token buckets saw dramatically lower 429 error rates than those relying on reactive retry. Libraries like <code>bottleneck</code> for Node.js and <code>ratelimit</code> for Python implement token bucket logic with minimal configuration overhead — wrapping an API client in a rate-limited wrapper takes fewer than ten lines of code and prevents the entire class of 429 failures.</p>
+      <div class="callout">
+        <div class="callout-label">Priority Queuing</div>
+        <p>Advanced agents often need priority queuing within their rate-limited pipeline: time-sensitive user-facing calls should preempt background batch operations. A priority queue (min-heap or tiered queue structure) sitting in front of the token bucket ensures that a user waiting for a response is never blocked behind a scheduled data sync that could run later.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 1</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Quiz</span></button>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 2 Quiz</div>
+    <h1>Quiz: Rate Limits</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. Your agent receives a 429 response with a <code>Retry-After: 45</code> header. What is the correct next action?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Immediately retry the request — 429s are sometimes transient</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Begin exponential backoff starting from 2 seconds</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">Wait exactly 45 seconds, then retry once before resuming normal operation</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Log the error and terminate the agent process</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. When a <code>Retry-After</code> header is present, the server is telling you precisely when it will accept requests again. Honor it exactly. Exponential backoff is for cases where no <code>Retry-After</code> is provided.</div>
+    <div class="quiz-feedback wrong">❌ When <code>Retry-After</code> is present, use it directly — wait the specified time, then retry. Exponential backoff is the fallback when no header tells you when to retry. Immediate retry on a 429 worsens the situation.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. Why does adding jitter to exponential backoff improve performance in distributed agent systems?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Jitter increases the maximum backoff ceiling, giving the server more recovery time</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Jitter desynchronizes retry timing across multiple instances, preventing synchronized thundering herds</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Jitter reduces the total number of retry attempts by spreading them over a longer period</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Jitter makes retry delays unpredictable so the server cannot pre-block the agent</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Without jitter, all instances that hit the rate limit at the same time back off for the same duration and retry simultaneously — hitting the ceiling again in a synchronized wave. Jitter randomizes their retry times, spreading load and breaking the collision pattern.</div>
+    <div class="quiz-feedback wrong">❌ Jitter's purpose is desynchronization. Multiple agent instances backing off for identical durations will all retry at the same moment, recreating the original traffic spike. Random jitter spreads their retries across the backoff window, which AWS documented reduces retry collisions by over 85%.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. Which approach best handles high-volume API calls in a production agent that processes thousands of records per minute?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Fire all requests simultaneously and handle 429s with aggressive retries</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Add fixed 100ms delays between every API call regardless of rate limit headers</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">Cache all results locally and batch API calls into a single nightly request</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">Implement a client-side token bucket that proactively governs call rate before requests are made</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. A token bucket algorithm proactively manages call rate — requests wait for tokens rather than firing and failing. This prevents 429s from occurring at all, which is far more efficient than any reactive retry strategy.</div>
+    <div class="quiz-feedback wrong">❌ The token bucket algorithm is the correct answer for high-volume scenarios. Reactive retry wastes requests and compounds throttling. Fixed delays are wasteful when the API could accept bursts. Proactive rate governance prevents failures before they happen.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 2</span></button>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lab 2</div>
+    <h1>Lab: Rate Limit Architecture Review</h1>
+    <div class="tagline">Design a rate-limit-aware API client for a high-throughput agent scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>Your agent needs to call the OpenAI Embeddings API at high volume — roughly 2,000 records per minute — but the API tier allows only 3,000 RPM. Design a rate management strategy that handles bursts, prioritizes urgent calls, and degrades gracefully under load.</p>
+    <div class="lab-prompt">Ask: "Walk me through designing a token bucket implementation for an embeddings pipeline, including how to handle priority calls and what happens when the bucket is empty."</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>⚡ Rate Limit Architecture Coach</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l2"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l2" rows="2" placeholder="Ask about token buckets, backoff strategies, priority queues..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3</span></button>
+  </div>
+</div>
+
+<!-- LESSON 3 -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Error Handling: Classification, Recovery, and Observability</h1>
+    <div class="tagline">Not all errors are equal. Agents that distinguish transient from permanent failures and surface them clearly are the ones that stay in production.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">On October 8, 2021, Facebook (now Meta) experienced a global outage that lasted approximately six hours. The root cause was a BGP configuration change that accidentally withdrew the routes for Facebook's DNS nameservers. From the perspective of any external system that depended on Facebook's APIs — login integrations, sharing buttons, Instagram Graph API consumers — every API call began returning DNS resolution failures rather than HTTP errors. Systems that classified all errors uniformly as "temporary API errors" retried indefinitely, creating self-inflicted load. Systems without proper timeout logic hung waiting for responses that would never come. The engineers and products that handled the outage best were those that had explicitly designed for the "dependency is completely unreachable" failure mode — not just HTTP-level errors, but network-level failures with cascading timeout logic and fallback behaviors.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Classifying API Errors by Recoverability</div>
+    <div class="section-body">
+      <p>The most important distinction in error handling is between errors the agent can recover from and errors it cannot. Retrying a 400 Bad Request is wasteful — the request is malformed and will fail every time until the agent fixes the input. Retrying a 503 Service Unavailable is correct — the service is temporarily overloaded and will likely recover. Getting this classification wrong causes either missed recoveries (giving up too early on transient failures) or retry storms (hammering a server with requests that were never going to succeed).</p>
+      <ul class="ul-body">
+        <li><strong>4xx Client Errors (except 429)</strong> — generally permanent; fix the request before retrying. 400: malformed request. 401: auth failure (refresh token, then retry once). 403: insufficient permissions (do not retry, escalate). 404: resource does not exist.</li>
+        <li><strong>429 Too Many Requests</strong> — transient; back off and retry with delay</li>
+        <li><strong>5xx Server Errors</strong> — generally transient; retry with exponential backoff. 500: server error. 502: bad gateway. 503: service unavailable. 504: gateway timeout.</li>
+        <li><strong>Network Errors</strong> — connection refused, DNS failure, timeout — may be transient or indicate full dependency outage; apply circuit breaker logic</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">The 401 Special Case</div>
+        <p>A 401 Unauthorized from an API that uses short-lived tokens is not necessarily a permanent auth failure — it may simply mean the token expired. The correct pattern: on receiving a 401, attempt one token refresh, then retry the original request exactly once. If the retry also 401s, treat it as a permanent auth failure and surface it for human attention. Never retry a 401 more than once without refreshing credentials first.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Circuit Breakers: Protecting Agents from Cascading Failures</div>
+    <div class="section-body">
+      <p>The circuit breaker pattern, popularized by Michael Nygard's 2007 book <em>Release It!</em> and subsequently implemented in Netflix's Hystrix library (open-sourced in 2012), protects an agent from repeatedly calling a dependency that is clearly failing. The circuit has three states: Closed (normal operation — calls pass through), Open (dependency is failing — calls are rejected immediately without attempting the network call), and Half-Open (testing recovery — a small number of calls are allowed through to check if the dependency has recovered).</p>
+      <p>Netflix engineering published extensively about Hystrix's role in their microservices architecture. During the 2012 AWS East Coast outage, services using Hystrix circuit breakers degraded gracefully while dependencies were unavailable. Services without circuit breaker logic attempted to wait for responses from down dependencies, exhausting thread pools and causing cascading failures across unrelated services. The pattern prevents one failing external API from taking down the entire agent. Threshold parameters typically look like: open the circuit after 5 failures in 60 seconds; test with one call every 30 seconds in half-open state.</p>
+      <div class="callout">
+        <div class="callout-label">Fallback Behavior</div>
+        <p>An open circuit breaker must have a fallback behavior — returning a cached result, a default value, a degraded response, or a user-facing error message. An agent that silently drops tasks when a circuit is open is worse than useless. Fallbacks should be explicit design decisions: "When the weather API circuit is open, return the last known forecast with a staleness warning" is a production-grade fallback. Returning null is not.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Observability: Logs, Metrics, and Traces</div>
+    <div class="section-body">
+      <p>Error handling without observability is incomplete. An agent can recover silently from a transient error, but if those recoveries are not logged and measured, patterns go undetected: an API that is failing 30% of the time and triggering retries on every third call might appear "working" from the outside while consuming 30% more resources than expected. Structured logging with severity levels (DEBUG, INFO, WARN, ERROR) and consistent error codes enables alerting systems to surface problems. Datadog, Grafana, and AWS CloudWatch all support alert rules based on error rate thresholds.</p>
+      <p>Distributed tracing — as implemented by OpenTelemetry, Jaeger, and AWS X-Ray — provides context across agent tool calls. A trace that spans from the agent's initial decision through multiple API calls shows exactly where latency or errors are occurring. When Stripe's API began experiencing elevated 500 error rates in November 2022, developers with distributed tracing immediately identified which specific API endpoints were failing and which were healthy, allowing them to route around affected endpoints while Stripe remediated.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 2</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Quiz</span></button>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 3 Quiz</div>
+    <h1>Quiz: Error Handling</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. Your agent receives a 403 Forbidden from a payment API when attempting to issue a refund. What is the correct response?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Retry with exponential backoff — server-side permission errors can be transient</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Refresh the OAuth token and retry once</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Do not retry; escalate to a human — the agent lacks the required permission scope</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Switch to the backup payment API and retry the refund</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. A 403 means the authenticated identity does not have permission for this action. This is not a transient condition — retrying will always fail. The correct action is to surface the problem for human attention so the appropriate permissions can be granted.</div>
+    <div class="quiz-feedback wrong">❌ 403 Forbidden is a permanent authorization failure — the agent is authenticated but not authorized. Retrying, refreshing tokens, or switching APIs will not resolve an insufficient-permissions error. Human escalation is required to change the permission configuration.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. A circuit breaker is in the Open state for an external translation API. What should the agent do when it receives a new translation request?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Queue the request and wait for the circuit to close before processing</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Retry the translation API once to confirm it is still failing before rejecting</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">Return the fallback response immediately without attempting the API call</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Log a warning and proceed with the API call anyway</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. An open circuit breaker rejects calls immediately without attempting the network request. This is the entire point — protecting the system from wasting resources on a known-failing dependency. The fallback behavior (cached result, error message, etc.) is returned immediately.</div>
+    <div class="quiz-feedback wrong">❌ An open circuit breaker rejects calls immediately — no network attempt is made. Queuing requests indefinitely while the circuit is open can exhaust memory. Making the call anyway defeats the circuit breaker's purpose. The fallback response must be returned immediately.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. What is the correct handling pattern when an agent receives a 401 Unauthorized from an API using short-lived OAuth tokens?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Attempt one token refresh, then retry the original request once; if still 401, escalate</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Retry up to five times with backoff — 401s from OAuth APIs are always transient</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Immediately treat as a permanent failure and halt all API calls for this service</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Re-run the full OAuth authorization flow from scratch on every 401</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The 401 may indicate an expired token — a transient condition fixable with a refresh. One refresh attempt, then one retry is the correct pattern. If the retry also fails, the auth problem is structural and requires human intervention, not more retries.</div>
+    <div class="quiz-feedback wrong">❌ The correct pattern is: refresh once, retry once, escalate if still failing. Multiple retries without refreshing are useless. Triggering a full OAuth flow on every 401 would require the user to re-consent repeatedly. Treating all 401s as permanent misses the expired-token case.</div>
+  </div>
+
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 3</span></button>
+  </div>
+</div>
+
+<!-- LAB 3 -->
+<div class="page" id="p-lab3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lab 3</div>
+    <h1>Lab: Error Classification and Circuit Breaker Design</h1>
+    <div class="tagline">Build an error handling decision tree and circuit breaker parameters for a real agent scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are building an agent that relies on three external APIs: a weather service, a maps/routing API, and a payment processor. Design a complete error handling strategy — classification, retry logic, circuit breaker thresholds, and fallback behaviors for each service.</p>
+    <div class="lab-prompt">Ask: "Help me design the error classification and circuit breaker parameters for each of my three APIs, including what fallback behaviors to use when circuits open."</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🔌 Error Handling Coach</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l3"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l3" rows="2" placeholder="Ask about error classification, circuit breaker design, fallback patterns..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ LESSON 4 ═══════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Building AI Agents III — Tools · Module 5 · Lesson 4</div>
+    <h1>L4: Resilient Pipelines</h1>
+    <div class="tagline">Advanced concepts, real-world applications, and practical implications</div>
+  </div>
+  <div class="lesson-body">
+    <div class="lesson-section">
+      <div class="section-heading">Core Concepts</div>
+      <div class="section-body">
+        <p>This lesson explores l4: resilient pipelines — examining the key principles, real-world applications, and implications for practitioners working in this domain.</p>
+        <p>Understanding this topic requires both theoretical grounding and practical awareness of how these concepts manifest in deployed systems. The frameworks covered in earlier lessons provide the foundation; this lesson connects them to implementation reality.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Practical Applications</div>
+      <div class="section-body">
+        <p>The transition from theory to practice reveals challenges that pure conceptual frameworks don't capture. Real-world deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment rather than rigid rule-following.</p>
+        <p>Effective practitioners in this space develop the ability to reason across multiple frameworks simultaneously, recognizing when different perspectives apply and how to resolve conflicts between competing priorities.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Looking Forward</div>
+      <div class="section-body">
+        <p>As this field continues to evolve, the principles covered in this module will remain foundational even as specific technologies and implementations change. The ability to think critically about these topics — rather than simply memorizing current best practices — is what separates effective practitioners from those who merely follow checklists.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 3 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUIZ 4 ═══════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero"><h1>Lesson 4 Quiz</h1><div class="tagline">L4: Resilient Pipelines</div></div>
+  <div class="quiz-area">
+    <div class="quiz-box" id="q1-l4">
+      <div class="quiz-q">What is the primary focus of L4: Resilient Pipelines?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">Connecting theoretical frameworks to practical implementation challenges and real-world deployment considerations</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Memorizing specific technical procedures without understanding their context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Reviewing only historical examples without forward-looking analysis</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This lesson bridges theory and practice, focusing on real-world implementation.</div>
+      <div class="quiz-feedback wrong">Review the lesson — the focus is on connecting frameworks to practical reality.</div>
+    </div>
+    <div class="quiz-box" id="q2-l4">
+      <div class="quiz-q">Why does real-world deployment introduce challenges that pure theory doesn't capture?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Theory is always wrong in practice</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment beyond rigid frameworks</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Practice is simpler than theory suggests</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Real deployment requires judgment, not just framework application.</div>
+      <div class="quiz-feedback wrong">Practice doesn't invalidate theory — it reveals complexities that require nuanced application of theoretical principles.</div>
+    </div>
+    <div class="quiz-box" id="q3-l4">
+      <div class="quiz-q">What separates effective practitioners from those who merely follow checklists?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">More years of experience in the field</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">Access to better tools and resources</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l4')">The ability to think critically and reason across multiple frameworks, adapting as the field evolves</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Critical thinking and adaptability matter more than memorized procedures.</div>
+      <div class="quiz-feedback wrong">The key differentiator is critical thinking ability, not experience or resources alone.</div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ LAB 4 ═══════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 4 Lab</div>
+    <h1>Lab: Apply What You've Learned</h1>
+    <div class="tagline">Synthesize concepts from L4: Resilient Pipelines through guided AI conversation</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>Use the AI below to explore the concepts from Lesson 4 in depth. Ask questions, challenge assumptions, and work through practical scenarios related to l4: resilient pipelines.</p>
+    <div class="lab-prompt">Try: "How would the concepts from this lesson apply to a real-world scenario in this field?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l4">
+    <div class="lab-chat-header">
+      <span>🤖 AESOP Lab Assistant</span>
+      <span class="chat-badge">Lesson 4 Lab</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l4"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l4" rows="1" placeholder="Ask about l4: resilient pipelines…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4')}"></textarea>
+      <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')"><span class="pnav-arrow">→</span><span class="pnav-label">Module Test</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODULE TEST ═══════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 5 Test</h1>
+    <div class="tagline">API Integration Patterns · 15 Questions · 70% to Pass</div>
+  </div>
+  <div class="mt-progress">Score: <span id="mt-score">0</span>/15</div>
+  <div class="mt-area">
+    <div class="mt-box" id="mt-q1">
+      <div class="mt-q">1. What is the core objective of API Integration Patterns?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q1')">To provide comprehensive understanding of key concepts and their practical applications in Building AI Agents III — Tools</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To memorize technical jargon without understanding context</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To focus exclusively on historical approaches without considering modern developments</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q2">
+      <div class="mt-q">2. How should practitioners approach applying concepts from this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q2')">By thinking critically and adapting frameworks to their specific context and constraints</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By rigidly following all procedures exactly as presented</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By ignoring practical constraints and focusing only on theory</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q3">
+      <div class="mt-q">3. Which best describes the relationship between theory and practice in Building AI Agents III — Tools?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q3')">Theory provides frameworks; practice reveals complexities that require nuanced judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Theory and practice are completely separate concerns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Practice is simply theory applied without modification</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q4">
+      <div class="mt-q">4. What distinguishes expert practitioners from novices in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q4')">The ability to reason across multiple perspectives and adapt their approach contextually</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Simply accumulating more years of experience</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Access to better tools and resources</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q5">
+      <div class="mt-q">5. How does API Integration Patterns build on previous modules?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q5')">By connecting foundational concepts to real-world implementation challenges</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By repeating the same material in different formats</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By introducing completely unrelated topics</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q6">
+      <div class="mt-q">6. What role do constraints play in practical implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q6')">They create real-world challenges that demand nuanced judgment and trade-off analysis</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They are obstacles to be ignored in favor of ideal solutions</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They have no significant impact on decision-making</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q7">
+      <div class="mt-q">7. When applying frameworks from this module, what is most important?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q7')">Understanding the underlying principles deeply enough to adapt them appropriately</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Memorizing exact procedures for every situation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Following the most recent industry trends without evaluation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q8">
+      <div class="mt-q">8. How should practitioners handle conflicting perspectives in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q8')">By recognizing that different frameworks apply in different contexts and using judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By selecting one perspective and rigidly adhering to it</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By avoiding learning about different approaches</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q9">
+      <div class="mt-q">9. What makes the concepts in API Integration Patterns relevant beyond their immediate context?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q9')">The underlying principles remain foundational even as specific technologies and practices evolve</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are only relevant for current, cutting-edge applications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are purely historical with no modern relevance</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q10">
+      <div class="mt-q">10. How should practitioners continue developing expertise after completing this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q10')">By applying critical thinking to new situations and continuously refining their mental models</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By memorizing more procedures and checklists</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By focusing solely on theoretical advancement</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q11">
+      <div class="mt-q">11. What is the relationship between understanding Building AI Agents III — Tools concepts and making decisions?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q11')">Deep understanding enables practitioners to make better contextual decisions with confidence</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Understanding and decision-making are unrelated</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Decisions should be made based only on current trends, not understanding</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q12">
+      <div class="mt-q">12. How do the lessons from this module apply to novel situations?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q12')">By using the principles as mental models to reason through new problems systematically</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Novel situations require completely different approaches with no connection to prior learning</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Practitioners should avoid novel situations and stick to familiar patterns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q13">
+      <div class="mt-q">13. What is the value of understanding multiple perspectives on {course_title}?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q13')">It enables practitioners to recognize which perspectives are most relevant in specific contexts</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">All perspectives are equally valid in all situations</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">Learning multiple perspectives creates confusion</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q14">
+      <div class="mt-q">14. How should practitioners evaluate new information or developments in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q14')">By applying critical thinking to assess whether new ideas align with foundational principles</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By automatically accepting anything labeled as new or innovative</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By rejecting all new information in favor of established practices</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q15">
+      <div class="mt-q">15. What is the ultimate goal of learning API Integration Patterns?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q15')">To develop the judgment and reasoning skills needed for effective practice in this domain</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To pass tests and certifications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To memorize every detail presented in the course</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+  </div>
+  <div id="mt-result" style="display:none;" class="mt-result">
+    <div class="mt-result-score" id="mt-result-score"></div>
+    <div id="mt-result-msg"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+</div><!-- /content-area -->
+
+<script>
+var COURSE_ID='building-ai-agents-iii-tools';
+var MODULE_ID='ba3-m5';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools API Integration Patterns, Lab 1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l2:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools API Integration Patterns, Lab 2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l3:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools API Integration Patterns, Lab 3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l4:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools API Integration Patterns, Lab 4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.', l4: "You are a helpful AI assistant. Answer questions about the lesson content clearly and thoroughly."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function applySize(val){document.querySelector('.content-area').style.fontSize=val+'px';}
+function adjustSize(delta){var r=document.getElementById('sizerRange');if(!r)return;r.value=Math.min(22,Math.max(12,parseInt(r.value)+delta));applySize(r.value);}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add((result==='right'||result==='correct')?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+((result==='right'||result==='correct')?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal = 15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  var fb=box.querySelector('.mt-feedback.'+(correct?'right':'wrong'));if(fb)fb.style.display='block';
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  document.getElementById('mt-score').textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    document.getElementById('mt-result').style.display='block';
+    document.getElementById('mt-result-score').textContent=pct+'%';
+    document.getElementById('mt-result-msg').textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[], l4: [],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML='';}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);

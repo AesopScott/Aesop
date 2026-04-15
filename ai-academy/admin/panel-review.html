@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.11 | 2026-04-14 -->
+<!-- v1.0.12 | 2026-04-14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1079,44 +1079,46 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
 
       // 2. Extract JSON object and try parsing it clean
       const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON found in response');
-      try {
-        const extracted = JSON.parse(jsonMatch[0]);
-        if (extracted.scores) return extracted;
-      } catch(_) {}
+      if (jsonMatch) {
+        try {
+          const extracted = JSON.parse(jsonMatch[0]);
+          if (extracted.scores) return extracted;
+        } catch(_) {}
+      }
 
-      // 3. Apply regex cleanup for messy LLM output (non-JSON-mode)
-      let jsonStr = jsonMatch[0];
-      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');              // trailing commas
-      jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');                  // single-line comments
-      jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');            // block comments
-      jsonStr = jsonStr.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');  // unquoted keys
-      jsonStr = jsonStr.replace(/:\s*'([^']*)'/g, ': "$1"');        // single-quoted values
-      jsonStr = jsonStr.replace(/:\s*(\d+)\s*\/\s*\d+/g, ': $1');   // "4/5" → 4
-      jsonStr = jsonStr.replace(/:\s*(\d+)\s*\([^)]*\)/g, ': $1');  // "4 (good)" → 4
-      jsonStr = jsonStr.replace(/:\s*(\d+)\s*-\s*[A-Za-z][^\n,}]*/g, ': $1'); // "4 - excellent" → 4
-
-      let parsed;
-      try {
-        parsed = JSON.parse(jsonStr);
-      } catch(e1) {
-        // Last resort: extract just the scores object
-        const scoresMatch = jsonStr.match(/"scores"\s*:\s*(\{[\s\S]*\})\s*(?:,\s*"|\s*\})/);
-        if (scoresMatch) {
-          let scStr = scoresMatch[1];
-          scStr = scStr.replace(/("c\d+")\s*:\s*"?(\d+)[^,}\n]*/g, '$1: $2');
-          scStr = scStr.replace(/,\s*([\]}])/g, '$1');
-          try {
-            parsed = { scores: JSON.parse(scStr) };
-          } catch(e3) {
-            throw new Error(e1.message);
-          }
-        } else {
-          throw new Error(e1.message);
+      // 3. Nuclear option: regex-extract scores directly (bypasses JSON.parse entirely)
+      //    Handles unicode chars, annotations, trailing commas — anything that breaks JSON.parse
+      const scoreMap = {};
+      const dimRegex = /"(d\d+)"\s*:\s*\{([^}]+)\}/g;
+      let dimMatch;
+      while ((dimMatch = dimRegex.exec(text)) !== null) {
+        const dimKey = dimMatch[1];
+        scoreMap[dimKey] = {};
+        const critRegex = /"(c\d+)"\s*:\s*(\d+)/g;
+        let critMatch;
+        while ((critMatch = critRegex.exec(dimMatch[2])) !== null) {
+          scoreMap[dimKey][critMatch[1]] = parseInt(critMatch[2]);
         }
       }
-      if (!parsed.scores) throw new Error('Missing scores in response');
-      return parsed;
+      if (Object.keys(scoreMap).length > 0) return { scores: scoreMap };
+
+      // 4. Apply regex cleanup for messy LLM output as last resort
+      let jsonStr = (jsonMatch && jsonMatch[0]) || text;
+      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+      jsonStr = jsonStr.replace(/\/\/[^\n]*/g, '');
+      jsonStr = jsonStr.replace(/\/\*[\s\S]*?\*\//g, '');
+      jsonStr = jsonStr.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+      jsonStr = jsonStr.replace(/:\s*'([^']*)'/g, ': "$1"');
+      jsonStr = jsonStr.replace(/:\s*(\d+)\s*\/\s*\d+/g, ': $1');
+      jsonStr = jsonStr.replace(/:\s*(\d+)\s*\([^)]*\)/g, ': $1');
+      jsonStr = jsonStr.replace(/:\s*(\d+)\s*-\s*[A-Za-z][^\n,}]*/g, ': $1');
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.scores) return parsed;
+      } catch(e) {
+        throw new Error(e.message);
+      }
+      throw new Error('Missing scores in response');
     }
 
     function calcDimScore(scores, dimId) {

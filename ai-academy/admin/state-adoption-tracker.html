@@ -1,6 +1,6 @@
 <!doctype html>
-<!-- v1.0.0 | 2026-04-16 -->
-<!-- state-adoption-tracker: 50-state courseware adoption tracker (admin-only) -->
+<!-- v1.1.0 | 2026-04-16 -->
+<!-- state-adoption-tracker: 50-state courseware adoption tracker (Firebase auth, read-only for non-admin) -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -275,6 +275,24 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
   border-top: 1px solid var(--border);
 }
 
+/* ─── Auth overlay (matches accreditation-tracker pattern) ──── */
+.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.97); display:flex; align-items:center; justify-content:center; z-index:9999; }
+.auth-box { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); }
+.auth-logo { font-size:32px; margin-bottom:8px; }
+.auth-box h2 { margin:4px 0 6px; font-size:18px; color:var(--gold-light); }
+.auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
+.auth-input { width:100%; padding:9px 11px; margin:6px 0; background:#0f172a; color:#e2e8f0; border:1px solid var(--border); border-radius:6px; font-size:14px; font-family:var(--font-body); }
+.auth-input:focus { outline:none; border-color:var(--gold); }
+.auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--gold); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
+.auth-btn:hover { filter:brightness(1.1); }
+.auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
+.auth-note { color:var(--muted); font-size:11px; margin-top:12px; }
+.user-bar { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.user-bar .user-email { color:#e2e8f0; }
+.sign-out-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.sign-out-btn:hover { color:#e2e8f0; border-color:var(--gold); }
+.readonly-badge { display:inline-block; background:rgba(245,158,11,0.15); color:var(--warn); font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; margin-left:8px; }
+
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .page-header, .summary-bar, .toolbar { padding-left: 16px; padding-right: 16px; }
@@ -285,12 +303,36 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
 </head>
 <body>
 
+<!-- ── AUTH GATE ── -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">&#x1f512;</div>
+    <h2>State Adoption Tracker</h2>
+    <p>Sign in to view this page.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-note">Contact Scott if you need access.</div>
+  </div>
+</div>
+
+<!-- ── MAIN APP (hidden until auth) ── -->
+<div id="app" style="display:none">
+
 <div class="page-header">
   <div>
     <a href="/ai-academy/courses.html" class="back-link">&larr; Back to Courses</a>
     <h1>State Adoption <span>Tracker</span></h1>
   </div>
-  <div class="meta">50 States &middot; Updated April 2026</div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div class="meta">50 States &middot; Updated April 2026</div>
+    <div class="user-bar">
+      <span class="user-email" id="userLabel"></span>
+      <span class="readonly-badge" id="readonlyBadge" style="display:none">READ ONLY</span>
+      <button class="sign-out-btn" id="signOutBtn">Sign Out</button>
+    </div>
+  </div>
 </div>
 
 <div class="summary-bar" id="summaryBar">
@@ -359,7 +401,77 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
   </div>
 </div>
 
-<div class="page-footer">AESOP AI Academy &middot; State Adoption Tracker &middot; Admin Use Only</div>
+<div class="page-footer">AESOP AI Academy &middot; State Adoption Tracker</div>
+
+</div><!-- /#app -->
+
+<!-- Firebase SDK + auth gate -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.firebasestorage.app",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Admin whitelist — only these emails get write access
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && ADMIN_EMAILS.includes(u.email);
+
+  const overlay = document.getElementById('auth-overlay');
+  const appEl   = document.getElementById('app');
+  const errEl   = document.getElementById('auth-error');
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pass').focus(); });
+  document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      overlay.style.display = 'none';
+      appEl.style.display = 'block';
+      document.getElementById('userLabel').textContent = user.email || 'Signed in';
+
+      // Set global read-only flag for non-admin users
+      window.__ADMIN_MODE = isAdmin(user);
+
+      if (!isAdmin(user)) {
+        document.getElementById('readonlyBadge').style.display = 'inline-block';
+      } else {
+        document.getElementById('readonlyBadge').style.display = 'none';
+      }
+
+      // Trigger table render with correct permissions
+      document.dispatchEvent(new CustomEvent('authReady'));
+    } else {
+      overlay.style.display = 'flex';
+      appEl.style.display = 'none';
+      window.__ADMIN_MODE = false;
+    }
+  });
+</script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -997,11 +1109,16 @@ function renderTable() {
       `<option value="${o.value}" ${status === o.value ? "selected" : ""} class="status-${o.value}">${o.label}</option>`
     ).join("");
 
+    const adminMode = window.__ADMIN_MODE;
+    const statusCell = adminMode
+      ? `<select class="status-select status-${status}" onclick="event.stopPropagation()" onchange="changeStatus('${s.abbr}', this)">${opts}</select>`
+      : `<span class="status-select status-${status}" style="cursor:default">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
     html += `<tr data-abbr="${s.abbr}">
       <td style="color:var(--muted)">${idx}</td>
       <td><span class="state-name">${s.name}</span><span class="state-abbr">${s.abbr}</span></td>
       <td><span class="model-tag ${modelClass}">${modelLabel}</span></td>
-      <td><select class="status-select status-${status}" onclick="event.stopPropagation()" onchange="changeStatus('${s.abbr}', this)">${opts}</select></td>
+      <td>${statusCell}</td>
       <td class="deadline-cell ${dlClass}">${s.deadline || '—'}</td>
       <td style="font-size:12px">${s.vendorPath}</td>
       <td style="font-size:12px;color:var(--muted)">${s.pdProcess}</td>
@@ -1062,6 +1179,22 @@ function openModal(abbr) {
     actionsHtml = s.actions.map(a => `<li>${a}</li>`).join("");
   }
 
+  const adminMode = window.__ADMIN_MODE;
+
+  const statusHtml = adminMode
+    ? `<select class="status-select status-${status}" style="font-size:14px;padding:6px 10px;background:var(--navy);border:1px solid var(--border);border-radius:6px;margin-bottom:12px"
+              onchange="changeStatus('${abbr}', this); this.className='status-select status-'+this.value;">
+        ${statusOpts}
+      </select>`
+    : `<span class="status-select status-${status}" style="font-size:14px">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+  const notesHtml = adminMode
+    ? `<div class="modal-notes">
+        <label>Your Notes</label>
+        <textarea id="modalNotes" placeholder="Add your notes for ${s.name}...">${userNotes}</textarea>
+      </div>`
+    : (userNotes ? `<div class="modal-notes"><label>Notes</label><p style="font-size:13px;color:#cbd5e1;background:var(--navy);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">${userNotes.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p></div>` : '');
+
   modalTitle.textContent = `${s.name} (${s.abbr})`;
   modalBody.innerHTML = `
     <div class="tag-row">
@@ -1092,20 +1225,16 @@ function openModal(abbr) {
     ${linksHtml ? `<h3>Key Links</h3><ul>${linksHtml}</ul>` : ""}
 
     <h3>Status</h3>
-    <select class="status-select status-${status}" style="font-size:14px;padding:6px 10px;background:var(--navy);border:1px solid var(--border);border-radius:6px;margin-bottom:12px"
-            onchange="changeStatus('${abbr}', this); this.className='status-select status-'+this.value;">
-      ${statusOpts}
-    </select>
+    ${statusHtml}
 
-    <div class="modal-notes">
-      <label>Your Notes</label>
-      <textarea id="modalNotes" placeholder="Add your notes for ${s.name}...">${userNotes}</textarea>
-    </div>
+    ${notesHtml}
   `;
 
-  // Save notes on change
-  const notesEl = document.getElementById("modalNotes");
-  notesEl.addEventListener("input", () => { setUserNotes(abbr, notesEl.value); });
+  // Save notes on change (admin only)
+  if (adminMode) {
+    const notesEl = document.getElementById("modalNotes");
+    notesEl.addEventListener("input", () => { setUserNotes(abbr, notesEl.value); });
+  }
 
   overlay.classList.add("open");
 }
@@ -1127,14 +1256,16 @@ search.addEventListener("input", renderTable);
 filterTier.addEventListener("change", renderTable);
 filterStatus.addEventListener("change", renderTable);
 
-/* ─── Init ─────────────────────────────────────────────────────── */
-renderTable();
-
-// Pre-set the 5 researched states to "researching"
-["TX","CO","NY","MA","WA"].forEach(abbr => {
-  if (getStatus(abbr) === "not-started") { setStatus(abbr, "researching"); }
+/* ─── Init (wait for auth) ────────────────────────────────────── */
+document.addEventListener('authReady', () => {
+  // Pre-set the 5 researched states to "researching" (admin only, first visit)
+  if (window.__ADMIN_MODE) {
+    ["TX","CO","NY","MA","WA"].forEach(abbr => {
+      if (getStatus(abbr) === "not-started") { setStatus(abbr, "researching"); }
+    });
+  }
+  renderTable();
 });
-renderTable();
 </script>
 </body>
 </html>

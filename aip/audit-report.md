@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-15 11:38 UTC
+**Generated:** 2026-04-16 11:43 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 453 · **Warnings:** 574
+**Errors:** 453 · **Warnings:** 576
 
 ---
 
@@ -484,8 +484,10 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
 
-### Warnings (368)
+### Warnings (370)
 
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/ai-and-the-future-of-work-m8.html` — The read operation timed out
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-for-small-business-managers/ai-for-small-business-managers-m8.html` — The read operation timed out
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgam-2-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgam-2-m2.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgam-2-m3.html` — <urlopen error [Errno -2] Name or service not known>

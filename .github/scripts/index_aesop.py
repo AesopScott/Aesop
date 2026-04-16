@@ -1,8 +1,11 @@
 """
 AIP Corpus Indexer — AESOP Intelligence Pipeline
 Triggered by GitHub Actions on pushes to ai-academy/modules/**
-Parses HTML module files, chunks text, embeds via Voyage-3,
-and upserts vectors to Pinecone for RAG-based gap analysis.
+Supports delta mode (only changed files) and full re-index mode.
+
+Delta mode (default on push): uses git diff to find changed module files,
+  re-indexes only those, and removes vectors for deleted files.
+Full mode (manual dispatch or FULL_REINDEX=true): re-indexes all modules.
 """
 
 import os
@@ -10,6 +13,7 @@ import re
 import sys
 import time
 import hashlib
+import subprocess
 from pathlib import Path
 import requests
 from pinecone import Pinecone
@@ -26,11 +30,59 @@ PINECONE_INDEX    = "aesop-academy"
 MODULES_DIR       = Path("ai-academy/modules")
 CHUNK_SIZE        = 500   # words per chunk
 CHUNK_OVERLAP     = 50    # word overlap between chunks
-EMBED_BATCH       = 20    # vectors per Voyage API call (larger = fewer calls)
+EMBED_BATCH       = 20    # vectors per Voyage API call
 UPSERT_BATCH      = 50    # vectors per Pinecone upsert
-EMBED_DELAY       = 0.5   # seconds between embedding batches (rate limit guard)
+EMBED_DELAY       = 0.5   # seconds between embedding batches
 UPSERT_DELAY      = 1.0   # seconds between Pinecone upsert batches
 UPSERT_RETRIES    = 5     # max retries per upsert batch on 429/5xx
+
+MODULE_PATTERN    = re.compile(r"-m\d+\.html$")
+
+# ── DELTA DETECTION ─────────────────────────────────────────────────────────
+
+def get_changed_module_files():
+    """Use git diff to find module files changed in the latest commit.
+    Returns (changed_files, deleted_files) as lists of relative paths.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-status", "HEAD~1", "HEAD", "--", "ai-academy/modules/"],
+            capture_output=True, text=True, check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"  git diff failed: {e.stderr}")
+        return None, None  # Fall back to full re-index
+
+    changed = []
+    deleted = []
+    for line in result.stdout.strip().splitlines():
+        if not line:
+            continue
+        parts = line.split("\t", 1)
+        if len(parts) != 2:
+            continue
+        status, filepath = parts[0], parts[1]
+        # Only care about module files (not hubs, admin pages, etc.)
+        if not MODULE_PATTERN.search(filepath):
+            continue
+        if status.startswith("D"):
+            deleted.append(filepath)
+        else:
+            # A (added), M (modified), R (renamed), C (copied)
+            changed.append(filepath)
+
+    return changed, deleted
+
+
+def get_vector_ids_for_file(rel_path, max_chunks=100):
+    """Generate all possible vector IDs for a given file path.
+    Uses the same deterministic ID scheme as indexing.
+    """
+    ids = []
+    for i in range(max_chunks):
+        vec_id = hashlib.md5(f"{rel_path}::{i}".encode()).hexdigest()
+        ids.append(vec_id)
+    return ids
 
 # ── HTML PARSING ─────────────────────────────────────────────────────────────
 
@@ -39,20 +91,15 @@ def extract_text_from_html(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         soup = BeautifulSoup(f.read(), "html.parser")
 
-    # Remove scripts, styles, nav elements
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()
 
-    # Extract title: prefer h1 over <title> (title can be malformed in fragments)
     title_tag = soup.find("h1") or soup.find("title")
     title = title_tag.get_text(strip=True) if title_tag else filepath.stem
-    # Safety: truncate absurdly long titles (malformed <title> in fragment files)
     if len(title) > 120:
         title = title[:120].rsplit(" ", 1)[0] + "…"
 
-    # Get all visible text
     text = soup.get_text(separator=" ", strip=True)
-    # Collapse whitespace
     text = re.sub(r"\s+", " ", text).strip()
 
     return title, text
@@ -103,7 +150,6 @@ def embed_texts(texts, retries=5):
             return [item["embedding"] for item in data]
 
         if resp.status_code == 429 and attempt < retries - 1:
-            # Exponential backoff: 5, 10, 20, 40s
             wait = min(5 * 2 ** attempt, 60)
             print(f"    Rate limited, waiting {wait}s...")
             time.sleep(wait)
@@ -120,31 +166,51 @@ def embed_texts(texts, retries=5):
 
     raise RuntimeError("Voyage embedding failed after all retries")
 
-# ── MAIN PIPELINE ────────────────────────────────────────────────────────────
+# ── UPSERT WITH RETRY ───────────────────────────────────────────────────────
 
-def main():
-    print("=== AIP Corpus Indexer ===\n")
+def upsert_with_retry(index, vectors):
+    """Upsert vectors to Pinecone in batches with retry on rate limits."""
+    print(f"\nUpserting {len(vectors)} vectors to Pinecone...")
+    for batch_start in range(0, len(vectors), UPSERT_BATCH):
+        batch = vectors[batch_start : batch_start + UPSERT_BATCH]
+        upsert_data = [
+            (v["id"], v["embedding"], v["metadata"])
+            for v in batch
+        ]
 
-    # Connect to Pinecone
-    print("Connecting to Pinecone...")
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index(PINECONE_INDEX, host=PINECONE_HOST)
-    stats = index.describe_index_stats()
-    print(f"  Current vectors: {stats['total_vector_count']}\n")
+        for attempt in range(UPSERT_RETRIES):
+            try:
+                index.upsert(vectors=upsert_data)
+                break
+            except Exception as e:
+                err_str = str(e)
+                is_retryable = ("429" in err_str or "Too Many Requests" in err_str
+                                or "500" in err_str or "503" in err_str)
+                if is_retryable and attempt < UPSERT_RETRIES - 1:
+                    wait = min(3 * 2 ** attempt, 60)
+                    print(f"    Pinecone rate limited, retrying in {wait}s... (attempt {attempt + 1})")
+                    time.sleep(wait)
+                    continue
+                raise
 
-    # Find all HTML module files
-    html_files = sorted(MODULES_DIR.glob("**/*.html"))
-    # Filter to actual module files (skip hubs, admin pages, etc.)
-    module_files = [
-        f for f in html_files
-        if re.search(r"-m\d+\.html$", f.name)
-    ]
-    print(f"Found {len(module_files)} module files.\n")
+        done = min(batch_start + UPSERT_BATCH, len(vectors))
+        print(f"  Upserted {done}/{len(vectors)}")
+        time.sleep(UPSERT_DELAY)
 
-    # Process each file
+# ── PROCESS FILES ───────────────────────────────────────────────────────────
+
+def process_files(file_list):
+    """Parse, chunk, and prepare vectors for a list of module files."""
     all_vectors = []
-    for filepath in module_files:
-        rel_path = str(filepath.relative_to("."))
+    for filepath in file_list:
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
+        rel_path = str(filepath.relative_to(".")) if filepath.is_absolute() else str(filepath)
+
+        if not filepath.exists():
+            print(f"  Skipping (not found): {rel_path}")
+            continue
+
         title, text = extract_text_from_html(filepath)
 
         if len(text.split()) < 20:
@@ -155,7 +221,6 @@ def main():
         print(f"  {rel_path}: {len(chunks)} chunks from '{title}'")
 
         for i, chunk in enumerate(chunks):
-            # Deterministic ID based on file path + chunk index
             vec_id = hashlib.md5(f"{rel_path}::{i}".encode()).hexdigest()
             all_vectors.append({
                 "id": vec_id,
@@ -168,15 +233,15 @@ def main():
                 },
             })
 
-    print(f"\nTotal chunks to index: {len(all_vectors)}")
-    print(f"Embedding batches: {len(all_vectors) // EMBED_BATCH + 1} (batch size {EMBED_BATCH})")
+    return all_vectors
 
+
+def embed_vectors(all_vectors):
+    """Embed all vectors' text using Voyage-3."""
     if not all_vectors:
-        print("No content to index.")
-        return
+        return all_vectors
 
-    # Embed in batches with rate limiting
-    print("\nEmbedding chunks...")
+    print(f"\nEmbedding {len(all_vectors)} chunks...")
     embed_start = time.time()
     for batch_start in range(0, len(all_vectors), EMBED_BATCH):
         batch = all_vectors[batch_start : batch_start + EMBED_BATCH]
@@ -188,40 +253,87 @@ def main():
 
         done = min(batch_start + EMBED_BATCH, len(all_vectors))
         elapsed = time.time() - embed_start
-        # Print progress every 10 batches to keep log manageable
         if (done // EMBED_BATCH) % 10 == 0 or done >= len(all_vectors):
             print(f"  Embedded {done}/{len(all_vectors)} ({elapsed:.0f}s)")
 
-        # Rate limit guard
         time.sleep(EMBED_DELAY)
 
     print(f"  Embedding complete in {time.time() - embed_start:.0f}s")
+    return all_vectors
 
-    # Upsert to Pinecone in batches with retry on rate limits
-    print("\nUpserting to Pinecone...")
-    for batch_start in range(0, len(all_vectors), UPSERT_BATCH):
-        batch = all_vectors[batch_start : batch_start + UPSERT_BATCH]
-        upsert_data = [
-            (v["id"], v["embedding"], v["metadata"])
-            for v in batch
-        ]
+# ── MAIN PIPELINE ────────────────────────────────────────────────────────────
 
-        for attempt in range(UPSERT_RETRIES):
-            try:
-                index.upsert(vectors=upsert_data)
-                break
-            except Exception as e:
-                err_str = str(e)
-                if ("429" in err_str or "Too Many Requests" in err_str or "500" in err_str or "503" in err_str) and attempt < UPSERT_RETRIES - 1:
-                    wait = min(3 * 2 ** attempt, 60)
-                    print(f"    Pinecone rate limited, retrying in {wait}s... (attempt {attempt + 1})")
-                    time.sleep(wait)
-                    continue
-                raise
+def main():
+    full_reindex = os.environ.get("FULL_REINDEX", "").lower() == "true"
 
-        done = min(batch_start + UPSERT_BATCH, len(all_vectors))
-        print(f"  Upserted {done}/{len(all_vectors)}")
-        time.sleep(UPSERT_DELAY)
+    print("=== AIP Corpus Indexer ===")
+    print(f"Mode: {'FULL re-index' if full_reindex else 'DELTA (changed files only)'}\n")
+
+    # Connect to Pinecone
+    print("Connecting to Pinecone...")
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    index = pc.Index(PINECONE_INDEX, host=PINECONE_HOST)
+    stats = index.describe_index_stats()
+    print(f"  Current vectors: {stats['total_vector_count']}\n")
+
+    if full_reindex:
+        # ── FULL RE-INDEX ────────────────────────────────────────────────
+        html_files = sorted(MODULES_DIR.glob("**/*.html"))
+        module_files = [f for f in html_files if MODULE_PATTERN.search(f.name)]
+        print(f"Found {len(module_files)} module files.\n")
+
+        all_vectors = process_files(module_files)
+        print(f"\nTotal chunks to index: {len(all_vectors)}")
+
+        if not all_vectors:
+            print("No content to index.")
+            return
+
+        all_vectors = embed_vectors(all_vectors)
+        upsert_with_retry(index, all_vectors)
+
+    else:
+        # ── DELTA MODE ───────────────────────────────────────────────────
+        changed_files, deleted_files = get_changed_module_files()
+
+        if changed_files is None:
+            print("  Could not determine changed files, falling back to full re-index.")
+            os.environ["FULL_REINDEX"] = "true"
+            return main()
+
+        print(f"Changed/added module files: {len(changed_files)}")
+        print(f"Deleted module files: {len(deleted_files)}")
+
+        if not changed_files and not deleted_files:
+            print("\nNo module files changed. Nothing to do.")
+            return
+
+        # Handle deletions: remove vectors for deleted files
+        if deleted_files:
+            print(f"\nRemoving vectors for {len(deleted_files)} deleted files...")
+            for del_path in deleted_files:
+                ids_to_delete = get_vector_ids_for_file(del_path)
+                # Delete in batches of 100 (Pinecone limit)
+                for i in range(0, len(ids_to_delete), 100):
+                    batch = ids_to_delete[i:i+100]
+                    try:
+                        index.delete(ids=batch)
+                    except Exception as e:
+                        print(f"    Warning: delete failed for {del_path}: {e}")
+                print(f"  Removed vectors for: {del_path}")
+
+        # Handle changed/added files
+        if changed_files:
+            print(f"\nIndexing {len(changed_files)} changed files...")
+            file_paths = [Path(f) for f in changed_files]
+            all_vectors = process_files(file_paths)
+
+            if all_vectors:
+                print(f"\nTotal chunks to index: {len(all_vectors)}")
+                all_vectors = embed_vectors(all_vectors)
+                upsert_with_retry(index, all_vectors)
+            else:
+                print("No indexable content in changed files.")
 
     # Final stats
     stats = index.describe_index_stats()

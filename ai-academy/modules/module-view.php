@@ -261,12 +261,10 @@ function goPage(pageId) {
   var pages = container.querySelectorAll('.page');
   pages.forEach(function(p) {
     p.classList.remove('active');
-    p.style.display = 'none';
   });
   var target = document.getElementById(pageId);
   if (target) {
     target.classList.add('active');
-    target.style.display = 'block';
   }
   currentPageId = pageId;
   updateTabs();
@@ -423,10 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
   pages.forEach(function(p, i) {
     if (i === 0) {
       p.classList.add('active');
-      p.style.display = 'block';
     } else {
       p.classList.remove('active');
-      p.style.display = 'none';
     }
   });
   updateTabs();

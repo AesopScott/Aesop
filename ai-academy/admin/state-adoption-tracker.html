@@ -1,6 +1,6 @@
 <!doctype html>
-<!-- v1.1.0 | 2026-04-16 -->
-<!-- state-adoption-tracker: 50-state courseware adoption tracker (Firebase auth, read-only for non-admin) -->
+<!-- v1.2.0 | 2026-04-16 -->
+<!-- state-adoption-tracker: 50-state courseware adoption tracker (public read-only, Firebase admin login for write) -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -275,9 +275,10 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
   border-top: 1px solid var(--border);
 }
 
-/* ─── Auth overlay (matches accreditation-tracker pattern) ──── */
-.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.97); display:flex; align-items:center; justify-content:center; z-index:9999; }
-.auth-box { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); }
+/* ─── Auth modal (popup, not blocking overlay) ─────────────── */
+.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
+.auth-overlay.open { display:flex; }
+.auth-box { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); position:relative; }
 .auth-logo { font-size:32px; margin-bottom:8px; }
 .auth-box h2 { margin:4px 0 6px; font-size:18px; color:var(--gold-light); }
 .auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
@@ -285,13 +286,17 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
 .auth-input:focus { outline:none; border-color:var(--gold); }
 .auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--gold); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
 .auth-btn:hover { filter:brightness(1.1); }
+.auth-close { position:absolute; top:10px; right:14px; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:4px; }
+.auth-close:hover { color:#e2e8f0; background:rgba(255,255,255,0.05); }
 .auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
 .auth-note { color:var(--muted); font-size:11px; margin-top:12px; }
 .user-bar { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
 .user-bar .user-email { color:#e2e8f0; }
+.admin-login-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.admin-login-btn:hover { color:var(--gold-light); border-color:var(--gold); }
 .sign-out-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
 .sign-out-btn:hover { color:#e2e8f0; border-color:var(--gold); }
-.readonly-badge { display:inline-block; background:rgba(245,158,11,0.15); color:var(--warn); font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; margin-left:8px; }
+.admin-badge { display:inline-block; background:rgba(34,197,94,0.15); color:var(--ok); font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -303,22 +308,19 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
 </head>
 <body>
 
-<!-- ── AUTH GATE ── -->
+<!-- ── Admin login modal (not blocking) ── -->
 <div class="auth-overlay" id="auth-overlay">
   <div class="auth-box">
+    <button class="auth-close" id="auth-close">&times;</button>
     <div class="auth-logo">&#x1f512;</div>
-    <h2>State Adoption Tracker</h2>
-    <p>Sign in to view this page.</p>
+    <h2>Admin Sign In</h2>
+    <p>Sign in for edit access.</p>
     <input class="auth-input" id="auth-email" type="email" placeholder="Email address" autocomplete="email">
     <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
     <button class="auth-btn" id="auth-btn">Sign In</button>
     <div class="auth-error" id="auth-error"></div>
-    <div class="auth-note">Contact Scott if you need access.</div>
   </div>
 </div>
-
-<!-- ── MAIN APP (hidden until auth) ── -->
-<div id="app" style="display:none">
 
 <div class="page-header">
   <div>
@@ -327,10 +329,8 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
   </div>
   <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
     <div class="meta">50 States &middot; Updated April 2026</div>
-    <div class="user-bar">
-      <span class="user-email" id="userLabel"></span>
-      <span class="readonly-badge" id="readonlyBadge" style="display:none">READ ONLY</span>
-      <button class="sign-out-btn" id="signOutBtn">Sign Out</button>
+    <div class="user-bar" id="userBar">
+      <button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>
     </div>
   </div>
 </div>
@@ -403,9 +403,7 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
 
 <div class="page-footer">AESOP AI Academy &middot; State Adoption Tracker</div>
 
-</div><!-- /#app -->
-
-<!-- Firebase SDK + auth gate -->
+<!-- Firebase SDK + admin auth -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -422,18 +420,24 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Admin whitelist — only these emails get write access
   const ADMIN_EMAILS = ['scott@aesopacademy.org'];
   const isAdmin = u => u && ADMIN_EMAILS.includes(u.email);
 
-  const overlay = document.getElementById('auth-overlay');
-  const appEl   = document.getElementById('app');
-  const errEl   = document.getElementById('auth-error');
+  const overlay  = document.getElementById('auth-overlay');
+  const errEl    = document.getElementById('auth-error');
+  const userBar  = document.getElementById('userBar');
+
+  // Open / close login modal
+  document.getElementById('adminLoginBtn').addEventListener('click', () => {
+    overlay.classList.add('open');
+    document.getElementById('auth-email').focus();
+  });
+  document.getElementById('auth-close').addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 
   document.getElementById('auth-btn').addEventListener('click', doSignIn);
   document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
   document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pass').focus(); });
-  document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
 
   async function doSignIn() {
     errEl.textContent = '';
@@ -448,29 +452,49 @@ select.status-select:focus { border-color: var(--gold); outline: none; backgroun
     }
   }
 
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      overlay.style.display = 'none';
-      appEl.style.display = 'block';
-      document.getElementById('userLabel').textContent = user.email || 'Signed in';
-
-      // Set global read-only flag for non-admin users
-      window.__ADMIN_MODE = isAdmin(user);
-
-      if (!isAdmin(user)) {
-        document.getElementById('readonlyBadge').style.display = 'inline-block';
-      } else {
-        document.getElementById('readonlyBadge').style.display = 'none';
-      }
-
-      // Trigger table render with correct permissions
-      document.dispatchEvent(new CustomEvent('authReady'));
+  function updateUserBar(user) {
+    if (user && isAdmin(user)) {
+      userBar.innerHTML = `
+        <span style="color:#e2e8f0">${user.email}</span>
+        <span class="admin-badge">ADMIN</span>
+        <button class="sign-out-btn" id="signOutBtn">Sign Out</button>`;
+      document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
     } else {
-      overlay.style.display = 'flex';
-      appEl.style.display = 'none';
-      window.__ADMIN_MODE = false;
+      userBar.innerHTML = `<button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>`;
+      document.getElementById('adminLoginBtn').addEventListener('click', () => {
+        overlay.classList.add('open');
+        document.getElementById('auth-email').focus();
+      });
     }
+  }
+
+  // Page loads in read-only mode by default
+  window.__ADMIN_MODE = false;
+
+  onAuthStateChanged(auth, user => {
+    overlay.classList.remove('open');
+
+    if (user && isAdmin(user)) {
+      window.__ADMIN_MODE = true;
+      updateUserBar(user);
+    } else if (user && !isAdmin(user)) {
+      // Non-admin Firebase user — sign them out, keep read-only
+      signOut(auth);
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+      errEl.textContent = 'This account does not have admin access.';
+      overlay.classList.add('open');
+    } else {
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+    }
+
+    // Re-render table with correct permissions
+    document.dispatchEvent(new CustomEvent('authReady'));
   });
+
+  // Initial render (read-only, no auth needed)
+  document.dispatchEvent(new CustomEvent('authReady'));
 </script>
 
 <script>

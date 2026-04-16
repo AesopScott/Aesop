@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-15 -->
+<!-- v1.0.3 | 2026-04-16 -->
 <!-- electives-hub-v1.1.0 | Registry-only: all course data from course-registry.json (no hardcoded courses) | April 2026 -->
 <html lang="en">
 <head>
@@ -1026,6 +1026,17 @@ function injectModuleContent(html, cId, mId, m, c){
   setTimeout(function(){ if(typeof hubRestoreControls==='function') hubRestoreControls(); }, 50);
 
   // Re-execute module scripts in global scope
+  // Minimal fallback used when module script has a syntax error (e.g. truncated file)
+  const NAV_FALLBACK = `var currentPageId='p-l1';
+function goPage(id){var prev=document.getElementById(currentPageId);var next=document.getElementById(id);if(!next)return;if(prev)prev.classList.remove('active');next.classList.add('active');currentPageId=id;updateTabs();window.scrollTo(0,0);}
+function updateTabs(){document.querySelectorAll('[data-page]').forEach(function(el){el.classList.toggle('active',el.dataset.page===currentPageId);});}
+function answer(btn,result,qId){var box=document.getElementById(qId);if(!box)return;box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});btn.classList.add(result==='correct'?'correct':'wrong');box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));if(fb)fb.classList.add('show');}
+function mtAnswer(btn,correct,qNum){var box=document.getElementById(qNum);if(!box||box.classList.contains('answered'))return;box.classList.add('answered');box.querySelectorAll('.mt-opt').forEach(function(b){b.disabled=true;});btn.classList.add(correct?'correct':'wrong');}
+function chatSend(labId){var inp=document.getElementById('inp-'+labId);if(inp)inp.value='';var msgs=document.getElementById('msgs-'+labId);if(msgs){var d=document.createElement('div');d.className='chat-msg ai';d.textContent='AI labs require a complete module file. Navigation and quizzes are still available.';msgs.appendChild(d);}}
+function chatReset(labId){var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML='';}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+goPage('p-l1');`;
+
   try {
     const old = document.getElementById('hub-module-script');
     if(old) old.remove();
@@ -1047,7 +1058,13 @@ function injectModuleContent(html, cId, mId, m, c){
         }
       ` + moduleScripts.replace(/\bgoPage\b/g, 'standaloneGoPage');
     } else {
-      scriptEl.textContent = moduleScripts;
+      // Validate syntax before injecting — catches truncated/broken module files
+      let finalScript = moduleScripts;
+      try { new Function(moduleScripts); } catch(syntaxErr) {
+        console.warn('Module script syntax error (truncated file?), using nav fallback:', syntaxErr.message);
+        finalScript = NAV_FALLBACK;
+      }
+      scriptEl.textContent = finalScript;
     }
     document.body.appendChild(scriptEl);
   } catch(e){ console.warn('Module script injection error:', e); }

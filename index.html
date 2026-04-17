@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.3 | 2026-04-17 -->
+<!-- v1.0.4 | 2026-04-17 -->
 <html lang="en">
 <head>
 <!-- aesop-academy-index -->
@@ -1021,13 +1021,16 @@ body.banner-dismissed { padding-top: 0; }
     <button class="tb-close" type="button" aria-label="Dismiss banner" onclick="document.getElementById('topBanner').style.display='none';document.body.classList.add('banner-dismissed');">×</button>
   </nav>
 
-  <!-- Row 2: Live Stats + Utility controls -->
+  <!-- Row 2: Live Stats + Utility controls.
+       Numbers are populated client-side from /stats.json (refreshed hourly by
+       .github/workflows/update-stats.yml). Values below are fallbacks used if
+       the fetch fails; keep them honest. -->
   <div class="tb-stats">
     <span class="tb-live"><span class="tb-live-dot" aria-hidden="true"></span>Live</span>
-    <div class="tb-stat-row">
-      <span class="tb-stat"><span class="tb-stat-num">1,247</span><span class="tb-stat-lbl">Learners this week</span></span>
-      <span class="tb-stat"><span class="tb-stat-num">79</span><span class="tb-stat-lbl">Courses live</span></span>
-      <span class="tb-stat"><span class="tb-stat-num">12</span><span class="tb-stat-lbl">Languages</span></span>
+    <div class="tb-stat-row" id="tbStatRow">
+      <span class="tb-stat" data-stat="learners" hidden><span class="tb-stat-num" data-stat-num>—</span><span class="tb-stat-lbl">Learners this week</span></span>
+      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>25</span><span class="tb-stat-lbl">Courses live</span></span>
+      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>4</span><span class="tb-stat-lbl">Languages</span></span>
     </div>
     <div class="tb-utilities">
       <div class="tb-lang lang-selector" id="langSelector" aria-label="Select language">
@@ -1050,6 +1053,38 @@ body.banner-dismissed { padding-top: 0; }
   </div>
 
 </div>
+
+<script>
+/* Live stats banner: fetch /stats.json (generated hourly by the
+   update-stats.yml workflow), populate the three numbers. Falls back silently
+   to the server-rendered values if the fetch fails or a metric is null. */
+(function() {
+  var cacheBust = Math.floor(Date.now() / (1000 * 60 * 5)); // rotate every 5 min
+  fetch('/stats.json?v=' + cacheBust, { cache: 'no-store' })
+    .then(function(r) { if (!r.ok) throw new Error('stats ' + r.status); return r.json(); })
+    .then(function(stats) {
+      var row = document.getElementById('tbStatRow');
+      if (!row) return;
+
+      function setStat(key, value) {
+        var el = row.querySelector('[data-stat="' + key + '"]');
+        if (!el) return;
+        var num = el.querySelector('[data-stat-num]');
+        if (value === null || value === undefined) {
+          el.hidden = true;
+          return;
+        }
+        if (num) num.textContent = Number(value).toLocaleString();
+        el.hidden = false;
+      }
+
+      setStat('learners',  stats.learnersThisWeek);
+      setStat('courses',   stats.coursesLive);
+      setStat('languages', stats.languages);
+    })
+    .catch(function() { /* fallback values in the HTML stand — stay silent */ });
+})();
+</script>
 
 <style>
 /* ─── Top banner (pills + stats) ───────────────────────── */

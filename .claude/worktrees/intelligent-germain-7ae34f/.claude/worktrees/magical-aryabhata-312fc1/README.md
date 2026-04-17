@@ -1,2 +1,0 @@
-# Aesop
-Aesop Academy Files

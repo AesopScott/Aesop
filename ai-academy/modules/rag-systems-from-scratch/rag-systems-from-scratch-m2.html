@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-15 -->
+<!-- v1.0.3 | 2026-04-17 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1122,4 +1122,38 @@ function chatReset(labId){
     l3:"Hello! I'm your embedding model selection advisor. Choosing the right model is one of the highest-leverage decisions in a RAG system. Tell me about your use case and I'll help you navigate the trade-offs.",
     l4:"Hello! I'm your chunking strategy advisor. The way you split documents profoundly affects your embedding quality and retrieval recall. Tell me about your document types and query patterns and we'll design the right chunking approach."
   };
-  addMsg(labId,'ai',welcomes[labId]||'Ready to help. What would you like to
+  addMsg(labId,'ai',welcomes[labId]||'Ready to help. What would you like to explore?');
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(typeof chatExchanges[labId]==='undefined') chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attem

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-15 -->
+<!-- v1.0.3 | 2026-04-17 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1216,4 +1216,39 @@ async function chatSend(labId){
     chatHistories[labId].push({role:'assistant',content:reply});
     addMsg(labId,'ai',reply);
     chatExchanges[labId]++;
-    
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    if(inp)inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'');
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:sysPrompt,
+          messages:chatHistories[labId]
+        })
+      });
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an issue. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking&&thinking.parentNode)thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      if(inp)inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      if(thinking&&thinking.parentNode)thinking.remove();
+      _offlineMode[labId]=true;
+      _fa

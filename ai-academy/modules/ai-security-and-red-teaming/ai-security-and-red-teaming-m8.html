@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.4 | 2026-04-15 -->
+<!-- v1.0.5 | 2026-04-17 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1196,4 +1196,39 @@ async function chatSend(labId){
   if(!inp||!btn)return;
   var txt=inp.value.trim();
   if(!txt)return;
-  in
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId])chatHistories[labId]=[];
+  if(chatExchanges[labId]===undefined)chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      var data=await res.json();
+      var replyText=(data

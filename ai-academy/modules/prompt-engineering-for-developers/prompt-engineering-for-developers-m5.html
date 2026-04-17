@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-15 -->
+<!-- v1.0.3 | 2026-04-17 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1218,4 +1218,37 @@ async function chatSend(labId){
       var data=await res.json();
       var text=(data.content&&data.content[0]&&data.content[0].text)||'I could not generate a response. Please try again.';
       chatHistories[labId].push({role:'assistant',content:text});
-      if(thinking&&thinking.parentNode) th
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+updateTabs

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.4 | 2026-04-15 -->
+<!-- v1.0.5 | 2026-04-17 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1218,4 +1218,37 @@ async function chatSend(labId){
 
   if(_offlineMode[labId]){
     var reply=_fallbackReply(labId);
-    chatHistories[labId].push({role:'assist
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var msgs=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:msgs
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an error. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]

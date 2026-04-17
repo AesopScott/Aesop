@@ -1,5 +1,5 @@
 <!-- AESOP-FRAGMENT: true (injected into electives-hub.html — no <html>/<head>
-<!-- v1.0.1 | 2026-04-15 -->
+<!-- v1.0.2 | 2026-04-17 -->
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
@@ -946,4 +946,22 @@ async function chatSend(labId){
       chatExchanges[labId]=(chatExchanges[labId]||0)+1;
       if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
         labSignaled[labId]=true;
-        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,mod
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);

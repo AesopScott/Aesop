@@ -284,6 +284,9 @@ _MODULE_ID_PREFIXES = {
     "building-an-ai-first-business": "baf",
     "gpt-vs-claude-vs-gemini": "gcg",
     "photography-and-ai": "pho",
+    "ai-and-creativity": "cre",
+    "ai-and-national-security": "ans",
+    "how-large-language-models-work": "llm",
 }
 
 # Map of course IDs whose folder name doesn't match the ID

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-15 -->
+<!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
 <!-- v1.0.0 | 2026-04-14 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -1675,9 +1675,10 @@ async function buildFullCourse() {
       document.getElementById('coursesUpdateStatus').style.color = '#f59e0b';
     }
 
-    // Post-activation audit
+    // Post-activation audit + standards alignment update
     if (repoFolderHandle) {
       try { await runPostActivationAudit(cid); } catch(e) { log('Audit error: ' + e.message); }
+      try { await runPostActivationStandardsUpdate(cid); } catch(e) { log('Standards update error: ' + e.message); }
     }
 
     await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: true });
@@ -1812,19 +1813,47 @@ let repoFolderHandle = null;
 
 async function setRepoFolder() {
   try {
-    // Ask user to select ai-academy folder — then navigate into modules
-    coursesFolderHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
-    rootFolderHandle = coursesFolderHandle; // backup for recovery
-    // Navigate into modules subfolder for module saves
+    const pickedHandle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+
+    // Detect if user selected the repo root (contains 'ai-academy/' subdirectory)
+    // vs. the ai-academy/ or modules/ folder directly.
+    let detectedRepoRoot = false;
     try {
-      repoFolderHandle = await coursesFolderHandle.getDirectoryHandle('modules', { create: false });
-      document.getElementById('folderStatus').textContent = 'Folder set: ' + coursesFolderHandle.name + '/modules';
-    } catch(e) {
-      // If no modules subfolder, use selected folder as-is
-      repoFolderHandle = coursesFolderHandle;
-      document.getElementById('folderStatus').textContent = 'Folder set: ' + coursesFolderHandle.name;
+      const aaHandle = await pickedHandle.getDirectoryHandle('ai-academy', { create: false });
+      // Repo root detected — navigate into ai-academy/
+      detectedRepoRoot = true;
+      coursesFolderHandle = aaHandle;
+      rootFolderHandle = aaHandle;
+      try {
+        repoFolderHandle = await aaHandle.getDirectoryHandle('modules', { create: false });
+        document.getElementById('folderStatus').textContent = 'Repo root: ' + pickedHandle.name + '/ai-academy/modules';
+      } catch(_) {
+        repoFolderHandle = aaHandle;
+        document.getElementById('folderStatus').textContent = 'Repo root: ' + pickedHandle.name + '/ai-academy';
+      }
+      // Capture standards/ from the original (repo root) handle
+      try {
+        standardsFolderHandle = await pickedHandle.getDirectoryHandle('standards', { create: false });
+      } catch(_) { /* standards/ not present */ }
+    } catch(_) { /* not a repo root */ }
+
+    if (!detectedRepoRoot) {
+      // Existing behaviour: user selected ai-academy/ or modules/ directly
+      coursesFolderHandle = pickedHandle;
+      rootFolderHandle = pickedHandle;
+      try {
+        repoFolderHandle = await pickedHandle.getDirectoryHandle('modules', { create: false });
+        document.getElementById('folderStatus').textContent = 'Folder set: ' + pickedHandle.name + '/modules';
+      } catch(e) {
+        repoFolderHandle = pickedHandle;
+        document.getElementById('folderStatus').textContent = 'Folder set: ' + pickedHandle.name;
+      }
     }
+
     document.getElementById('folderStatus').style.color = '#5dd6a8';
+    if (standardsFolderHandle) {
+      document.getElementById('folderStatus').textContent += ' (+ standards/)';
+    }
   } catch(e) {
     if (e.name !== 'AbortError') showStatus('error', 'Could not access folder: ' + e.message);
   }
@@ -1882,6 +1911,7 @@ async function downloadFile() {
 
 let coursesFolderHandle = null;
 let rootFolderHandle = null;  // backup of ai-academy/ handle for recovery
+let standardsFolderHandle = null; // standards/ at repo root — set via setRepoFolder() when user picks repo root
 
 async function manualActivate() {
   const cid = document.getElementById('courseSelect').value;
@@ -1904,9 +1934,10 @@ async function manualActivate() {
     document.getElementById('courseSelect').value = '';
     onCourseChange();
 
-    // Post-activation audit
+    // Post-activation audit + standards alignment update
     if (repoFolderHandle) {
       try { await runPostActivationAudit(cid); } catch(e) { log('Audit error: ' + e.message); }
+      try { await runPostActivationStandardsUpdate(cid); } catch(e) { log('Standards update error: ' + e.message); }
     }
 
   }
@@ -2374,6 +2405,118 @@ async function runPostActivationAudit(cid) {
   }
 
   return { passed, failed, total, results, markdown: md };
+}
+
+// ── Post-activation: update standards alignment pages ───────────────────────
+// Appends a row for the newly activated course to both
+// standards/ai4k12-alignment.html and standards/unesco-alignment.html,
+// and increments the course count in each page's lead paragraph.
+//
+// Requires standardsFolderHandle to be set (happens automatically when the
+// user selects the REPO ROOT in "Set Repo Folder", e.g. the Aesop/ directory).
+async function runPostActivationStandardsUpdate(cid) {
+  // Per-course ratings map.
+  // ai4k12: [BI1-Perception, BI2-Rep&Reasoning, BI3-Learning, BI4-NatInteract, BI5-SocImpact]
+  // unesco:  [D1-HumanMindset, D2-Ethics, D3-Techniques, D4-SystemDesign]
+  // Values: 'None' | 'Partial' | 'Strong'
+  const RATINGS = {
+    'governance':                    { name:'AI Governance',                       ai4k12:['None','None','Partial','None','Strong'],         unesco:['Strong','Strong','Strong','Partial'] },
+    'society':                       { name:'AI in Society',                        ai4k12:['Partial','None','Partial','Partial','Strong'],   unesco:['Strong','Strong','Partial','None'] },
+    'ethics':                        { name:'AI Ethics &amp; Decision-Making',      ai4k12:['None','Partial','Partial','None','Strong'],      unesco:['Strong','Strong','Strong','Partial'] },
+    'building':                      { name:'Building with AI',                     ai4k12:['Partial','Partial','Partial','Strong','Partial'],unesco:['Partial','Partial','Strong','Strong'] },
+    'ai-in-healthcare':              { name:'AI in Healthcare',                     ai4k12:['Strong','Partial','Strong','Partial','Strong'],  unesco:['Strong','Strong','Strong','Partial'] },
+    'ai-and-education':              { name:'AI &amp; Education',                   ai4k12:['None','None','Partial','Partial','Strong'],      unesco:['Strong','Strong','Strong','Partial'] },
+    'ai-psychology-and-behavior':    { name:'AI Psychology &amp; Behavior',         ai4k12:['None','None','Partial','Strong','Strong'],       unesco:['Strong','Strong','Partial','None'] },
+    'ai-leadership':                 { name:'AI Leadership',                        ai4k12:['None','None','None','None','Partial'],           unesco:['Partial','Partial','Partial','Partial'] },
+    'gpt-vs-claude-vs-gemini':       { name:'GPT vs. Claude vs. Gemini',            ai4k12:['Partial','Strong','Strong','Strong','Partial'],  unesco:['Partial','Partial','Strong','Partial'] },
+    'ai-in-game-design-i':           { name:'AI in Game Design I',                  ai4k12:['Partial','Strong','Partial','Strong','Partial'], unesco:['Partial','Partial','Strong','Strong'] },
+    'photography-and-ai':            { name:'Photography and AI',                   ai4k12:['Strong','Partial','Strong','None','Partial'],    unesco:['Partial','Strong','Strong','Partial'] },
+    'ai-tools-for-solo-founders':    { name:'AI Tools for Solo Founders',           ai4k12:['None','None','None','Partial','Partial'],        unesco:['Partial','Partial','Strong','Partial'] },
+    'ai-for-marketing-and-growth':   { name:'AI for Marketing and Growth',          ai4k12:['None','Partial','Strong','Partial','Partial'],   unesco:['Partial','Strong','Strong','Partial'] },
+    'ai-risk-for-business-leaders':  { name:'AI Risk for Business Leaders',         ai4k12:['None','None','None','None','Strong'],            unesco:['Strong','Strong','None','None'] },
+    'building-an-ai-first-business': { name:'Building an AI-First Business',        ai4k12:['None','None','Partial','Partial','Partial'],     unesco:['Partial','Partial','Strong','Strong'] },
+    'ai-for-small-business-managers':{ name:'AI for Small Business Managers',       ai4k12:['None','None','None','Partial','Partial'],        unesco:['Partial','Partial','Strong','Partial'] },
+    'building-ai-agents-i-use-cases':{ name:'Building AI Agents I',                 ai4k12:['Partial','Strong','Partial','Partial','Partial'],unesco:['None','Partial','Strong','Strong'] },
+    'building-ai-agents-ii-skills':  { name:'Building AI Agents II',                ai4k12:['None','Strong','Strong','Partial','None'],       unesco:['None','None','Strong','Strong'] },
+    'building-ai-agents-iii-tools':  { name:'Building AI Agents III',               ai4k12:['None','Partial','None','Partial','Partial'],     unesco:['None','Partial','Strong','Strong'] },
+    'building-ai-agents-iv-openclaw':{ name:'Building AI Agents IV (OpenClaw)',      ai4k12:['Partial','Strong','None','Partial','None'],      unesco:['None','None','Strong','Strong'] },
+    'building-ai-agents-v-optimization':{ name:'Building AI Agents V',              ai4k12:['None','Partial','None','None','None'],           unesco:['None','None','Strong','Strong'] },
+    'prompt-engineering-for-developers':{ name:'Prompt Engineering for Developers', ai4k12:['None','Partial','Partial','Strong','Partial'],   unesco:['Partial','Partial','Strong','Strong'] },
+    'rag-systems-from-scratch':      { name:'RAG Systems from Scratch',             ai4k12:['None','Strong','Strong','Partial','None'],       unesco:['None','None','Strong','Strong'] },
+    'am-5':                          { name:'How Large Language Models Work',        ai4k12:['None','Partial','Strong','Strong','Partial'],    unesco:['Partial','Partial','Strong','Partial'] },
+    'ai-and-the-future-of-work':     { name:'AI and the Future of Work',            ai4k12:['None','None','Partial','Partial','Strong'],      unesco:['Strong','Strong','Partial','None'] },
+    'dv-13':                         { name:'AI Security and Red Teaming',          ai4k12:['None','Partial','Partial','None','Strong'],      unesco:['Partial','Strong','Strong','Partial'] },
+  };
+
+  const rating = RATINGS[cid];
+  if (!rating) {
+    log('[Standards] No ratings defined for "' + cid + '" — skipping. Add an entry to the RATINGS map in runPostActivationStandardsUpdate().');
+    return;
+  }
+
+  if (!standardsFolderHandle) {
+    log('[Standards] No standards folder handle. To enable automatic standards updates, select your REPO ROOT (e.g. Aesop/) in "Set Repo Folder" — the tool will detect standards/ automatically.');
+    return;
+  }
+
+  function badge(r) {
+    const cls = r === 'Strong' ? 'strong' : r === 'Partial' ? 'partial' : 'none';
+    return '<span class="badge badge--' + cls + '">' + r + '</span>';
+  }
+
+  // ── AI4K12 ──────────────────────────────────────────────────────────────
+  try {
+    const fh = await standardsFolderHandle.getFileHandle('ai4k12-alignment.html');
+    let html = await (await fh.getFile()).text();
+
+    if (html.includes('>' + rating.name + '<')) {
+      log('[Standards] AI4K12: row for "' + rating.name + '" already present — skipped.');
+    } else {
+      const [b1,b2,b3,b4,b5] = rating.ai4k12;
+      const row = '\n          <tr><td class="course-name">' + rating.name + '</td>' +
+        '<td>' + badge(b1) + '</td>' +
+        '<td>' + badge(b2) + '</td>' +
+        '<td>' + badge(b3) + '</td>' +
+        '<td>' + badge(b4) + '</td>' +
+        '<td>' + badge(b5) + '</td></tr>';
+      html = html.replace('</tbody>', row + '\n          </tbody>');
+      // Bump course count in lead paragraph
+      html = html.replace(/All (\d+) courses rated/, (m, n) => 'All ' + (parseInt(n) + 1) + ' courses rated');
+      const w = await fh.createWritable();
+      await w.write(html);
+      await w.close();
+      log('[Standards] ✓ AI4K12 row added for "' + rating.name + '"');
+    }
+  } catch(e) {
+    log('[Standards] AI4K12 update failed: ' + e.message);
+  }
+
+  // ── UNESCO ───────────────────────────────────────────────────────────────
+  try {
+    const fh = await standardsFolderHandle.getFileHandle('unesco-alignment.html');
+    let html = await (await fh.getFile()).text();
+
+    if (html.includes('>' + rating.name + '<')) {
+      log('[Standards] UNESCO: row for "' + rating.name + '" already present — skipped.');
+    } else {
+      const [d1,d2,d3,d4] = rating.unesco;
+      const row = '\n          <tr><td class="course-name">' + rating.name + '</td>' +
+        '<td>' + badge(d1) + '</td>' +
+        '<td>' + badge(d2) + '</td>' +
+        '<td>' + badge(d3) + '</td>' +
+        '<td>' + badge(d4) + '</td></tr>';
+      html = html.replace('</tbody>', row + '\n          </tbody>');
+      html = html.replace(/All (\d+) courses rated/, (m, n) => 'All ' + (parseInt(n) + 1) + ' courses rated');
+      const w = await fh.createWritable();
+      await w.write(html);
+      await w.close();
+      log('[Standards] ✓ UNESCO row added for "' + rating.name + '"');
+    }
+  } catch(e) {
+    log('[Standards] UNESCO update failed: ' + e.message);
+  }
+
+  log('[Standards] Alignment update complete. Accreditation tracker auto-populates from course-registry.json — no extra step needed.');
 }
 
 async function updateCoursesFile(opts) {

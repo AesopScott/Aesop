@@ -28,12 +28,12 @@
     'body { padding-top: 118px; overflow-x: hidden; }' +
     'body.banner-dismissed { padding-top: 0; }' +
     '.top-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999;' +
-    '  background: var(--navy, #0f1923); color: #fff;' +
-    '  box-shadow: 0 2px 12px rgba(0,20,60,0.25);' +
+    '  background: var(--navy-mid, #16293d); color: #fff;' +
+    '  box-shadow: 0 2px 16px rgba(13,27,42,0.45);' +
     '  font-family: var(--font-sans), system-ui, sans-serif; }' +
     '.tb-pills { display: flex; gap: 0.5rem; padding: 0.55rem 1.25rem;' +
     '  overflow-x: auto; -webkit-overflow-scrolling: touch;' +
-    '  scrollbar-width: none; border-bottom: 1px solid rgba(255,255,255,0.08);' +
+    '  scrollbar-width: none; border-bottom: 1px solid rgba(201,160,90,0.20);' +
     '  align-items: center; }' +
     '.tb-pills::-webkit-scrollbar { display: none; }' +
     '.tb-brand { flex-shrink: 0; display: inline-flex; align-items: center;' +
@@ -124,7 +124,7 @@
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__track { background: #c9a05a; }' +
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__thumb {' +
     '  transform: translateX(12px); background: #0f1923; }' +
-    '[data-theme="dark"] .top-banner { background: #0a1426; }' +
+    '[data-theme="dark"] .top-banner { background: #0d1b2a; }' +
     '[data-theme="dark"] .tb-pills a {' +
     '  background: rgba(255,255,255,0.05); color: #fff !important;' +
     '  border-color: rgba(255,255,255,0.1); }' +
@@ -239,20 +239,4 @@
       var current = 'en';
       var m = path.match(/\/ai-academy\/modules\/([a-z]{2})\//);
       if (m) current = m[1];
-      sel.querySelectorAll('.lang-btn').forEach(function (btn) {
-        var code = btn.dataset.lang;
-        btn.classList.toggle('lang-active', code === current);
-        btn.addEventListener('click', function () {
-          location.href = (code === 'en') ? '/' : '/ai-academy/modules/' + code + '/courses.html';
-        });
-      });
-    }
-  }
-
-  // Run now if DOM is already interactive, else after it parses.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', mount, { once: true });
-  } else {
-    mount();
-  }
-})();
+      sel.querySelectorAll('.lang-btn').forEach(f

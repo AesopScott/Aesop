@@ -1,0 +1,1117 @@
+<!doctype html>
+<!-- v1.0.0 | 2026-04-17 -->
+<!-- military-base-tracker: SkillBridge / military partnership tracker (public read-only, Firebase admin login for write) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Military Base Tracker — AESOP AI Academy</title>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<style>
+/* ─── Design tokens (AESOP palette) ──────────────────────────── */
+:root {
+  --navy: #0d1b2a;
+  --navy-mid: #16293d;
+  --navy-light: #1e3a52;
+  --gold: #c9a05a;
+  --gold-light: #dbb87a;
+  --gold-pale: #f5e9d0;
+  --cream: #faf8f4;
+  --teal: #3dd6c0;
+  --ink: #2d2a26;
+  --ink-light: #6b6560;
+  --muted: #94a3b8;
+  --border: #2a3a4a;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --info: #38bdf8;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font: 14px/1.5 var(--font-body);
+  margin: 0;
+  background: var(--navy);
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+a { color: var(--gold-light); text-decoration: none; }
+a:hover { color: var(--gold); }
+
+.page-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-header h1 {
+  margin: 0;
+  font: 700 22px/1.2 var(--font-display);
+  color: var(--gold-light);
+  letter-spacing: -0.01em;
+}
+.page-header h1 span { color: #e2e8f0; font-weight: 400; }
+.page-header .meta { color: var(--muted); font-size: 12px; }
+.back-link {
+  font-size: 12px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.back-link:hover { color: var(--gold-light); }
+
+.summary-bar {
+  display: flex;
+  gap: 20px;
+  padding: 10px 32px;
+  background: #0b1220;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.summary-bar .stat b { color: #e2e8f0; }
+.summary-bar .spacer { flex: 1; }
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--border);
+  background: #0b1220;
+  align-items: center;
+}
+.toolbar input[type=search],
+.toolbar select {
+  background: var(--navy);
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.toolbar input[type=search] { min-width: 200px; }
+.toolbar .spacer { flex: 1; }
+.toolbar .legend { display: flex; gap: 10px; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+.toolbar .legend span { display: flex; align-items: center; gap: 3px; }
+.toolbar .legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+main { padding: 0 24px 80px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 0; font-size: 13px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; text-align: left; }
+th {
+  position: sticky;
+  top: 0;
+  background: #0b1220;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  z-index: 2;
+  white-space: nowrap;
+}
+tr { cursor: pointer; transition: background 0.12s; }
+tr:hover td { background: #162033; }
+tr.tier-header td {
+  background: var(--navy-mid);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: default;
+  padding: 10px;
+  border-bottom: 2px solid var(--gold);
+}
+.base-name { font-weight: 600; color: #e2e8f0; white-space: nowrap; }
+.base-abbr { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.branch-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.branch-army { background: rgba(76, 127, 73, 0.20); color: #9ac992; }
+.branch-af { background: rgba(56, 189, 248, 0.14); color: var(--info); }
+.branch-sf { background: rgba(167, 139, 250, 0.18); color: #c4b5fd; }
+.branch-navy { background: rgba(30, 64, 175, 0.30); color: #93c5fd; }
+.branch-marines { background: rgba(220, 38, 38, 0.18); color: #fca5a5; }
+.branch-cg { background: rgba(249, 115, 22, 0.16); color: #fdba74; }
+.branch-joint { background: rgba(201, 160, 90, 0.20); color: var(--gold-light); }
+.skillbridge-yes { color: var(--ok); font-weight: 600; font-size: 12px; }
+.skillbridge-no { color: var(--err); font-size: 12px; }
+.skillbridge-unknown { color: var(--muted); font-size: 12px; font-style: italic; }
+.notes-cell { font-size: 12px; color: var(--muted); max-width: 220px; }
+
+select.status-select {
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+select.status-select:hover { border-color: var(--border); }
+select.status-select:focus { border-color: var(--gold); outline: none; background: var(--navy); }
+.status-not-started { color: var(--muted); }
+.status-researching { color: var(--info); }
+.status-contacted { color: #a78bfa; }
+.status-meeting-scheduled { color: var(--warn); }
+.status-mou-drafted { color: #fb923c; }
+.status-approved { color: var(--ok); }
+.status-declined { color: var(--err); }
+.status-on-hold { color: #94a3b8; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--navy-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: modalIn 0.2s ease-out;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h2 { margin: 0; font: 700 18px/1.2 var(--font-display); color: var(--gold-light); }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.modal-close:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+.modal-body { padding: 20px 24px 24px; }
+.modal-body h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 18px 0 8px;
+}
+.modal-body h3:first-child { margin-top: 0; }
+.modal-body p, .modal-body li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 6px;
+}
+.modal-body ul { margin: 0 0 10px; padding-left: 20px; }
+.modal-body .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.modal-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.modal-contact { background: var(--navy); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; font-size: 13px; }
+.modal-contact b { color: #e2e8f0; }
+.modal-notes textarea {
+  width: 100%;
+  min-height: 60px;
+  background: var(--navy);
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font: 13px/1.5 var(--font-body);
+  resize: vertical;
+}
+.modal-notes textarea:focus { border-color: var(--gold); outline: none; }
+.modal-notes label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: block; margin-bottom: 4px; }
+
+.page-footer {
+  color: var(--muted);
+  font-size: 11px;
+  padding: 24px 32px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
+.auth-overlay.open { display:flex; }
+.auth-box { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); position:relative; }
+.auth-logo { font-size:32px; margin-bottom:8px; }
+.auth-box h2 { margin:4px 0 6px; font-size:18px; color:var(--gold-light); }
+.auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
+.auth-input { width:100%; padding:9px 11px; margin:6px 0; background:#0f172a; color:#e2e8f0; border:1px solid var(--border); border-radius:6px; font-size:14px; font-family:var(--font-body); }
+.auth-input:focus { outline:none; border-color:var(--gold); }
+.auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--gold); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
+.auth-btn:hover { filter:brightness(1.1); }
+.auth-close { position:absolute; top:10px; right:14px; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:4px; }
+.auth-close:hover { color:#e2e8f0; background:rgba(255,255,255,0.05); }
+.auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
+.user-bar { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.admin-login-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.admin-login-btn:hover { color:var(--gold-light); border-color:var(--gold); }
+.sign-out-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.sign-out-btn:hover { color:#e2e8f0; border-color:var(--gold); }
+.admin-badge { display:inline-block; background:rgba(34,197,94,0.15); color:var(--ok); font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
+
+@media (max-width: 768px) {
+  .page-header, .summary-bar, .toolbar { padding-left: 16px; padding-right: 16px; }
+  main { padding: 0 8px 80px; }
+  .notes-cell, .location-cell { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Admin login modal (not blocking) ── -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <button class="auth-close" id="auth-close">&times;</button>
+    <div class="auth-logo">&#x1f512;</div>
+    <h2>Admin Sign In</h2>
+    <p>Sign in for edit access.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<div class="page-header">
+  <div>
+    <a href="/ai-academy/courses.html" class="back-link">&larr; Back to Courses</a>
+    <h1>Military Base <span>Tracker</span></h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div class="meta">SkillBridge &amp; CSP Outreach &middot; Updated April 2026</div>
+    <div class="user-bar" id="userBar">
+      <button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>
+    </div>
+  </div>
+</div>
+
+<div class="summary-bar" id="summaryBar">
+  <span class="stat"><b id="countTotal">0</b> Bases</span>
+  <span class="stat">Approved: <b id="countApproved">0</b></span>
+  <span class="stat">MOU Drafted: <b id="countMou">0</b></span>
+  <span class="stat">Contacted: <b id="countContacted">0</b></span>
+  <span class="stat">Researching: <b id="countResearching">0</b></span>
+  <span class="stat">Not Started: <b id="countNotStarted">0</b></span>
+</div>
+
+<div class="toolbar">
+  <input type="search" id="searchBox" placeholder="Search bases, cities, states...">
+  <select id="filterTier">
+    <option value="">All Tiers</option>
+    <option value="1">Tier 1 — Local (Colorado)</option>
+    <option value="2">Tier 2 — Major Army SkillBridge Hubs</option>
+    <option value="3">Tier 3 — Major Air &amp; Space Force</option>
+    <option value="4">Tier 4 — Joint Bases</option>
+    <option value="5">Tier 5 — Navy / Marines / Coast Guard</option>
+  </select>
+  <select id="filterBranch">
+    <option value="">All Branches</option>
+    <option value="army">Army</option>
+    <option value="af">Air Force</option>
+    <option value="sf">Space Force</option>
+    <option value="navy">Navy</option>
+    <option value="marines">Marines</option>
+    <option value="cg">Coast Guard</option>
+    <option value="joint">Joint Base</option>
+  </select>
+  <select id="filterStatus">
+    <option value="">All Statuses</option>
+    <option value="not-started">Not Started</option>
+    <option value="researching">Researching</option>
+    <option value="contacted">Contacted</option>
+    <option value="meeting-scheduled">Meeting Scheduled</option>
+    <option value="mou-drafted">MOU Drafted</option>
+    <option value="approved">Approved</option>
+    <option value="declined">Declined</option>
+    <option value="on-hold">On Hold</option>
+  </select>
+  <div class="spacer"></div>
+  <div class="legend">
+    <span><span class="dot" style="background:#9ac992"></span> Army</span>
+    <span><span class="dot" style="background:var(--info)"></span> Air Force</span>
+    <span><span class="dot" style="background:#c4b5fd"></span> Space Force</span>
+    <span><span class="dot" style="background:#93c5fd"></span> Navy</span>
+    <span><span class="dot" style="background:#fca5a5"></span> Marines</span>
+    <span><span class="dot" style="background:var(--gold-light)"></span> Joint</span>
+  </div>
+</div>
+
+<main>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:18%">Base</th>
+        <th style="width:7%">Branch</th>
+        <th style="width:14%" class="location-cell">Location</th>
+        <th style="width:11%">Status</th>
+        <th style="width:9%">SkillBridge</th>
+        <th style="width:15%">CSP / Contact</th>
+        <th style="width:22%" class="notes-cell">Notes</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</main>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="page-footer">AESOP AI Academy &middot; Military Base Tracker &middot; SkillBridge Provider Outreach</div>
+
+<!-- Firebase SDK + admin auth -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.firebasestorage.app",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && ADMIN_EMAILS.includes(u.email);
+
+  const overlay  = document.getElementById('auth-overlay');
+  const errEl    = document.getElementById('auth-error');
+  const userBar  = document.getElementById('userBar');
+
+  document.getElementById('adminLoginBtn').addEventListener('click', () => {
+    overlay.classList.add('open');
+    document.getElementById('auth-email').focus();
+  });
+  document.getElementById('auth-close').addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pass').focus(); });
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  function updateUserBar(user) {
+    if (user && isAdmin(user)) {
+      userBar.innerHTML = `
+        <span style="color:#e2e8f0">${user.email}</span>
+        <span class="admin-badge">ADMIN</span>
+        <button class="sign-out-btn" id="signOutBtn">Sign Out</button>`;
+      document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+    } else {
+      userBar.innerHTML = `<button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>`;
+      document.getElementById('adminLoginBtn').addEventListener('click', () => {
+        overlay.classList.add('open');
+        document.getElementById('auth-email').focus();
+      });
+    }
+  }
+
+  window.__ADMIN_MODE = false;
+
+  onAuthStateChanged(auth, user => {
+    overlay.classList.remove('open');
+    if (user && isAdmin(user)) {
+      window.__ADMIN_MODE = true;
+      updateUserBar(user);
+    } else if (user && !isAdmin(user)) {
+      signOut(auth);
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+      errEl.textContent = 'This account does not have admin access.';
+      overlay.classList.add('open');
+    } else {
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+    }
+    document.dispatchEvent(new CustomEvent('authReady'));
+  });
+
+  document.dispatchEvent(new CustomEvent('authReady'));
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   MILITARY BASE DATA — ordered by tier & priority for Aesop Academy
+   SkillBridge / Career Skills Program / training provider outreach
+   ═══════════════════════════════════════════════════════════════════ */
+
+const BASES = [
+  // ── TIER 1: Local Colorado bases (Scott's home turf) ─────────
+  { tier: 1, abbr: "FTC", name: "Fort Carson", branch: "army",
+    location: "Colorado Springs, CO", population: "~26,000 active duty",
+    skillBridge: "yes",
+    cspName: "Soldier for Life – Transition Assistance Program (SFL-TAP)",
+    cspPhone: "719-526-1002", cspEmail: "",
+    detail: "Home of the 4th Infantry Division and 10th Special Forces Group. Large, highly active SFL-TAP office with established SkillBridge relationships. Fort Carson is the nearest major Army installation to Aesop's operations and is the strategic entry point for Army partnerships.",
+    actions: [
+      "Call Fort Carson SFL-TAP (719-526-1002) to introduce Aesop Academy",
+      "Request SkillBridge provider briefing slot",
+      "Complete DoD SkillBridge provider application with Fort Carson as primary installation",
+      "Offer a pilot cohort: free AI literacy for 10–15 transitioning service members",
+      "Build connection to local Chamber of Commerce and veteran entrepreneur groups"
+    ],
+    links: [
+      "https://home.army.mil/carson/about/Garrison/directorate-human-resources/military-personnel/transition-assistance-program",
+      "https://skillbridge.osd.mil/"
+    ],
+    notes: "Highest priority. Closest major base. Army flexibility is best fit for local providers."
+  },
+  { tier: 1, abbr: "PSFB", name: "Peterson Space Force Base", branch: "sf",
+    location: "Colorado Springs, CO", population: "~8,000 active duty",
+    skillBridge: "yes",
+    cspName: "Airman & Family Readiness Center (AFRC)",
+    cspPhone: "719-556-6141", cspEmail: "",
+    detail: "Home of Space Base Delta 1, supporting USSPACECOM, NORAD/USNORTHCOM. Transition services run through AFRC. Space Force is new and small; every provider relationship matters. Highly technical workforce — strong AI-literacy fit.",
+    actions: [
+      "Call Peterson AFRC (719-556-6141) to request SkillBridge program briefing",
+      "Position Aesop Academy for space/cyber-adjacent transitioning Guardians",
+      "Cross-promote with Schriever SFB and Buckley SFB (same command region)"
+    ],
+    links: ["https://www.peterson.spaceforce.mil/"],
+    notes: "Space Force transitions are smaller in volume but highly technical — strong signal fit."
+  },
+  { tier: 1, abbr: "USAFA", name: "U.S. Air Force Academy", branch: "af",
+    location: "USAF Academy, CO", population: "~4,400 cadets + 7,000 staff",
+    skillBridge: "unknown",
+    cspName: "USAFA Transition Office",
+    cspPhone: "719-333-1110 (main)", cspEmail: "",
+    detail: "USAFA is a training command, not a typical operational base. Most separations are cadets commissioning, not separating — SkillBridge volume is low. However, relationships with USAFA's Center for Character & Leadership Development and STEM outreach programs could be valuable for visibility and faculty connections.",
+    actions: [
+      "Explore partnership through Center for Character & Leadership Development",
+      "Connect with USAFA STEM outreach program",
+      "Offer AI ethics / AI literacy seminar series for cadets"
+    ],
+    links: ["https://www.usafa.edu/"],
+    notes: "Low SkillBridge volume but high visibility. Pursue as thought-leadership partner, not volume."
+  },
+  { tier: 1, abbr: "SCHR", name: "Schriever Space Force Base", branch: "sf",
+    location: "Colorado Springs, CO", population: "~8,000 total workforce",
+    skillBridge: "yes",
+    cspName: "Airman & Family Readiness (via Peterson AFRC)",
+    cspPhone: "719-556-6141", cspEmail: "",
+    detail: "Schriever is home to Space Delta 6 (Cyberspace Operations) and Space Delta 8 (Satellite Communications). Transition services share infrastructure with Peterson SFB. Cyber and satcom workforce transitioning is ideal match for AI literacy programs.",
+    actions: [
+      "Include Schriever in Peterson AFRC briefing",
+      "Target Delta 6 cyber transitions specifically",
+      "Offer specialized cyber-AI curriculum track"
+    ],
+    links: ["https://www.schriever.spaceforce.mil/"],
+    notes: "Shares AFRC with Peterson. Cyber workforce is a premium SkillBridge audience."
+  },
+  { tier: 1, abbr: "BUCK", name: "Buckley Space Force Base", branch: "sf",
+    location: "Aurora, CO (Denver metro)", population: "~14,000 total workforce",
+    skillBridge: "yes",
+    cspName: "Airman & Family Readiness Center",
+    cspPhone: "720-847-6681", cspEmail: "",
+    detail: "Buckley hosts Space Delta 4 (Missile Warning) and Space Delta 2 (Space Domain Awareness), plus Colorado Air National Guard. Denver metro location means broader civilian employer ecosystem. Good complement to Colorado Springs bases.",
+    actions: [
+      "Call Buckley AFRC (720-847-6681)",
+      "Pitch AI literacy as post-service employability accelerator",
+      "Leverage Denver proximity for in-person workshops"
+    ],
+    links: ["https://www.buckley.spaceforce.mil/"],
+    notes: "Denver metro location opens civilian employer partnerships. Don't skip."
+  },
+
+  // ── TIER 2: Major Army SkillBridge hubs nationwide ───────────
+  { tier: 2, abbr: "FTLB", name: "Fort Liberty (formerly Bragg)", branch: "army",
+    location: "Fayetteville, NC", population: "~54,000 active duty",
+    skillBridge: "yes",
+    cspName: "Fort Liberty SFL-TAP",
+    cspPhone: "910-396-4001", cspEmail: "",
+    detail: "Largest Army installation by population. Home of XVIII Airborne Corps, 82nd Airborne, USASOC. Huge SkillBridge volume and many established corporate partners — highly competitive but massive opportunity. Formerly Fort Bragg, renamed 2023.",
+    actions: [
+      "Apply as DoD SkillBridge provider with Fort Liberty as primary installation",
+      "Network with existing providers (Code Platoon, ACI Learning, Nucamp) for referral pathways",
+      "Target special operations veterans — high-income, tech-adjacent civilian roles"
+    ],
+    links: ["https://home.army.mil/liberty/"],
+    notes: "Highest-volume Army installation. Competitive but massive. Special ops cohort is a premium target."
+  },
+  { tier: 2, abbr: "FTCV", name: "Fort Cavazos (formerly Hood)", branch: "army",
+    location: "Killeen, TX", population: "~36,000 active duty",
+    skillBridge: "yes",
+    cspName: "Fort Cavazos SFL-TAP",
+    cspPhone: "254-287-0968", cspEmail: "",
+    detail: "Second-largest Army installation. Home of III Armored Corps, 1st Cavalry, 3rd Cavalry Regiment. Renamed from Fort Hood in 2023. Very active SkillBridge ecosystem given proximity to Austin tech corridor.",
+    actions: [
+      "Contact Fort Cavazos SFL-TAP",
+      "Target armored/mechanized transitions — large cohort, underserved by tech training",
+      "Leverage Austin tech ecosystem for employer partnerships"
+    ],
+    links: ["https://home.army.mil/cavazos/"],
+    notes: "Austin proximity is a big plus. Huge cohort of transitioning soldiers seeking tech paths."
+  },
+  { tier: 2, abbr: "JBLM", name: "Joint Base Lewis-McChord", branch: "joint",
+    location: "Tacoma, WA", population: "~54,000 service members",
+    skillBridge: "yes",
+    cspName: "JBLM Transition Services",
+    cspPhone: "253-967-3340", cspEmail: "",
+    detail: "One of the largest joint bases. Houses I Corps, 7th Infantry Division, and McChord Field airlift wing. Seattle tech corridor proximity makes this a premier SkillBridge market — Microsoft, Amazon, Boeing all hire heavily.",
+    actions: [
+      "Apply as SkillBridge provider targeting JBLM",
+      "Leverage Seattle tech employer relationships",
+      "Pitch as pre-SkillBridge on-ramp for non-technical transitions"
+    ],
+    links: ["https://home.army.mil/lewis-mcchord/"],
+    notes: "Seattle tech proximity. Competitive but rewards providers who land enterprise hiring partners."
+  },
+  { tier: 2, abbr: "FTCAM", name: "Fort Campbell", branch: "army",
+    location: "Fort Campbell, KY/TN", population: "~30,000 active duty",
+    skillBridge: "yes",
+    cspName: "Fort Campbell SFL-TAP",
+    cspPhone: "270-798-5000", cspEmail: "",
+    detail: "Home of the 101st Airborne Division (Air Assault) and 5th Special Forces Group. Straddles Kentucky and Tennessee. Nashville metro proximity (~1 hour) for employer connections.",
+    actions: [
+      "Contact Fort Campbell SFL-TAP",
+      "Build Nashville-area employer pipeline",
+      "Target aviation-branch transitions"
+    ],
+    links: ["https://home.army.mil/campbell/"],
+    notes: "Strong aviation community. Nashville proximity helps with employer matching."
+  },
+  { tier: 2, abbr: "FTST", name: "Fort Stewart", branch: "army",
+    location: "Hinesville, GA", population: "~18,000 active duty",
+    skillBridge: "yes",
+    cspName: "Fort Stewart SFL-TAP",
+    cspPhone: "912-767-2001", cspEmail: "",
+    detail: "Home of the 3rd Infantry Division. Largest Army installation east of the Mississippi by land area. Savannah metro proximity.",
+    actions: [
+      "Contact Fort Stewart SFL-TAP",
+      "Leverage Savannah/coastal GA employer ecosystem"
+    ],
+    links: ["https://home.army.mil/stewart/"],
+    notes: "Solid Tier 2 target. Less competitive than Bragg/Cavazos."
+  },
+  { tier: 2, abbr: "FTDR", name: "Fort Drum", branch: "army",
+    location: "Watertown, NY", population: "~19,000 active duty",
+    skillBridge: "yes",
+    cspName: "Fort Drum SFL-TAP",
+    cspPhone: "315-772-3434", cspEmail: "",
+    detail: "Home of the 10th Mountain Division. Remote upstate NY location means many soldiers relocate after separation — strong appetite for remote-friendly career paths (good AI-literacy fit).",
+    actions: [
+      "Contact Fort Drum SFL-TAP",
+      "Emphasize remote-work compatible career pathways"
+    ],
+    links: ["https://home.army.mil/drum/"],
+    notes: "Remote location = remote-work appeal. Niche but highly aligned with AI/tech careers."
+  },
+
+  // ── TIER 3: Major Air & Space Force installations ────────────
+  { tier: 3, abbr: "JBSA", name: "Joint Base San Antonio", branch: "joint",
+    location: "San Antonio, TX", population: "~80,000 total workforce",
+    skillBridge: "yes",
+    cspName: "JBSA Military & Family Readiness Center",
+    cspPhone: "210-221-2705", cspEmail: "",
+    detail: "Consolidates Lackland AFB, Randolph AFB, and Fort Sam Houston. Largest joint base by total workforce. Home of Air Force basic training and massive medical readiness community. Huge SkillBridge volume.",
+    actions: [
+      "Apply as SkillBridge provider for JBSA",
+      "Target medical-to-tech career transitions (Fort Sam Houston)",
+      "Leverage Texas Workforce Commission employer partnerships"
+    ],
+    links: ["https://www.jbsa.mil/"],
+    notes: "Largest joint base. Medical and basic training pipelines make SkillBridge volume enormous."
+  },
+  { tier: 3, abbr: "LAFB", name: "Langley AFB (JB Langley-Eustis)", branch: "joint",
+    location: "Hampton, VA", population: "~20,000 total workforce",
+    skillBridge: "yes",
+    cspName: "JB Langley-Eustis AFRC",
+    cspPhone: "757-764-3990", cspEmail: "",
+    detail: "Home of Air Combat Command HQ and Army TRADOC (Fort Eustis). Combines AF and Army transition pipelines. Proximity to Norfolk/Hampton Roads Navy community provides cross-service networking.",
+    actions: [
+      "Apply as SkillBridge provider",
+      "Coordinate with Hampton Roads employer consortium"
+    ],
+    links: ["https://www.jble.af.mil/"],
+    notes: "Joint AF/Army combo makes this a uniquely diverse pipeline."
+  },
+  { tier: 3, abbr: "WPAFB", name: "Wright-Patterson AFB", branch: "af",
+    location: "Dayton, OH", population: "~27,000 total workforce",
+    skillBridge: "yes",
+    cspName: "Wright-Patt AFRC",
+    cspPhone: "937-257-3592", cspEmail: "",
+    detail: "Home of Air Force Materiel Command and Air Force Research Laboratory. Highly technical workforce (engineers, scientists, logisticians) — premium audience for advanced AI curriculum. Ohio AI policy mandate (July 2026) creates additional employer demand.",
+    actions: [
+      "Contact Wright-Patt AFRC",
+      "Emphasize advanced AI curriculum for engineering/scientific workforce",
+      "Build Dayton/Cincinnati employer pipeline"
+    ],
+    links: ["https://www.wpafb.af.mil/"],
+    notes: "Most technical AF workforce in the country. Advanced-tier AI curriculum is the right fit."
+  },
+  { tier: 3, abbr: "NELL", name: "Nellis AFB", branch: "af",
+    location: "Las Vegas, NV", population: "~12,000 active duty",
+    skillBridge: "yes",
+    cspName: "Nellis AFRC",
+    cspPhone: "702-652-3327", cspEmail: "",
+    detail: "Large fighter training community (Red Flag, Weapons School). Las Vegas proximity to hospitality/tech employers is asset. Strong pilot and maintainer transition pipeline.",
+    actions: ["Contact Nellis AFRC", "Target aircrew and maintainer transitions"],
+    links: ["https://www.nellis.af.mil/"],
+    notes: "Vegas location atypical for military but strong employer diversity."
+  },
+  { tier: 3, abbr: "HILL", name: "Hill AFB", branch: "af",
+    location: "Ogden, UT", population: "~23,000 total workforce",
+    skillBridge: "yes",
+    cspName: "Hill AFRC",
+    cspPhone: "801-777-4681", cspEmail: "",
+    detail: "Ogden Air Logistics Complex — major aircraft maintenance depot. Silicon Slopes (Utah tech corridor) nearby for employer partnerships. Large civilian engineering workforce alongside active duty.",
+    actions: ["Contact Hill AFRC", "Leverage Silicon Slopes tech ecosystem"],
+    links: ["https://www.hill.af.mil/"],
+    notes: "Silicon Slopes proximity is the differentiator. Strong engineering transitions."
+  },
+  { tier: 3, abbr: "TIND", name: "Tinker AFB", branch: "af",
+    location: "Oklahoma City, OK", population: "~26,000 total workforce",
+    skillBridge: "yes",
+    cspName: "Tinker AFRC",
+    cspPhone: "405-734-2500", cspEmail: "",
+    detail: "Oklahoma City Air Logistics Complex. Largest single-site employer in Oklahoma. Big logistics and maintenance workforce. Complements Oklahoma state-level K-12 AI adoption push.",
+    actions: ["Contact Tinker AFRC", "Build Oklahoma City employer pipeline"],
+    links: ["https://www.tinker.af.mil/"],
+    notes: "Largest OK employer. Good Tier 3 target with low competition."
+  },
+
+  // ── TIER 4: Joint Bases (other) ───────────────────────────────
+  { tier: 4, abbr: "JBAB", name: "Joint Base Andrews", branch: "joint",
+    location: "Camp Springs, MD (DC metro)", population: "~17,000 total workforce",
+    skillBridge: "yes",
+    cspName: "JB Andrews Military & Family Support Center",
+    cspPhone: "301-981-7087", cspEmail: "",
+    detail: "Home of the 89th Airlift Wing (Air Force One) and Naval Air Facility Washington. DC metro location provides unmatched access to federal contractors and defense primes — premium employer ecosystem.",
+    actions: [
+      "Apply as SkillBridge provider for JB Andrews",
+      "Build Beltway contractor pipeline (Lockheed, Booz Allen, GDIT, Leidos)",
+      "Emphasize cleared-to-civilian AI career pathways"
+    ],
+    links: ["https://www.jba.af.mil/"],
+    notes: "DC metro + cleared workforce = premium pipeline. Extremely competitive."
+  },
+  { tier: 4, abbr: "JBER", name: "JB Elmendorf-Richardson", branch: "joint",
+    location: "Anchorage, AK", population: "~32,000 total workforce",
+    skillBridge: "yes",
+    cspName: "JBER Military & Family Readiness",
+    cspPhone: "907-552-4943", cspEmail: "",
+    detail: "Largest military installation in Alaska. Combines AF and Army pipelines. Remote location makes remote-friendly civilian careers (like AI/tech) especially attractive.",
+    actions: ["Contact JBER MFR", "Pitch remote-work-compatible AI careers"],
+    links: ["https://www.jber.jb.mil/"],
+    notes: "Alaska isolation drives demand for remote-friendly training."
+  },
+  { tier: 4, abbr: "JBPH", name: "JB Pearl Harbor-Hickam", branch: "joint",
+    location: "Honolulu, HI", population: "~65,000 total workforce",
+    skillBridge: "yes",
+    cspName: "JBPHH Military & Family Support Center",
+    cspPhone: "808-474-1999", cspEmail: "",
+    detail: "Massive Navy + Air Force joint base in Hawaii. INDOPACOM strategic hub. Hawaii cost of living drives many transitioning service members to continental US — remote training fits.",
+    actions: ["Contact JBPHH support center", "Offer remote-delivery AI curriculum"],
+    links: ["https://www.cnic.navy.mil/Pearl-Harbor-Hickam/"],
+    notes: "INDOPACOM volume is huge. Remote delivery is essential from here."
+  },
+
+  // ── TIER 5: Navy / Marines / Coast Guard majors ──────────────
+  { tier: 5, abbr: "NORF", name: "Naval Station Norfolk", branch: "navy",
+    location: "Norfolk, VA", population: "~75,000 service members",
+    skillBridge: "yes",
+    cspName: "NavyFFSC Hampton Roads",
+    cspPhone: "757-444-2102", cspEmail: "",
+    detail: "World's largest naval base. Home to Atlantic Fleet. Hampton Roads region has highest concentration of military personnel in US. Massive SkillBridge volume — Navy calls it 'Navy COOL' + SkillBridge combined.",
+    actions: [
+      "Apply as Navy SkillBridge provider",
+      "Build Hampton Roads employer pipeline",
+      "Target separating sailors with technical rates (IT, cyber, intel)"
+    ],
+    links: ["https://www.cnic.navy.mil/Norfolk/", "https://www.navycool.navy.mil/"],
+    notes: "Largest Navy base in world. IT/cyber rates are premium AI-literacy targets."
+  },
+  { tier: 5, abbr: "SDNB", name: "Naval Base San Diego", branch: "navy",
+    location: "San Diego, CA", population: "~35,000 service members",
+    skillBridge: "yes",
+    cspName: "Navy FFSC San Diego",
+    cspPhone: "866-923-6478", cspEmail: "",
+    detail: "Pacific Fleet homeport. San Diego tech ecosystem (Qualcomm, Illumina, defense primes) creates exceptional employer pipeline. Combined with Camp Pendleton (Marines) forms largest SoCal military cluster.",
+    actions: [
+      "Apply as Navy SkillBridge provider",
+      "Build San Diego tech employer relationships",
+      "Cross-promote with Camp Pendleton"
+    ],
+    links: ["https://www.cnic.navy.mil/San-Diego/"],
+    notes: "San Diego tech + Pacific Fleet = top-tier employer ecosystem."
+  },
+  { tier: 5, abbr: "CPEN", name: "Marine Corps Base Camp Pendleton", branch: "marines",
+    location: "Oceanside, CA", population: "~38,000 active duty",
+    skillBridge: "yes",
+    cspName: "Camp Pendleton Transition Readiness Program (TRP)",
+    cspPhone: "760-725-6413", cspEmail: "",
+    detail: "Largest Marine Corps base by active-duty population on West Coast. I Marine Expeditionary Force. Strong SkillBridge infrastructure through USMC TRP. San Diego tech employer overlap with naval base.",
+    actions: [
+      "Contact Camp Pendleton TRP",
+      "Apply for USMC SkillBridge authorization",
+      "Build SoCal tech employer pipeline"
+    ],
+    links: ["https://www.pendleton.marines.mil/"],
+    notes: "Marines have tighter SkillBridge rules than Army — worth the extra effort given volume."
+  },
+  { tier: 5, abbr: "LEJN", name: "MCB Camp Lejeune", branch: "marines",
+    location: "Jacksonville, NC", population: "~47,000 active duty",
+    skillBridge: "yes",
+    cspName: "Camp Lejeune TRP",
+    cspPhone: "910-451-3212", cspEmail: "",
+    detail: "Largest Marine Corps base on East Coast. II Marine Expeditionary Force. Adjacent to Fort Liberty creates large regional military workforce. Underserved by tech providers relative to size.",
+    actions: ["Contact Camp Lejeune TRP", "Emphasize regional tech employer scarcity as opportunity"],
+    links: ["https://www.lejeune.marines.mil/"],
+    notes: "Massive Marine pipeline. Less tech-provider competition than Cali bases."
+  },
+  { tier: 5, abbr: "NSGL", name: "Naval Station Great Lakes", branch: "navy",
+    location: "Great Lakes, IL", population: "~22,000 total workforce",
+    skillBridge: "yes",
+    cspName: "Navy FFSC Great Lakes",
+    cspPhone: "847-688-3603", cspEmail: "",
+    detail: "Navy's only boot camp. High churn of sailors arriving and moving on. Transition volume is lower than fleet bases but Chicago employer ecosystem is strong.",
+    actions: ["Contact FFSC Great Lakes", "Build Chicago tech employer pipeline"],
+    links: ["https://www.cnic.navy.mil/Great-Lakes/"],
+    notes: "Boot camp focus means lower transition volume, but Chicago metro helps."
+  },
+  { tier: 5, abbr: "USCG", name: "Coast Guard Training Center Cape May", branch: "cg",
+    location: "Cape May, NJ", population: "~1,300 staff + rotating recruits",
+    skillBridge: "yes",
+    cspName: "USCG Transition Assistance Program",
+    cspPhone: "202-795-6680 (USCG HQ TAP)", cspEmail: "",
+    detail: "Coast Guard is the smallest DoD/DHS branch but has strong SkillBridge participation. CG enlisted transitions are lower volume but highly technical (IT, electronics, cyber).",
+    actions: [
+      "Apply as USCG SkillBridge provider (coordinate with Coast Guard HQ TAP)",
+      "Target IT, electronics, cyber rates"
+    ],
+    links: ["https://www.dcms.uscg.mil/Our-Organization/Assistant-Commandant-for-Human-Resources-CG-1/Civilian-Human-Resources-Diversity-and-Leadership-Directorate/Office-of-Work-Life-CG-111/Transition-Assistance-Program-TAP/"],
+    notes: "Small branch, big punch — USCG rates are technical. Apply to CG HQ, not base-by-base."
+  },
+  { tier: 5, abbr: "QUAN", name: "MCB Quantico", branch: "marines",
+    location: "Quantico, VA", population: "~12,000 active duty",
+    skillBridge: "yes",
+    cspName: "Quantico TRP",
+    cspPhone: "703-784-3400", cspEmail: "",
+    detail: "Home of Marine Corps Base Quantico, Officer Candidate School, FBI Academy co-location. Highly educated officer-heavy population. DC proximity helps with federal contractor pipeline.",
+    actions: ["Contact Quantico TRP", "Target officer transitions and DC metro employers"],
+    links: ["https://www.quantico.marines.mil/"],
+    notes: "Officer-heavy + DC metro = premium transitions. Small volume but high value."
+  }
+];
+
+/* ─── Tier labels ──────────────────────────────────────────────── */
+const TIER_LABELS = {
+  1: "Tier 1 — Local Bases (Colorado)",
+  2: "Tier 2 — Major Army SkillBridge Hubs",
+  3: "Tier 3 — Major Air &amp; Space Force Installations",
+  4: "Tier 4 — Joint Bases (Other Regions)",
+  5: "Tier 5 — Navy / Marines / Coast Guard"
+};
+
+const BRANCH_INFO = {
+  army: { label: "Army", cls: "branch-army" },
+  af: { label: "Air Force", cls: "branch-af" },
+  sf: { label: "Space Force", cls: "branch-sf" },
+  navy: { label: "Navy", cls: "branch-navy" },
+  marines: { label: "Marines", cls: "branch-marines" },
+  cg: { label: "Coast Guard", cls: "branch-cg" },
+  joint: { label: "Joint Base", cls: "branch-joint" }
+};
+
+const STATUS_OPTIONS = [
+  { value: "not-started",       label: "Not Started" },
+  { value: "researching",       label: "Researching" },
+  { value: "contacted",         label: "Contacted" },
+  { value: "meeting-scheduled", label: "Meeting Scheduled" },
+  { value: "mou-drafted",       label: "MOU Drafted" },
+  { value: "approved",          label: "Approved" },
+  { value: "declined",          label: "Declined" },
+  { value: "on-hold",           label: "On Hold" }
+];
+
+/* ─── Local storage ────────────────────────────────────────────── */
+const STORAGE_KEY = "aesop-military-base-tracker";
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch(e) {}
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); }
+function getStatus(abbr) { return (saved[abbr] && saved[abbr].status) || "not-started"; }
+function setStatus(abbr, val) { if (!saved[abbr]) saved[abbr] = {}; saved[abbr].status = val; save(); }
+function getUserNotes(abbr) { return (saved[abbr] && saved[abbr].userNotes) || ""; }
+function setUserNotes(abbr, val) { if (!saved[abbr]) saved[abbr] = {}; saved[abbr].userNotes = val; save(); }
+
+/* ─── Render ───────────────────────────────────────────────────── */
+const tbody = document.getElementById("tableBody");
+const search = document.getElementById("searchBox");
+const filterTier = document.getElementById("filterTier");
+const filterBranch = document.getElementById("filterBranch");
+const filterStatus = document.getElementById("filterStatus");
+
+function renderTable() {
+  const q = search.value.toLowerCase();
+  const ft = filterTier.value;
+  const fb = filterBranch.value;
+  const fs = filterStatus.value;
+
+  let html = "";
+  let currentTier = 0;
+  let idx = 0;
+
+  BASES.forEach(b => {
+    const status = getStatus(b.abbr);
+    if (q && !b.name.toLowerCase().includes(q) && !b.abbr.toLowerCase().includes(q) && !b.location.toLowerCase().includes(q)) return;
+    if (ft && String(b.tier) !== ft) return;
+    if (fb && b.branch !== fb) return;
+    if (fs && status !== fs) return;
+
+    if (b.tier !== currentTier) {
+      currentTier = b.tier;
+      html += `<tr class="tier-header"><td colspan="8">${TIER_LABELS[b.tier]}</td></tr>`;
+    }
+
+    idx++;
+    const bi = BRANCH_INFO[b.branch] || { label: b.branch, cls: "" };
+    const opts = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${status === o.value ? "selected" : ""}>${o.label}</option>`
+    ).join("");
+
+    const adminMode = window.__ADMIN_MODE;
+    const statusCell = adminMode
+      ? `<select class="status-select status-${status}" onclick="event.stopPropagation()" onchange="changeStatus('${b.abbr}', this)">${opts}</select>`
+      : `<span class="status-select status-${status}" style="cursor:default">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+    const sbCell = b.skillBridge === "yes"
+      ? '<span class="skillbridge-yes">&#10003; Yes</span>'
+      : b.skillBridge === "no"
+        ? '<span class="skillbridge-no">&#10007; No</span>'
+        : '<span class="skillbridge-unknown">Unknown</span>';
+
+    const contactCell = b.cspPhone
+      ? `<div style="font-size:12px;line-height:1.4"><div>${b.cspName || ''}</div><div style="color:var(--muted);font-size:11px">${b.cspPhone}</div></div>`
+      : `<div style="font-size:12px;color:var(--muted)">${b.cspName || '—'}</div>`;
+
+    html += `<tr data-abbr="${b.abbr}">
+      <td style="color:var(--muted)">${idx}</td>
+      <td><span class="base-name">${b.name}</span><span class="base-abbr">${b.abbr}</span></td>
+      <td><span class="branch-tag ${bi.cls}">${bi.label}</span></td>
+      <td class="location-cell" style="font-size:12px">${b.location}</td>
+      <td>${statusCell}</td>
+      <td>${sbCell}</td>
+      <td>${contactCell}</td>
+      <td class="notes-cell">${b.notes}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+  updateSummary();
+}
+
+function updateSummary() {
+  let total = 0, approved = 0, mou = 0, contacted = 0, researching = 0, notStarted = 0;
+  BASES.forEach(b => {
+    total++;
+    const st = getStatus(b.abbr);
+    if (st === "approved") approved++;
+    else if (st === "mou-drafted") mou++;
+    else if (st === "contacted" || st === "meeting-scheduled") contacted++;
+    else if (st === "researching") researching++;
+    else if (st === "not-started") notStarted++;
+  });
+  document.getElementById("countTotal").textContent = total;
+  document.getElementById("countApproved").textContent = approved;
+  document.getElementById("countMou").textContent = mou;
+  document.getElementById("countContacted").textContent = contacted;
+  document.getElementById("countResearching").textContent = researching;
+  document.getElementById("countNotStarted").textContent = notStarted;
+}
+
+function changeStatus(abbr, el) {
+  setStatus(abbr, el.value);
+  el.className = `status-select status-${el.value}`;
+  updateSummary();
+}
+
+/* ─── Modal ────────────────────────────────────────────────────── */
+const mOverlay = document.getElementById("modalOverlay");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+
+function openModal(abbr) {
+  const b = BASES.find(x => x.abbr === abbr);
+  if (!b) return;
+
+  const status = getStatus(abbr);
+  const userNotes = getUserNotes(abbr);
+  const bi = BRANCH_INFO[b.branch] || { label: b.branch, cls: "" };
+
+  const statusOpts = STATUS_OPTIONS.map(o =>
+    `<option value="${o.value}" ${status === o.value ? "selected" : ""}>${o.label}</option>`
+  ).join("");
+
+  let linksHtml = "";
+  if (b.links && b.links.length) {
+    linksHtml = b.links.map(l => `<li><a href="${l}" target="_blank" rel="noopener">${l.replace(/^https?:\/\//, '').split('/').slice(0,2).join('/')}</a></li>`).join("");
+  }
+
+  let actionsHtml = "";
+  if (b.actions && b.actions.length) {
+    actionsHtml = b.actions.map(a => `<li>${a}</li>`).join("");
+  }
+
+  const adminMode = window.__ADMIN_MODE;
+
+  const statusHtml = adminMode
+    ? `<select class="status-select status-${status}" style="font-size:14px;padding:6px 10px;background:var(--navy);border:1px solid var(--border);border-radius:6px;margin-bottom:12px"
+              onchange="changeStatus('${abbr}', this); this.className='status-select status-'+this.value;">
+        ${statusOpts}
+      </select>`
+    : `<span class="status-select status-${status}" style="font-size:14px">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+  const notesHtml = adminMode
+    ? `<div class="modal-notes">
+        <label>Your Notes</label>
+        <textarea id="modalNotes" placeholder="Add your notes for ${b.name}...">${userNotes}</textarea>
+      </div>`
+    : (userNotes ? `<div class="modal-notes"><label>Notes</label><p style="font-size:13px;color:#cbd5e1;background:var(--navy);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">${userNotes.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p></div>` : '');
+
+  const contactBlock = `
+    <div class="modal-contact">
+      <b>${b.cspName || 'Transition Office'}</b><br>
+      ${b.cspPhone ? `&#128222; <a href="tel:${b.cspPhone.replace(/[^0-9+]/g,'')}">${b.cspPhone}</a>` : '<span style="color:var(--muted)">No phone on file</span>'}
+      ${b.cspEmail ? `<br>&#9993; <a href="mailto:${b.cspEmail}">${b.cspEmail}</a>` : ''}
+    </div>`;
+
+  const sbLabel = b.skillBridge === "yes" ? "Yes — confirmed participation"
+                : b.skillBridge === "no" ? "No — not a SkillBridge site"
+                : "Unknown — needs verification";
+
+  modalTitle.textContent = `${b.name} (${b.abbr})`;
+  modalBody.innerHTML = `
+    <div class="tag-row">
+      <span class="modal-tag ${bi.cls}">${bi.label}</span>
+      <span class="modal-tag" style="background:rgba(255,255,255,0.06);color:var(--muted)">Tier ${b.tier}</span>
+      <span class="modal-tag" style="background:rgba(255,255,255,0.06);color:var(--muted)">${b.location}</span>
+    </div>
+
+    <h3>Overview</h3>
+    <p>${b.detail}</p>
+
+    <h3>Population</h3>
+    <p>${b.population || 'Unknown'}</p>
+
+    <h3>SkillBridge Participation</h3>
+    <p>${sbLabel}</p>
+
+    <h3>Transition Office Contact</h3>
+    ${contactBlock}
+
+    ${actionsHtml ? `<h3>Action Items</h3><ul>${actionsHtml}</ul>` : ""}
+
+    ${linksHtml ? `<h3>Key Links</h3><ul>${linksHtml}</ul>` : ""}
+
+    <h3>Status</h3>
+    ${statusHtml}
+
+    ${notesHtml}
+  `;
+
+  if (adminMode) {
+    const notesEl = document.getElementById("modalNotes");
+    notesEl.addEventListener("input", () => { setUserNotes(abbr, notesEl.value); });
+  }
+
+  mOverlay.classList.add("open");
+}
+
+document.getElementById("modalClose").onclick = () => { mOverlay.classList.remove("open"); renderTable(); };
+mOverlay.onclick = e => { if (e.target === mOverlay) { mOverlay.classList.remove("open"); renderTable(); } };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && mOverlay.classList.contains("open")) { mOverlay.classList.remove("open"); renderTable(); } });
+
+tbody.addEventListener("click", e => {
+  if (e.target.tagName === "SELECT" || e.target.tagName === "OPTION") return;
+  const row = e.target.closest("tr[data-abbr]");
+  if (row) openModal(row.dataset.abbr);
+});
+
+search.addEventListener("input", renderTable);
+filterTier.addEventListener("change", renderTable);
+filterBranch.addEventListener("change", renderTable);
+filterStatus.addEventListener("change", renderTable);
+
+document.addEventListener('authReady', () => {
+  // Pre-seed local CO bases as "researching" for admin first-visit
+  if (window.__ADMIN_MODE) {
+    ["FTC","PSFB","SCHR","BUCK"].forEach(abbr => {
+      if (getStatus(abbr) === "not-started") { setStatus(abbr, "researching"); }
+    });
+  }
+  renderTable();
+});
+</script>
+</body>
+</html>

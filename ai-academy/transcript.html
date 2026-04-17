@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- v1.0.6 | 2026-04-17 -->
-<!-- transcript-v2.1.0 | Replaced Print with Save/Import (JSON backup + restore) -->
+<!-- v1.0.4 | 2026-04-17 -->
+<!-- transcript-v2.0.0 | Replaced login with anonymous Learner ID system -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -254,112 +254,6 @@
 
     window._doPrint = () => window.print();
 
-    // ── Save transcript (download JSON backup) ─────────────────
-    window._saveTranscript = async () => {
-      const id = localStorage.getItem(LS_KEY);
-      if (!id) return;
-
-      let data = {};
-      try {
-        const snap = await getDoc(doc(db, 'learners', id));
-        if (snap.exists()) data = snap.data();
-      } catch (e) {
-        console.warn('Save read error:', e);
-      }
-
-      const payload = {
-        _format: 'aesop-transcript-v1',
-        learnerId: id,
-        createdAt: data.createdAt || null,
-        exportedAt: new Date().toISOString(),
-        courseProgress: data.courseProgress || {}
-      };
-
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      const safeId = id.replace(/[^A-Z0-9-]/gi, '');
-      const today  = new Date().toISOString().slice(0,10);
-      a.href = url;
-      a.download = `aesop-transcript-${safeId}-${today}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    };
-
-    // ── Import transcript (upload JSON backup) ─────────────────
-    async function applyImport(payload) {
-      if (!payload || payload._format !== 'aesop-transcript-v1' || !payload.learnerId) {
-        throw new Error('Not a valid AESOP transcript file.');
-      }
-      const id = String(payload.learnerId).trim().toUpperCase();
-      if (!id.startsWith('AESOP-') || id.length < 8) {
-        throw new Error('Transcript file has an invalid Learner ID.');
-      }
-
-      const newDoc = {
-        learnerId:      id,
-        createdAt:      payload.createdAt || new Date().toISOString(),
-        courseProgress: payload.courseProgress || {},
-        importedAt:     new Date().toISOString()
-      };
-
-      try {
-        await setDoc(doc(db, 'learners', id), newDoc, { merge: true });
-      } catch (e) {
-        console.warn('Firestore import write error:', e);
-      }
-
-      localStorage.setItem(LS_KEY, id);
-      await loadLearner(id);
-    }
-
-    function readJsonFile(file) {
-      return new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload  = () => { try { resolve(JSON.parse(r.result)); } catch(e) { reject(new Error('File is not valid JSON.')); } };
-        r.onerror = () => reject(new Error('Could not read file.'));
-        r.readAsText(file);
-      });
-    }
-
-    window._triggerImport = (targetErrId) => {
-      const input = document.getElementById('importFileInput');
-      input.dataset.errTarget = targetErrId || '';
-      input.value = '';
-      input.click();
-    };
-
-    window._handleImportFile = async (evt) => {
-      const file = evt.target.files && evt.target.files[0];
-      if (!file) return;
-      const errId = evt.target.dataset.errTarget || '';
-      const errEl = errId ? document.getElementById(errId) : null;
-      if (errEl) errEl.textContent = '';
-
-      try {
-        const payload = await readJsonFile(file);
-        const id = String(payload.learnerId || '').toUpperCase();
-
-        // If we're already logged in as a different learner, confirm overwrite.
-        const current = localStorage.getItem(LS_KEY);
-        if (current && id && current !== id) {
-          const ok = window.confirm(
-            `This file is for Learner ID ${id}, but you're currently viewing ${current}. ` +
-            `Switch to ${id} and load its transcript?`
-          );
-          if (!ok) return;
-        }
-
-        await applyImport(payload);
-      } catch (e) {
-        console.error('Import error:', e);
-        if (errEl) errEl.textContent = e.message || 'Could not import that file.';
-        else window.alert(e.message || 'Could not import that file.');
-      }
-    };
-
     // Boot
     init();
   </script>
@@ -467,23 +361,6 @@
     }
     .btn-print:hover { background: var(--gold-light); }
 
-    /* Save + Import (share the gold button styling) */
-    .btn-save, .btn-import {
-      display: inline-flex; align-items: center; gap: 0.45rem;
-      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.5rem 1.2rem; border-radius: var(--radius-sm);
-      border: none; cursor: pointer; transition: all 0.2s;
-    }
-    .btn-save   { background: var(--gold); color: #0d1b2a; }
-    .btn-save:hover { background: var(--gold-light); }
-    .btn-import {
-      background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85);
-      border: 1px solid rgba(255,255,255,0.18);
-    }
-    .btn-import:hover {
-      background: rgba(255,255,255,0.14); color: #fff; border-color: rgba(255,255,255,0.32);
-    }
-
     /* ── Welcome gate (replaces auth gate) ─────────────────────── */
     .welcome-gate {
       display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -559,12 +436,6 @@
       cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
     .btn-lookup:hover { background: rgba(201,160,90,0.25); border-color: rgba(201,160,90,0.5); }
-    .btn-lookup--full { width: 100%; padding: 0.7rem 1.25rem; }
-    .return-section code {
-      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.78rem;
-      background: rgba(201,160,90,0.12); color: var(--gold);
-      padding: 0.1rem 0.35rem; border-radius: 4px;
-    }
     .lookup-err {
       font-size: 0.78rem; color: #dc3545; margin-top: 0.5rem; min-height: 1.2em; text-align: left;
     }
@@ -809,8 +680,7 @@
         <span class="learner-id-hint">Save this ID to access your transcript later</span>
       </div>
       <div class="learner-id-actions">
-        <button class="btn-save"   onclick="_saveTranscript()">💾&nbsp; Save Transcript</button>
-        <button class="btn-import" onclick="_triggerImport('')">⬆&nbsp; Import</button>
+        <button class="btn-print" onclick="_doPrint()">🖨&nbsp; Print Transcript</button>
         <button class="btn-switch" onclick="_switchLearner()">Switch ID</button>
       </div>
     </div>
@@ -842,21 +712,8 @@
         </div>
         <div class="lookup-err" id="lookupErr"></div>
       </div>
-
-      <div class="welcome-divider"><span>or</span></div>
-
-      <div class="return-section">
-        <h3>Have a Saved Transcript File?</h3>
-        <p>Import a previously saved <code>.json</code> transcript to restore your Learner ID and progress.</p>
-        <button class="btn-lookup btn-lookup--full" onclick="_triggerImport('importErr')">⬆&nbsp; Import Transcript File</button>
-        <div class="lookup-err" id="importErr"></div>
-      </div>
     </div>
   </div>
-
-  <!-- Hidden file input for import (shared by welcome gate and action bar) -->
-  <input type="file" id="importFileInput" accept="application/json,.json"
-         style="display:none" onchange="_handleImportFile(event)">
 
   <!-- ─── TRANSCRIPT BODY ──────────────────────────────────────── -->
   <div id="transcriptBody">

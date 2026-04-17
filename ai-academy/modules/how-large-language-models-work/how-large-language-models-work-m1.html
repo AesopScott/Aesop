@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Large Language Models Work — M1: The Transformer Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m1 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+.arch-diagram{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1.5rem;margin:1.25rem 0;display:flex;flex-direction:column;align-items:center;gap:0.5rem;}
+.arch-block{width:100%;max-width:320px;padding:0.55rem 1rem;border-radius:4px;text-align:center;font-size:0.78rem;font-weight:600;letter-spacing:0.04em;}
+.arch-block.input{background:rgba(79,207,138,0.08);border:1px solid rgba(79,207,138,0.2);color:#4fcf8a;}
+.arch-block.embed{background:rgba(201,160,90,0.08);border:1px solid rgba(201,160,90,0.2);color:var(--gold);}
+.arch-block.attn{background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);}
+.arch-block.ff{background:rgba(100,149,237,0.08);border:1px solid rgba(100,149,237,0.2);color:#6495ed;}
+.arch-block.norm{background:rgba(180,180,180,0.06);border:1px solid rgba(180,180,180,0.15);color:#a89f93;}
+.arch-block.output{background:rgba(79,207,138,0.08);border:1px solid rgba(79,207,138,0.2);color:#4fcf8a;}
+.arch-arrow{color:var(--muted);font-size:0.9rem;}
+.arch-caption{font-size:0.68rem;color:var(--muted);text-align:center;margin-top:0.5rem;font-style:italic;}
+.arch-repeat{font-size:0.65rem;color:var(--muted);border:1px dashed rgba(255,255,255,0.07);border-radius:4px;padding:0.3rem 0.75rem;margin:0.2rem 0;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ LESSON 1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 1 · Lesson 1</div>
+      <h1>The Paper That Changed Everything</h1>
+      <div class="tagline">From RNNs to "Attention Is All You Need" — the 2017 breakthrough that made modern AI possible</div>
+      <div class="lesson-question">Why did eight Google researchers abandon the dominant sequence model of the era and bet everything on attention?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — 2017">
+        <p class="story-text">In the summer of 2017, a team at Google Brain and Google Research posted a paper to arXiv titled <em>"Attention Is All You Need."</em> Its premise was radical: throw out recurrence entirely. No LSTMs. No GRUs. Just attention mechanisms stacked together. Within five years, virtually every frontier language model — GPT-4, Claude, Gemini, LLaMA — would be built on the architecture they described.</p>
+        <p class="story-text">The eight authors — Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin — were not proposing a small improvement. They were proposing that the field had been solving the sequence problem with the wrong fundamental tool for nearly a decade.</p>
+      </div>
+
+      <div class="section-heading">Why Recurrent Networks Were Failing</div>
+      <div class="section-body">
+        <p>Prior to 2017, the dominant approach to sequence modeling was the <em>recurrent neural network</em> (RNN) and its gated variants — LSTMs (introduced by Hochreiter &amp; Schmidhuber in 1997) and GRUs (Cho et al., 2014). These networks processed text one token at a time, left to right, maintaining a hidden state that accumulated context.</p>
+        <p>The fundamental limitation was <em>sequential computation</em>: to process token 512, you had to first process tokens 1 through 511. This made training on long documents extremely slow and made it nearly impossible to fully exploit modern parallel hardware like GPUs. Information from early tokens also tended to fade — the "vanishing gradient" problem meant that even LSTMs struggled to relate a pronoun at position 400 to its referent at position 12.</p>
+        <p>Researchers had already begun bolting attention mechanisms onto encoder-decoder RNNs for machine translation — Bahdanau et al.'s 2015 paper "Neural Machine Translation by Jointly Learning to Align and Translate" showed attention could dramatically improve translation quality. But attention was treated as an add-on, not the whole architecture.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Historical Record</div>
+        <p>On the WMT 2014 English-to-German translation benchmark, the original Transformer model achieved 28.4 BLEU — a new state of the art at the time — while training in <strong>3.5 days on 8 P100 GPUs</strong>, compared to weeks for comparable recurrent models. The parallel training advantage was not marginal; it was transformative.</p>
+      </div>
+
+      <div class="section-heading">The Core Insight: Attention as the Whole Architecture</div>
+      <div class="section-body">
+        <p>The Transformer's key conceptual move was to ask: what if, instead of passing a hidden state through time, we let every token directly attend to every other token in a single parallel operation? This is <em>self-attention</em>: a mechanism that computes, for each token, a weighted sum of all other tokens' representations, where the weights express relevance.</p>
+        <p>The word "bank" in "river bank" needs to know about "river" to be interpreted correctly. Self-attention lets "bank" look directly at "river" in a single step, regardless of the distance between them. No recurrence. No vanishing gradient across long distances. And crucially, every token can do this simultaneously — the computation parallelizes across all positions at once.</p>
+        <p>This single insight, fully implemented, produced a model that was faster to train, scaled better with data, and handled long-range dependencies more reliably than anything before it.</p>
+      </div>
+
+      <div class="section-heading">Key Terms</div>
+      <div class="section-body">
+        <div class="key-term"><span class="kt-term">Transformer</span><span class="kt-def">The neural network architecture introduced in "Attention Is All You Need" (Vaswani et al., 2017), built entirely from attention mechanisms and feed-forward layers, without recurrence or convolution.</span></div>
+        <div class="key-term"><span class="kt-term">Self-Attention</span><span class="kt-def">A mechanism where each position in a sequence computes relevance scores against all other positions and produces a weighted combination of their representations.</span></div>
+        <div class="key-term"><span class="kt-term">RNN / LSTM</span><span class="kt-def">Recurrent neural networks that process sequences step-by-step, maintaining a hidden state — the dominant paradigm before Transformers.</span></div>
+        <div class="key-term"><span class="kt-term">BLEU Score</span><span class="kt-def">Bilingual Evaluation Understudy — a standard metric for machine translation quality, measuring n-gram overlap with reference translations.</span></div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Why This Matters for You</div>
+        <p>Every AI tool you use today — ChatGPT, Claude, Gemini, Copilot, Midjourney's text encoder — runs on the Transformer architecture or a direct descendant. Understanding the original design is understanding the foundation beneath all of modern AI.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">The Paper That Changed Everything</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">1. What was the title of the 2017 paper that introduced the Transformer architecture?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Neural Machine Translation by Jointly Learning to Align and Translate</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Attention Is All You Need</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Deep Residual Learning for Image Recognition</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">BERT: Pre-training of Deep Bidirectional Transformers</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Vaswani et al. (2017) titled their landmark paper "Attention Is All You Need," introducing the Transformer architecture.</div>
+        <div class="quiz-feedback wrong">Not quite. The correct answer is "Attention Is All You Need" by Vaswani et al. (2017). The Bahdanau et al. paper introduced attention as an add-on to RNNs — not the Transformer itself.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">2. What was the primary practical limitation of recurrent neural networks (RNNs/LSTMs) that the Transformer addressed?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">They required too much memory to store word embeddings</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">They could only process text, not images or audio</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Sequential computation prevented parallelization, making training slow and long-range dependencies hard</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">They could not handle vocabulary sizes larger than 10,000 words</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RNNs process tokens one at a time, preventing parallel computation. This made training slow and caused information from distant tokens to fade — the vanishing gradient problem.</div>
+        <div class="quiz-feedback wrong">The core issue was sequential computation: RNNs process token-by-token, which prevents parallelization and causes long-range information loss via the vanishing gradient problem.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">3. On the WMT 2014 English-to-German benchmark, what BLEU score did the original Transformer achieve?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">14.2</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">21.7</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">28.4</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">35.1</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The original Transformer achieved 28.4 BLEU on WMT 2014 English-German — a new state of the art at the time, achieved in 3.5 days on 8 P100 GPUs.</div>
+        <div class="quiz-feedback wrong">The correct figure is 28.4 BLEU. This was a new state of the art in 2017, achieved while training far faster than comparable recurrent models.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — The Architecture Origins</h1>
+      <div class="tagline">Explore why Transformers displaced RNNs. Ask at least 3 questions to complete the lab.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>You have a direct line to an AI tutor specialized in Transformer history and architecture foundations. Use it to deepen your understanding of why the 2017 paper was so significant — and what problems it actually solved.</p>
+        <div class="lab-prompt">Suggested starting points: "Why couldn't researchers just make LSTMs bigger?" · "What did Bahdanau's attention paper contribute before Transformers?" · "What does it mean for computation to be parallelizable?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Architecture Origins Tutor</span>
+          <div class="chat-badge">L1 Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome. I'm here to help you explore the historical context and motivations behind the Transformer architecture. The 2017 "Attention Is All You Need" paper didn't emerge from nowhere — it was a response to real bottlenecks that had frustrated researchers for years. What would you like to dig into first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about Transformers, RNNs, attention history..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 1 · Lesson 2</div>
+      <h1>Tokens, Embeddings, and Positional Encoding</h1>
+      <div class="tagline">How raw text becomes the mathematical objects a Transformer can process</div>
+      <div class="lesson-question">If attention treats all positions symmetrically, how does the model know that "dog bites man" means something different from "man bites dog"?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="The Input Pipeline">
+        <p class="story-text">Before a Transformer can process a single word, that word must be transformed into something mathematics can operate on. The journey from the string "The quick brown fox" to the first computation inside the model involves three distinct transformations — tokenization, embedding, and positional encoding — each solving a specific problem.</p>
+      </div>
+
+      <div class="section-heading">Step 1: Tokenization</div>
+      <div class="section-body">
+        <p>Text is not fed character-by-character or word-by-word into modern Transformers. Instead, it is split into <em>tokens</em> — subword units produced by algorithms like Byte Pair Encoding (BPE, used in GPT models) or WordPiece (used in BERT). These algorithms were developed to balance vocabulary size against coverage of rare words.</p>
+        <p>OpenAI's GPT-4 uses a tokenizer called <strong>cl100k_base</strong>, which has a vocabulary of approximately 100,277 tokens. The word "unhappiness" might be tokenized as ["un", "happiness"] — two tokens. The word "cat" is a single token. An emoji might be 2–3 tokens. On average, one token corresponds to roughly 0.75 English words.</p>
+        <p>This matters practically: GPT-4's context window of 128,000 tokens corresponds to roughly 96,000 words — about the length of a full novel. Every token, not every word, consumes part of that window.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Data Point</div>
+        <p>When OpenAI released its tokenizer tool <strong>tiktoken</strong> in 2022, developers discovered that code is tokenized very differently from prose. Python's <code>print("hello")</code> — 15 characters — becomes approximately 6 tokens. Dense mathematical notation can tokenize extremely inefficiently, which partly explains why math was historically harder for LLMs than prose.</p>
+      </div>
+
+      <div class="section-heading">Step 2: Embeddings</div>
+      <div class="section-body">
+        <p>Each token ID is mapped to a high-dimensional vector through an <em>embedding matrix</em>. In the original Transformer, this vector had 512 dimensions. In GPT-3, 12,288 dimensions. In practice, these vectors are learned during training: the model discovers, through gradient descent, that the vector for "king" should be positioned in embedding space such that "king − man + woman ≈ queen" — the famous demonstration from Word2Vec (Mikolov et al., 2013).</p>
+        <p>Embeddings encode semantic similarity geometrically. Words used in similar contexts end up with similar vectors. This is not programmed — it emerges from the training objective of predicting the next token accurately.</p>
+      </div>
+
+      <div class="section-heading">Step 3: Positional Encoding — The Critical Addition</div>
+      <div class="section-body">
+        <p>Here is the problem: self-attention, as described, is <em>permutation-invariant</em>. Give it the tokens for "dog bites man" or "man bites dog" in any order, and the raw attention computation produces the same result — it has no notion of sequence. This would be catastrophic for language, where word order is meaning.</p>
+        <p>The original Transformer paper solved this with <em>sinusoidal positional encoding</em>: a set of sine and cosine functions at different frequencies, added directly to the embedding vectors before any processing. Each position gets a unique positional signal injected into its representation.</p>
+        <p>The formula uses sin(pos/10000^(2i/d)) and cos(pos/10000^(2i/d)) for alternating dimensions, where pos is the token position and d is the embedding dimension. The authors chose sinusoids specifically because they allow the model to generalize to longer sequences than it saw during training — a relative offset between positions is always expressible as a linear function of the encoding.</p>
+        <p>Later models, including GPT-2 and BERT, switched to <em>learned positional embeddings</em> — simply trainable parameters for each position, letting the model discover whatever positional signal works best. More recent architectures like LLaMA use <em>Rotary Position Embeddings</em> (RoPE), which encode relative rather than absolute position within the attention computation itself.</p>
+      </div>
+
+      <div class="section-heading">Key Terms</div>
+      <div class="section-body">
+        <div class="key-term"><span class="kt-term">Token</span><span class="kt-def">The basic unit of text that a language model processes — typically a subword unit produced by BPE or WordPiece tokenization, averaging ~0.75 English words.</span></div>
+        <div class="key-term"><span class="kt-term">Embedding</span><span class="kt-def">A learned high-dimensional vector representing a token's meaning, positioned in space so that semantically similar tokens have similar vectors.</span></div>
+        <div class="key-term"><span class="kt-term">Positional Encoding</span><span class="kt-def">A signal added to token embeddings to inject information about sequence order, compensating for attention's permutation-invariance.</span></div>
+        <div class="key-term"><span class="kt-term">BPE</span><span class="kt-def">Byte Pair Encoding — a tokenization algorithm that iteratively merges the most frequent character pairs, producing a subword vocabulary that handles rare words efficiently.</span></div>
+        <div class="key-term"><span class="kt-term">RoPE</span><span class="kt-def">Rotary Position Embeddings — a technique used in LLaMA and other modern models that encodes relative position directly within attention computations.</span></div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Implication</div>
+        <p>Understanding tokenization explains real AI behavior: why models sometimes "count" letters wrong (they never see individual characters), why code and math can confuse models (inefficient tokenization), and why context windows are measured in tokens, not words.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Tokens, Embeddings, and Positional Encoding</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">1. Why do modern Transformers use subword tokenization (like BPE) rather than character-by-character or word-by-word splits?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Characters are too small for embeddings to represent meaningfully</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Subword tokenization balances vocabulary size with the ability to handle rare and out-of-vocabulary words efficiently</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Word-level tokenization would require too much GPU memory</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It was required by the original 2017 Transformer paper</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BPE and similar algorithms find a middle ground: a manageable vocabulary size (e.g. ~100K tokens for GPT-4) that still handles rare words by splitting them into known subword pieces.</div>
+        <div class="quiz-feedback wrong">The key benefit is balance: subword methods avoid a huge word-level vocabulary while still representing rare words (by decomposing them into known subwords). Pure character approaches work but produce very long sequences.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">2. Why is positional encoding necessary in a Transformer, but NOT in an RNN?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">RNNs use longer embeddings that naturally encode position</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Positional encoding is actually used in both architectures</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Self-attention is permutation-invariant — it produces the same result regardless of token order without explicit position signals; RNNs process tokens sequentially and inherently encode order</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Transformers process images as well as text and need position for image patches</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Because RNNs process one token at a time in order, position is implicit in the computation. Self-attention attends to all tokens simultaneously and is blind to order without an explicit positional signal.</div>
+        <div class="quiz-feedback wrong">The key insight: RNNs process tokens sequentially, so order is naturally embedded in the computation. Self-attention treats all positions the same unless you explicitly inject positional information.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">3. On average, how many English words does one token correspond to in GPT-style models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">About 3 words per token</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">About 0.75 words per token (roughly 4 characters)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Exactly 1 word per token</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">About 2 words per token</button>
+        </div>
+        <div class="quiz-feedback right">Correct. One token ≈ 0.75 English words, or roughly 4 characters. This means a 128K token context window holds approximately 96,000 words.</div>
+        <div class="quiz-feedback wrong">The average is roughly 0.75 words (or ~4 characters) per token. Common short words are single tokens; longer or rarer words may be 2–3 tokens.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Tokenization Explorer</h1>
+      <div class="tagline">Probe how tokenization and positional encoding shape model behavior. Ask at least 3 questions.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>Explore the practical consequences of tokenization and positional encoding with your AI tutor. Many puzzling LLM behaviors — letter-counting errors, math struggles, context length limits — trace back to these input representations.</p>
+        <div class="lab-prompt">Suggested starting points: "Why do LLMs sometimes fail to count the letters in 'strawberry'?" · "How does RoPE improve on sinusoidal positional encoding?" · "What happens when you give a model input longer than its context window?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Tokenization &amp; Embeddings Tutor</span>
+          <div class="chat-badge">L2 Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Ready to explore how text becomes numbers. Tokenization and positional encoding explain a surprising number of LLM quirks that confuse practitioners. What would you like to investigate?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about tokenization, embeddings, positional encoding..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 1 · Lesson 3</div>
+      <h1>Self-Attention: Queries, Keys, and Values</h1>
+      <div class="tagline">The mathematical heart of the Transformer — how every token looks at every other token</div>
+      <div class="lesson-question">How does a word decide which other words in the sentence are most relevant to its own meaning?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="The Core Mechanism">
+        <p class="story-text">The self-attention mechanism is arguably the most important algorithm in contemporary AI. Understanding it — not just knowing it exists, but understanding how it actually computes — unlocks the ability to reason about what language models can and cannot do, why they sometimes fail, and how they are being extended by new research.</p>
+      </div>
+
+      <div class="section-heading">The Q, K, V Framework</div>
+      <div class="section-body">
+        <p>Each token's embedding is projected into three separate vectors through learned linear transformations: a <em>Query</em> (Q), a <em>Key</em> (K), and a <em>Value</em> (V). These names come from a loose analogy with database retrieval: the Query is what you're looking for, Keys are what's available to match against, and Values are the actual information retrieved.</p>
+        <p>For each token, attention is computed as follows: take the token's Query vector and compute its dot product with the Key vectors of every other token. This produces a raw score expressing how relevant each other token is. Divide by √d_k (the square root of the key dimension) — this scaling prevents the dot products from becoming so large that the softmax function produces near-zero gradients. Apply softmax to normalize these scores into a probability distribution. Finally, compute a weighted sum of all Value vectors using these normalized scores.</p>
+        <p>The result: each token's new representation is a blend of all other tokens' Value vectors, weighted by relevance. In a single layer, "bank" in "river bank" can already incorporate strong signal from "river."</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Formula</div>
+        <p>Attention(Q, K, V) = softmax(QK<sup>T</sup> / √d<sub>k</sub>) · V</p>
+        <p style="margin-top:0.5rem;">This is the entire self-attention computation. Every frontier language model runs billions of these operations per forward pass. The elegance is real: it is a differentiable, parallelizable lookup.</p>
+      </div>
+
+      <div class="section-heading">Multi-Head Attention</div>
+      <div class="section-body">
+        <p>A single attention computation can only capture one kind of relationship at a time. The original Transformer used <em>multi-head attention</em>: run the Q, K, V projection and attention computation <em>h</em> times in parallel, each with different learned projection matrices. Concatenate the results and project them back down to the model dimension.</p>
+        <p>In the original paper, the base model used h=8 heads with d_k=64. Why? Because different heads learn to attend to different types of relationships. Research by Voita et al. (2019) at Yandex analyzed trained Transformer heads and found that different heads specialized: some tracked syntactic dependencies, others tracked positional patterns, others tracked coreference (which "it" refers to).</p>
+        <p>This is not programmed in — it emerges from training. The multi-head structure gives the model enough capacity to simultaneously represent multiple types of inter-token relationships.</p>
+      </div>
+
+      <div class="section-heading">The Attention Pattern: What Models Actually Look At</div>
+      <div class="section-body">
+        <p>Researchers at Google Brain (Clark et al., 2019, "What Does BERT Look At?") visualized attention patterns in trained BERT models. They found that certain heads consistently attended to specific linguistic structures: delimiter tokens like [SEP], the next/previous token, and words in specific syntactic relationships. One head almost perfectly tracked direct objects of verbs across a range of sentences.</p>
+        <p>This analysis was important because it demonstrated that Transformers were not black boxes in the sense of being completely opaque — the attention weights provide a partial window into what the model is computing, though interpreting attention weights as "what the model uses" remains an active research debate (Jain &amp; Wallace, 2019, argued attention is not explanation).</p>
+      </div>
+
+      <div class="section-heading">Key Terms</div>
+      <div class="section-body">
+        <div class="key-term"><span class="kt-term">Query (Q)</span><span class="kt-def">The projection of a token's embedding used to "ask" which other tokens are relevant — what this token is looking for.</span></div>
+        <div class="key-term"><span class="kt-term">Key (K)</span><span class="kt-def">The projection used to "advertise" a token's relevance to queries — what this token offers to be found by.</span></div>
+        <div class="key-term"><span class="kt-term">Value (V)</span><span class="kt-def">The actual information content of a token that gets passed to attending tokens — what is retrieved when the match succeeds.</span></div>
+        <div class="key-term"><span class="kt-term">Multi-Head Attention</span><span class="kt-def">Running h parallel attention computations with separate projection matrices, allowing the model to attend to multiple relationship types simultaneously.</span></div>
+        <div class="key-term"><span class="kt-term">Softmax</span><span class="kt-def">A function that converts a vector of raw scores into a probability distribution (all values positive, summing to 1), used to normalize attention scores.</span></div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Emerging Insight</div>
+        <p>The scaling factor √d<sub>k</sub> in the attention formula is easy to overlook but critical. Without it, with large d_k, dot products grow large and softmax saturates — pushing all probability mass onto one token and producing near-zero gradients that prevent learning. This single detail explains a class of early Transformer training instabilities.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Self-Attention: Queries, Keys, and Values</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">1. In the attention formula Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V, what is the purpose of dividing by √d_k?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">To normalize the Value vectors to unit length</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">To make the computation run faster on GPUs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">To prevent dot products from becoming too large, which would cause softmax to saturate and gradients to vanish</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">To ensure the Query and Key matrices have the same dimensions</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Without the √d_k scaling, large-dimension dot products grow large, pushing softmax into regions where gradients are near zero — making training unstable.</div>
+        <div class="quiz-feedback wrong">The √d_k divisor is a stabilization technique: as key dimension grows, dot products grow proportionally, which saturates softmax. Scaling brings them back to a regime where gradients flow properly.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">2. What did Voita et al. (2019) discover about multi-head attention heads in trained Transformers?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">All heads learn redundant, identical attention patterns</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Different heads spontaneously specialize to track different linguistic relationships (syntax, coreference, positional patterns)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Heads only attend to nearby tokens, never long-range dependencies</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Attention heads can be removed without affecting performance</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Voita et al. (2019) found that attention heads specialize — some track syntax, some coreference, some positional patterns — emerging purely from training, not explicit programming.</div>
+        <div class="quiz-feedback wrong">Voita et al. found specialization: different heads learn different types of relationships. This was important evidence that Transformers develop structured internal representations.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">3. In the Q, K, V framework, if "river" is the Query and "bank" is a Key, what does the resulting high attention score lead to?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">The token "bank" is deleted from the sequence</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">The Query vector for "river" is replaced with the Key vector for "bank"</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">The Value vector of "bank" contributes heavily to the new representation of "river"</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Both tokens are merged into a single embedding</button>
+        </div>
+        <div class="quiz-feedback right">Correct. High attention score → high weight in the softmax distribution → the Value vector of "bank" contributes strongly to the output representation of "river," blending context into each token.</div>
+        <div class="quiz-feedback wrong">Attention weights are used to compute a weighted sum of Value vectors. A high score between "river" (Q) and "bank" (K) means "bank"'s Value vector heavily influences "river"'s output representation.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Attention Mechanics Deep Dive</h1>
+      <div class="tagline">Work through the Q, K, V computation with your AI tutor. Ask at least 3 questions.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>The self-attention formula is deceptively compact. In this lab, push your understanding of how it actually works: what the three projections represent, why multi-head attention matters, and what interpretability research has revealed about what trained attention heads do.</p>
+        <div class="lab-prompt">Suggested starting points: "Walk me through the attention computation step by step for a simple example" · "What's the difference between self-attention and cross-attention?" · "How do attention patterns differ between early and late layers in a Transformer?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>Attention Mechanics Tutor</span>
+          <div class="chat-badge">L3 Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Let's dig into the core algorithm. Self-attention is the engine of the Transformer — understanding it deeply will pay dividends throughout this course and in your practical AI work. Where would you like to start?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about Q, K, V, multi-head attention, attention patterns..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 1 · Lesson 4</div>
+      <h1>Feed-Forward Layers, Layer Norms, and the Full Stack</h1>
+      <div class="tagline">The complete Transformer block — and why depth matters more than width</div>
+      <div class="lesson-question">Attention captures relationships between tokens — but where does the model store and apply factual knowledge?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Beyond Attention">
+        <p class="story-text">Attention handles routing: it decides which information from which tokens is relevant and mixes it together. But attention alone cannot store or apply knowledge. The feed-forward layers — often overlooked in popular explanations — are where the model's learned factual associations actually live. Research by Geva et al. (2021) at Tel Aviv University demonstrated that feed-forward layers in Transformers function as <em>key-value memories</em>, with each neuron encoding specific input patterns and their associated outputs.</p>
+      </div>
+
+      <div class="section-heading">The Feed-Forward Sublayer</div>
+      <div class="section-body">
+        <p>Every Transformer layer contains two sublayers: the multi-head self-attention sublayer (which we covered in Lesson 3) and a <em>position-wise feed-forward network</em> (FFN). The FFN is applied independently and identically to each token position — there is no mixing between positions here.</p>
+        <p>The original architecture used a two-layer fully-connected network with a ReLU activation: FFN(x) = max(0, xW₁ + b₁)W₂ + b₂. The inner layer dimension was 4× the model dimension — so in the base model with d_model=512, the FFN expanded to 2048, then contracted back. This expansion-contraction pattern persists across virtually all Transformer variants.</p>
+        <p>Modern models like GPT-4 use a variant of this called <em>SwiGLU</em> (Shazeer, 2020), which uses a different gating activation. LLaMA, Mistral, and most open-source models use SwiGLU or similar gated FFN variants, finding them to improve performance at the same parameter count.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Research Finding</div>
+        <p>Geva et al. (2021), "Transformer Feed-Forward Layers Are Key-Value Memories," showed that individual neurons in FFN layers respond to specific input patterns (keys) and promote specific output tokens (values). A neuron that fires strongly for "Paris is the capital of" tends to amplify the probability of "France" in the output. This is direct empirical evidence that factual knowledge is stored in FFN weights, not attention weights.</p>
+      </div>
+
+      <div class="section-heading">Layer Normalization</div>
+      <div class="section-body">
+        <p>Between each sublayer, the original Transformer applied <em>Layer Normalization</em> (Ba et al., 2016). Layer Norm normalizes the activations across the feature dimension (not the batch dimension, as Batch Norm does), then applies learned scale and shift parameters. This stabilizes training by preventing internal covariate shift — the phenomenon where the distribution of activations changes unpredictably during training, making each layer adapt to a moving target.</p>
+        <p>The original paper used <em>post-layer norm</em> (norm applied after the residual addition). Most modern models — GPT-2 onwards — switched to <em>pre-layer norm</em> (norm applied before each sublayer). This change, analyzed in depth by Liu et al. (2020), substantially improves training stability and allows larger models to train without warmup. LLaMA and most 2023+ open models use <em>RMSNorm</em>, a simplified normalization that drops the mean-centering step and is slightly faster.</p>
+      </div>
+
+      <div class="section-heading">Residual Connections: The Information Highway</div>
+      <div class="section-body">
+        <p>Both sublayers (attention and FFN) use <em>residual connections</em> — the input to each sublayer is added back to its output: output = sublayer(x) + x. This pattern, borrowed from ResNets (He et al., 2015), allows gradients to flow directly back to early layers without being multiplied through every transformation in the stack. Without residuals, very deep networks fail to train; with them, 96-layer models (GPT-3 has 96 layers) train stably.</p>
+        <p>The residual connection also means each layer is learning a <em>residual function</em> — the difference from the identity. If a layer learns nothing, it can simply output zeros and pass the input unchanged. This initialization-friendly property makes deep Transformers surprisingly robust to the specific initialization of individual layers.</p>
+      </div>
+
+      <div class="section-heading">The Full Transformer Block</div>
+      <div class="section-body">
+        <p>A complete Transformer decoder block (as used in GPT models) processes input x through:</p>
+        <p>1. <em>Layer Norm</em> → <em>Masked Multi-Head Self-Attention</em> → add residual<br>2. <em>Layer Norm</em> → <em>Feed-Forward Network</em> → add residual</p>
+        <p>This block is stacked N times (12 in GPT-2 small, 96 in GPT-3). The output of the final block goes through a final Layer Norm, then a linear projection to vocabulary size, then a softmax to produce next-token probabilities. That is the complete architecture of every GPT-style model ever deployed.</p>
+      </div>
+
+      <div class="arch-diagram">
+        <div class="arch-block output">Output Probabilities (softmax over vocabulary)</div>
+        <div class="arch-arrow">↑</div>
+        <div class="arch-block output">Final Linear Projection + Layer Norm</div>
+        <div class="arch-arrow">↑</div>
+        <div class="arch-block ff">Feed-Forward Network (×N blocks)</div>
+        <div class="arch-arrow">↑</div>
+        <div class="arch-block attn">Masked Multi-Head Self-Attention (×N blocks)</div>
+        <div class="arch-arrow">↑</div>
+        <div class="arch-block embed">Token Embeddings + Positional Encoding</div>
+        <div class="arch-arrow">↑</div>
+        <div class="arch-block input">Input Tokens</div>
+        <div class="arch-caption">Simplified GPT-style Transformer Decoder Stack</div>
+      </div>
+
+      <div class="section-heading">Key Terms</div>
+      <div class="section-body">
+        <div class="key-term"><span class="kt-term">Feed-Forward Network (FFN)</span><span class="kt-def">The position-wise fully-connected sublayer in each Transformer block that expands then contracts the representation, functioning as a key-value memory for factual associations.</span></div>
+        <div class="key-term"><span class="kt-term">Layer Normalization</span><span class="kt-def">A normalization technique applied across feature dimensions that stabilizes training by ensuring consistent activation distributions through the network.</span></div>
+        <div class="key-term"><span class="kt-term">Residual Connection</span><span class="kt-def">Adding the sublayer input directly to its output (output = sublayer(x) + x), enabling stable gradient flow through deep networks.</span></div>
+        <div class="key-term"><span class="kt-term">Pre-Layer Norm</span><span class="kt-def">Applying layer normalization before (rather than after) each sublayer — the standard in modern GPT-style models, improving training stability.</span></div>
+        <div class="key-term"><span class="kt-term">SwiGLU</span><span class="kt-def">A gated activation function used in modern FFN layers (LLaMA, GPT-4 generation models) that improves performance over the original ReLU-based FFN.</span></div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Practical Upshot</div>
+        <p>If you want to understand <em>where</em> a language model stores a fact (e.g., "Paris is the capital of France"), it is largely in the FFN weights distributed across layers. If you want to understand <em>how</em> it routes and combines information in context, look to attention. Both components are necessary; neither is sufficient alone.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Feed-Forward Layers, Layer Norms, and the Full Stack</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">1. According to Geva et al. (2021), what function do feed-forward layers in Transformers primarily serve?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">They route information between distant token positions</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">They function as key-value memories, storing factual associations between input patterns and output tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">They apply positional information to token embeddings</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">They perform the normalization needed to stabilize training</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Geva et al. (2021) showed empirically that FFN neurons respond to specific input patterns and promote specific outputs — functioning as distributed factual memory.</div>
+        <div class="quiz-feedback wrong">Geva et al. found that FFN layers act as key-value memories. Individual neurons fire for specific patterns (e.g., "capital of France") and boost specific outputs (e.g., "Paris"). Routing between positions is attention's job.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">2. What is the key advantage of residual connections in deep Transformer networks?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">They double the model's parameter count without additional computation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">They prevent attention heads from attending to the same tokens twice</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">They allow gradients to flow directly back to early layers, enabling stable training of very deep networks</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">They ensure that token embeddings do not change across layers</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Residual connections (output = sublayer(x) + x) create a direct gradient path through all layers, solving the vanishing gradient problem in deep networks — a technique borrowed from ResNets.</div>
+        <div class="quiz-feedback wrong">Residual connections add the input directly to the sublayer output. This creates a "highway" for gradients to flow back to early layers without being multiplied through all the intermediate transformations.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">3. In the inner dimension of the Transformer's feed-forward sublayer, what expansion ratio does the original paper use relative to the model dimension?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">2× the model dimension</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">4× the model dimension</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">8× the model dimension</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Equal to the model dimension</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The original Transformer used a 4× expansion in the FFN inner layer (e.g., model dim 512 → inner dim 2048 → back to 512). This 4× ratio is still common in most modern architectures.</div>
+        <div class="quiz-feedback wrong">The original paper used a 4× expansion. With d_model=512, the FFN expanded to 2048 internally before projecting back. This ratio persists in most Transformer variants.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — The Complete Architecture</h1>
+      <div class="tagline">Integrate all four components of the Transformer with your AI tutor. Ask at least 3 questions.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>You've now seen all the components of the Transformer: tokenization, embeddings, positional encoding, self-attention, feed-forward layers, layer norm, and residual connections. In this final lab, work with your tutor to connect them into a coherent picture — and begin thinking about how this architecture scales.</p>
+        <div class="lab-prompt">Suggested starting points: "How does information flow from input tokens to output probabilities in a GPT model?" · "Why does GPT-3 have 96 layers — what does depth buy you?" · "What is the difference between an encoder-only model like BERT and a decoder-only model like GPT?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>Full Architecture Tutor</span>
+          <div class="chat-badge">L4 Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">You've built up the full picture now — tokens, embeddings, positional encoding, attention, feed-forward layers, normalization, and residuals. Let's put it all together. What aspect of the complete architecture would you like to explore or clarify?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Ask about the complete Transformer architecture, scaling, BERT vs GPT..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 1 Test</h1>
+      <div class="tagline">The Transformer Architecture — 15 questions · Pass mark: 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. In what year was the Transformer architecture introduced, and in what paper?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">2017, "Attention Is All You Need" by Vaswani et al.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">2015, "Neural Machine Translation by Jointly Learning to Align and Translate"</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">2018, "BERT: Pre-training of Deep Bidirectional Transformers"</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">2019, "Language Models are Unsupervised Multitask Learners"</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Vaswani et al. published "Attention Is All You Need" in 2017.</div>
+        <div class="quiz-feedback wrong">The Transformer was introduced in 2017 in "Attention Is All You Need" by Vaswani et al.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. What is the fundamental reason the Transformer can train faster than RNNs on the same data?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Transformers use smaller vocabulary sizes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Self-attention processes all positions in parallel, while RNNs must process tokens sequentially</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Transformers use fewer parameters than comparable RNNs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Transformers do not need backpropagation to train</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Parallelization is the key training advantage — all positions are processed simultaneously rather than one at a time.</div>
+        <div class="quiz-feedback wrong">Parallel processing is the key: self-attention computes all positions at once; RNNs must wait for each token to process the next.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. What tokenization algorithm is used in GPT-4's cl100k_base tokenizer?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">WordPiece</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">SentencePiece</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Byte Pair Encoding (BPE)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Character-level tokenization</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GPT models use BPE (Byte Pair Encoding). BERT uses WordPiece — a similar but distinct algorithm.</div>
+        <div class="quiz-feedback wrong">GPT models (including GPT-4) use Byte Pair Encoding. WordPiece is used by BERT. Both are subword tokenization methods.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Why is positional encoding necessary in Transformers but not in RNNs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Self-attention is permutation-invariant and produces the same output regardless of token order without explicit position signals</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Transformers process images and need position information for spatial layout</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">RNNs already have positional encoding built into their LSTM gates</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Transformers use larger vocabularies that require position to disambiguate tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RNNs process tokens sequentially, so order is implicit. Self-attention is order-agnostic and requires explicit positional signals.</div>
+        <div class="quiz-feedback wrong">Self-attention treats all positions identically without positional encoding. RNNs encode order inherently through sequential processing.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. In the original Transformer (base model), what is the embedding dimension (d_model)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">128</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">512</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">1024</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">12288</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The original base Transformer uses d_model=512. The large model uses 1024. GPT-3's 12288 is much later.</div>
+        <div class="quiz-feedback wrong">The original base model uses d_model=512. The large variant uses 1024. Modern large models like GPT-3 use 12288.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. What is the complete self-attention formula?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Attention(Q,K,V) = sigmoid(QKᵀ) · V</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Attention(Q,K,V) = softmax(QV) · K</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Attention(Q,K,V) = softmax(KV) · Q / d_k</button>
+        </div>
+        <div class="quiz-feedback right">Correct. softmax(QKᵀ / √d_k) · V is the canonical self-attention formula from Vaswani et al. (2017).</div>
+        <div class="quiz-feedback wrong">The correct formula is Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V. Queries dot with Keys, scaled, softmaxed, then applied to Values.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. In the original Transformer base model, how many attention heads (h) are used in multi-head attention?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">4</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">8</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">12</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">16</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The original base Transformer uses h=8 heads with d_k=64 each (512 / 8 = 64).</div>
+        <div class="quiz-feedback wrong">The base model uses h=8 heads. With d_model=512 and 8 heads, each head has d_k=64 dimensions.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. What does the research finding from Geva et al. (2021) tell us about where factual knowledge is stored in a Transformer?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Factual knowledge is stored primarily in the attention weight matrices</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Factual knowledge is distributed uniformly across all parameter matrices</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Feed-forward layers function as key-value memories storing factual associations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Facts are stored in the positional encoding parameters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Geva et al. showed FFN layers are key-value memories — individual neurons respond to specific input patterns and boost associated output tokens.</div>
+        <div class="quiz-feedback wrong">Geva et al. found that FFN layers store factual knowledge as key-value memories. Attention handles routing; FFN handles knowledge retrieval.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. What is the inner-layer expansion ratio in the original Transformer's feed-forward sublayer?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">2×</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">4×</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">8×</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">16×</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The FFN expands 4× (d_model=512 → inner=2048) before projecting back down.</div>
+        <div class="quiz-feedback wrong">The expansion is 4×. With d_model=512, the FFN inner dimension is 2048.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. What modern positional encoding technique does LLaMA use, and what is its key advantage?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Sinusoidal encoding; advantage is mathematical elegance</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Learned absolute embeddings; advantage is simplicity</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Rotary Position Embeddings (RoPE); encodes relative position within attention computations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Convolutional position encoding; advantage is translation invariance</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LLaMA uses RoPE (Rotary Position Embeddings), which encodes relative rather than absolute position directly within the attention computation.</div>
+        <div class="quiz-feedback wrong">LLaMA uses RoPE — Rotary Position Embeddings — which encode relative positions within attention, enabling better generalization to sequence lengths beyond training.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. Why did researchers switch from post-layer norm to pre-layer norm in models like GPT-2 and later?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Pre-layer norm reduces the total parameter count significantly</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Pre-layer norm substantially improves training stability and allows larger models to train without warmup</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Post-layer norm was found to cause overfitting on small datasets</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Pre-layer norm speeds up inference by reducing memory access</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Liu et al. (2020) showed pre-layer norm markedly improves training stability, especially important as models scaled to hundreds of billions of parameters.</div>
+        <div class="quiz-feedback wrong">Pre-layer norm stabilizes training — especially critical at scale. Most modern models (GPT-2 onward) use it for this reason.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. On average, how many English words does one token represent in GPT-style models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">About 2 words</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">About 0.75 words</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Exactly 1 word</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">About 3 words</button>
+        </div>
+        <div class="quiz-feedback right">Correct. One token ≈ 0.75 English words. A 128K token context window holds roughly 96,000 words.</div>
+        <div class="quiz-feedback wrong">The average is ~0.75 words per token. Common short words are one token; longer/rarer words may be 2–3 tokens.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. What did Voita et al. (2019) discover about different attention heads in trained Transformer models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">All heads learn the same attention patterns — redundancy is intentional</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Most heads focus exclusively on the immediately preceding token</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Different heads spontaneously specialize to track different linguistic relationships such as syntax and coreference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Attention heads only activate for named entities</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Voita et al. found emergent specialization — different heads track syntax, coreference, positional patterns, etc., without being explicitly programmed to do so.</div>
+        <div class="quiz-feedback wrong">Voita et al. found emergent specialization: heads diverge to track different linguistic relationships purely through training.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. What is the purpose of residual connections in Transformer blocks?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">They prevent any single layer from changing its input too drastically</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">They store the original input for use in the final output layer</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">They allow gradients to flow directly to early layers during training, enabling stable training of deep networks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">They combine the outputs of all layers for the final prediction</button>
+        </div>
+        <div class="quiz-feedback right">Correct. By adding input to output (x + sublayer(x)), residuals create a direct gradient path, making very deep networks trainable.</div>
+        <div class="quiz-feedback wrong">Residuals (output = x + sublayer(x)) create a direct gradient highway to early layers, solving vanishing gradients in deep networks.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. What BLEU score did the original Transformer achieve on WMT 2014 English-German translation, establishing a new state of the art?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">21.7</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">25.9</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">28.4</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">32.1</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 28.4 BLEU on WMT 2014 English-German — achieved in 3.5 days on 8 P100 GPUs, outperforming all prior models including ensembles.</div>
+        <div class="quiz-feedback wrong">The correct figure is 28.4 BLEU. This was a new state of the art, achieved with significantly faster training than comparable recurrent models.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="window.parent.postMessage({type:'moduleComplete',courseId:COURSE_ID,moduleId:MODULE_ID},'*')">Finish Module</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m1';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI tutor for AESOP AI Academy, Module 1 Lesson 1 of "How Large Language Models Work." Your specialty is the historical context of the Transformer architecture: why RNNs and LSTMs were the dominant paradigm before 2017, what the vanishing gradient problem is and why it limited LSTMs, what Bahdanau et al. (2015) contributed with attention-augmented RNNs, and why the 2017 "Attention Is All You Need" paper (Vaswani et al.) was so transformative. Be precise, cite real papers and figures (e.g., 28.4 BLEU on WMT 2014), and keep responses to 3-5 sentences. If a question is off-topic, warmly redirect to the lesson subject.',
+  l2:'You are an expert AI tutor for AESOP AI Academy, Module 1 Lesson 2 of "How Large Language Models Work." Your specialty is tokenization (BPE, WordPiece, tiktoken/cl100k_base), token-to-word ratios, token embeddings and the embedding space, sinusoidal positional encoding (the sin/cos formulas), learned positional embeddings, and Rotary Position Embeddings (RoPE). Explain practical consequences of tokenization (e.g., why LLMs miscount letters, why code tokenizes inefficiently). Be precise, cite real examples, and keep responses to 3-5 sentences. If a question is off-topic, warmly redirect.',
+  l3:'You are an expert AI tutor for AESOP AI Academy, Module 1 Lesson 3 of "How Large Language Models Work." Your specialty is the self-attention mechanism: the Q, K, V projection framework, the attention formula (softmax(QKᵀ/√d_k)·V), why √d_k scaling matters, multi-head attention and how heads specialize (Voita et al. 2019), and what interpretability research (Clark et al. 2019, Jain & Wallace 2019) has revealed about attention patterns. Work through concrete examples when asked. Be precise and keep responses to 3-5 sentences. If a question is off-topic, warmly redirect.',
+  l4:'You are an expert AI tutor for AESOP AI Academy, Module 1 Lesson 4 of "How Large Language Models Work." Your specialty is the complete Transformer architecture: feed-forward sublayers and their 4× expansion, SwiGLU and gated FFN variants, layer normalization (pre vs post, Ba et al. 2016, RMSNorm), residual connections and their role in gradient flow, and how all components assemble into the full decoder stack. You also cover encoder-only (BERT) vs decoder-only (GPT) architectures, and how depth (number of layers) affects model capability. Cite Geva et al. (2021) on FFN as key-value memory. Be precise, keep responses to 3-5 sentences, and warmly redirect off-topic questions.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Great question about the historical context. RNNs process tokens one at a time in sequence, which means computing token 512 requires completing tokens 1 through 511 first — this prevents the parallel computation that GPUs excel at. LSTMs improved gradient flow with gating mechanisms, but the sequential bottleneck remained.",
+    "Bahdanau et al. (2015) made a crucial contribution: they showed that adding an attention mechanism to encoder-decoder RNNs let the decoder selectively focus on relevant parts of the input. This dramatically improved machine translation quality. But attention was still an add-on to recurrent computation, not the whole architecture.",
+    "The key insight in 'Attention Is All You Need' was that you don't need recurrence at all. If attention can already relate any two tokens in one step, the sequential hidden state becomes redundant. Replacing it entirely with attention unlocked full parallelization and better long-range dependency handling simultaneously.",
+    "The WMT 2014 result was striking not just for the 28.4 BLEU score, but for the training time: 3.5 days on 8 P100 GPUs. Comparable RNN models took weeks. The speedup came directly from eliminating the sequential dependency — every layer could run all token computations in parallel.",
+    "The vanishing gradient problem occurs because backpropagation through time multiplies gradients across many sequential steps. In long sequences, these products approach zero, making early timesteps nearly untrainable. LSTMs mitigated this with gating, but the Transformer eliminated the problem structurally by removing recurrence."
+  ],
+  l2:[
+    "The letter-counting problem is a direct consequence of tokenization. LLMs never see individual characters — they see token IDs. 'strawberry' might be tokenized as ['straw', 'berry'] or ['st', 'raw', 'berry']. The model has to infer character content from token representations, which it does imperfectly.",
+    "BPE works iteratively: start with individual characters as the vocabulary, then repeatedly merge the most frequent adjacent pair into a new token. Do this enough times and you get a vocabulary of ~100K subword units. Common words become single tokens; rare words get split into their constituent subword pieces.",
+    "Sinusoidal positional encoding uses functions at different frequencies so that any relative offset between positions can be expressed as a linear transformation of the encoding vectors. This gives the model a built-in mechanism to generalize position relationships to longer sequences than seen during training — though in practice learned embeddings often outperform it.",
+    "RoPE (Rotary Position Embeddings) rotates the Q and K vectors by angles proportional to their positions before computing attention scores. This means the dot product QᵀK naturally decays with relative distance, giving the model a built-in preference for nearby context without needing explicit position tokens. It also generalizes better to extended contexts.",
+    "A 128K token context window for GPT-4 translates to roughly 96,000 English words — about the length of a full novel. But code and mathematical notation are tokenized inefficiently, so those contexts fill up faster. This is why models sometimes seem to 'forget' early content in very long technical documents."
+  ],
+  l3:[
+    "Here's a concrete example of Q, K, V: for the token 'it' in 'The cat sat because it was tired,' the Query for 'it' computes dot products with the Keys of all other tokens. 'cat' and 'sat' will score high because coreference and syntactic relationships are learned during training. Those high scores weight 'cat' and 'sat' Values heavily in 'it's output representation.",
+    "The √d_k scaling is about numerical stability. With d_k=64, a random dot product between a Q and K vector has expected magnitude around 8 (√64). Without scaling, with d_k=512, that grows to ~22.6. Large magnitudes push softmax into regions where nearly all probability mass goes to one token and gradients become near-zero — effectively stopping learning.",
+    "Multi-head attention runs h separate Q, K, V projection + attention computations in parallel. Each head uses different learned weight matrices, so they naturally specialize to different relationship types. Voita et al. (2019) analyzed trained models and found heads that tracked syntactic heads, coreference chains, and positional relationships independently.",
+    "Cross-attention is the Transformer's mechanism for connecting encoder and decoder in seq2seq tasks. In translation, decoder tokens query against encoder token Keys and Values — allowing the decoder to selectively focus on relevant source-language tokens. Self-attention within the decoder also uses causal masking so future tokens aren't visible during training.",
+    "Early attention layers in trained Transformers tend to track local, syntactic relationships — adjacent tokens, punctuation, positional patterns. Later layers tend to handle more semantic, long-range relationships. This 'low-to-high abstraction' hierarchy mirrors what's observed in CNNs for vision, suggesting it's a general property of deep learned representations."
+  ],
+  l4:[
+    "The complete forward pass through a GPT-style decoder: input tokens are looked up in the embedding matrix and added to positional encodings. This goes through N transformer blocks, each containing (1) pre-layer norm → masked self-attention → residual add, and (2) pre-layer norm → FFN → residual add. Finally, a linear projection and softmax produce next-token probabilities.",
+    "Depth matters because each layer refines the representation. Early layers handle local syntactic patterns; middle layers resolve semantic ambiguities; later layers handle task-specific reasoning. GPT-3's 96 layers allow a very deep compositional hierarchy. Increasing depth (with residuals) tends to improve capability more efficiently than just increasing width.",
+    "The difference between BERT and GPT architecturally: BERT is encoder-only with bidirectional attention (each token can attend to all others) and is pre-trained with masked language modeling. GPT is decoder-only with causal (left-to-right) masked attention and is pre-trained by next-token prediction. BERT is better for classification tasks; GPT for generation.",
+    "SwiGLU, introduced by Shazeer (2020), replaces the FFN's ReLU with a gated activation: FFN(x) = (xW₁ ⊗ σ(xW₂))W₃, where σ is the sigmoid function. It outperforms ReLU-based FFNs at the same parameter count. LLaMA, Mistral, Gemma, and most modern open-source models use SwiGLU or close variants.",
+    "RMSNorm (Root Mean Square Normalization) simplifies Layer Norm by removing the mean-centering step and only applying RMS-based scaling. It's slightly faster to compute and performs comparably to full Layer Norm. LLaMA and most 2023+ open-weight models use RMSNorm precisely because the performance difference is negligible and the computational savings compound across billions of parameters."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId]||["I'm in offline practice mode. Try asking about the lesson topic — I'll do my best with cached responses."];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  msgs.innerHTML='';
+  var intros={
+    l1:'Welcome. I\'m here to help you explore the historical context and motivations behind the Transformer architecture. The 2017 "Attention Is All You Need" paper didn\'t emerge from nowhere — it was a response to real bottlenecks that had frustrated researchers for years. What would you like to dig into first?',
+    l2:'Ready to explore how text becomes numbers. Tokenization and positional encoding explain a surprising number of LLM quirks that confuse practitioners. What would you like to investigate?',
+    l3:'Let\'s dig into the core algorithm. Self-attention is the engine of the Transformer — understanding it deeply will pay dividends throughout this course and in your practical AI work. Where would you like to start?',
+    l4:'You\'ve built up the full picture now — tokens, embeddings, positional encoding, attention, feed-forward layers, normalization, and residuals. Let\'s put it all together. What aspect of the complete architecture would you like to explore or clarify?'
+  };
+  addMsg(labId,'ai',intros[labId]||'Lab reset. What would you like to explore?');
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+  var inp=document.getElementById('inp-'+labId);
+  if(inp) inp.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  inp.disabled=true;
+
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    setTimeout(function(){
+      var reply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:reply});
+      addMsg(labId,'ai',reply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.disabled=false;
+      inp.focus();
+    },400);
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  var payload={
+    model:'claude-opus-4-5',
+    max_tokens:400,
+    system:LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI tutor for AESOP AI Academy.',
+    messages:chatHistories[labId]
+  };
+
+  var success=false;
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I couldn\'t generate a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      success=true;
+      break;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fallbackReply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fallbackReply});
+      addMsg(labId,'ai',fallbackReply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      success=true;
+    }
+  }
+
+  btn.disabled=false;
+  inp.disabled=false;
+  if(success) inp.focus();
+}
+
+// Initialize tab state
+updateTabs();
+</script>
+
+</body>
+</html>

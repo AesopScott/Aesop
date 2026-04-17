@@ -2,22 +2,12 @@ name: Update Homepage Stats
 
 on:
   schedule:
-    # Top of every hour. GA4 API returns near-real-time data; hourly is plenty.
-    - cron: '0 * * * *'
-  workflow_dispatch:      # Manual trigger anytime
-  push:
-    # Rebuild when the registry changes so course count updates without waiting.
-    branches: [main]
-    paths:
-      - 'ai-academy/modules/course-registry.json'
-      - '.github/scripts/build_stats.py'
+    - cron: '0 * * * *'    # Hourly, on the hour
+  workflow_dispatch:        # Manual trigger anytime
 
 jobs:
-  refresh-stats:
+  refresh:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repo
@@ -39,16 +29,12 @@ jobs:
         env:
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           GA4_SERVICE_ACCOUNT_JSON: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
-        run: python .github/scripts/build_stats.py
+        run: python .github/scripts/build_stats.py || true
 
-      - name: Commit if changed
+      - name: Commit updated stats
         run: |
           git config user.name "AESOP Stats Bot"
           git config user.email "stats@aesopacademy.org"
           git add stats.json
-          if git diff --staged --quiet; then
-            echo "No stat changes — skipping commit."
-          else
-            git commit -m "Stats: refresh homepage ticker ($(date -u '+%Y-%m-%d %H:%M UTC'))"
-            git push
-          fi
+          git diff --staged --quiet || git commit -m "Stats: refresh homepage ticker ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git push

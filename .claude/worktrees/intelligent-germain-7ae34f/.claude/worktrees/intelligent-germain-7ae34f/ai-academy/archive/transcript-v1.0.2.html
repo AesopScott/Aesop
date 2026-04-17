@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<!-- v1.0.2 | 2026-04-15 -->
+<!-- transcript-v1.0.2 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Transcript — AESOP AI Academy</title>
+  <meta name="description" content="View your AESOP AI Academy learning transcript. Track completed modules, earned certifications, and your progress across all courses.">
+
+  <link rel="stylesheet" href="/academy-theme.css">
+  <link rel="stylesheet" href="/academy-dark-mode.css">
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInWithRedirect, signInWithEmailAndPassword,
+             createUserWithEmailAndPassword, getRedirectResult, GoogleAuthProvider,
+             signOut, updateProfile }
+      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc }
+      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU",
+      authDomain: "playagame-f733d.firebaseapp.com",
+      projectId: "playagame-f733d",
+      storageBucket: "playagame-f733d.appspot.com",
+      messagingSenderId: "610508714644",
+      appId: "1:610508714644:web:63ca4374e5d5be1c81ba81"
+    };
+
+    const app      = initializeApp(firebaseConfig);
+    const auth     = getAuth(app);
+    const db       = getFirestore(app);
+    const gProvider = new GoogleAuthProvider();
+
+    // Handle redirect result on load
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        await ensureUserDoc(result.user);
+      }
+    }).catch(e => console.error('Redirect result error:', e));
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        showTranscript(user);
+        await loadProgress(user);
+      } else {
+        showGate();
+      }
+    });
+
+    async function ensureUserDoc(user) {
+      const ref = doc(db, 'users', user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          displayName: user.displayName || '',
+          email: user.email || '',
+          createdAt: new Date().toISOString()
+        }, { merge: true });
+      }
+    }
+
+    // Google sign-in (redirect)
+    window._signInGoogle = () => {
+      signInWithRedirect(auth, gProvider);
+    };
+
+    // Email/password sign-in
+    window._signInEmail = async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      const pass  = document.getElementById('auth-pass').value;
+      const err   = document.getElementById('auth-err');
+      err.textContent = '';
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (e) {
+        err.textContent = friendlyError(e.code);
+      }
+    };
+
+    // Email/password sign-up
+    window._signUpEmail = async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      const pass  = document.getElementById('auth-pass').value;
+      const name  = document.getElementById('auth-name').value.trim();
+      const err   = document.getElementById('auth-err');
+      err.textContent = '';
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        if (name) await updateProfile(cred.user, { displayName: name });
+        await ensureUserDoc(cred.user);
+      } catch (e) {
+        err.textContent = friendlyError(e.code);
+      }
+    };
+
+    window._signOut = async () => {
+      await signOut(auth);
+      showGate();
+    };
+
+    // Toggle between sign-in and sign-up
+    window._showSignUp = () => {
+      document.getElementById('auth-name-row').style.display = 'block';
+      document.getElementById('auth-signin-btn').style.display = 'none';
+      document.getElementById('auth-signup-btn').style.display = 'inline-flex';
+      document.getElementById('auth-toggle').innerHTML = 'Already have an account? <a href="#" onclick="_showSignIn();return false;">Sign in</a>';
+    };
+    window._showSignIn = () => {
+      document.getElementById('auth-name-row').style.display = 'none';
+      document.getElementById('auth-signin-btn').style.display = 'inline-flex';
+      document.getElementById('auth-signup-btn').style.display = 'none';
+      document.getElementById('auth-toggle').innerHTML = 'New here? <a href="#" onclick="_showSignUp();return false;">Create an account</a>';
+    };
+
+    function friendlyError(code) {
+      const map = {
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/user-not-found': 'No account found with that email.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/email-already-in-use': 'An account with this email already exists.',
+        'auth/too-many-requests': 'Too many attempts. Please try again later.',
+      };
+      return map[code] || 'Something went wrong. Please try again.';
+    }
+
+    window._signOut = async () => {
+      await signOut(auth);
+      showGate();
+    };
+
+    function showGate() {
+      document.getElementById('authGate').style.display      = 'flex';
+      document.getElementById('transcriptBody').style.display = 'none';
+      document.getElementById('printBar').style.display      = 'none';
+      document.getElementById('heroStats').style.display     = 'none';
+    }
+
+    function showTranscript(user) {
+      document.getElementById('authGate').style.display      = 'none';
+      document.getElementById('transcriptBody').style.display = 'block';
+      document.getElementById('printBar').style.display      = 'flex';
+      document.getElementById('heroStats').style.display     = 'flex';
+      document.getElementById('userDisplayName').textContent  = user.displayName || user.email || 'Learner';
+      document.getElementById('printName').textContent        = user.displayName || user.email || 'Learner';
+      document.getElementById('signOutBtn').style.display     = 'inline-flex';
+    }
+
+    async function loadProgress(user) {
+      let progressData = null;
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists()) progressData = snap.data();
+      } catch (e) {
+        console.warn('Progress read (stub):', e);
+      }
+      renderTranscript(progressData);
+    }
+
+    const COURSES = [
+      { id:'ai-foundations',    title:'AI Foundations',              sub:'Course 1 — Foundations', icon:'🤖', bar:'gold',   modules:10, url:'/ai-academy/' },
+      { id:'ai-governance',     title:'AI Governance',               sub:'Course 2 — Governance',  icon:'🏛️', bar:'teal',   modules:6,  url:'/ai-academy/ai-governance.html' },
+      { id:'ai-in-society',     title:'AI in Society',               sub:'Course 3 — Society',     icon:'🌐', bar:'purple', modules:8,  url:'/ai-academy/ai-in-society.html' },
+      { id:'ai-and-creativity', title:'AI & Creativity',             sub:'Course 4 — Creativity',  icon:'🎨', bar:'purple', modules:8,  url:'/ai-academy/ai-and-creativity.html' },
+      { id:'ai-ethics',         title:'AI Ethics & Decision-Making', sub:'Course 5 — Ethics',      icon:'⚖️', bar:'navy',   modules:6,  url:'/ai-academy/ai-ethics.html' },
+      { id:'building-with-ai',  title:'Building with AI',            sub:'Course 6 — Building',    icon:'🛠️', bar:'green',  modules:8,  url:'/ai-academy/building-with-ai.html' },
+      { id:'ai-careers',        title:'AI Careers & Research',       sub:'Course 7 — Careers',     icon:'🚀', bar:'amber',  modules:6,  url:'/ai-academy/ai-careers.html' },
+    ];
+
+    function renderTranscript(data) {
+      const progress   = data?.courseProgress || {};
+      const inProgress = [], completed = [], testedOut = [];
+
+      COURSES.forEach(course => {
+        const cp       = progress[course.id] || {};
+        const status   = cp.status   || null;
+        const modsDone = cp.modulesCompleted || 0;
+        const certDate = cp.certifiedOn      || null;
+        const score    = cp.testScore        || null;
+        const item     = { ...course, modsDone, certDate, score };
+
+        if      (status === 'complete') completed.push(item);
+        else if (status === 'tested')   testedOut.push(item);
+        else if (status === 'started')  inProgress.push(item);
+      });
+
+      // Demo state when no Firestore data yet
+      if (!data) {
+        inProgress.push({ ...COURSES[0], modsDone: 3, certDate: null, score: null });
+      }
+
+      renderSection('sectionInProgress', inProgress,  'started');
+      renderSection('sectionCompleted',  completed,   'complete');
+      renderSection('sectionTested',     testedOut,   'tested');
+
+      document.getElementById('statCourses').textContent  = completed.length + testedOut.length;
+      document.getElementById('statCerts').textContent    = [...completed,...testedOut].filter(c=>c.certDate).length;
+      document.getElementById('statProgress').textContent = inProgress.length;
+
+      buildPrintCerts([...completed, ...testedOut]);
+    }
+
+    function renderSection(id, items, type) {
+      const wrap  = document.getElementById(id);
+      const grid  = wrap.querySelector('.tx-grid');
+      const empty = wrap.querySelector('.tx-empty');
+      if (!items.length) { grid.style.display='none'; empty.style.display='block'; return; }
+      grid.style.display='grid'; empty.style.display='none';
+      grid.innerHTML = items.map(c => cardHTML(c, type)).join('');
+    }
+
+    function cardHTML(c, type) {
+      const badge = {
+        started:  '<span class="tx-badge tx-badge--started">In Progress</span>',
+        complete: '<span class="tx-badge tx-badge--complete">✓ Completed</span>',
+        tested:   '<span class="tx-badge tx-badge--tested">★ Tested Out</span>',
+      }[type];
+
+      const bar = (type === 'started')
+        ? `<div class="tx-progress-wrap"><div class="tx-progress-bar" style="width:${Math.round((c.modsDone/c.modules)*100)}%"></div></div>
+           <div class="tx-progress-label">${c.modsDone} of ${c.modules} modules complete</div>`
+        : '';
+
+      const cert  = c.certDate ? `<div class="tx-cert-line">🎓 Certified ${formatDate(c.certDate)}</div>` : '';
+      const score = c.score    ? `<div class="tx-score-line">Test score: ${c.score}%</div>` : '';
+
+      const cta = (type === 'started')
+        ? `<a href="${c.url}" class="tx-cta tx-cta--gold">Continue →</a>`
+        : `<a href="${c.url}" class="tx-cta tx-cta--ghost">View Course →</a>`;
+
+      return `
+        <div class="tx-card tx-card--${type}">
+          <div class="tx-card__bar tx-card__bar--${c.bar}"></div>
+          <div class="tx-card__body">
+            <div class="tx-card__header">
+              <span class="tx-icon">${c.icon}</span>
+              <div class="tx-badges">${badge}</div>
+            </div>
+            <div class="tx-card__sub">${c.sub}</div>
+            <h2>${c.title}</h2>
+            ${bar}${cert}${score}
+          </div>
+          <div class="tx-card__footer">
+            <div class="tx-meta"><strong>${c.modules} Modules</strong></div>
+            ${cta}
+          </div>
+        </div>`;
+    }
+
+    function buildPrintCerts(items) {
+      const list = document.getElementById('printCertList');
+      if (!items.length) {
+        list.innerHTML = '<p class="print-no-certs">No certifications earned yet.</p>';
+        return;
+      }
+      list.innerHTML = items.map(c => `
+        <div class="print-cert-row">
+          <div class="print-cert-left">
+            <span class="print-cert-icon">${c.icon}</span>
+            <div>
+              <div class="print-cert-title">${c.title}</div>
+              <div class="print-cert-sub">${c.sub}</div>
+            </div>
+          </div>
+          <div class="print-cert-right">
+            ${c.certDate ? `<span class="print-cert-date">Certified ${formatDate(c.certDate)}</span>` : ''}
+            ${c.score    ? `<span class="print-cert-score">Score: ${c.score}%</span>` : ''}
+            <span class="print-cert-status ${c.score ? 'tested' : 'complete'}">
+              ${c.score ? '★ Tested Out' : '✓ Completed'}
+            </span>
+          </div>
+        </div>`).join('');
+    }
+
+    function formatDate(ts) {
+      if (!ts) return '';
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    }
+
+    window._doPrint = () => window.print();
+  </script>
+
+  <style>
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .tx-hero {
+      background: #0d1b2a;
+      color: var(--white);
+      padding: 4rem 2rem 3.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .tx-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 80% at 20% 50%, rgba(61,214,192,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 70% at 80% 60%, rgba(201,160,90,0.09) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .tx-hero-inner { position: relative; max-width: var(--max-w); margin: 0 auto; }
+    .tx-hero-eyebrow {
+      display: inline-block;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--teal);
+      background: rgba(61,214,192,0.10); border: 1px solid rgba(61,214,192,0.22);
+      padding: 0.3rem 0.85rem; border-radius: 99px; margin-bottom: 1.25rem;
+    }
+    .tx-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem); font-weight: 800;
+      letter-spacing: -0.02em; color: var(--white);
+      margin-bottom: 0.9rem; line-height: 1.1;
+    }
+    .tx-hero h1 span { color: var(--gold-light); }
+    .tx-hero p {
+      font-size: 1rem; color: rgba(255,255,255,0.65);
+      max-width: 520px; margin: 0 auto 1.75rem; line-height: 1.7;
+    }
+
+    .hero-stats {
+      display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .hero-stat {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 99px; padding: 0.4rem 1.1rem;
+      font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.80);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .hero-stat strong { color: var(--gold-light); font-weight: 800; }
+
+    #signOutBtn {
+      display: none; margin-top: 1.25rem;
+      align-items: center; gap: 0.4rem;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+      color: rgba(255,255,255,0.45); background: transparent;
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 99px;
+      padding: 0.3rem 0.9rem; cursor: pointer; transition: all 0.2s;
+    }
+    #signOutBtn:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.35); }
+
+    /* ── Print bar ─────────────────────────────────────────────── */
+    .print-bar {
+      display: none; background: #0a1524;
+      border-bottom: 1px solid rgba(255,255,255,0.07); padding: 0.75rem 2rem;
+    }
+    .print-bar-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .print-note { font-size: 0.74rem; color: rgba(255,255,255,0.40); }
+    .btn-print {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.5rem 1.2rem; border-radius: var(--radius-sm);
+      background: var(--gold); color: #0d1b2a; border: none; cursor: pointer; transition: background 0.2s;
+    }
+    .btn-print:hover { background: var(--gold-light); }
+
+    /* ── Auth gate ─────────────────────────────────────────────── */
+    .auth-gate {
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      padding: 5rem 2rem; background: var(--cream); text-align: center;
+    }
+    .auth-gate-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .auth-gate h2 {
+      font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+      color: var(--navy); margin-bottom: 0.4rem;
+    }
+    .auth-gate > p {
+      font-size: 0.9rem; color: var(--ink-light); line-height: 1.65;
+      max-width: 380px; margin: 0 auto 1.5rem;
+    }
+
+    /* Auth card */
+    .auth-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
+      padding: 2rem; width: 100%; max-width: 380px; text-align: left;
+    }
+    .auth-field { margin-bottom: 0.85rem; }
+    .auth-field label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--ink-mid); margin-bottom: 0.3rem; letter-spacing: 0.04em; text-transform: uppercase; }
+    .auth-field input {
+      width: 100%; padding: 0.6rem 0.85rem; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 0.88rem; background: var(--cream);
+      color: var(--navy); outline: none; font-family: inherit; box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .auth-field input:focus { border-color: var(--gold); }
+    .auth-err { font-size: 0.78rem; color: #dc3545; margin-bottom: 0.75rem; min-height: 1.2em; }
+    .auth-btns { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.25rem; }
+    .btn-auth-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+      font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.65rem 1.5rem; border-radius: var(--radius-sm);
+      background: var(--gold); color: #0d1b2a; border: none; cursor: pointer; transition: background 0.2s;
+      width: 100%;
+    }
+    .btn-auth-primary:hover { background: var(--gold-light); }
+    .auth-divider { display: flex; align-items: center; gap: 0.75rem; margin: 0.25rem 0; }
+    .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .auth-divider span { font-size: 0.68rem; color: var(--ink-muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .btn-auth-google {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+      font-size: 0.82rem; font-weight: 600; padding: 0.65rem 1.5rem;
+      border-radius: var(--radius-sm); background: var(--white);
+      color: var(--ink-mid); border: 1px solid var(--border); cursor: pointer;
+      transition: all 0.2s; width: 100%;
+    }
+    .btn-auth-google:hover { border-color: var(--gold); color: var(--navy); }
+    .auth-toggle { font-size: 0.78rem; color: var(--ink-muted); text-align: center; margin-top: 1rem; }
+    .auth-toggle a { color: var(--gold); font-weight: 600; text-decoration: none; }
+    .auth-toggle a:hover { text-decoration: underline; }
+
+    [data-theme="dark"] .auth-card { background: var(--white); border-color: var(--border); }
+    [data-theme="dark"] .auth-field input { background: var(--navy); border-color: var(--border); color: var(--cream); }
+    [data-theme="dark"] .btn-auth-google { background: var(--white); border-color: var(--border); }
+
+    /* ── Transcript sections ───────────────────────────────────── */
+    #transcriptBody { display: none; }
+
+    .tx-section { padding: 4rem 2rem 1.5rem; background: var(--cream); }
+    .tx-section:last-of-type { padding-bottom: 5rem; }
+    .tx-section-inner { max-width: var(--max-w); margin: 0 auto; }
+
+    /* Label — identical to courses-grid-label */
+    .tx-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1.75rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .tx-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .tx-empty {
+      display: none; font-size: 0.85rem; color: var(--ink-muted);
+      font-style: italic; padding: 0.5rem 0 1.5rem;
+    }
+    .tx-empty a { color: var(--gold); }
+
+    /* Grid — identical to courses-grid */
+    .tx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap: 1.5rem; }
+
+    /* Cards */
+    .tx-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);
+      display: flex; flex-direction: column;
+      transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    }
+    .tx-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+    .tx-card--started:hover  { border-color: rgba(201,160,90,0.35); }
+    .tx-card--complete:hover { border-color: rgba(61,214,192,0.35); }
+    .tx-card--tested:hover   { border-color: rgba(124,58,237,0.35); }
+
+    .tx-card__bar { height: 4px; width: 100%; }
+    .tx-card__bar--gold   { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+    .tx-card__bar--teal   { background: linear-gradient(90deg, var(--teal-dark), var(--teal)); }
+    .tx-card__bar--purple { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .tx-card__bar--navy   { background: linear-gradient(90deg, var(--navy), var(--navy-light)); }
+    .tx-card__bar--green  { background: linear-gradient(90deg, #2d8a5f, var(--green)); }
+    .tx-card__bar--amber  { background: linear-gradient(90deg, var(--amber), #f5c842); }
+
+    .tx-card__body {
+      padding: 1.75rem 1.75rem 1.25rem; flex: 1; display: flex; flex-direction: column;
+    }
+    .tx-card__header {
+      display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.85rem;
+    }
+    .tx-icon { font-size: 2rem; line-height: 1; }
+    .tx-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+
+    .tx-badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 0.25rem 0.65rem; border-radius: 99px;
+    }
+    .tx-badge--started  { background: rgba(201,160,90,0.12); color: #8a6a2e; border: 1px solid rgba(201,160,90,0.3); }
+    .tx-badge--complete { background: rgba(61,214,192,0.12);  color: var(--teal-dark); border: 1px solid rgba(61,214,192,0.3); }
+    .tx-badge--tested   { background: rgba(124,58,237,0.12);  color: #6d28d9; border: 1px solid rgba(124,58,237,0.25); }
+
+    .tx-card__sub {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--ink-muted); margin-bottom: 0.4rem;
+    }
+    .tx-card h2 {
+      font-family: var(--font-display); font-size: 1.2rem; font-weight: 700;
+      color: var(--navy); letter-spacing: -0.01em; margin-bottom: 0.75rem; line-height: 1.2;
+    }
+
+    .tx-progress-wrap {
+      height: 5px; background: var(--border-light); border-radius: 99px; overflow: hidden; margin-bottom: 0.35rem;
+    }
+    .tx-progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      border-radius: 99px; transition: width 0.6s ease;
+    }
+    .tx-progress-label { font-size: 0.72rem; color: var(--ink-muted); font-weight: 500; }
+
+    .tx-cert-line  { font-size: 0.78rem; font-weight: 600; color: var(--teal-dark); margin-top: 0.5rem; }
+    .tx-score-line { font-size: 0.78rem; font-weight: 600; color: var(--ink-mid);   margin-top: 0.25rem; }
+
+    .tx-card__footer {
+      padding: 0.9rem 1.75rem 1.25rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--border-light); gap: 0.75rem;
+    }
+    .tx-meta { font-size: 0.72rem; color: var(--ink-muted); font-weight: 500; }
+    .tx-meta strong { color: var(--ink-mid); font-weight: 700; font-size: 0.8rem; }
+
+    .tx-cta {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.45rem 1rem; border-radius: var(--radius-sm);
+      transition: all 0.2s; white-space: nowrap; text-decoration: none;
+    }
+    .tx-cta--gold  { background: var(--gold); color: #0d1b2a; }
+    .tx-cta--gold:hover  { background: var(--gold-light); }
+    .tx-cta--ghost { background: var(--border-light); color: var(--ink-muted); }
+    .tx-cta--ghost:hover { background: var(--border); color: var(--ink-mid); }
+
+    /* Pulse dot */
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--gold); animation: pulse-dot 2s ease-in-out infinite;
+    }
+    .live-dot--teal   { background: var(--teal); }
+    .live-dot--purple { background: #7c3aed; }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.5; transform:scale(0.8); }
+    }
+
+    /* ── Dark mode overrides ───────────────────────────────────── */
+    [data-theme="dark"] .tx-hero    { background: #080f17; }
+    [data-theme="dark"] .tx-hero p  { color: rgba(255,255,255,0.6); }
+    [data-theme="dark"] .tx-section { background: var(--cream); }
+    [data-theme="dark"] .tx-card    { background: var(--white); border-color: var(--border); }
+    [data-theme="dark"] .tx-card__footer { border-top-color: var(--border); }
+    [data-theme="dark"] .tx-label   { color: var(--gold-light); }
+    [data-theme="dark"] .tx-label::after { background: var(--border); }
+    [data-theme="dark"] .tx-cta--ghost  { background: rgba(255,255,255,0.06); }
+    [data-theme="dark"] .auth-gate  { background: var(--cream); }
+    [data-theme="dark"] .print-bar  { background: #050d16; border-bottom-color: rgba(255,255,255,0.05); }
+    [data-theme="dark"] .tx-badge--started  { background: rgba(201,160,90,0.18); }
+    [data-theme="dark"] .tx-badge--complete { background: rgba(61,214,192,0.18); }
+    [data-theme="dark"] .tx-badge--tested   { background: rgba(124,58,237,0.18); }
+
+    /* ── PRINT STYLES ──────────────────────────────────────────── */
+    @media print {
+      .nav, .tx-hero, .print-bar, .auth-gate, #transcriptBody, footer { display: none !important; }
+      #printArea { display: block !important; }
+
+      body { background: #fff !important; color: #000 !important; font-family: Georgia, serif; margin: 0; }
+
+      .print-page { max-width: 740px; margin: 0 auto; padding: 2.5rem; }
+
+      .print-header {
+        display: flex; align-items: center; justify-content: space-between;
+        border-bottom: 2px solid #0d1b2a; padding-bottom: 1.25rem; margin-bottom: 1.5rem;
+      }
+      .print-brand { font-size: 1.3rem; font-weight: 800; color: #0d1b2a; letter-spacing: -0.01em; }
+      .print-brand span { color: #c9a05a; }
+      .print-meta { font-size: 0.75rem; color: #555; text-align: right; line-height: 1.5; }
+
+      .print-title { font-size: 1.5rem; font-weight: 700; color: #0d1b2a; margin-bottom: 0.25rem; }
+      .print-subtitle { font-size: 0.82rem; color: #666; margin-bottom: 2rem; }
+
+      .print-section-head {
+        font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        color: #888; border-bottom: 1px solid #ddd; padding-bottom: 0.4rem; margin-bottom: 0.85rem;
+      }
+      .print-cert-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.75rem 0; border-bottom: 1px solid #eee; gap: 1rem;
+      }
+      .print-cert-left { display: flex; align-items: center; gap: 0.75rem; }
+      .print-cert-icon { font-size: 1.4rem; }
+      .print-cert-title { font-size: 0.92rem; font-weight: 700; color: #0d1b2a; }
+      .print-cert-sub { font-size: 0.72rem; color: #666; margin-top: 0.1rem; }
+      .print-cert-right {
+        display: flex; align-items: center; gap: 0.75rem;
+        text-align: right; font-size: 0.72rem; color: #555;
+        flex-wrap: wrap; justify-content: flex-end;
+      }
+      .print-cert-status { font-weight: 700; color: #0d1b2a; }
+      .print-cert-status.tested  { color: #6d28d9; }
+      .print-cert-status.complete { color: #166534; }
+      .print-no-certs { font-style: italic; color: #888; font-size: 0.85rem; }
+
+      .print-footer {
+        margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #ddd;
+        font-size: 0.68rem; color: #aaa;
+        display: flex; justify-content: space-between;
+      }
+    }
+
+    /* Hidden on screen */
+    #printArea { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ─── NAV ──────────────────────────────────────────────────── -->
+  <nav class="nav" role="navigation">
+    <div class="nav-inner">
+      <div class="nav-brand-group">
+        <a href="https://aesopacademy.org" class="nav-brand-primary">AESOP AI Academy</a>
+      </div>
+      <div class="nav-links">
+        <a href="/ai-academy/courses.html" class="nav-btn">Courses</a>
+        <a href="/forums/" class="nav-btn nav-btn--forums">Forums</a>
+        <button class="dark-mode-toggle" id="themeToggle" aria-label="Toggle dark mode">
+          <span class="dark-mode-toggle__icon">☀️</span>
+          <span class="dark-mode-toggle__track">
+            <span class="dark-mode-toggle__thumb"></span>
+          </span>
+          <span class="dark-mode-toggle__icon">🌙</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ─────────────────────────────────────────────────── -->
+  <header class="tx-hero">
+    <div class="tx-hero-inner">
+      <span class="tx-hero-eyebrow">AESOP AI Academy</span>
+      <h1>My <span>Transcript</span></h1>
+      <p>Your personal learning record — every course started, completed, and tested out of. Print your certifications anytime.</p>
+
+      <div class="hero-stats" id="heroStats" style="display:none;">
+        <div class="hero-stat">
+          <span class="live-dot live-dot--teal"></span>
+          <span><strong id="statCourses">0</strong> Courses Finished</span>
+        </div>
+        <div class="hero-stat">
+          🎓 <span><strong id="statCerts">0</strong> Certifications</span>
+        </div>
+        <div class="hero-stat">
+          <span class="live-dot"></span>
+          <span><strong id="statProgress">0</strong> In Progress</span>
+        </div>
+      </div>
+
+      <button id="signOutBtn" onclick="_signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- ─── PRINT BAR ────────────────────────────────────────────── -->
+  <div class="print-bar" id="printBar">
+    <div class="print-bar-inner">
+      <span class="print-note">Signed in as <strong id="userDisplayName"></strong></span>
+      <button class="btn-print" onclick="_doPrint()">🖨&nbsp; Print Transcript</button>
+    </div>
+  </div>
+
+  <!-- ─── AUTH GATE ────────────────────────────────────────────── -->
+  <div class="auth-gate" id="authGate">
+    <div class="auth-gate-icon">📋</div>
+    <h2>Sign In to View Your Transcript</h2>
+    <p>Your learning record is tied to your AESOP AI Academy account.</p>
+
+    <div class="auth-card">
+      <div class="auth-field" id="auth-name-row" style="display:none;">
+        <label>Your Name</label>
+        <input type="text" id="auth-name" placeholder="Full name" autocomplete="name">
+      </div>
+      <div class="auth-field">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Password</label>
+        <input type="password" id="auth-pass" placeholder="Password" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter') _signInEmail()">
+      </div>
+      <div class="auth-err" id="auth-err"></div>
+      <div class="auth-btns">
+        <button class="btn-auth-primary" id="auth-signin-btn" onclick="_signInEmail()">Sign In</button>
+        <button class="btn-auth-primary" id="auth-signup-btn" onclick="_signUpEmail()" style="display:none;">Create Account</button>
+        <div class="auth-divider"><span>or</span></div>
+        <button class="btn-auth-google" onclick="_signInGoogle()">
+          <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#4285F4" d="M44.5 20H24v8.5h11.8C34.7 33.9 29.8 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11 0 21-8 21-22 0-1.3-.2-2.7-.5-4z"/>
+          </svg>
+          Continue with Google
+        </button>
+      </div>
+      <div class="auth-toggle" id="auth-toggle">
+        New here? <a href="#" onclick="_showSignUp();return false;">Create an account</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TRANSCRIPT BODY ──────────────────────────────────────── -->
+  <div id="transcriptBody">
+
+    <!-- In Progress -->
+    <section class="tx-section" aria-label="Courses in progress">
+      <div class="tx-section-inner" id="sectionInProgress">
+        <div class="tx-label"><span class="live-dot"></span> In Progress</div>
+        <div class="tx-empty">No courses in progress yet. <a href="/ai-academy/courses.html">Browse courses →</a></div>
+        <div class="tx-grid"></div>
+      </div>
+    </section>
+
+    <!-- Completed -->
+    <section class="tx-section" aria-label="Completed courses">
+      <div class="tx-section-inner" id="sectionCompleted">
+        <div class="tx-label"><span class="live-dot live-dot--teal"></span> Completed</div>
+        <div class="tx-empty">No completed courses yet — keep going!</div>
+        <div class="tx-grid"></div>
+      </div>
+    </section>
+
+    <!-- Tested Out -->
+    <section class="tx-section" aria-label="Courses tested out of">
+      <div class="tx-section-inner" id="sectionTested">
+        <div class="tx-label">★ Tested Out</div>
+        <div class="tx-empty">No test-out certifications yet.</div>
+        <div class="tx-grid"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ─── PRINT AREA (hidden on screen) ───────────────────────── -->
+  <div id="printArea">
+    <div class="print-page">
+      <div class="print-header">
+        <div class="print-brand">AESOP <span>AI</span> Academy</div>
+        <div class="print-meta">
+          <div>aesopacademy.org</div>
+          <div id="printDate"></div>
+        </div>
+      </div>
+      <div class="print-title">Official Learning Transcript</div>
+      <div class="print-subtitle">Issued to: <strong id="printName"></strong></div>
+      <div class="print-section-head">Certifications Earned</div>
+      <div id="printCertList"></div>
+      <div class="print-footer">
+        <span>© 2026 AESOP AI Academy — All rights reserved.</span>
+        <span>AESOP™ Patent Pending · App #64/018,565</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── FOOTER ────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">AESOP AI Academy</div>
+        <div class="footer-tagline">Learn the future. One story at a time.</div>
+      </div>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="https://aesopacademy.org" class="footer-link">Home</a>
+        <a href="/ai-academy/courses.html" class="footer-link">Courses</a>
+        <a href="/ai-academy/" class="footer-link">AI Foundations</a>
+        <a href="/forums/" class="footer-link">Forums</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-tm">© 2026 AESOP AI Academy — All rights reserved.</span>
+      <span class="footer-patent">AESOP™ Patent Pending · App #64/018,565</span>
+    </div>
+  </footer>
+
+  <!-- ─── DARK MODE SCRIPT ──────────────────────────────────────── -->
+  <script>
+    (function () {
+      var HTML = document.documentElement;
+      var BTN  = document.getElementById('themeToggle');
+      var KEY  = 'aesop-theme';
+      if (localStorage.getItem(KEY) === 'dark') HTML.setAttribute('data-theme', 'dark');
+      BTN.addEventListener('click', function () {
+        var isDark = HTML.getAttribute('data-theme') === 'dark';
+        if (isDark) { HTML.removeAttribute('data-theme'); localStorage.setItem(KEY, 'light'); }
+        else { HTML.setAttribute('data-theme', 'dark'); localStorage.setItem(KEY, 'dark'); }
+      });
+    })();
+
+    document.getElementById('printDate').textContent =
+      'Printed ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  </script>
+  <!-- Late override: tx-hero has dark bg — keep h1 white in dark mode -->
+  <style>
+    [data-theme="dark"] .tx-hero h1 { color: var(--white); }
+    [data-theme="dark"] .tx-hero h1 span { color: var(--gold-light); }
+    [data-theme="dark"] .tx-hero p { color: rgba(255,255,255,0.65); }
+  </style>
+
+</body>
+</html>

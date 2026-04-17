@@ -1,0 +1,986 @@
+<!-- AESOP-FRAGMENT: true (injected into electives-hub.html — no <html>/<head>
+<!-- v1.0.1 | 2026-04-15 -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+<!-- v1.0.0 | 2026-04-14 -->
+<!-- building-ai-agents-iii-tools-m2 -->
+<!-- AESOP AI Academy — Electives Module (content injection format) -->
+<!-- Hub extracts: .tab-strip, .content-area, <script> -->
+<!-- Styles loaded by electives-hub.html via elective-module.css -->
+
+<!-- TAB STRIP -->
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<!-- CONTENT AREA -->
+<div class="content-area">
+
+<!-- LESSON 1 -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 1 of 4</div>
+    <h1>Search APIs: Architecture and Integration</h1>
+    <div class="tagline">How agents query the web programmatically — from raw HTTP calls to structured results pipelines.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In March 2023, Perplexity AI processed over 500 million queries in a single month by building a retrieval pipeline on top of Bing's Web Search API combined with their own crawling infrastructure. Rather than sending users to a list of blue links, their system issued structured API calls, extracted relevant snippets, re-ranked results by semantic similarity, and synthesized a grounded answer — all within roughly 1.5 seconds per query. The engineering insight was treating search not as a destination but as a data source: a structured feed of URLs, titles, and snippets that an LLM could reason over.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Search API Landscape</h2>
+    <div class="section-body">
+      <p>A search API translates a natural-language or keyword query into a structured JSON response. The major providers — Bing Web Search API, Google Custom Search JSON API, SerpAPI, Brave Search API, and Tavily — each expose slightly different schemas, rate limits, and data freshness guarantees. Choosing the right one for an agent is an architectural decision, not a UI choice.</p>
+      <p>Bing's API returns <code>webPages.value[]</code> objects with fields including <code>name</code>, <code>url</code>, <code>snippet</code>, <code>dateLastCrawled</code>, and <code>cachedPageUrl</code>. Google's Custom Search JSON API returns <code>items[]</code> with <code>title</code>, <code>link</code>, <code>snippet</code>, and a <code>pagemap</code> sub-object containing structured metadata. SerpAPI abstracts over both Google and Bing and normalizes the schema. Tavily, built specifically for LLM agents, returns pre-scored relevance alongside raw snippets and supports a <code>search_depth: advanced</code> mode that triggers full-page content extraction.</p>
+      <p>The critical technical difference for agent design is <strong>snippet quality vs. full content access</strong>. Standard search APIs return 150–300 character snippets optimized for human reading. Agents that need to cite sources accurately or synthesize detailed answers must follow URLs and fetch full page content — a separate operation with its own latency and token cost.</p>
+      <div class="callout">
+        <div class="callout-label">Architecture Note</div>
+        <p>Tavily's <code>include_raw_content: true</code> flag retrieves full extracted text alongside search results in a single API call, collapsing what would otherwise be a two-step fetch-and-parse pipeline. For latency-sensitive agents, this is a meaningful design tradeoff worth benchmarking.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Query Construction and Result Processing</h2>
+    <div class="section-body">
+      <p>Raw user intent rarely maps cleanly to an effective search query. The agent must perform <strong>query transformation</strong> — converting a conversational request like "what's the latest on OpenAI's valuation?" into a structured query like <code>"OpenAI valuation" site:reuters.com OR site:bloomberg.com after:2024-01-01</code>. This is a non-trivial step. Production systems at companies like Perplexity and You.com use a dedicated query-rewriting LLM call before the API request.</p>
+      <p>Result processing involves three layers: <strong>deduplication</strong> (removing near-identical snippets from syndicated sources), <strong>relevance re-ranking</strong> (scoring results against the original user intent, not just the transformed query), and <strong>provenance tracking</strong> (maintaining the URL-to-snippet mapping so citations survive the LLM's summarization step). Losing provenance is a common failure mode — the agent produces a confident answer but cannot tell the user where the information came from.</p>
+      <ul class="ul-body">
+        <li>Query transformation: convert intent to optimized keyword/operator string</li>
+        <li>API call with pagination awareness (page 1 may not have the best result)</li>
+        <li>Snippet extraction: pull the most relevant 2–4 snippets, not all 10</li>
+        <li>Optional full-page fetch for sources requiring deeper content</li>
+        <li>Re-rank by semantic similarity to original user query</li>
+        <li>Inject top-k results into context with source URLs preserved</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Real Failure Case</div>
+        <p>In November 2023, early versions of Google's Search Generative Experience (SGE) cited a satirical Onion article as factual health advice because the snippet-level relevance score was high but the source domain credibility check was absent. Production agents need explicit domain-trust filtering as a post-retrieval step, not just retrieval quality optimization.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Rate Limits, Caching, and Cost Management</h2>
+    <div class="section-body">
+      <p>Bing Web Search API's S1 tier allows 3 queries per second and 1,000 queries per month at $7. Tavily's free tier allows 1,000 searches per month; production usage is priced at $0.004 per search at scale. At those prices, an agent that issues 5 search calls per user session costs $0.02 per session in search costs alone — before LLM inference costs. Multiply by 100,000 daily active users and search API costs become a significant line item.</p>
+      <p>Production teams address this through semantic caching: storing the embedding of each query alongside its results, then returning cached results for new queries within a cosine similarity threshold (typically 0.92–0.95). Redis with vector search extensions or Qdrant are commonly used for this layer. The cache hit rate for a mature consumer product typically reaches 30–40%, substantially reducing API spend.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <a class="pnav-btn primary" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Quiz 1</div>
+    <h1>Quiz: Search APIs</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. What distinguishes Tavily's <code>search_depth: advanced</code> mode from standard search API calls?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">It returns more results per page</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">It triggers full-page content extraction alongside snippets in a single call</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">It queries multiple search engines simultaneously</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">It applies operator-based query filtering automatically</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Tavily's advanced mode fetches and extracts full page text alongside snippets, collapsing the typical two-step fetch-and-parse workflow into one API call.</div>
+    <div class="quiz-feedback wrong">Not quite. Tavily's distinguishing feature is full-page content extraction in a single call — which collapses the separate URL-fetch step agents otherwise need.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. What is "provenance tracking" in a search result processing pipeline?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Monitoring how many API calls an agent has made</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Logging user query history for analytics</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Maintaining the URL-to-snippet mapping so citations survive the summarization step</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Tracking the geographic origin of search results</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Provenance tracking ensures the original source URL stays attached to each piece of information so the agent can cite it accurately even after synthesizing an answer.</div>
+    <div class="quiz-feedback wrong">Incorrect. Provenance tracking specifically means keeping source URLs linked to their content snippets so citations are not lost during LLM summarization.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. Why do production search-augmented agents use semantic caching?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">To improve the quality of LLM-generated answers</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">To return cached results for semantically similar queries and reduce API spend</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">To avoid storing user data on external servers</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">To bypass search API rate limits entirely</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Semantic caching stores query embeddings and their results, returning cached responses when a new query exceeds a cosine similarity threshold — cutting API costs by 30–40% at scale.</div>
+    <div class="quiz-feedback wrong">Incorrect. Semantic caching's primary benefit is cost reduction: similar queries return cached results instead of triggering new API calls, cutting spend significantly at scale.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lab 1</div>
+    <h1>Lab: Search API Pipeline Design</h1>
+    <div class="tagline">Design a production-grade search retrieval pipeline for an LLM agent.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Challenge</h4>
+    <p>You are designing the search retrieval layer for a financial news agent. The agent needs to answer real-time questions like "What are analysts saying about Nvidia's Q3 earnings?" with cited, accurate answers.</p>
+    <ol>
+      <li>Decide which search API(s) to use and justify the choice</li>
+      <li>Design the query transformation step</li>
+      <li>Explain how you will handle provenance and citations</li>
+      <li>Describe your caching strategy</li>
+    </ol>
+    <div class="lab-prompt">Walk me through your architecture decisions for a financial news search pipeline — which API, how you transform queries, how you preserve citations, and how you cache results.</div>
+  </div>
+  <div class="lab-chat" id="lab-l1">
+    <div class="lab-chat-header">
+      <span>🔬 Search API Lab</span>
+      <span class="chat-badge">AI Tutor Active</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l1"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l1" rows="2" placeholder="Describe your pipeline design..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- LESSON 2 -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 2 of 4</div>
+    <h1>Browser Automation: Playwright, Puppeteer, and Agent Control</h1>
+    <div class="tagline">When search snippets are not enough — programmatic browser control for agents that need to interact with live web pages.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In January 2024, Cognition AI's Devin software engineering agent made headlines by autonomously navigating to GitHub, reading a repository's issue tracker, cloning code, running tests, and submitting a pull request — all through a headless browser and terminal integration. Devin used Playwright under the hood to control a Chromium instance, taking screenshots at each step for visual state verification. The architecture exposed a key insight: for tasks requiring multi-step web interaction, a headless browser is not a convenience feature but a fundamental capability layer.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Playwright and Puppeteer: Core Mechanics</h2>
+    <div class="section-body">
+      <p>Playwright (Microsoft, 2020) and Puppeteer (Google, 2018) both expose a programmatic API for controlling a headless browser. Playwright supports Chromium, Firefox, and WebKit with a unified API; Puppeteer targets Chromium/Chrome. Both operate by connecting to the browser's DevTools Protocol (CDP), which allows JavaScript execution, network interception, DOM inspection, screenshot capture, and user input simulation.</p>
+      <p>For agent use, the most important primitives are: <code>page.goto(url)</code> for navigation, <code>page.waitForSelector(selector)</code> for element readiness, <code>page.fill(selector, text)</code> and <code>page.click(selector)</code> for form interaction, <code>page.screenshot()</code> for visual state capture, and <code>page.evaluate(fn)</code> for arbitrary JS execution in page context. The challenge is that modern web apps render content dynamically — a naive <code>goto</code> + <code>innerText</code> extraction misses content loaded by JavaScript after initial page load.</p>
+      <div class="callout">
+        <div class="callout-label">Key Difference</div>
+        <p>Playwright's <code>page.waitForLoadState('networkidle')</code> waits until no network requests have fired for 500ms — a much more reliable signal for SPA content readiness than <code>DOMContentLoaded</code>, which fires before JavaScript frameworks render their content.</p>
+      </div>
+      <p>For content extraction, <code>page.locator()</code> with semantic selectors (ARIA roles, text content) is more resilient to site redesigns than XPath or CSS class selectors, which break whenever a developer renames a class. Production browser agents use a layered extraction strategy: try semantic selectors first, fall back to readability-based extraction (Mozilla's Readability library), and finally fall back to raw <code>innerText</code> with noise filtering.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Computer Use and Multimodal Browser Control</h2>
+    <div class="section-body">
+      <p>In October 2024, Anthropic released the Claude 3.5 Sonnet Computer Use API, which allows Claude to observe screenshots and emit low-level actions: mouse clicks at pixel coordinates, keyboard input, and scroll commands. This represents a fundamental shift from selector-based automation (which requires knowing the DOM structure) to vision-based automation (which works on any rendered interface). The agent sees the page as a bitmap and decides where to click by understanding the visual layout.</p>
+      <p>Google's Project Mariner, demonstrated in December 2024, took a similar approach using Gemini to control Chrome via screenshot observation. OpenAI's Operator product, announced January 2025, uses GPT-4o to control a browser through a cloud-hosted Chromium instance, with a human-in-the-loop confirmation step for actions involving payments or account changes.</p>
+      <ul class="ul-body">
+        <li>Selector-based automation (Playwright/Puppeteer): fast, brittle, requires DOM knowledge</li>
+        <li>Vision-based automation (Claude Computer Use, Operator): slower, robust, works on any rendered UI</li>
+        <li>Hybrid: use selectors where reliable, fall back to vision for login/CAPTCHA/dynamic content</li>
+        <li>Screenshot loops: capture state → reason about next action → execute → repeat</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Production Reality</div>
+        <p>Anthropic's Computer Use API documentation notes that vision-based control averages 3–8 seconds per action step due to screenshot capture, encoding, and LLM inference latency. A 10-step task therefore takes 30–80 seconds — acceptable for autonomous research tasks but too slow for real-time user-facing interactions.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Session Management and Anti-Bot Measures</h2>
+    <div class="section-body">
+      <p>Production browser agents face significant anti-bot infrastructure. Cloudflare's Bot Management product (used by over 30% of Fortune 1000 websites as of 2024) uses TLS fingerprinting, JavaScript challenge evaluation, mouse movement heuristics, and behavioral analysis to distinguish automated browsers from human users. Playwright and Puppeteer emit detectable signals by default — <code>navigator.webdriver</code> is set to true, CDP socket connections are observable, and default viewport sizes differ from typical user profiles.</p>
+      <p>Mitigations include: playwright-extra with the stealth plugin (patches the most common detection vectors), residential proxy rotation, and browser profile persistence (reusing cookies and localStorage to appear as a returning user). However, the arms race between automation detection and evasion is ongoing. Ethical agent design means respecting <code>robots.txt</code>, rate-limiting requests to avoid server overload, and not using automation to circumvent access controls or paywalls.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-lab1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-q2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Quiz 2</div>
+    <h1>Quiz: Browser Automation</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. Why is <code>page.waitForLoadState('networkidle')</code> more reliable than <code>DOMContentLoaded</code> for SPA content extraction?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">It is faster to execute in headless mode</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">It works across all browsers including Firefox and WebKit</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">It waits until JavaScript frameworks have finished rendering content, not just parsing the DOM</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">It prevents anti-bot detection by mimicking human loading behavior</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. DOMContentLoaded fires when HTML is parsed, but SPA frameworks render content via JavaScript after that point. networkidle waits for JS rendering to complete.</div>
+    <div class="quiz-feedback wrong">Incorrect. The key reason is that DOMContentLoaded fires before JavaScript frameworks render their content, so you'd miss dynamically loaded data. networkidle waits for rendering to finish.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. What is the primary advantage of vision-based browser control (like Claude Computer Use) over selector-based automation?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">It works on any rendered interface without needing DOM structure knowledge</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">It executes actions faster than selector-based methods</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">It bypasses Cloudflare bot detection more effectively</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">It requires less LLM inference per action step</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Vision-based control observes screenshots and clicks by visual understanding, so it works regardless of DOM structure — making it robust to site redesigns that break selector-based automation.</div>
+    <div class="quiz-feedback wrong">Incorrect. Vision-based control is actually slower. Its advantage is robustness: it works on any rendered interface without needing DOM knowledge, making it resilient to site changes.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. Which signal makes default Playwright/Puppeteer instances detectable by anti-bot systems?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">They use a non-standard HTTP version</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">They load pages significantly slower than human browsers</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">They cannot execute JavaScript inside the page</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">navigator.webdriver is set to true and CDP socket connections are observable</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. navigator.webdriver=true is a standard WebDriver flag exposed to page JavaScript, and CDP connections have observable network signatures — both are standard detection vectors.</div>
+    <div class="quiz-feedback wrong">Incorrect. The primary giveaways are navigator.webdriver being set to true (visible to page JavaScript) and observable CDP socket connections that anti-bot systems can fingerprint.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lab 2</div>
+    <h1>Lab: Browser Automation Strategy</h1>
+    <div class="tagline">Choose the right automation approach for complex real-world agent tasks.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Challenge</h4>
+    <p>You are building an agent that monitors competitor pricing on three e-commerce sites: one static HTML site, one React SPA, and one behind a login wall. For each, decide:</p>
+    <ol>
+      <li>Which automation approach to use (selector-based, vision-based, or hybrid)</li>
+      <li>How to handle session persistence for the login-walled site</li>
+      <li>How to avoid triggering anti-bot defenses</li>
+      <li>What ethical constraints apply</li>
+    </ol>
+    <div class="lab-prompt">Walk me through your automation approach for each of the three sites — and explain what ethical constraints shape your design choices.</div>
+  </div>
+  <div class="lab-chat" id="lab-l2">
+    <div class="lab-chat-header">
+      <span>🤖 Browser Automation Lab</span>
+      <span class="chat-badge">AI Tutor Active</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l2"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l2" rows="2" placeholder="Describe your automation strategy..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- LESSON 3 -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 3 of 4</div>
+    <h1>Web-Capable Agent Architecture</h1>
+    <div class="tagline">How search and browsing tools fit into the broader agent loop — tool calling, memory, and orchestration patterns.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In September 2023, OpenAI re-enabled web browsing in ChatGPT after disabling it in July due to a vulnerability where the Bing-powered browsing tool could be manipulated through prompt injection in web pages — adversarial content that caused the agent to exfiltrate conversation context by encoding it in a URL the agent was instructed to navigate to. The fix required adding an output filter that blocked navigation to URLs containing patterns resembling encoded conversation data. This real incident illustrates that web tools dramatically expand an agent's attack surface: every web page it reads is potentially adversarial input.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Tool Calling Architecture for Web Access</h2>
+    <div class="section-body">
+      <p>In the OpenAI function calling / Anthropic tool use paradigm, web access is implemented as one or more named tools that the LLM can invoke by emitting a structured JSON block. A minimal web-capable agent typically exposes three tools: <code>web_search(query: str) → list[SearchResult]</code>, <code>fetch_url(url: str) → str</code>, and optionally <code>browser_action(action: BrowserAction) → Screenshot</code>. The LLM decides when to call these based on whether its parametric knowledge is sufficient for the task.</p>
+      <p>The tool calling loop runs as follows: the LLM receives user message → determines whether web access is needed → emits a tool call → the orchestrator executes the tool and appends the result to context → the LLM reasons over the result and either calls another tool or generates a final response. The number of tool call cycles per query is bounded by a <code>max_iterations</code> parameter to prevent infinite loops.</p>
+      <div class="callout">
+        <div class="callout-label">ReAct Pattern</div>
+        <p>The ReAct (Reasoning + Acting) pattern, published by Yao et al. at Princeton in 2022, formalizes this loop by interleaving explicit reasoning traces ("Thought: I need to find the current price...") with tool calls ("Action: web_search(...)") and observations ("Observation: ..."). Production implementations at LangChain and LlamaIndex directly implement ReAct as the default agent executor pattern.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Context Window Management for Retrieved Content</h2>
+    <div class="section-body">
+      <p>Web retrieval creates a context management problem. A single webpage can contain 50,000–200,000 tokens of text. Even with 200K context windows, injecting multiple full pages alongside the conversation history and system prompt can saturate the context window, increase inference latency, and degrade model attention on the most relevant content.</p>
+      <p>Production systems address this through <strong>retrieved content compression</strong>: after fetching a URL, a lightweight LLM call (or a non-LLM extractive summarization model like DistilBERT-based MRC) extracts only the passages relevant to the current query. This "query-focused summarization" step reduces a full webpage to 300–800 tokens of relevant content. LangChain's MapReduce chain and LlamaIndex's SentenceWindowNodeParser implement variants of this approach.</p>
+      <ul class="ul-body">
+        <li>Fetch → extract → compress → inject: never inject raw full-page HTML</li>
+        <li>Chunk with overlap: 512-token chunks with 64-token overlap for dense retrieval</li>
+        <li>Top-k injection: select only the top 3–5 most relevant chunks per source</li>
+        <li>Recency weighting: for news/financial queries, prefer results within 30 days</li>
+        <li>Source diversity: enforce that injected context spans at least 2 distinct domains</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Lost in the Middle</div>
+        <p>Stanford and UC Berkeley research (Liu et al., 2023) demonstrated that LLMs perform significantly worse when the relevant information appears in the middle of a long context window versus at the beginning or end. For agents injecting multiple web sources, ordering matters: put the most relevant retrieved content last, immediately before the generation prompt.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Multi-Step Web Research Patterns</h2>
+    <div class="section-body">
+      <p>Complex research queries require multiple sequential web interactions. GPT-Researcher (open source, 2023) implements a multi-agent pattern: a "Director" agent breaks the research question into sub-queries, dispatches them to parallel "Researcher" agents each running their own search-and-fetch loops, then a "Writer" agent synthesizes the results. This pattern reduced end-to-end latency by 3x compared to sequential single-agent research by parallelizing the search calls.</p>
+      <p>The key orchestration decision is whether sub-tasks run in parallel (faster but requires more context aggregation logic) or sequentially with information passing between steps (slower but allows each step to refine based on prior findings). For fact-finding tasks, parallel is preferred. For tasks with logical dependencies — "first find the CEO, then research their background" — sequential chaining is necessary.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-lab2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-q3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Quiz 3</div>
+    <h1>Quiz: Web-Capable Agent Architecture</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. What security vulnerability caused OpenAI to temporarily disable ChatGPT's web browsing in July 2023?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The browser tool allowed access to localhost and internal network resources</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Prompt injection in web pages could instruct the agent to exfiltrate conversation data via crafted URLs</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The Bing API returned cached data that contained outdated security certificates</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The agent could execute arbitrary JavaScript in the user's browser session</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Adversarial content on web pages could inject instructions causing the agent to encode conversation context into navigation URLs — a classic prompt injection + data exfiltration chain.</div>
+    <div class="quiz-feedback wrong">Incorrect. The vulnerability was prompt injection: malicious web pages contained instructions that caused the agent to encode and exfiltrate conversation data through URLs it was told to navigate to.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. According to the "Lost in the Middle" research finding, where should the most relevant retrieved content be placed in the context window?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">At the very beginning, right after the system prompt</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Distributed evenly throughout the context window</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">Last, immediately before the generation prompt</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">In a separate system message to avoid mixing with conversation history</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Liu et al. (2023) showed LLMs attend better to content at the beginning and end of the context window. Placing the most relevant content last — just before the prompt — maximizes attention on it.</div>
+    <div class="quiz-feedback wrong">Incorrect. Research shows LLMs have a "lost in the middle" problem — content buried in the middle of a long context gets less attention. The most relevant content should go last, right before the generation prompt.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. When is sequential (rather than parallel) sub-task execution preferred in a multi-step web research agent?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">When the query is simple and requires only one search call</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">When API rate limits prevent parallel requests</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">When sub-tasks have logical dependencies where each step refines based on prior findings</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">When the context window is too small to hold multiple search results simultaneously</button>
+    </div>
+    <div class="quiz-feedback right">✓ Correct. Sequential execution is necessary when tasks depend on each other — like "find the CEO, then research their background" — where the second step needs the output of the first.</div>
+    <div class="quiz-feedback wrong">Incorrect. Sequential chaining is specifically needed when tasks have logical dependencies — each step uses information from the prior step. For independent fact-finding tasks, parallel is preferred for speed.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- LAB 3 -->
+<div class="page" id="p-lab3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lab 3</div>
+    <h1>Lab: Agent Architecture Design</h1>
+    <div class="tagline">Design a web-capable agent with proper context management and security controls.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Challenge</h4>
+    <p>Design a web research agent for a law firm that needs to monitor regulatory changes across three jurisdictions daily. Your design must address:</p>
+    <ol>
+      <li>Which tools to expose and their exact function signatures</li>
+      <li>How you manage context window budget across multiple sources</li>
+      <li>How you defend against prompt injection in retrieved legal documents</li>
+      <li>Whether sub-tasks run in parallel or sequentially, and why</li>
+    </ol>
+    <div class="lab-prompt">Design the architecture for a multi-jurisdiction regulatory monitoring agent — cover your tool set, context management strategy, security controls, and orchestration pattern.</div>
+  </div>
+  <div class="lab-chat" id="lab-l3">
+    <div class="lab-chat-header">
+      <span>🔗 Agent Architecture Lab</span>
+      <span class="chat-badge">AI Tutor Active</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l3"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l3" rows="2" placeholder="Describe your agent architecture..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l4')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 4</span>
+    </a>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ LESSON 4 ═══════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Building AI Agents III — Tools · Module 2 · Lesson 4</div>
+    <h1>Reliability &amp; Safety</h1>
+    <div class="tagline">Advanced concepts, real-world applications, and practical implications</div>
+  </div>
+  <div class="lesson-body">
+    <div class="lesson-section">
+      <div class="section-heading">Core Concepts</div>
+      <div class="section-body">
+        <p>This lesson explores reliability &amp; safety — examining the key principles, real-world applications, and implications for practitioners working in this domain.</p>
+        <p>Understanding this topic requires both theoretical grounding and practical awareness of how these concepts manifest in deployed systems. The frameworks covered in earlier lessons provide the foundation; this lesson connects them to implementation reality.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Practical Applications</div>
+      <div class="section-body">
+        <p>The transition from theory to practice reveals challenges that pure conceptual frameworks don't capture. Real-world deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment rather than rigid rule-following.</p>
+        <p>Effective practitioners in this space develop the ability to reason across multiple frameworks simultaneously, recognizing when different perspectives apply and how to resolve conflicts between competing priorities.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Looking Forward</div>
+      <div class="section-body">
+        <p>As this field continues to evolve, the principles covered in this module will remain foundational even as specific technologies and implementations change. The ability to think critically about these topics — rather than simply memorizing current best practices — is what separates effective practitioners from those who merely follow checklists.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 3 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUIZ 4 ═══════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero"><h1>Lesson 4 Quiz</h1><div class="tagline">Reliability &amp; Safety</div></div>
+  <div class="quiz-area">
+    <div class="quiz-box" id="q1-l4">
+      <div class="quiz-q">What is the primary focus of Reliability &amp; Safety?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">Connecting theoretical frameworks to practical implementation challenges and real-world deployment considerations</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Memorizing specific technical procedures without understanding their context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Reviewing only historical examples without forward-looking analysis</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This lesson bridges theory and practice, focusing on real-world implementation.</div>
+      <div class="quiz-feedback wrong">Review the lesson — the focus is on connecting frameworks to practical reality.</div>
+    </div>
+    <div class="quiz-box" id="q2-l4">
+      <div class="quiz-q">Why does real-world deployment introduce challenges that pure theory doesn't capture?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Theory is always wrong in practice</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment beyond rigid frameworks</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Practice is simpler than theory suggests</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Real deployment requires judgment, not just framework application.</div>
+      <div class="quiz-feedback wrong">Practice doesn't invalidate theory — it reveals complexities that require nuanced application of theoretical principles.</div>
+    </div>
+    <div class="quiz-box" id="q3-l4">
+      <div class="quiz-q">What separates effective practitioners from those who merely follow checklists?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">More years of experience in the field</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">Access to better tools and resources</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l4')">The ability to think critically and reason across multiple frameworks, adapting as the field evolves</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Critical thinking and adaptability matter more than memorized procedures.</div>
+      <div class="quiz-feedback wrong">The key differentiator is critical thinking ability, not experience or resources alone.</div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ LAB 4 ═══════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 4 Lab</div>
+    <h1>Lab: Apply What You've Learned</h1>
+    <div class="tagline">Synthesize concepts from Reliability &amp; Safety through guided AI conversation</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>Use the AI below to explore the concepts from Lesson 4 in depth. Ask questions, challenge assumptions, and work through practical scenarios related to reliability &amp; safety.</p>
+    <div class="lab-prompt">Try: "How would the concepts from this lesson apply to a real-world scenario in this field?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l4">
+    <div class="lab-chat-header">
+      <span>🤖 AESOP Lab Assistant</span>
+      <span class="chat-badge">Lesson 4 Lab</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l4"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l4" rows="1" placeholder="Ask about reliability &amp; safety…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4')}"></textarea>
+      <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')"><span class="pnav-arrow">→</span><span class="pnav-label">Module Test</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODULE TEST ═══════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 2 Test</h1>
+    <div class="tagline">Web Search and Browsing Tools · 15 Questions · 70% to Pass</div>
+  </div>
+  <div class="mt-progress">Score: <span id="mt-score">0</span>/15</div>
+  <div class="mt-area">
+    <div class="mt-box" id="mt-q1">
+      <div class="mt-q">1. What is the core objective of Web Search and Browsing Tools?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q1')">To provide comprehensive understanding of key concepts and their practical applications in Building AI Agents III — Tools</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To memorize technical jargon without understanding context</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To focus exclusively on historical approaches without considering modern developments</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q2">
+      <div class="mt-q">2. How should practitioners approach applying concepts from this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q2')">By thinking critically and adapting frameworks to their specific context and constraints</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By rigidly following all procedures exactly as presented</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By ignoring practical constraints and focusing only on theory</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q3">
+      <div class="mt-q">3. Which best describes the relationship between theory and practice in Building AI Agents III — Tools?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q3')">Theory provides frameworks; practice reveals complexities that require nuanced judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Theory and practice are completely separate concerns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Practice is simply theory applied without modification</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q4">
+      <div class="mt-q">4. What distinguishes expert practitioners from novices in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q4')">The ability to reason across multiple perspectives and adapt their approach contextually</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Simply accumulating more years of experience</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Access to better tools and resources</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q5">
+      <div class="mt-q">5. How does Web Search and Browsing Tools build on previous modules?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q5')">By connecting foundational concepts to real-world implementation challenges</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By repeating the same material in different formats</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By introducing completely unrelated topics</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q6">
+      <div class="mt-q">6. What role do constraints play in practical implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q6')">They create real-world challenges that demand nuanced judgment and trade-off analysis</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They are obstacles to be ignored in favor of ideal solutions</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They have no significant impact on decision-making</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q7">
+      <div class="mt-q">7. When applying frameworks from this module, what is most important?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q7')">Understanding the underlying principles deeply enough to adapt them appropriately</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Memorizing exact procedures for every situation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Following the most recent industry trends without evaluation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q8">
+      <div class="mt-q">8. How should practitioners handle conflicting perspectives in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q8')">By recognizing that different frameworks apply in different contexts and using judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By selecting one perspective and rigidly adhering to it</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By avoiding learning about different approaches</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q9">
+      <div class="mt-q">9. What makes the concepts in Web Search and Browsing Tools relevant beyond their immediate context?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q9')">The underlying principles remain foundational even as specific technologies and practices evolve</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are only relevant for current, cutting-edge applications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are purely historical with no modern relevance</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q10">
+      <div class="mt-q">10. How should practitioners continue developing expertise after completing this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q10')">By applying critical thinking to new situations and continuously refining their mental models</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By memorizing more procedures and checklists</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By focusing solely on theoretical advancement</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q11">
+      <div class="mt-q">11. What is the relationship between understanding Building AI Agents III — Tools concepts and making decisions?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q11')">Deep understanding enables practitioners to make better contextual decisions with confidence</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Understanding and decision-making are unrelated</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Decisions should be made based only on current trends, not understanding</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q12">
+      <div class="mt-q">12. How do the lessons from this module apply to novel situations?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q12')">By using the principles as mental models to reason through new problems systematically</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Novel situations require completely different approaches with no connection to prior learning</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Practitioners should avoid novel situations and stick to familiar patterns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q13">
+      <div class="mt-q">13. What is the value of understanding multiple perspectives on {course_title}?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q13')">It enables practitioners to recognize which perspectives are most relevant in specific contexts</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">All perspectives are equally valid in all situations</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">Learning multiple perspectives creates confusion</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q14">
+      <div class="mt-q">14. How should practitioners evaluate new information or developments in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q14')">By applying critical thinking to assess whether new ideas align with foundational principles</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By automatically accepting anything labeled as new or innovative</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By rejecting all new information in favor of established practices</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q15">
+      <div class="mt-q">15. What is the ultimate goal of learning Web Search and Browsing Tools?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q15')">To develop the judgment and reasoning skills needed for effective practice in this domain</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To pass tests and certifications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To memorize every detail presented in the course</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+  </div>
+  <div id="mt-result" style="display:none;" class="mt-result">
+    <div class="mt-result-score" id="mt-result-score"></div>
+    <div id="mt-result-msg"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+</div><!-- /content-area -->
+
+<script>
+var COURSE_ID='building-ai-agents-iii-tools';
+var MODULE_ID='ba3-m2';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools Web Search &amp; Browsing Tools, Lab 1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l2:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools Web Search &amp; Browsing Tools, Lab 2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l3:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools Web Search &amp; Browsing Tools, Lab 3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l4:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iii Tools Web Search &amp; Browsing Tools, Lab 4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.', l4: "You are a helpful AI assistant. Answer questions about the lesson content clearly and thoroughly."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function applySize(val){document.querySelector('.content-area').style.fontSize=val+'px';}
+function adjustSize(delta){var r=document.getElementById('sizerRange');if(!r)return;r.value=Math.min(22,Math.max(12,parseInt(r.value)+delta));applySize(r.value);}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add((result==='right'||result==='correct')?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+((result==='right'||result==='correct')?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal = 15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  var fb=box.querySelector('.mt-feedback.'+(correct?'right':'wrong'));if(fb)fb.style.display='block';
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  document.getElementById('mt-score').textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    document.getElementById('mt-result').style.display='block';
+    document.getElementById('mt-result-score').textContent=pct+'%';
+    document.getElementById('mt-result-msg').textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[], l4: [],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML='';}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);

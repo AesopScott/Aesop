@@ -1,0 +1,1295 @@
+<!doctype html>
+<!-- v1.2.0 | 2026-04-16 -->
+<!-- state-adoption-tracker: 50-state courseware adoption tracker (public read-only, Firebase admin login for write) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State Adoption Tracker — AESOP AI Academy</title>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<style>
+/* ─── Design tokens (AESOP palette) ──────────────────────────── */
+:root {
+  --navy: #0d1b2a;
+  --navy-mid: #16293d;
+  --navy-light: #1e3a52;
+  --gold: #c9a05a;
+  --gold-light: #dbb87a;
+  --gold-pale: #f5e9d0;
+  --cream: #faf8f4;
+  --teal: #3dd6c0;
+  --ink: #2d2a26;
+  --ink-light: #6b6560;
+  --muted: #94a3b8;
+  --border: #2a3a4a;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --info: #38bdf8;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── Reset / Global ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font: 14px/1.5 var(--font-body);
+  margin: 0;
+  background: var(--navy);
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+a { color: var(--gold-light); text-decoration: none; }
+a:hover { color: var(--gold); }
+
+/* ─── Header ─────────────────────────────────────────────────── */
+.page-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-header h1 {
+  margin: 0;
+  font: 700 22px/1.2 var(--font-display);
+  color: var(--gold-light);
+  letter-spacing: -0.01em;
+}
+.page-header h1 span { color: #e2e8f0; font-weight: 400; }
+.page-header .meta { color: var(--muted); font-size: 12px; }
+.back-link {
+  font-size: 12px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.back-link:hover { color: var(--gold-light); }
+
+/* ─── Summary bar ────────────────────────────────────────────── */
+.summary-bar {
+  display: flex;
+  gap: 20px;
+  padding: 10px 32px;
+  background: #0b1220;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.summary-bar .stat b { color: #e2e8f0; }
+.summary-bar .spacer { flex: 1; }
+
+/* ─── Toolbar ────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--border);
+  background: #0b1220;
+  align-items: center;
+}
+.toolbar input[type=search],
+.toolbar select {
+  background: var(--navy);
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.toolbar input[type=search] { min-width: 200px; }
+.toolbar .spacer { flex: 1; }
+.toolbar .legend { display: flex; gap: 10px; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+.toolbar .legend span { display: flex; align-items: center; gap: 3px; }
+.toolbar .legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ─── Table ──────────────────────────────────────────────────── */
+main { padding: 0 24px 80px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 0; font-size: 13px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; text-align: left; }
+th {
+  position: sticky;
+  top: 0;
+  background: #0b1220;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  z-index: 2;
+  white-space: nowrap;
+}
+tr { cursor: pointer; transition: background 0.12s; }
+tr:hover td { background: #162033; }
+tr.tier-header td {
+  background: var(--navy-mid);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: default;
+  padding: 10px;
+  border-bottom: 2px solid var(--gold);
+}
+.state-name { font-weight: 600; color: #e2e8f0; white-space: nowrap; }
+.state-abbr { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.model-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.model-state { background: rgba(201, 160, 90, 0.18); color: var(--gold-light); }
+.model-district { background: rgba(61, 214, 192, 0.12); color: var(--teal); }
+.model-hybrid { background: rgba(56, 189, 248, 0.12); color: var(--info); }
+.deadline-cell { font-size: 12px; white-space: nowrap; }
+.deadline-urgent { color: var(--warn); font-weight: 600; }
+.deadline-future { color: var(--muted); }
+.notes-cell { font-size: 12px; color: var(--muted); max-width: 220px; }
+
+/* Status dropdown */
+select.status-select {
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+select.status-select:hover { border-color: var(--border); }
+select.status-select:focus { border-color: var(--gold); outline: none; background: var(--navy); }
+.status-not-started { color: var(--muted); }
+.status-researching { color: var(--info); }
+.status-preparing { color: #a78bfa; }
+.status-submitted { color: var(--warn); }
+.status-approved { color: var(--ok); }
+.status-rejected { color: var(--err); }
+.status-on-hold { color: #fb923c; }
+.status-not-applicable { color: #64748b; }
+
+/* ─── Modal ──────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--navy-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: modalIn 0.2s ease-out;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h2 { margin: 0; font: 700 18px/1.2 var(--font-display); color: var(--gold-light); }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.modal-close:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+.modal-body { padding: 20px 24px 24px; }
+.modal-body h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 18px 0 8px;
+}
+.modal-body h3:first-child { margin-top: 0; }
+.modal-body p, .modal-body li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 6px;
+}
+.modal-body ul { margin: 0 0 10px; padding-left: 20px; }
+.modal-body .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.modal-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.modal-notes textarea {
+  width: 100%;
+  min-height: 60px;
+  background: var(--navy);
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font: 13px/1.5 var(--font-body);
+  resize: vertical;
+}
+.modal-notes textarea:focus { border-color: var(--gold); outline: none; }
+.modal-notes label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: block; margin-bottom: 4px; }
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+.page-footer {
+  color: var(--muted);
+  font-size: 11px;
+  padding: 24px 32px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── Auth modal (popup, not blocking overlay) ─────────────── */
+.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
+.auth-overlay.open { display:flex; }
+.auth-box { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); position:relative; }
+.auth-logo { font-size:32px; margin-bottom:8px; }
+.auth-box h2 { margin:4px 0 6px; font-size:18px; color:var(--gold-light); }
+.auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
+.auth-input { width:100%; padding:9px 11px; margin:6px 0; background:#0f172a; color:#e2e8f0; border:1px solid var(--border); border-radius:6px; font-size:14px; font-family:var(--font-body); }
+.auth-input:focus { outline:none; border-color:var(--gold); }
+.auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--gold); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
+.auth-btn:hover { filter:brightness(1.1); }
+.auth-close { position:absolute; top:10px; right:14px; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:4px; }
+.auth-close:hover { color:#e2e8f0; background:rgba(255,255,255,0.05); }
+.auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
+.auth-note { color:var(--muted); font-size:11px; margin-top:12px; }
+.user-bar { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.user-bar .user-email { color:#e2e8f0; }
+.admin-login-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.admin-login-btn:hover { color:var(--gold-light); border-color:var(--gold); }
+.sign-out-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.sign-out-btn:hover { color:#e2e8f0; border-color:var(--gold); }
+.admin-badge { display:inline-block; background:rgba(34,197,94,0.15); color:var(--ok); font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-header, .summary-bar, .toolbar { padding-left: 16px; padding-right: 16px; }
+  main { padding: 0 8px 80px; }
+  .notes-cell { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Admin login modal (not blocking) ── -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <button class="auth-close" id="auth-close">&times;</button>
+    <div class="auth-logo">&#x1f512;</div>
+    <h2>Admin Sign In</h2>
+    <p>Sign in for edit access.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<div class="page-header">
+  <div>
+    <a href="/ai-academy/courses.html" class="back-link">&larr; Back to Courses</a>
+    <h1>State Adoption <span>Tracker</span></h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div class="meta">50 States &middot; Updated April 2026</div>
+    <div class="user-bar" id="userBar">
+      <button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>
+    </div>
+  </div>
+</div>
+
+<div class="summary-bar" id="summaryBar">
+  <span class="stat"><b id="countTotal">50</b> States</span>
+  <span class="stat">Approved: <b id="countApproved">0</b></span>
+  <span class="stat">Submitted: <b id="countSubmitted">0</b></span>
+  <span class="stat">In Progress: <b id="countProgress">0</b></span>
+  <span class="stat">Not Started: <b id="countNotStarted">50</b></span>
+</div>
+
+<div class="toolbar">
+  <input type="search" id="searchBox" placeholder="Search states...">
+  <select id="filterTier">
+    <option value="">All Tiers</option>
+    <option value="1">Tier 1 — State Adoption (Active)</option>
+    <option value="2">Tier 2 — State Adoption (Future)</option>
+    <option value="3">Tier 3 — Large District Markets</option>
+    <option value="4">Tier 4 — Coop Purchasing</option>
+    <option value="5">Tier 5 — District Level</option>
+  </select>
+  <select id="filterStatus">
+    <option value="">All Statuses</option>
+    <option value="not-started">Not Started</option>
+    <option value="researching">Researching</option>
+    <option value="preparing">Preparing</option>
+    <option value="submitted">Submitted</option>
+    <option value="approved">Approved</option>
+    <option value="rejected">Rejected</option>
+    <option value="on-hold">On Hold</option>
+    <option value="not-applicable">N/A</option>
+  </select>
+  <div class="spacer"></div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--gold)"></span> State</span>
+    <span><span class="dot" style="background:var(--teal)"></span> District</span>
+    <span><span class="dot" style="background:var(--info)"></span> Hybrid</span>
+  </div>
+</div>
+
+<main>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:15%">State</th>
+        <th style="width:8%">Model</th>
+        <th style="width:11%">Status</th>
+        <th style="width:10%">Deadline</th>
+        <th style="width:14%">Vendor Path</th>
+        <th style="width:12%">PD Process</th>
+        <th style="width:26%">Notes</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</main>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="page-footer">AESOP AI Academy &middot; State Adoption Tracker</div>
+
+<!-- Firebase SDK + admin auth -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.firebasestorage.app",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && ADMIN_EMAILS.includes(u.email);
+
+  const overlay  = document.getElementById('auth-overlay');
+  const errEl    = document.getElementById('auth-error');
+  const userBar  = document.getElementById('userBar');
+
+  // Open / close login modal
+  document.getElementById('adminLoginBtn').addEventListener('click', () => {
+    overlay.classList.add('open');
+    document.getElementById('auth-email').focus();
+  });
+  document.getElementById('auth-close').addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pass').focus(); });
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  function updateUserBar(user) {
+    if (user && isAdmin(user)) {
+      userBar.innerHTML = `
+        <span style="color:#e2e8f0">${user.email}</span>
+        <span class="admin-badge">ADMIN</span>
+        <button class="sign-out-btn" id="signOutBtn">Sign Out</button>`;
+      document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+    } else {
+      userBar.innerHTML = `<button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>`;
+      document.getElementById('adminLoginBtn').addEventListener('click', () => {
+        overlay.classList.add('open');
+        document.getElementById('auth-email').focus();
+      });
+    }
+  }
+
+  // Page loads in read-only mode by default
+  window.__ADMIN_MODE = false;
+
+  onAuthStateChanged(auth, user => {
+    overlay.classList.remove('open');
+
+    if (user && isAdmin(user)) {
+      window.__ADMIN_MODE = true;
+      updateUserBar(user);
+    } else if (user && !isAdmin(user)) {
+      // Non-admin Firebase user — sign them out, keep read-only
+      signOut(auth);
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+      errEl.textContent = 'This account does not have admin access.';
+      overlay.classList.add('open');
+    } else {
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+    }
+
+    // Re-render table with correct permissions
+    document.dispatchEvent(new CustomEvent('authReady'));
+  });
+
+  // Initial render (read-only, no auth needed)
+  document.dispatchEvent(new CustomEvent('authReady'));
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   STATE DATA — 50 states ordered by tier & priority
+   ═══════════════════════════════════════════════════════════════════ */
+
+const STATES = [
+  // ── TIER 1: State-Level Adoption, Active/Upcoming Cycles ──────
+  { tier: 1, abbr: "TX", name: "Texas", model: "state",
+    deadline: "2027 IMRA Cycle (bid ~Oct 2026)", deadlineUrgent: true,
+    vendorPath: "EMAT Portal / TEA",
+    pdProcess: "District-managed",
+    standards: "TEKS + ELPS",
+    aiCs: "Technology Applications TEKS (K-8); select CTE; no AI-specific proclamation yet",
+    detail: "Texas operates the Instructional Materials Review and Approval (IMRA) process under SBOE authority. Materials must cover 50%+ of TEKS and 100% of ELPS. The 2026 cycle (529 programs) is underway; AESOP should target the 2027 cycle. Districts get $40/student for adopting EMAT-approved materials.",
+    actions: ["Register for EMAT portal account", "Contact TEA about 2027 Proclamation subjects", "Complete TEKS + ELPS crosswalk for all courses", "Submit Statement of Intent to Bid when Proclamation opens", "Submit completed products by March deadline"],
+    links: ["https://sboe.texas.gov/state-board-of-education/imra", "https://tea.texas.gov/academics/instructional-materials/procure-instructional-materials-in-emat"],
+    notes: "Largest centralized adoption state. $40/student incentive makes EMAT listing highly valuable."
+  },
+  { tier: 1, abbr: "FL", name: "Florida", model: "state",
+    deadline: "2026-27: K-12 Math + CS", deadlineUrgent: true,
+    vendorPath: "FLDOE Portal",
+    pdProcess: "State-level DOE",
+    standards: "B.E.S.T. Standards",
+    aiCs: "CS included in 2026-27 adoption cycle; active AI education initiatives",
+    detail: "Florida uses a centralized adoption with rotating subject cycles. The 2026-27 cycle covers K-12 Mathematics and Computer Science, making it directly relevant for AI courseware. Materials must align with B.E.S.T. (Benchmarks for Excellent Student Thinking) Standards.",
+    actions: ["Monitor FLDOE adoption calendar for CS submission deadlines", "Align courses to B.E.S.T. Standards", "Register as FLDOE vendor", "Prepare for formal bid process"],
+    links: ["https://www.fldoe.org/academics/standards/instructional-materials/"],
+    notes: "CS is in the current adoption cycle. High priority given timing alignment."
+  },
+  { tier: 1, abbr: "TN", name: "Tennessee", model: "state",
+    deadline: "Staggered by subject (through 2029-30)", deadlineUrgent: false,
+    vendorPath: "TDOE Adoption Portal",
+    pdProcess: "State-approved list",
+    standards: "TN Academic Standards",
+    aiCs: "AI use policy mandate (2024); CS standards adopted",
+    detail: "Tennessee uses comprehensive staggered subject adoption cycles running through 2029-30. The state mandated AI use policies for all districts in 2024, signaling strong interest in AI education. Materials go through formal TDOE review.",
+    actions: ["Check TDOE schedule for Technology/CS adoption window", "Align to TN Academic Standards", "Register as TDOE vendor", "Prepare standards correlation documentation"],
+    links: ["https://www.tn.gov/education/textbook-and-instructional-materials-quality-commission.html"],
+    notes: "Staggered schedule means multiple entry points. AI policy mandate shows receptivity."
+  },
+  { tier: 1, abbr: "NC", name: "North Carolina", model: "state",
+    deadline: "Varies by subject area", deadlineUrgent: false,
+    vendorPath: "NCDPI Textbook Portal",
+    pdProcess: "State-managed",
+    standards: "NC Standard Course of Study",
+    aiCs: "CS standards adopted; Digital Learning Plan active",
+    detail: "North Carolina maintains a state-level adoption process through NCDPI. The State Board of Education approves instructional materials that align with the NC Standard Course of Study. Districts can also adopt supplemental materials locally.",
+    actions: ["Contact NCDPI for current Technology/CS adoption schedule", "Align to NC Standard Course of Study", "Register as approved vendor", "Submit correlation documents"],
+    links: ["https://www.dpi.nc.gov/districts-schools/classroom-resources/textbooks"],
+    notes: "State allows district supplemental adoption alongside state-approved list."
+  },
+  { tier: 1, abbr: "SC", name: "South Carolina", model: "state",
+    deadline: "Rotating cycle", deadlineUrgent: false,
+    vendorPath: "SCDE Adoption",
+    pdProcess: "State-managed",
+    standards: "SC Academic Standards",
+    aiCs: "CS standards K-12; Profile of the SC Graduate includes digital literacy",
+    detail: "South Carolina uses a state-level textbook adoption process with rotating subject cycles. The State Board of Education approves materials based on alignment with SC Academic Standards. The Profile of the SC Graduate emphasizes technology and digital literacy.",
+    actions: ["Monitor SCDE adoption calendar", "Align to SC Academic Standards", "Submit when CS/Technology cycle opens"],
+    links: ["https://ed.sc.gov/instruction/standards-learning/"],
+    notes: "Profile of SC Graduate framework aligns well with AI literacy goals."
+  },
+  { tier: 1, abbr: "LA", name: "Louisiana", model: "state",
+    deadline: "Tier 1 reviews ongoing", deadlineUrgent: false,
+    vendorPath: "LDOE Curriculum Review",
+    pdProcess: "State-approved",
+    standards: "Louisiana Student Standards",
+    aiCs: "CS4LA initiative; K-12 CS standards",
+    detail: "Louisiana operates a tiered curriculum review system through LDOE. Materials receive Tier 1 (exemplary), Tier 2 (approaching), or Tier 3 (not representing) ratings. High ratings significantly influence district adoption decisions.",
+    actions: ["Submit for LDOE curriculum review", "Target Tier 1 rating", "Align to Louisiana Student Standards", "Leverage CS4LA connections"],
+    links: ["https://www.louisianabelieves.com/academics/curriculum"],
+    notes: "Tier rating system is influential even though not mandatory. Tier 1 rating is key."
+  },
+  { tier: 1, abbr: "MS", name: "Mississippi", model: "state",
+    deadline: "Rotating cycle; AI emerging requirement 2027-30", deadlineUrgent: false,
+    vendorPath: "MDE Textbook Portal",
+    pdProcess: "State-approved",
+    standards: "MS College & Career Readiness Standards",
+    aiCs: "AI emerging technology requirement planned for 2027-30",
+    detail: "Mississippi uses state-level textbook adoption. The state is planning AI emerging technology requirements for 2027-30, creating a near-term window for AI courseware. Materials must align with MS College & Career Readiness Standards.",
+    actions: ["Contact MDE about AI/technology adoption timeline", "Register as state vendor", "Prepare for emerging AI requirement cycle"],
+    links: ["https://www.mdek12.org/OAE/Textbooks"],
+    notes: "AI requirement timeline (2027-30) creates excellent strategic timing."
+  },
+  { tier: 1, abbr: "NM", name: "New Mexico", model: "state",
+    deadline: "Rotating cycle", deadlineUrgent: false,
+    vendorPath: "NMPED Adoption",
+    pdProcess: "State-approved",
+    standards: "NM Content Standards",
+    aiCs: "CS standards adopted; digital equity focus",
+    detail: "New Mexico has a state-level textbook adoption process managed by NMPED. The state has adopted CS standards and emphasizes digital equity in education, aligning with AESOP's free and multilingual model.",
+    actions: ["Contact NMPED for Technology/CS cycle timing", "Align to NM Content Standards", "Emphasize free access and multilingual support in application"],
+    links: ["https://webnew.ped.state.nm.us/"],
+    notes: "Free + multilingual model is strong fit for NM digital equity priorities."
+  },
+  { tier: 1, abbr: "OK", name: "Oklahoma", model: "state",
+    deadline: "2026 (Social Studies delayed; CS pending)", deadlineUrgent: true,
+    vendorPath: "OSDE Adoption Portal",
+    pdProcess: "State-approved",
+    standards: "OAS (Oklahoma Academic Standards)",
+    aiCs: "CS standards adopted; technology integration standards",
+    detail: "Oklahoma uses state-level adoption. The Social Studies adoption was delayed pending standards revision with a February 2026 deadline. Watch for Technology/CS adoption cycle announcements.",
+    actions: ["Monitor OSDE for Technology/CS adoption announcements", "Align to Oklahoma Academic Standards", "Register as approved vendor"],
+    links: ["https://sde.ok.gov/instructional-materials"],
+    notes: "Active adoption activity in 2026 shows state is engaged in current cycles."
+  },
+  { tier: 1, abbr: "WV", name: "West Virginia", model: "state",
+    deadline: "Arts/Wellness July 2026; next subjects TBD", deadlineUrgent: false,
+    vendorPath: "WVDE Adoption",
+    pdProcess: "State-approved",
+    standards: "WV Content Standards",
+    aiCs: "CS standards; technology integration requirements",
+    detail: "West Virginia uses state-level adoption. Pre-K/Social Studies and Arts/Wellness are effective July 1, 2026. Watch for Technology/CS to appear in upcoming cycles.",
+    actions: ["Monitor WVDE adoption calendar for Technology/CS cycle", "Align to WV Content Standards", "Register as state vendor"],
+    links: ["https://wvde.us/instructional-materials/"],
+    notes: "Active 2026 adoption activity. Look for CS/Technology in next cycle."
+  },
+
+  // ── TIER 2: State-Level Adoption, Future/Transitional ─────────
+  { tier: 2, abbr: "AL", name: "Alabama", model: "state",
+    deadline: "Future cycle (TBD)",
+    vendorPath: "ALSDE Adoption",
+    pdProcess: "State-approved",
+    standards: "Alabama Course of Study",
+    aiCs: "CS Course of Study adopted; AI emerging requirement 2027+",
+    detail: "Alabama uses state-level textbook adoption through ALSDE. The state has adopted a CS Course of Study and is planning AI requirements. Exact timeline for Technology/CS adoption cycle needs verification.",
+    actions: ["Contact ALSDE for Technology/CS adoption timeline", "Align to Alabama Course of Study", "Prepare for AI requirement cycle"],
+    links: ["https://www.alsde.edu/"],
+    notes: "AI requirement emerging. Monitor for adoption cycle announcements."
+  },
+  { tier: 2, abbr: "GA", name: "Georgia", model: "hybrid",
+    deadline: "Transitioning (HB 739 allows opt-out)",
+    vendorPath: "GaDOE / District direct",
+    pdProcess: "State + district",
+    standards: "Georgia Standards of Excellence",
+    aiCs: "CS standards adopted; digital literacy emphasis; AI graduation requirement emerging",
+    detail: "Georgia is transitioning from state to hybrid model. HB 739 allows districts to opt out of state adoption lists. Legacy approved lists still carry weight. State maintains Georgia Standards of Excellence and is developing AI graduation requirements.",
+    actions: ["Submit for GaDOE review while state process exists", "Build direct district relationships", "Monitor HB 739 implementation impact"],
+    links: ["https://www.gadoe.org/"],
+    notes: "Transitional period — pursue both state and district pathways simultaneously."
+  },
+  { tier: 2, abbr: "KY", name: "Kentucky", model: "hybrid",
+    deadline: "Local authority (SB 1, 2022)",
+    vendorPath: "District direct / regional coops",
+    pdProcess: "District-managed",
+    standards: "KY Academic Standards",
+    aiCs: "CS standards adopted; KDE provides guidance",
+    detail: "Kentucky's State Textbook Commission has been unfunded since 2015. SB 1 (2022) transferred adoption authority to local superintendents. The state maintains KY Academic Standards but districts make purchasing decisions independently.",
+    actions: ["Target district-level procurement", "Explore regional cooperative purchasing", "Align to KY Academic Standards"],
+    links: ["https://education.ky.gov/"],
+    notes: "De facto district-level despite historical state process. Focus on direct district engagement."
+  },
+  { tier: 2, abbr: "VA", name: "Virginia", model: "state",
+    deadline: "Rotating cycle (check VDOE)",
+    vendorPath: "VDOE Adoption Portal",
+    pdProcess: "State-approved list",
+    standards: "VA Standards of Learning (SOL)",
+    aiCs: "CS standards K-12; AI integration guidance",
+    detail: "Virginia maintains a state-level adoption process through VDOE with rotating subject cycles. Materials must align with Virginia Standards of Learning (SOL). Districts can supplement with locally-approved materials.",
+    actions: ["Check VDOE for Technology/CS adoption cycle timing", "Align to VA SOL", "Register as approved vendor"],
+    links: ["https://www.doe.virginia.gov/"],
+    notes: "Strong CS standards. District supplemental adoption provides additional pathway."
+  },
+
+  // ── TIER 3: Large Market District-Level ───────────────────────
+  { tier: 3, abbr: "CA", name: "California", model: "hybrid",
+    deadline: "K-8 state frameworks; HS local",
+    vendorPath: "CDE Adoption / District direct",
+    pdProcess: "CTC requirements",
+    standards: "CA Content Standards + CCSS",
+    aiCs: "CS standards adopted; active AI education task force",
+    detail: "California maintains K-8 state adoption frameworks but high school adoption is entirely local. The state has adopted CS standards and has an active AI education task force. As the largest state market, even district-level entry is extremely valuable.",
+    actions: ["Pursue CDE adoption for K-8 if applicable", "Target large district RFPs (LAUSD, SFUSD, SDUSD)", "Align to CA Content Standards", "Engage with CA AI education task force"],
+    links: ["https://www.cde.ca.gov/ci/cr/cf/"],
+    notes: "Largest market in US. K-8 state framework + district HS creates dual pathway."
+  },
+  { tier: 3, abbr: "NY", name: "New York", model: "district",
+    deadline: "No state cycle (district timelines)",
+    vendorPath: "BPSS / BOCES / OGS Contracts",
+    pdProcess: "CTLE providers",
+    standards: "NGLS + CS & Digital Fluency Standards",
+    aiCs: "First K-12 CS & Digital Fluency Standards (2024). NYC AI vendor disclosure requirements (Dec 2024). FERPA + Cloud Review required.",
+    detail: "New York is fully district-level but offers multiple cooperative purchasing pathways. BOCES DREAM Consortium specifically handles instructional software. NYC has additional AI-specific vendor requirements including capability disclosure and prohibition on student data training. All vendors must complete NYC DOE Cloud Review Process.",
+    actions: ["Submit to BPSS for Nationally Recognized Vendor status", "Apply to BOCES DREAM Consortium", "Complete NYC DOE Cloud Review Process", "Prepare AI capability disclosure documentation", "Register for OGS centralized contracts", "Explore OMNIA Partners cooperative"],
+    links: ["https://www.acces.nysed.gov/content/nationally-recognized-vendors", "https://www.p12.nysed.gov/mgtserv/purchasing/coopurch.htm"],
+    notes: "NYC alone is massive market. BOCES cooperative reaches hundreds of districts statewide."
+  },
+  { tier: 3, abbr: "IL", name: "Illinois", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / ROE coops",
+    pdProcess: "ISBE PD requirements",
+    standards: "Illinois Learning Standards (CCSS-aligned)",
+    aiCs: "CS standards adopted; ISBE AI guidance issued",
+    detail: "Illinois is district-level with Regional Offices of Education (ROE) providing cooperative purchasing. ISBE has issued AI guidance for schools. Chicago Public Schools (CPS) is the third-largest district in the country.",
+    actions: ["Target large district RFPs (CPS, suburban districts)", "Explore ROE cooperative purchasing", "Align to Illinois Learning Standards"],
+    links: ["https://www.isbe.net/"],
+    notes: "CPS is third-largest district nationally. ROE cooperatives offer regional reach."
+  },
+  { tier: 3, abbr: "PA", name: "Pennsylvania", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "IU cooperatives / District direct",
+    pdProcess: "PDE Act 48 requirements",
+    standards: "PA Core Standards",
+    aiCs: "CS standards framework; IU-supported technology initiatives",
+    detail: "Pennsylvania is district-level with strong cooperative purchasing through 29 Intermediate Units (IUs). IUs serve as regional education service agencies providing technology and curriculum support to member districts.",
+    actions: ["Target Intermediate Unit cooperative purchasing", "Align to PA Core Standards", "Target large suburban districts (Philadelphia, Pittsburgh metro)"],
+    links: ["https://www.education.pa.gov/"],
+    notes: "29 Intermediate Units provide excellent cooperative purchasing infrastructure."
+  },
+  { tier: 3, abbr: "OH", name: "Ohio", model: "district",
+    deadline: "No state cycle; AI policy req July 2026",
+    vendorPath: "ESC cooperatives / District direct",
+    pdProcess: "ODE-approved providers",
+    standards: "Ohio Learning Standards",
+    aiCs: "All districts required to have AI policy by July 1, 2026. CS Model Curriculum available.",
+    detail: "Ohio is district-level with Educational Service Centers (ESCs) providing cooperative purchasing. The state mandated that all districts must have an AI policy by July 1, 2026, creating immediate demand for AI education resources.",
+    actions: ["Target ESC cooperative purchasing", "Leverage AI policy mandate to market to districts", "Align to Ohio Learning Standards + CS Model Curriculum"],
+    links: ["https://education.ohio.gov/"],
+    notes: "AI policy mandate (July 2026) creates urgent district demand for AI curriculum."
+  },
+
+  // ── TIER 4: District-Level with Strong Cooperative Purchasing ──
+  { tier: 4, abbr: "CO", name: "Colorado", model: "district",
+    deadline: "No state cycle (district timelines)",
+    vendorPath: "CDE Advisory List / BOCES-AEPA",
+    pdProcess: "READ Act PD list",
+    standards: "Colorado Academic Standards (CAS)",
+    aiCs: "K-12 CS standards expanded. Colorado AI Roadmap (2024). AI4K12 framework alignment. Future Ready CO Skills Progression.",
+    detail: "Colorado is fully district-level (constitutionally protected). CDE maintains an Advisory List of Providers. BOCES/AEPA cooperative reaches 31 states with no membership fees. The state published a comprehensive Colorado Roadmap for AI in K-12 Education (2024) and has a Future Ready CO: AI K-12 Skills Progression Guide.",
+    actions: ["Apply for CDE Advisory List of Providers (Forms A + B-G)", "Contact Colorado BOCES for AEPA vendor application", "Register on Rocky Mountain E-Procurement System (RMEPS)", "Explore Colorado Education Initiative AI partnership"],
+    links: ["https://ed.cde.state.co.us/standardsandinstruction/curriculum-adoption-and-implementation", "https://www.coloradoboces.org/aepa-cooperative-purchasing/"],
+    notes: "BOCES/AEPA application reaches 31 states. Free model strong fit for budget-constrained districts."
+  },
+  { tier: 4, abbr: "MA", name: "Massachusetts", model: "district",
+    deadline: "K-3 literacy by July 2027; AI standards emerging 2026",
+    vendorPath: "OSD Statewide Contracts / COMMBUYS / TEC",
+    pdProcess: "DESE PD Provider Registry",
+    standards: "MA Curriculum Frameworks + DLCS",
+    aiCs: "Digital Literacy & CS Standards (K-12). AI literacy guidelines in active development. Task force recommending explicit AI standards. DESE AI workshops rolling out 2025-26.",
+    detail: "Massachusetts is district-level with strong state infrastructure. DESE publishes teacher-led reviews via Curriculum Dashboard. OSD Statewide Contracts cover $2.5B annually. The state is actively developing AI literacy standards with updated guidance expected Summer/Fall 2026. DESE is rolling out state-sponsored AI workshops.",
+    actions: ["Register on COMMBUYS portal", "Pursue OSD Statewide Contract (contact 888-627-8283)", "Apply for DESE PD Provider Registry", "Engage with IMplement MA curriculum adoption cohorts", "Position for emerging AI literacy standards"],
+    links: ["https://www.commbuys.com/", "https://www.doe.mass.edu/instruction/impd/implement-ma.html", "https://www.doe.mass.edu/pd/"],
+    notes: "AI standards actively being developed — early positioning is key. Strong PD infrastructure."
+  },
+  { tier: 4, abbr: "WA", name: "Washington", model: "district",
+    deadline: "No state cycle (district timelines)",
+    vendorPath: "DES Contracts / WLS Cooperative / BuyBoard",
+    pdProcess: "PESB Clock Hour Providers",
+    standards: "CCSS/NGSS + ISTE-adapted Tech Standards",
+    aiCs: "HS CS elective mandated (2022-23). ISTE tech standards (7 areas). No separate AI pathway.",
+    detail: "Washington is district-level with OSPI providing a Course Design Toolkit. DES manages 180+ statewide contracts. Washington Learning Source (WLS) cooperative covers all nine ESDs with no-cost subscription. State law (RCW 28A.300.803) requires OSPI to identify freely available OER courseware — a unique pathway for AESOP's free model.",
+    actions: ["Register in WEBS (DES vendor portal)", "Contact WLS about vendor partnership", "Explore OSPI OER listing (unique free-courseware pathway)", "Apply for PESB Clock Hour Provider approval"],
+    links: ["https://des.wa.gov/sell/how-work-state", "https://www.walearningsource.org/"],
+    notes: "OER pathway under RCW 28A.300.803 is unique fit for AESOP's free access model."
+  },
+  { tier: 4, abbr: "IN", name: "Indiana", model: "hybrid",
+    deadline: "New 2024 law: state STEM advisory list",
+    vendorPath: "IDOE Advisory List / District direct",
+    pdProcess: "IDOE-approved",
+    standards: "Indiana Academic Standards",
+    aiCs: "New 2024 law mandates state advisory list for STEM/Science; CS standards adopted",
+    detail: "Indiana is transitioning to a hybrid model. A 2024 law mandates a state advisory list for STEM/Science materials, creating a new vendor pathway. Districts still maintain purchasing authority but the advisory list is influential.",
+    actions: ["Monitor IDOE implementation of new STEM advisory list law", "Submit for advisory list consideration", "Align to Indiana Academic Standards"],
+    links: ["https://www.in.gov/doe/"],
+    notes: "New hybrid model emerging. STEM advisory list creates state-level entry point."
+  },
+  { tier: 4, abbr: "MI", name: "Michigan", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "ISD cooperatives / District direct",
+    pdProcess: "MDE SCECH requirements",
+    standards: "Michigan Merit Curriculum",
+    aiCs: "CS standards adopted; MiSTEM Network supports technology education",
+    detail: "Michigan is district-level with Intermediate School Districts (ISDs) providing cooperative purchasing. MiSTEM Network supports STEM/technology education across the state.",
+    actions: ["Target ISD cooperative purchasing", "Engage MiSTEM Network", "Target large districts (Detroit, suburban metro)"],
+    links: ["https://www.michigan.gov/mde"],
+    notes: "ISDs provide good cooperative infrastructure. MiSTEM Network is potential partner."
+  },
+  { tier: 4, abbr: "MO", name: "Missouri", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "RPDC / District direct",
+    pdProcess: "DESE PD requirements",
+    standards: "MO Learning Standards",
+    aiCs: "CS standards adopted; RPDC supports technology PD",
+    detail: "Missouri is district-level with Regional Professional Development Centers (RPDCs) providing support. RPDCs offer technology education professional development across the state.",
+    actions: ["Target RPDC partnerships for PD distribution", "Target large district RFPs (KC, STL metro)", "Align to MO Learning Standards"],
+    links: ["https://dese.mo.gov/"],
+    notes: "RPDCs provide PD distribution channel. Two major metro areas for targeting."
+  },
+  { tier: 4, abbr: "OR", name: "Oregon", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "ESD cooperatives / District direct",
+    pdProcess: "ODE-approved",
+    standards: "Oregon Standards",
+    aiCs: "CS standards adopted; ODE AI guidance available",
+    detail: "Oregon is district-level with Education Service Districts (ESDs) providing cooperative purchasing. ODE has published AI guidance for schools. Strong technology education community.",
+    actions: ["Target ESD cooperative purchasing", "Align to Oregon Standards", "Engage with ODE AI education initiatives"],
+    links: ["https://www.oregon.gov/ode/"],
+    notes: "ESD cooperatives provide regional reach. ODE AI guidance shows receptivity."
+  },
+  { tier: 4, abbr: "UT", name: "Utah", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "USBE recommended list / District direct",
+    pdProcess: "USBE-approved",
+    standards: "Utah Core Standards",
+    aiCs: "CS standards adopted; strong technology education focus",
+    detail: "Utah is district-level but USBE maintains recommended materials lists that influence district decisions. Strong technology education focus statewide.",
+    actions: ["Pursue USBE recommended list inclusion", "Align to Utah Core Standards", "Target district procurement"],
+    links: ["https://www.schools.utah.gov/"],
+    notes: "USBE recommended list is influential even though not mandatory."
+  },
+  { tier: 4, abbr: "NJ", name: "New Jersey", model: "district",
+    deadline: "No state cycle; AI K-12 mandate 2025+",
+    vendorPath: "District direct / Co-op purchasing",
+    pdProcess: "NJDOE PD requirements",
+    standards: "NJ Student Learning Standards",
+    aiCs: "AI concepts K-12 integration mandate (2025+). Among first states to require AI across all grades.",
+    detail: "New Jersey is district-level but has mandated AI concepts integration across K-12 starting 2025+, making it one of the first states to require AI education at all grade levels. This creates strong demand for AI curriculum.",
+    actions: ["Leverage AI mandate to market to districts", "Align to NJ Student Learning Standards", "Target large district RFPs", "Explore cooperative purchasing agreements"],
+    links: ["https://www.nj.gov/education/"],
+    notes: "AI K-12 mandate creates immediate demand. Among most AI-forward states."
+  },
+  { tier: 4, abbr: "MD", name: "Maryland", model: "hybrid",
+    deadline: "State HQIM frameworks (non-mandatory)",
+    vendorPath: "MSDE frameworks / District direct",
+    pdProcess: "MSDE-approved",
+    standards: "MD College & Career Ready Standards",
+    aiCs: "CS standards adopted; MSDE HQIM (High-Quality Instructional Materials) initiative",
+    detail: "Maryland uses a hybrid approach with state HQIM frameworks that are recommended but not mandatory. MSDE reviews and rates materials for quality, similar to EdReports model. Districts make final selection decisions.",
+    actions: ["Submit for MSDE HQIM review", "Align to MD Standards", "Target large districts (Montgomery Co, Prince George's Co, Baltimore)"],
+    links: ["https://marylandpublicschools.org/"],
+    notes: "HQIM ratings influence district decisions. Large suburban districts are key targets."
+  },
+
+  // ── TIER 5: Remaining District-Level States ───────────────────
+  { tier: 5, abbr: "AZ", name: "Arizona", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "ADE requirements",
+    standards: "AZ Academic Standards",
+    aiCs: "CS standards adopted",
+    detail: "Arizona is district-level. Districts independently select instructional materials aligned to AZ Academic Standards. CS standards have been adopted. Growing technology education community.",
+    actions: ["Target district RFPs", "Align to AZ Academic Standards", "Focus on Phoenix/Tucson metro districts"],
+    links: ["https://www.azed.gov/"],
+    notes: "Large metro districts offer significant market. District-level procurement."
+  },
+  { tier: 5, abbr: "MN", name: "Minnesota", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / Service coops",
+    pdProcess: "PELSB requirements",
+    standards: "MN Academic Standards",
+    aiCs: "CS standards adopted; active CS education community",
+    detail: "Minnesota is district-level with Service Cooperatives providing some joint purchasing. Active CS education community statewide.",
+    actions: ["Target Service Cooperative partnerships", "Align to MN Academic Standards", "Target Twin Cities metro districts"],
+    links: ["https://education.mn.gov/"],
+    notes: "Service Cooperatives offer regional purchasing. Strong education community."
+  },
+  { tier: 5, abbr: "WI", name: "Wisconsin", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / CESA coops",
+    pdProcess: "DPI PD requirements",
+    standards: "WI Academic Standards",
+    aiCs: "CS standards adopted; Professional Learning Partner Guide available",
+    detail: "Wisconsin is district-level with Cooperative Educational Service Agencies (CESAs) providing regional support. DPI maintains a Professional Learning Partner Guide for vetted PD providers.",
+    actions: ["Target CESA cooperative purchasing", "Apply for Professional Learning Partner Guide listing", "Align to WI Academic Standards"],
+    links: ["https://dpi.wi.gov/"],
+    notes: "CESAs provide cooperative infrastructure. PL Partner Guide is good PD pathway."
+  },
+  { tier: 5, abbr: "CT", name: "Connecticut", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / RESC coops",
+    pdProcess: "CSDE PD requirements",
+    standards: "CT Core Standards",
+    aiCs: "CS standards adopted; strong education technology community",
+    detail: "Connecticut is district-level with Regional Educational Service Centers (RESCs) providing cooperative services. Strong education technology community in the state.",
+    actions: ["Target RESC cooperative purchasing", "Align to CT Core Standards", "Target suburban district clusters"],
+    links: ["https://portal.ct.gov/sde"],
+    notes: "RESCs provide regional service. Affluent suburban districts are strong targets."
+  },
+  { tier: 5, abbr: "NV", name: "Nevada", model: "hybrid",
+    deadline: "State validation process",
+    vendorPath: "District committees + state validation",
+    pdProcess: "NDE-approved",
+    standards: "Nevada Academic Content Standards",
+    aiCs: "CS standards adopted; state validation model",
+    detail: "Nevada uses a hybrid validation model where district committees select materials and the state board provides validation/approval. This combines local input with state oversight.",
+    actions: ["Navigate district committee + state validation process", "Align to Nevada Standards", "Target Clark County (Las Vegas) and Washoe County (Reno)"],
+    links: ["https://doe.nv.gov/"],
+    notes: "Hybrid validation model. Clark County is one of largest districts nationally."
+  },
+  { tier: 5, abbr: "RI", name: "Rhode Island", model: "hybrid",
+    deadline: "State-approved HQIM for math/ELA",
+    vendorPath: "RIDE HQIM list / District direct",
+    pdProcess: "RIDE PD requirements",
+    standards: "RI Standards (CCSS-aligned)",
+    aiCs: "CS standards adopted; small state with unified approach",
+    detail: "Rhode Island uses mandatory state-approved HQIM for math and ELA, but other subjects are district-level. Small state size means reaching all districts is feasible.",
+    actions: ["Submit for RIDE HQIM review if applicable", "Target district-level for CS/Technology", "Leverage small state size for comprehensive outreach"],
+    links: ["https://www.ride.ri.gov/"],
+    notes: "Small state — feasible to reach all districts directly. HQIM process for core subjects."
+  },
+  { tier: 5, abbr: "HI", name: "Hawaii", model: "hybrid",
+    deadline: "Board-recommended list (waiver available)",
+    vendorPath: "HIDOE recommended list",
+    pdProcess: "HIDOE requirements",
+    standards: "HI Content & Performance Standards",
+    aiCs: "CS standards adopted; single-district state",
+    detail: "Hawaii is unique as a single state-wide school district. The board maintains a recommended list with school waiver options. This means getting on the HIDOE list effectively covers the entire state.",
+    actions: ["Submit for HIDOE recommended list", "Single approval covers entire state", "Align to HI Standards"],
+    links: ["https://www.hawaiipublicschools.org/"],
+    notes: "Single district state — one approval covers everything. High efficiency target."
+  },
+  { tier: 5, abbr: "AK", name: "Alaska", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "DEED requirements",
+    standards: "AK Content Standards",
+    aiCs: "Limited CS standards; remote access challenges",
+    detail: "Alaska is district-level with unique challenges including remote access and small district sizes. Digital/online courseware has particular appeal for reaching remote communities.",
+    actions: ["Target Anchorage and Fairbanks districts", "Emphasize digital access for remote communities", "Align to AK Content Standards"],
+    links: ["https://education.alaska.gov/"],
+    notes: "Online/digital courseware has special appeal for remote Alaska communities."
+  },
+  { tier: 5, abbr: "AR", name: "Arkansas", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / Ed coops",
+    pdProcess: "ADE requirements",
+    standards: "AR Academic Standards",
+    aiCs: "CS standards adopted; computer science push active",
+    detail: "Arkansas is district-level with Education Cooperatives providing regional support. The state has an active computer science education push. Arkansas was among the first states to require CS education.",
+    actions: ["Target Education Cooperative partnerships", "Leverage CS mandate connections", "Align to AR Academic Standards"],
+    links: ["https://dese.ade.arkansas.gov/"],
+    notes: "CS education pioneer state. Education Cooperatives provide regional reach."
+  },
+  { tier: 5, abbr: "DE", name: "Delaware", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "DDOE requirements",
+    standards: "DE Content Standards",
+    aiCs: "CS standards adopted",
+    detail: "Delaware is district-level. Small state with relatively few districts makes comprehensive outreach feasible.",
+    actions: ["Target all major districts directly", "Align to DE Content Standards", "Leverage small state for full coverage"],
+    links: ["https://www.doe.k12.de.us/"],
+    notes: "Small state — full district coverage is achievable."
+  },
+  { tier: 5, abbr: "IA", name: "Iowa", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "AEA cooperatives / District direct",
+    pdProcess: "BOEE requirements",
+    standards: "Iowa Core Standards",
+    aiCs: "CS standards adopted; AEA technology support",
+    detail: "Iowa is district-level with Area Education Agencies (AEAs) providing cooperative services including technology support and purchasing.",
+    actions: ["Target AEA cooperative purchasing", "Align to Iowa Core Standards"],
+    links: ["https://educateiowa.gov/"],
+    notes: "AEAs provide strong cooperative infrastructure for reaching districts."
+  },
+  { tier: 5, abbr: "ID", name: "Idaho", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "SDE requirements",
+    standards: "Idaho Content Standards",
+    aiCs: "CS standards adopted; Idaho Digital Learning Academy",
+    detail: "Idaho is district-level. Idaho Digital Learning Academy provides online learning infrastructure that could complement AESOP offerings.",
+    actions: ["Explore Idaho Digital Learning Academy partnership", "Target district procurement", "Align to Idaho Content Standards"],
+    links: ["https://www.sde.idaho.gov/"],
+    notes: "Idaho Digital Learning Academy is potential distribution partner."
+  },
+  { tier: 5, abbr: "KS", name: "Kansas", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "Service Center coops / District direct",
+    pdProcess: "KSDE requirements",
+    standards: "KS College & Career Ready Standards",
+    aiCs: "CS model standards adopted",
+    detail: "Kansas is district-level with Service Centers providing cooperative purchasing support.",
+    actions: ["Target Service Center cooperatives", "Align to KS Standards", "Target Wichita, KC metro districts"],
+    links: ["https://www.ksde.org/"],
+    notes: "Service Centers provide cooperative infrastructure."
+  },
+  { tier: 5, abbr: "ME", name: "Maine", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "DOE requirements",
+    standards: "ME Learning Results",
+    aiCs: "CS standards adopted; Maine Learning Technology Initiative (1:1 program)",
+    detail: "Maine is district-level. The Maine Learning Technology Initiative was a pioneering 1:1 device program, showing strong technology education culture.",
+    actions: ["Leverage MLTI technology culture", "Target district procurement", "Align to ME Learning Results"],
+    links: ["https://www.maine.gov/doe/"],
+    notes: "MLTI shows strong technology adoption culture. Good fit for digital courseware."
+  },
+  { tier: 5, abbr: "MT", name: "Montana", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "OPI requirements",
+    standards: "MT Content Standards",
+    aiCs: "Limited CS standards",
+    detail: "Montana is district-level with many small rural districts. Digital courseware has appeal for reaching rural communities.",
+    actions: ["Target larger districts (Billings, Missoula, Great Falls)", "Emphasize digital access for rural communities"],
+    links: ["https://opi.mt.gov/"],
+    notes: "Rural state where digital courseware fills access gaps."
+  },
+  { tier: 5, abbr: "NE", name: "Nebraska", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "ESU cooperatives / District direct",
+    pdProcess: "NDE requirements",
+    standards: "NE College & Career Ready Standards",
+    aiCs: "CS standards adopted",
+    detail: "Nebraska is district-level with Educational Service Units (ESUs) providing cooperative services.",
+    actions: ["Target ESU cooperative purchasing", "Align to NE Standards"],
+    links: ["https://www.education.ne.gov/"],
+    notes: "ESUs provide cooperative infrastructure for reaching districts."
+  },
+  { tier: 5, abbr: "NH", name: "New Hampshire", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / SAU coops",
+    pdProcess: "DOE requirements",
+    standards: "NH College & Career Ready Standards",
+    aiCs: "CS standards adopted; competency-based education leader",
+    detail: "New Hampshire is district-level with School Administrative Units (SAUs) grouping districts. The state is a leader in competency-based education, which aligns with AESOP's certification model.",
+    actions: ["Target SAU-level procurement", "Leverage competency-based education alignment", "Emphasize AESOP certification model"],
+    links: ["https://www.education.nh.gov/"],
+    notes: "Competency-based education leader — AESOP certifications are a good fit."
+  },
+  { tier: 5, abbr: "ND", name: "North Dakota", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / REA coops",
+    pdProcess: "ESPB requirements",
+    standards: "ND Content Standards",
+    aiCs: "CS standards adopted",
+    detail: "North Dakota is district-level with Regional Education Associations (REAs) providing cooperative support.",
+    actions: ["Target REA cooperative purchasing", "Align to ND Content Standards"],
+    links: ["https://www.nd.gov/dpi/"],
+    notes: "REAs provide regional cooperative infrastructure."
+  },
+  { tier: 5, abbr: "SD", name: "South Dakota", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "DOE requirements",
+    standards: "SD Content Standards",
+    aiCs: "CS standards adopted",
+    detail: "South Dakota is district-level. Small state with relatively few districts.",
+    actions: ["Target Sioux Falls and Rapid City districts", "Align to SD Content Standards"],
+    links: ["https://doe.sd.gov/"],
+    notes: "Small state — focus on two largest districts for initial traction."
+  },
+  { tier: 5, abbr: "VT", name: "Vermont", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct / SU coops",
+    pdProcess: "AOE requirements",
+    standards: "VT Standards (CCSS-aligned)",
+    aiCs: "CS standards adopted; strong education innovation culture",
+    detail: "Vermont is district-level with Supervisory Unions (SUs) grouping districts. Strong education innovation culture.",
+    actions: ["Target SU-level procurement", "Leverage innovation culture", "Align to VT Standards"],
+    links: ["https://education.vermont.gov/"],
+    notes: "Small innovative state. SUs group multiple districts for easier outreach."
+  },
+  { tier: 5, abbr: "WY", name: "Wyoming", model: "district",
+    deadline: "No state cycle",
+    vendorPath: "District direct",
+    pdProcess: "WDE requirements",
+    standards: "WY Content & Performance Standards",
+    aiCs: "CS standards framework available",
+    detail: "Wyoming is district-level. Smallest state population with few districts. Digital courseware appeals for geographic reach.",
+    actions: ["Target Cheyenne and Casper districts", "Emphasize digital access"],
+    links: ["https://edu.wyoming.gov/"],
+    notes: "Smallest population state. Few districts make full outreach feasible."
+  }
+];
+
+/* ─── Tier labels ──────────────────────────────────────────────── */
+const TIER_LABELS = {
+  1: "Tier 1 — State-Level Adoption (Active/Upcoming Cycles)",
+  2: "Tier 2 — State-Level Adoption (Future/Transitional)",
+  3: "Tier 3 — Large District Markets",
+  4: "Tier 4 — District-Level with Strong Cooperative Purchasing",
+  5: "Tier 5 — District-Level (Remaining States)"
+};
+
+const STATUS_OPTIONS = [
+  { value: "not-started",     label: "Not Started" },
+  { value: "researching",     label: "Researching" },
+  { value: "preparing",       label: "Preparing" },
+  { value: "submitted",       label: "Submitted" },
+  { value: "approved",        label: "Approved" },
+  { value: "rejected",        label: "Rejected" },
+  { value: "on-hold",         label: "On Hold" },
+  { value: "not-applicable",  label: "N/A" }
+];
+
+/* ─── Local storage ────────────────────────────────────────────── */
+const STORAGE_KEY = "aesop-state-adoption-tracker";
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch(e) {}
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); }
+
+function getStatus(abbr) { return (saved[abbr] && saved[abbr].status) || "not-started"; }
+function setStatus(abbr, val) { if (!saved[abbr]) saved[abbr] = {}; saved[abbr].status = val; save(); }
+function getUserNotes(abbr) { return (saved[abbr] && saved[abbr].userNotes) || ""; }
+function setUserNotes(abbr, val) { if (!saved[abbr]) saved[abbr] = {}; saved[abbr].userNotes = val; save(); }
+
+/* ─── Render ───────────────────────────────────────────────────── */
+const tbody = document.getElementById("tableBody");
+const search = document.getElementById("searchBox");
+const filterTier = document.getElementById("filterTier");
+const filterStatus = document.getElementById("filterStatus");
+
+function renderTable() {
+  const q = search.value.toLowerCase();
+  const ft = filterTier.value;
+  const fs = filterStatus.value;
+
+  let html = "";
+  let currentTier = 0;
+  let idx = 0;
+
+  STATES.forEach(s => {
+    const status = getStatus(s.abbr);
+    // Filters
+    if (q && !s.name.toLowerCase().includes(q) && !s.abbr.toLowerCase().includes(q)) return;
+    if (ft && String(s.tier) !== ft) return;
+    if (fs && status !== fs) return;
+
+    // Tier header
+    if (s.tier !== currentTier) {
+      currentTier = s.tier;
+      html += `<tr class="tier-header"><td colspan="8">${TIER_LABELS[s.tier]}</td></tr>`;
+    }
+
+    idx++;
+    const modelClass = s.model === "state" ? "model-state" : s.model === "hybrid" ? "model-hybrid" : "model-district";
+    const modelLabel = s.model === "state" ? "State" : s.model === "hybrid" ? "Hybrid" : "District";
+    const dlClass = s.deadlineUrgent ? "deadline-urgent" : "deadline-future";
+
+    const opts = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${status === o.value ? "selected" : ""} class="status-${o.value}">${o.label}</option>`
+    ).join("");
+
+    const adminMode = window.__ADMIN_MODE;
+    const statusCell = adminMode
+      ? `<select class="status-select status-${status}" onclick="event.stopPropagation()" onchange="changeStatus('${s.abbr}', this)">${opts}</select>`
+      : `<span class="status-select status-${status}" style="cursor:default">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+    html += `<tr data-abbr="${s.abbr}">
+      <td style="color:var(--muted)">${idx}</td>
+      <td><span class="state-name">${s.name}</span><span class="state-abbr">${s.abbr}</span></td>
+      <td><span class="model-tag ${modelClass}">${modelLabel}</span></td>
+      <td>${statusCell}</td>
+      <td class="deadline-cell ${dlClass}">${s.deadline || '—'}</td>
+      <td style="font-size:12px">${s.vendorPath}</td>
+      <td style="font-size:12px;color:var(--muted)">${s.pdProcess}</td>
+      <td class="notes-cell">${s.notes}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+  updateSummary();
+}
+
+function updateSummary() {
+  let approved = 0, submitted = 0, progress = 0, notStarted = 0;
+  STATES.forEach(s => {
+    const st = getStatus(s.abbr);
+    if (st === "approved") approved++;
+    else if (st === "submitted") submitted++;
+    else if (st === "researching" || st === "preparing") progress++;
+    else if (st === "not-started") notStarted++;
+  });
+  document.getElementById("countApproved").textContent = approved;
+  document.getElementById("countSubmitted").textContent = submitted;
+  document.getElementById("countProgress").textContent = progress;
+  document.getElementById("countNotStarted").textContent = notStarted;
+}
+
+function changeStatus(abbr, el) {
+  setStatus(abbr, el.value);
+  el.className = `status-select status-${el.value}`;
+  updateSummary();
+}
+
+/* ─── Modal ────────────────────────────────────────────────────── */
+const overlay = document.getElementById("modalOverlay");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+
+function openModal(abbr) {
+  const s = STATES.find(x => x.abbr === abbr);
+  if (!s) return;
+
+  const status = getStatus(abbr);
+  const userNotes = getUserNotes(abbr);
+  const modelClass = s.model === "state" ? "model-state" : s.model === "hybrid" ? "model-hybrid" : "model-district";
+  const modelLabel = s.model === "state" ? "State-Level Adoption" : s.model === "hybrid" ? "Hybrid Model" : "District-Level";
+
+  const statusOpts = STATUS_OPTIONS.map(o =>
+    `<option value="${o.value}" ${status === o.value ? "selected" : ""}>${o.label}</option>`
+  ).join("");
+
+  let linksHtml = "";
+  if (s.links && s.links.length) {
+    linksHtml = s.links.map(l => `<li><a href="${l}" target="_blank" rel="noopener">${l.replace(/^https?:\/\//, '').split('/').slice(0,2).join('/')}</a></li>`).join("");
+  }
+
+  let actionsHtml = "";
+  if (s.actions && s.actions.length) {
+    actionsHtml = s.actions.map(a => `<li>${a}</li>`).join("");
+  }
+
+  const adminMode = window.__ADMIN_MODE;
+
+  const statusHtml = adminMode
+    ? `<select class="status-select status-${status}" style="font-size:14px;padding:6px 10px;background:var(--navy);border:1px solid var(--border);border-radius:6px;margin-bottom:12px"
+              onchange="changeStatus('${abbr}', this); this.className='status-select status-'+this.value;">
+        ${statusOpts}
+      </select>`
+    : `<span class="status-select status-${status}" style="font-size:14px">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+  const notesHtml = adminMode
+    ? `<div class="modal-notes">
+        <label>Your Notes</label>
+        <textarea id="modalNotes" placeholder="Add your notes for ${s.name}...">${userNotes}</textarea>
+      </div>`
+    : (userNotes ? `<div class="modal-notes"><label>Notes</label><p style="font-size:13px;color:#cbd5e1;background:var(--navy);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">${userNotes.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p></div>` : '');
+
+  modalTitle.textContent = `${s.name} (${s.abbr})`;
+  modalBody.innerHTML = `
+    <div class="tag-row">
+      <span class="modal-tag ${modelClass}">${modelLabel}</span>
+      <span class="modal-tag" style="background:rgba(255,255,255,0.06);color:var(--muted)">Tier ${s.tier}</span>
+    </div>
+
+    <h3>Overview</h3>
+    <p>${s.detail}</p>
+
+    <h3>Standards</h3>
+    <p>${s.standards}</p>
+
+    <h3>AI / Computer Science</h3>
+    <p>${s.aiCs}</p>
+
+    <h3>Deadline / Cycle</h3>
+    <p>${s.deadline || 'No fixed cycle'}</p>
+
+    <h3>Vendor Pathway</h3>
+    <p>${s.vendorPath}</p>
+
+    <h3>Professional Development</h3>
+    <p>${s.pdProcess}</p>
+
+    ${actionsHtml ? `<h3>Action Items</h3><ul>${actionsHtml}</ul>` : ""}
+
+    ${linksHtml ? `<h3>Key Links</h3><ul>${linksHtml}</ul>` : ""}
+
+    <h3>Status</h3>
+    ${statusHtml}
+
+    ${notesHtml}
+  `;
+
+  // Save notes on change (admin only)
+  if (adminMode) {
+    const notesEl = document.getElementById("modalNotes");
+    notesEl.addEventListener("input", () => { setUserNotes(abbr, notesEl.value); });
+  }
+
+  overlay.classList.add("open");
+}
+
+document.getElementById("modalClose").onclick = () => { overlay.classList.remove("open"); renderTable(); };
+overlay.onclick = e => { if (e.target === overlay) { overlay.classList.remove("open"); renderTable(); } };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && overlay.classList.contains("open")) { overlay.classList.remove("open"); renderTable(); } });
+
+/* ─── Row click via event delegation ───────────────────────────── */
+tbody.addEventListener("click", e => {
+  // Don't open modal when clicking a select dropdown
+  if (e.target.tagName === "SELECT" || e.target.tagName === "OPTION") return;
+  const row = e.target.closest("tr[data-abbr]");
+  if (row) openModal(row.dataset.abbr);
+});
+
+/* ─── Filter events ────────────────────────────────────────────── */
+search.addEventListener("input", renderTable);
+filterTier.addEventListener("change", renderTable);
+filterStatus.addEventListener("change", renderTable);
+
+/* ─── Init (wait for auth) ────────────────────────────────────── */
+document.addEventListener('authReady', () => {
+  // Pre-set the 5 researched states to "researching" (admin only, first visit)
+  if (window.__ADMIN_MODE) {
+    ["TX","CO","NY","MA","WA"].forEach(abbr => {
+      if (getStatus(abbr) === "not-started") { setStatus(abbr, "researching"); }
+    });
+  }
+  renderTable();
+});
+</script>
+</body>
+</html>

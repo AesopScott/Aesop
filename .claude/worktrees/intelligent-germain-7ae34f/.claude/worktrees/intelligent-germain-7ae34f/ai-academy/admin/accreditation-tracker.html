@@ -1,0 +1,356 @@
+<!doctype html>
+<!-- v1.0.2 | 2026-04-15 -->
+<!-- accreditation-tracker (admin-only, Firebase auth, course-level fields) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Accreditation Tracker — AESOP AI Academy</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+  :root { --bg:#0f172a; --fg:#e2e8f0; --muted:#94a3b8; --card:#1e293b; --border:#334155; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; }
+  * { box-sizing:border-box; }
+  body { font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; margin:0; background:var(--bg); color:var(--fg); }
+  header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+  header h1 { margin:0; font-size:18px; }
+  header .meta { color:var(--muted); font-size:12px; }
+  .toolbar { display:flex; gap:8px; flex-wrap:wrap; padding:12px 24px; border-bottom:1px solid var(--border); background:#0b1220; }
+  .toolbar input[type=search] { background:#0f172a; color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:6px 10px; min-width:240px; }
+  .toolbar select, .toolbar button { background:#0f172a; color:var(--fg); border:1px solid var(--border); border-radius:6px; padding:6px 10px; cursor:pointer; }
+  .toolbar button.primary { background:var(--accent); color:#0b1220; border-color:var(--accent); font-weight:600; }
+  .toolbar .spacer { flex:1; }
+  main { padding:0 24px 80px; }
+  table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+  th, td { padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; text-align:left; }
+  th { position:sticky; top:0; background:#0b1220; color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.04em; z-index:1; }
+  tr:hover td { background:#162033; }
+  td.title { font-weight:600; }
+  td.type { color:var(--muted); font-size:12px; }
+  input[type=text], input[type=date], select.cell, textarea {
+    width:100%; background:transparent; color:var(--fg); border:1px solid transparent; border-radius:4px; padding:4px 6px; font:inherit; font-size:12px; resize:vertical;
+  }
+  input[type=text]:hover, input[type=date]:hover, select.cell:hover, textarea:hover { border-color:var(--border); }
+  input[type=text]:focus, input[type=date]:focus, select.cell:focus, textarea:focus { border-color:var(--accent); outline:none; background:#0b1220; }
+  textarea { min-height:32px; max-height:120px; }
+  .status-accredited { color:var(--ok); }
+  .status-pending { color:var(--warn); }
+  .status-expired { color:var(--err); }
+  .status-na { color:var(--muted); }
+  .summary { display:flex; gap:16px; padding:8px 24px; background:#0b1220; border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); flex-wrap:wrap; }
+  .summary span b { color:var(--fg); }
+  .footer { color:var(--muted); font-size:11px; padding:24px; text-align:center; }
+  .saved { color:var(--ok); font-size:12px; opacity:0; transition:opacity .3s; }
+  .saved.show { opacity:1; }
+  .renewal-soon { background:rgba(245,158,11,.12); }
+  .renewal-overdue { background:rgba(239,68,68,.18); }
+
+  /* Auth overlay (matches review/exam-qa.html pattern) */
+  .auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.97); display:flex; align-items:center; justify-content:center; z-index:9999; }
+  .auth-box { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); }
+  .auth-logo { font-size:32px; margin-bottom:8px; }
+  .auth-box h2 { margin:4px 0 6px; font-size:18px; }
+  .auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
+  .auth-input { width:100%; padding:9px 11px; margin:6px 0; background:#0f172a; color:var(--fg); border:1px solid var(--border); border-radius:6px; font-size:14px; }
+  .auth-input:focus { outline:none; border-color:var(--accent); }
+  .auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--accent); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
+  .auth-btn:hover { filter:brightness(1.1); }
+  .auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
+  .auth-note { color:var(--muted); font-size:11px; margin-top:12px; }
+</style>
+</head>
+<body>
+
+<!-- ── AUTH GATE ── -->
+<div class="auth-overlay" id="auth-overlay" style="display:none">
+  <div class="auth-box">
+    <div class="auth-logo">🔐</div>
+    <h2>AESOP Admin Access</h2>
+    <p>Sign in with your admin account to access the Accreditation Tracker.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Admin email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-note">Admin access only. Contact Scott if you need access.</div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <header>
+    <div>
+      <h1>Accreditation Tracker</h1>
+      <div class="meta">v1.0.0 · admin-only · client-side state (localStorage)</div>
+    </div>
+    <div>
+      <span id="savedFlag" class="saved">Saved</span>
+      <span id="userLabel" style="color:var(--muted);font-size:12px;margin-left:12px"></span>
+      <button id="signOutBtn" style="margin-left:12px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer">Sign out</button>
+    </div>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Filter by title, id, body, notes...">
+    <select id="statusFilter">
+      <option value="__all__">All statuses</option>
+      <option value="accredited">Accredited</option>
+      <option value="pending">Pending</option>
+      <option value="expired">Expired</option>
+      <option value="na">N/A</option>
+      <option value="__unset__">— unset</option>
+    </select>
+    <select id="typeFilter">
+      <option value="">All types</option>
+    </select>
+    <div class="spacer"></div>
+    <button id="exportBtn">Export JSON</button>
+    <button id="importBtn">Import JSON</button>
+    <input id="importFile" type="file" accept="application/json" style="display:none">
+    <button id="clearBtn">Clear local data</button>
+  </div>
+
+  <main>
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th style="width:24%">Course</th>
+          <th style="width:8%">Type</th>
+          <th style="width:11%">Status</th>
+          <th style="width:17%">Accrediting Body</th>
+          <th style="width:11%">Accredited</th>
+          <th style="width:11%">Renewal</th>
+          <th style="width:18%">Notes</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="footer">
+      Course list pulled from <code>../modules/course-registry.json</code>. Per-course tracker data lives in this browser only — export to JSON if you need to share or back it up.
+    </div>
+  </main>
+</div>
+
+<!-- Firebase SDK + auth gate -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.firebasestorage.app",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Admin whitelist — match exam-qa.html
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && (ADMIN_EMAILS.length === 0 || ADMIN_EMAILS.includes(u.email));
+
+  const overlay = document.getElementById('auth-overlay');
+  const app$    = document.getElementById('app');
+  const errEl   = document.getElementById('auth-error');
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user && isAdmin(user)) {
+      overlay.style.display = 'none';
+      app$.style.display = 'block';
+      document.getElementById('userLabel').textContent = user.email || 'Signed in';
+      document.dispatchEvent(new CustomEvent('adminReady'));
+    } else if (user && !isAdmin(user)) {
+      overlay.style.display = 'flex';
+      app$.style.display = 'none';
+      errEl.textContent = 'This account does not have admin access.';
+    } else {
+      overlay.style.display = 'flex';
+      app$.style.display = 'none';
+    }
+  });
+</script>
+
+<script>
+const DATA_KEY = 'accred_tracker_v1';
+const REGISTRY_URL = '../modules/course-registry.json';
+
+const $ = sel => document.querySelector(sel);
+
+let registry = null;
+let tracker = JSON.parse(localStorage.getItem(DATA_KEY) || '{}');
+let courses = [];
+let saveTimer = null;
+let booted = false;
+
+function saveTracker() {
+  localStorage.setItem(DATA_KEY, JSON.stringify(tracker));
+  const f = $('#savedFlag');
+  f.classList.add('show');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => f.classList.remove('show'), 800);
+}
+
+function getRow(id) {
+  if (!tracker[id]) tracker[id] = { status:'', body:'', accredited:'', renewal:'', notes:'' };
+  return tracker[id];
+}
+
+async function loadAndRender() {
+  if (!registry) {
+    try {
+      registry = await fetch(REGISTRY_URL, { cache:'no-store' }).then(r => r.json());
+    } catch (e) {
+      $('#rows').innerHTML = `<tr><td colspan="7" style="color:var(--err)">Failed to load registry: ${e.message}</td></tr>`;
+      return;
+    }
+    courses = Object.entries(registry)
+      .filter(([k]) => k !== '_meta')
+      .map(([id, c]) => ({ id, title: c.title || id, type: c.type || '—' }))
+      .sort((a,b) => (a.type||'').localeCompare(b.type||'') || a.title.localeCompare(b.title));
+
+    const types = [...new Set(courses.map(c => c.type))].sort();
+    const tf = $('#typeFilter');
+    types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; tf.appendChild(o); });
+  }
+  render();
+}
+
+function render() {
+  const q  = $('#search').value.trim().toLowerCase();
+  const sf = $('#statusFilter').value;
+  const tf = $('#typeFilter').value;
+  const today = new Date().toISOString().slice(0,10);
+  const soonCutoff = new Date(Date.now() + 60*86400000).toISOString().slice(0,10);
+
+  const tbody = $('#rows');
+  tbody.innerHTML = '';
+
+  let counts = { accredited:0, pending:0, expired:0, na:0, unset:0, total:0, renewalSoon:0, overdue:0 };
+
+  courses.forEach(c => {
+    const r = getRow(c.id);
+    if (sf === '__unset__' && r.status !== '') return;
+    if (sf !== '__all__' && sf !== '__unset__' && r.status !== sf) return;
+    if (tf && c.type !== tf) return;
+    if (q) {
+      const hay = (c.title + ' ' + c.id + ' ' + (r.body||'') + ' ' + (r.notes||'')).toLowerCase();
+      if (!hay.includes(q)) return;
+    }
+
+    counts.total++;
+    counts[r.status || 'unset']++;
+    let renewalCls = '';
+    if (r.renewal) {
+      if (r.renewal < today) { counts.overdue++; renewalCls = 'renewal-overdue'; }
+      else if (r.renewal < soonCutoff) { counts.renewalSoon++; renewalCls = 'renewal-soon'; }
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="title">${escapeHtml(c.title)}<div style="color:var(--muted);font-weight:400;font-size:11px">${c.id}</div></td>
+      <td class="type">${escapeHtml(c.type)}</td>
+      <td>
+        <select class="cell status-${r.status||'na'}" data-id="${c.id}" data-field="status">
+          <option value="" ${r.status===''?'selected':''}>— unset</option>
+          <option value="accredited" ${r.status==='accredited'?'selected':''}>Accredited</option>
+          <option value="pending" ${r.status==='pending'?'selected':''}>Pending</option>
+          <option value="expired" ${r.status==='expired'?'selected':''}>Expired</option>
+          <option value="na" ${r.status==='na'?'selected':''}>N/A</option>
+        </select>
+      </td>
+      <td><input type="text" data-id="${c.id}" data-field="body" value="${escapeAttr(r.body)}" placeholder="e.g. IACET, ICE, internal"></td>
+      <td><input type="date" data-id="${c.id}" data-field="accredited" value="${r.accredited}"></td>
+      <td class="${renewalCls}"><input type="date" data-id="${c.id}" data-field="renewal" value="${r.renewal}"></td>
+      <td><textarea data-id="${c.id}" data-field="notes" placeholder="Notes...">${escapeHtml(r.notes)}</textarea></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  $('#summary').innerHTML = `
+    <span><b>${counts.total}</b> shown</span>
+    <span class="status-accredited"><b>${counts.accredited}</b> accredited</span>
+    <span class="status-pending"><b>${counts.pending}</b> pending</span>
+    <span class="status-expired"><b>${counts.expired}</b> expired</span>
+    <span class="status-na"><b>${counts.na}</b> n/a</span>
+    <span><b>${counts.unset}</b> unset</span>
+    <span style="color:var(--warn)"><b>${counts.renewalSoon}</b> renewal &lt;60d</span>
+    <span style="color:var(--err)"><b>${counts.overdue}</b> overdue</span>
+  `;
+}
+
+function escapeHtml(s) { return String(s||'').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (!t.dataset || !t.dataset.id) return;
+  const row = getRow(t.dataset.id);
+  row[t.dataset.field] = t.value;
+  saveTracker();
+  if (t.dataset.field === 'status') {
+    t.className = 'cell status-' + (t.value || 'na');
+  }
+});
+
+['#search','#statusFilter','#typeFilter'].forEach(s => $(s).addEventListener('input', render));
+
+$('#exportBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(tracker, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'accreditation-tracker-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+});
+
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const incoming = JSON.parse(r.result);
+      if (typeof incoming !== 'object' || Array.isArray(incoming)) throw new Error('Expected an object');
+      if (!confirm('Import will MERGE into your current tracker (incoming wins on conflicts). Proceed?')) return;
+      tracker = { ...tracker, ...incoming };
+      saveTracker();
+      render();
+    } catch (err) { alert('Import failed: ' + err.message); }
+  };
+  r.readAsText(f);
+});
+
+$('#clearBtn').addEventListener('click', () => {
+  if (!confirm('Erase ALL local accreditation tracker data in this browser? Cannot be undone.')) return;
+  tracker = {};
+  localStorage.removeItem(DATA_KEY);
+  render();
+});
+
+document.addEventListener('adminReady', () => {
+  if (booted) return;
+  booted = true;
+  loadAndRender();
+});
+</script>
+</body>
+</html>

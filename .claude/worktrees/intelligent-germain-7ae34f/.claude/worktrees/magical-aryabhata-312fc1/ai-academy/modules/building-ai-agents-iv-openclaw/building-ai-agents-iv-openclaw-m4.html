@@ -1,0 +1,964 @@
+<!-- AESOP-FRAGMENT: true (injected into electives-hub.html — no <html>/<head>
+<!-- v1.0.1 | 2026-04-15 -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+<!-- v1.0.0 | 2026-04-14 -->
+<!-- building-ai-agents-iv-openclaw-m4 -->
+<!-- AESOP AI Academy — Electives Module (content injection format) -->
+<!-- Hub extracts: .tab-strip, .content-area, <script> -->
+<!-- Styles loaded by electives-hub.html via elective-module.css -->
+
+<!-- TAB STRIP -->
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<!-- CONTENT AREA -->
+<div class="content-area">
+
+<!-- LESSON 1 -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Two Memory Modes</h1>
+    <div class="tagline">Why OpenClaw separates in-session context from cross-session persistence — and what that split costs you if you get it wrong.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2023, the team behind the customer-support agent at Intercom published a post-mortem on their first production chatbot. Users would open a new conversation and reference something they'd said "last time" — a ticket number, a billing complaint, a specific feature request. The agent had no idea what they meant. Every session started from zero. Churn from that cohort of users was 34% higher than users who reached human agents. The fix was not a smarter model. It was a memory layer that persisted user-level facts between sessions. After six weeks of work, that churn gap closed to 4%.</p>
+    <p class="story-text">The problem was architectural, not algorithmic. The agent had only one kind of memory — a context window that evaporated at session end. What it needed was two kinds working together.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">The Fundamental Split: In-Memory vs. Persistent</div>
+    <div class="section-body">
+      <p>Every production AI agent that handles multi-turn interactions must manage two distinct memory regimes. <strong>In-memory</strong> (also called working memory or session memory) holds the current conversation — messages, tool outputs, intermediate reasoning. It lives in RAM and in the model's context window. It is fast, directly accessible, and ephemeral. When the process ends or the session closes, it is gone.</p>
+      <p><strong>Persistent memory</strong> is anything written to a durable store — a database, a vector index, a file — that survives process restarts and session boundaries. Persistent memory is slower to access, requires a retrieval step, and must be explicitly managed. But it is the only way an agent can accumulate knowledge over time.</p>
+      <p>The OpenClaw framework (the open-source agent orchestration layer used in several documented production deployments including the Dust.tt platform and early Fixie.ai prototypes) formalizes this split with two explicit memory objects: a <code>SessionBuffer</code> for in-memory state and a <code>MemoryStore</code> interface for persistence. Understanding why they are separate — not just what they do — is the core competency of this module.</p>
+
+      <div class="callout">
+        <div class="callout-label">Key Distinction</div>
+        <p>In-memory context is scoped to a single agent run. Persistent memory is scoped to an entity — a user, a project, a domain — and outlasts any individual run. Conflating them is the single most common architecture mistake in first-generation agent deployments.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Why the Split Exists: Token Cost and Retrieval Latency</div>
+    <div class="section-body">
+      <p>Context windows are not free. As of mid-2024, GPT-4o charges $5 per million input tokens. A naive implementation that stuffs all historical memory into every prompt to avoid building a retrieval layer will quickly hit two walls: cost and latency. The Anthropic Claude 3 models support 200K-token contexts, but sending 200K tokens on every agent turn costs roughly $0.30 per call — catastrophic at scale.</p>
+      <p>The OpenClaw design answer is that in-memory context should contain only what the model needs <em>right now</em> to reason correctly. Persistent storage holds everything else, and a retrieval step fetches only the relevant subset when a new turn begins. This is not just an optimization — it is what allows agents to scale to users with years of interaction history.</p>
+
+      <ul class="ul-body">
+        <li><strong>In-memory:</strong> current messages, tool call results, active plan state, session-scoped variables.</li>
+        <li><strong>Persistent:</strong> user profile facts, long-term preferences, past decisions, domain knowledge, episodic summaries.</li>
+        <li><strong>Retrieval bridge:</strong> a semantic or keyword search that pulls the most relevant persistent facts into the working context at the start of each turn.</li>
+      </ul>
+
+      <p>The Dust.tt team documented in their 2024 engineering blog that switching from a full-history-in-context approach to a retrieved-summary approach reduced their average prompt size by 71% while increasing user-reported continuity satisfaction by 28%. The numbers confirm what the architecture already implies: retrieval is not a crutch, it is the design.</p>
+
+      <div class="callout">
+        <div class="callout-label">OpenClaw Pattern</div>
+        <p>OpenClaw's <code>MemoryStore.retrieve(query, topK)</code> is called at the start of every agent turn, injecting the top-K most relevant memories as a compressed block at the head of the system prompt. The rest of the context window is reserved for the live conversation and tool outputs.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <a class="pnav-btn primary" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. What is the primary reason OpenClaw separates in-memory and persistent memory instead of using one unified store?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">LLMs cannot read from databases directly.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Token cost and latency make it impractical to include all historical memory in every prompt.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Persistent storage is too slow to use at all during an agent run.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">In-memory data is encrypted and cannot be written to disk.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Stuffing all history into every context window is prohibitively expensive at scale — the split exists to keep prompt sizes manageable while retaining long-term knowledge.</div>
+    <div class="quiz-feedback wrong">Not quite. The split is fundamentally about token economics and latency, not technical inability to read databases.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. In the Intercom post-mortem case study, what was the root cause of the 34% higher churn among users who spoke to the chatbot?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">The model was too small to handle complex queries.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">The agent's response latency was too high.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Every session started from zero — the agent had no cross-session persistent memory of past interactions.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">The agent hallucinated facts from previous sessions.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The agent lacked persistent memory entirely, so returning users had to re-explain context every time — a frustrating and trust-destroying experience.</div>
+    <div class="quiz-feedback wrong">The documented cause was architectural: no cross-session memory, not model size or speed issues.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. What does OpenClaw's <code>MemoryStore.retrieve(query, topK)</code> call inject into the agent's context?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">The complete unfiltered history of all past sessions.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">The top-K most semantically relevant persistent memories, inserted as a compressed block at the head of the system prompt.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">A summary of the last session only, regardless of relevance.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">The raw database rows matching an exact keyword.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Retrieval is selective — only the most relevant memories are injected, keeping the context window lean while providing the model with needed background.</div>
+    <div class="quiz-feedback wrong">OpenClaw uses semantic retrieval to fetch only the most relevant subset, not full history or keyword-only matches.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lab 1: Diagnosing Memory Architecture</h1>
+    <div class="tagline">Analyze a real-world agent design and identify where the memory split should be drawn.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are reviewing the architecture of a new customer-success agent. The agent needs to handle: (a) the current conversation turn, (b) a user's subscription tier and past purchase history, (c) tool call results from a live inventory lookup, and (d) a summary of the user's last three support tickets.</p>
+    <ol>
+      <li>Identify which of the four data types above belong in in-memory context and which belong in persistent storage.</li>
+      <li>Ask the AI agent to explain the cost consequences of putting all four in the context window.</li>
+      <li>Ask it to sketch what the <code>retrieve()</code> call should look like for this agent at the start of a new session.</li>
+    </ol>
+    <div class="lab-prompt">Start by telling the agent which data types you think are in-memory vs. persistent, then ask it to critique your classification and estimate the token cost difference.</div>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🧠 Memory Architecture Advisor</span>
+      <span class="chat-badge">Lab 1</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l1"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l1" rows="2" placeholder="Type your answer or question..."></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- LESSON 2 -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Buffer Architecture</h1>
+    <div class="tagline">How OpenClaw's SessionBuffer manages the live context window — including message windowing, token budgeting, and mid-session compression.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In late 2023, the engineering team at Fixie.ai (a production agent platform that served thousands of developers) published a detailed breakdown of their session management challenges. Their agents ran on GPT-4 with an 8K-token context window. As conversations grew — especially in coding assistant workflows where tool outputs could run to hundreds of lines — the context would silently overflow. The model would start "forgetting" earlier parts of the conversation mid-session, producing contradictory responses. Users reported it as the model "going crazy." The fix was a structured buffer with explicit windowing and mid-session summarization, cutting mid-session contradiction rates by over 60%.</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">The SessionBuffer: Structure and Responsibilities</div>
+    <div class="section-body">
+      <p>OpenClaw's <code>SessionBuffer</code> is a typed data structure — not a raw list of strings — that holds the live state of a single agent run. It contains four slots: a <strong>system block</strong> (the agent's identity and injected memories), a <strong>message list</strong> (user/assistant/tool turns in order), a <strong>tool result cache</strong> (raw outputs from tool calls, which can be large), and a <strong>token counter</strong> (a running tally of current usage against the configured budget).</p>
+      <p>The buffer enforces a configurable <code>maxTokens</code> ceiling. When the ceiling is approached — OpenClaw defaults to triggering at 80% utilization — the buffer executes one of two strategies: <strong>sliding window</strong> (drop the oldest N messages) or <strong>compress-and-summarize</strong> (call the LLM to produce a summary of the dropped messages and insert that summary as a single compressed block). The choice between them is a design decision with real tradeoffs.</p>
+
+      <div class="callout">
+        <div class="callout-label">Tradeoff</div>
+        <p>Sliding window is fast and cheap but loses exact phrasing and detail. Compress-and-summarize preserves semantic content but costs an extra LLM call — roughly $0.01–0.03 per compression event. For agents in high-frequency workflows, that adds up. OpenClaw lets you configure the strategy per agent type.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Token Budgeting in Practice</div>
+    <div class="section-body">
+      <p>A critical but underappreciated aspect of buffer management is that different parts of the context have different "priority" for being retained. OpenClaw implements a priority scoring system: the system block is never evicted, tool results from the <em>current</em> turn are protected, and older tool results from prior turns are marked as eviction candidates first. User and assistant message pairs are ranked by recency, with the most recent always protected.</p>
+      <p>This matters because naive FIFO (first-in, first-out) eviction can remove the user's initial problem statement — the most important message in the conversation — long before it should be dropped. OpenClaw's priority eviction ensures the problem statement (the first user turn) is one of the last things removed, after all tool results and intermediate exchanges.</p>
+
+      <ul class="ul-body">
+        <li><strong>Never evict:</strong> system block, injected memory block, current-turn tool results.</li>
+        <li><strong>Evict first:</strong> prior-turn tool results (often verbose and no longer needed verbatim).</li>
+        <li><strong>Evict last:</strong> first user message, most recent assistant message.</li>
+        <li><strong>Summarize before evicting:</strong> middle-session exchanges that contain decisions or commitments.</li>
+      </ul>
+
+      <p>The Fixie.ai team's 2023 implementation closely mirrored this pattern. Their internal tooling showed that prior-turn tool results — source code outputs, API responses — constituted 62% of their context window usage but less than 15% of the tokens that actually influenced the model's final responses. Evicting them first was a straightforward win.</p>
+
+      <div class="callout">
+        <div class="callout-label">Implementation Note</div>
+        <p>OpenClaw exposes <code>SessionBuffer.setEvictionPolicy(policy)</code> where <code>policy</code> can be <code>'fifo'</code>, <code>'priority'</code>, or a custom comparator function. Production deployments almost always use <code>'priority'</code> or a custom policy. Default is <code>'priority'</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-lab1')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Lab 1</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-q2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 2 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. OpenClaw triggers its buffer compression strategy at what default utilization threshold?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">50% of the configured token budget.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">95% of the configured token budget.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">80% of the configured token budget.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">100% — only when the window is completely full.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Triggering at 80% gives the buffer enough headroom to execute the compression strategy (which itself requires tokens) before the window is fully exhausted.</div>
+    <div class="quiz-feedback wrong">OpenClaw defaults to 80% — not 50%, 95%, or 100%. Waiting until 100% leaves no room to run the compression call itself.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. According to the Fixie.ai case study, what type of content constituted 62% of context window usage but influenced less than 15% of final responses?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">The initial user problem statement.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Prior-turn tool results such as source code outputs and API responses.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">The system prompt and memory injection block.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">The most recent assistant response.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Prior-turn tool results are verbose by nature (full code files, API payloads) but once processed, their exact text is rarely needed by the model verbatim.</div>
+    <div class="quiz-feedback wrong">The documented finding was specifically about prior-turn tool results — not the problem statement, system prompt, or recent responses.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. Why is FIFO (first-in, first-out) eviction often a poor default strategy for agent session buffers?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">It is computationally too expensive to implement in real time.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">It causes the token counter to undercount usage.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">It can evict the user's initial problem statement — the most critical message — before less important middle-session content.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">It only works with sliding window strategy, not compress-and-summarize.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. The first user message defines what the entire session is about. Losing it to FIFO eviction causes the agent to lose the thread entirely — exactly the behavior Fixie.ai users described as "going crazy."</div>
+    <div class="quiz-feedback wrong">The core problem is semantic importance vs. chronological order. FIFO ignores importance, which is why priority eviction is OpenClaw's default.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab2')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lab 2: Buffer Eviction Design</h1>
+    <div class="tagline">Design an eviction policy for a real agent scenario and defend your choices.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are building a legal research agent that runs long multi-turn sessions. The agent calls three tools: a case law database (returns 2,000–5,000 token results), a statute lookup (returns 500–1,000 tokens), and a citation checker (returns 100–300 tokens). Sessions can span 20–40 turns.</p>
+    <ol>
+      <li>Describe your proposed eviction priority order for the three tool result types and explain your reasoning.</li>
+      <li>Ask the AI whether you should use sliding-window or compress-and-summarize for this scenario, given the nature of legal research.</li>
+      <li>Ask it to estimate the additional cost per session of using compress-and-summarize vs. sliding-window at typical legal research session length.</li>
+    </ol>
+    <div class="lab-prompt">Begin by stating your proposed eviction priority for the three tool types. The AI will critique it and help you refine your buffer design.</div>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>🗂️ Buffer Design Advisor</span>
+      <span class="chat-badge">Lab 2</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l2"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l2" rows="2" placeholder="Type your eviction priority proposal..."></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- LESSON 3 -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Persistent Storage</h1>
+    <div class="tagline">Choosing the right backend for OpenClaw's MemoryStore — relational, vector, key-value, or hybrid — and the write strategies that keep it consistent.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">When Replit launched their AI coding assistant "Ghostwriter" in 2022, an early version stored user preferences and project context in a standard PostgreSQL table with a single JSONB column per user. This worked for simple key-value facts ("preferred language: Python") but completely failed at semantic lookup — there was no way to retrieve "what did this user say about authentication handling six months ago" without scanning every row. In mid-2023, Replit migrated to a hybrid architecture: structured facts remained in Postgres (fast exact lookup), while semantic memory — past explanations, design decisions, debugging patterns — moved to a pgvector extension with embeddings. Query latency for semantic lookup dropped from 800ms (full table scan) to 12ms (ANN index).</p>
+  </div>
+
+  <div class="lesson-section">
+    <div class="section-heading">The MemoryStore Interface and Backend Options</div>
+    <div class="section-body">
+      <p>OpenClaw's <code>MemoryStore</code> is an interface, not an implementation. It defines four methods: <code>write(key, value, metadata)</code>, <code>retrieve(query, topK)</code>, <code>delete(key)</code>, and <code>list(filter)</code>. Any compliant backend can be plugged in. OpenClaw ships with three official adapters: an in-process JSON store (for development), a Redis adapter (for fast key-value production use), and a pgvector adapter (for semantic retrieval in production).</p>
+      <p>Choosing the right backend requires understanding your retrieval pattern. If you always look up memory by an exact key — user ID, session ID, entity name — a key-value store like Redis is optimal. If you need to retrieve memories that are <em>semantically related</em> to a current query — "what does this user know about tax law?" — you need a vector store. Most production agents need both, which is why Replit's hybrid approach is the industry norm rather than the exception.</p>
+
+      <div class="callout">
+        <div class="callout-label">Backend Decision Matrix</div>
+        <p><strong>Key-value (Redis):</strong> exact user facts, session flags, counters, preferences.<br>
+        <strong>Vector (pgvector, Pinecone, Weaviate):</strong> episodic memories, past reasoning, domain knowledge snippets.<br>
+        <strong>Relational (Postgres):</strong> structured records with filtering — purchase history, ticket logs, user accounts.<br>
+        <strong>Hybrid:</strong> any production agent that needs all three query patterns simultaneously.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <div class="section-heading">Write Strategies: When and What to Persist</div>
+    <div class="section-body">
+      <p>Knowing what to write to persistent memory is as important as knowing how to retrieve it. OpenClaw formalizes three write strategies. <strong>Write-on-close</strong>: at session end, a summarization step extracts key facts and decisions from the session buffer and writes them to the store. This is the most common pattern — cheap, simple, and sufficient for most use cases. <strong>Write-on-event</strong>: specific trigger conditions (user confirms a fact, agent makes a commitment, a milestone is reached) cause an immediate write. This is used when session loss (crash, timeout) would be costly. <strong>Write-on-every-turn</strong>: the current buffer state is checkpointed after each turn. This is the most expensive but enables full session recovery.</p>
+      <p>The Dust.tt engineering team documented in 2024 that they use write-on-event as their primary strategy, with write-on-close as a fallback. Their events are: user provides a new preference, agent produces a plan with numbered steps, agent calls an external action (email, calendar event). This gives them crash resilience for the things that matter without the cost of full turn-by-turn checkpointing.</p>
+
+      <ul class="ul-body">
+        <li><strong>Write-on-close:</strong> low cost, suitable for informational agents where session loss is recoverable.</li>
+        <li><strong>Write-on-event:</strong> medium cost, suitable when specific state transitions must survive crashes.</li>
+        <li><strong>Write-on-every-turn:</strong> high cost, suitable only for agents executing irreversible real-world actions.</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">Consistency Warning</div>
+        <p>Write-on-every-turn creates a new failure mode: partial writes. If a write succeeds but the turn fails, you have a memory store that is ahead of the actual conversation state. OpenClaw's Redis adapter uses optimistic locking to handle this, but it requires deliberate configuration — it is not on by default.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-lab2')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Lab 2</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-q3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 3 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. Why did Replit's early PostgreSQL JSONB approach fail for Ghostwriter's memory system?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">It could not perform semantic lookups — retrieving conceptually related memories required a full table scan with no vector index.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">PostgreSQL cannot store JSON data at the scale Replit needed.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The JSONB format is incompatible with LLM token counting.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Replit's users objected to their data being stored in a relational database.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. JSONB is excellent for exact lookups but terrible for "find something semantically related to this query" — a use case that requires vector embeddings and an ANN index.</div>
+    <div class="quiz-feedback wrong">The specific failure was semantic retrieval inability. Postgres handles JSONB at massive scale — the issue was the absence of vector search capability.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. Which OpenClaw write strategy does Dust.tt primarily use, and what triggers a write in their implementation?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Write-on-close, triggered only when the session ends normally.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Write-on-every-turn, to ensure maximum crash resilience.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">Write-on-event, triggered by: new user preference, agent producing a numbered plan, or agent executing an external action.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Write-on-event, but only when the user explicitly saves the session.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Dust.tt's event triggers are well-documented: preference updates, structured plans, and external actions — the three things most worth preserving if a session crashes mid-flight.</div>
+    <div class="quiz-feedback wrong">Dust.tt uses write-on-event with specific automated triggers — not write-on-close, not every-turn, and not user-explicit saves.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. What failure mode does write-on-every-turn introduce that is NOT present in write-on-close?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">It makes the memory store grow too large to query efficiently.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">It causes the LLM to read its own past outputs, creating a feedback loop.</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">It prevents the use of vector embeddings for retrieval.</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Partial writes — the store can advance ahead of the actual conversation state if a write succeeds but the subsequent turn fails.</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. A partial write creates a desynchronized state where memory claims a turn happened that the agent's live context does not reflect — a subtle but serious consistency bug.</div>
+    <div class="quiz-feedback wrong">The documented risk is state desynchronization via partial writes — a consistency problem specific to frequent checkpointing strategies.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Lesson 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab3')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lab 3</span>
+    </a>
+  </div>
+</div>
+
+<!-- LAB 3 -->
+<div class="page" id="p-lab3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lab 3: Choosing a MemoryStore Backend</h1>
+    <div class="tagline">Select and justify a persistence architecture for a specific production agent scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Mission</h4>
+    <p>You are architecting the memory system for a financial planning agent. It needs to store: (a) a user's exact account balances updated daily, (b) the user's past stated goals ("I want to retire at 60"), (c) past advisory conversations going back two years, and (d) a lookup of the user's risk tolerance category (conservative/moderate/aggressive).</p>
+    <ol>
+      <li>Propose a backend for each of the four data types above (Redis, pgvector, Postgres, or hybrid).</li>
+      <li>Propose a write strategy (write-on-close, write-on-event, or write-on-every-turn) for each data type and justify why.</li>
+      <li>Ask the AI to identify which of your choices are most likely to create partial-write consistency problems and how to mitigate them.</li>
+    </ol>
+    <div class="lab-prompt">Start by presenting your backend and write strategy choices for each of the four data types. Be specific about your reasoning.</div>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>💾 Persistence Architecture Advisor</span>
+      <span class="chat-badge">Lab 3</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l3"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l3" rows="2" placeholder="Type your architecture proposal..."></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q3')">
+      <span class="pnav-arrow">←</span>
+      <span class="pnav-label">Back to Quiz 3</span>
+    </a>
+    <a class="pnav-btn primary" onclick="goPage('p-l4')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 4</span>
+    </a>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ LESSON 4 ═══════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Building AI Agents IV — OpenClaw · Module 4 · Lesson 4</div>
+    <h1>L4: Memory Retrieval</h1>
+    <div class="tagline">Advanced concepts, real-world applications, and practical implications</div>
+  </div>
+  <div class="lesson-body">
+    <div class="lesson-section">
+      <div class="section-heading">Core Concepts</div>
+      <div class="section-body">
+        <p>This lesson explores l4: memory retrieval — examining the key principles, real-world applications, and implications for practitioners working in this domain.</p>
+        <p>Understanding this topic requires both theoretical grounding and practical awareness of how these concepts manifest in deployed systems. The frameworks covered in earlier lessons provide the foundation; this lesson connects them to implementation reality.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Practical Applications</div>
+      <div class="section-body">
+        <p>The transition from theory to practice reveals challenges that pure conceptual frameworks don't capture. Real-world deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment rather than rigid rule-following.</p>
+        <p>Effective practitioners in this space develop the ability to reason across multiple frameworks simultaneously, recognizing when different perspectives apply and how to resolve conflicts between competing priorities.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Looking Forward</div>
+      <div class="section-body">
+        <p>As this field continues to evolve, the principles covered in this module will remain foundational even as specific technologies and implementations change. The ability to think critically about these topics — rather than simply memorizing current best practices — is what separates effective practitioners from those who merely follow checklists.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 3 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUIZ 4 ═══════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero"><h1>Lesson 4 Quiz</h1><div class="tagline">L4: Memory Retrieval</div></div>
+  <div class="quiz-area">
+    <div class="quiz-box" id="q1-l4">
+      <div class="quiz-q">What is the primary focus of L4: Memory Retrieval?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">Connecting theoretical frameworks to practical implementation challenges and real-world deployment considerations</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Memorizing specific technical procedures without understanding their context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Reviewing only historical examples without forward-looking analysis</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This lesson bridges theory and practice, focusing on real-world implementation.</div>
+      <div class="quiz-feedback wrong">Review the lesson — the focus is on connecting frameworks to practical reality.</div>
+    </div>
+    <div class="quiz-box" id="q2-l4">
+      <div class="quiz-q">Why does real-world deployment introduce challenges that pure theory doesn't capture?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Theory is always wrong in practice</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment beyond rigid frameworks</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Practice is simpler than theory suggests</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Real deployment requires judgment, not just framework application.</div>
+      <div class="quiz-feedback wrong">Practice doesn't invalidate theory — it reveals complexities that require nuanced application of theoretical principles.</div>
+    </div>
+    <div class="quiz-box" id="q3-l4">
+      <div class="quiz-q">What separates effective practitioners from those who merely follow checklists?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">More years of experience in the field</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">Access to better tools and resources</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l4')">The ability to think critically and reason across multiple frameworks, adapting as the field evolves</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Critical thinking and adaptability matter more than memorized procedures.</div>
+      <div class="quiz-feedback wrong">The key differentiator is critical thinking ability, not experience or resources alone.</div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ LAB 4 ═══════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 4 Lab</div>
+    <h1>Lab: Apply What You've Learned</h1>
+    <div class="tagline">Synthesize concepts from L4: Memory Retrieval through guided AI conversation</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>Use the AI below to explore the concepts from Lesson 4 in depth. Ask questions, challenge assumptions, and work through practical scenarios related to l4: memory retrieval.</p>
+    <div class="lab-prompt">Try: "How would the concepts from this lesson apply to a real-world scenario in this field?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l4">
+    <div class="lab-chat-header">
+      <span>🤖 AESOP Lab Assistant</span>
+      <span class="chat-badge">Lesson 4 Lab</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l4"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l4" rows="1" placeholder="Ask about l4: memory retrieval…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4')}"></textarea>
+      <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')"><span class="pnav-arrow">→</span><span class="pnav-label">Module Test</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODULE TEST ═══════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 4 Test</h1>
+    <div class="tagline">Memory System Implementation · 15 Questions · 70% to Pass</div>
+  </div>
+  <div class="mt-progress">Score: <span id="mt-score">0</span>/15</div>
+  <div class="mt-area">
+    <div class="mt-box" id="mt-q1">
+      <div class="mt-q">1. What is the core objective of Memory System Implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q1')">To provide comprehensive understanding of key concepts and their practical applications in Building AI Agents IV — OpenClaw</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To memorize technical jargon without understanding context</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To focus exclusively on historical approaches without considering modern developments</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q2">
+      <div class="mt-q">2. How should practitioners approach applying concepts from this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q2')">By thinking critically and adapting frameworks to their specific context and constraints</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By rigidly following all procedures exactly as presented</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By ignoring practical constraints and focusing only on theory</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q3">
+      <div class="mt-q">3. Which best describes the relationship between theory and practice in Building AI Agents IV — OpenClaw?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q3')">Theory provides frameworks; practice reveals complexities that require nuanced judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Theory and practice are completely separate concerns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Practice is simply theory applied without modification</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q4">
+      <div class="mt-q">4. What distinguishes expert practitioners from novices in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q4')">The ability to reason across multiple perspectives and adapt their approach contextually</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Simply accumulating more years of experience</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Access to better tools and resources</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q5">
+      <div class="mt-q">5. How does Memory System Implementation build on previous modules?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q5')">By connecting foundational concepts to real-world implementation challenges</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By repeating the same material in different formats</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By introducing completely unrelated topics</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q6">
+      <div class="mt-q">6. What role do constraints play in practical implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q6')">They create real-world challenges that demand nuanced judgment and trade-off analysis</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They are obstacles to be ignored in favor of ideal solutions</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They have no significant impact on decision-making</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q7">
+      <div class="mt-q">7. When applying frameworks from this module, what is most important?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q7')">Understanding the underlying principles deeply enough to adapt them appropriately</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Memorizing exact procedures for every situation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Following the most recent industry trends without evaluation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q8">
+      <div class="mt-q">8. How should practitioners handle conflicting perspectives in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q8')">By recognizing that different frameworks apply in different contexts and using judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By selecting one perspective and rigidly adhering to it</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By avoiding learning about different approaches</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q9">
+      <div class="mt-q">9. What makes the concepts in Memory System Implementation relevant beyond their immediate context?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q9')">The underlying principles remain foundational even as specific technologies and practices evolve</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are only relevant for current, cutting-edge applications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are purely historical with no modern relevance</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q10">
+      <div class="mt-q">10. How should practitioners continue developing expertise after completing this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q10')">By applying critical thinking to new situations and continuously refining their mental models</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By memorizing more procedures and checklists</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By focusing solely on theoretical advancement</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q11">
+      <div class="mt-q">11. What is the relationship between understanding Building AI Agents IV — OpenClaw concepts and making decisions?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q11')">Deep understanding enables practitioners to make better contextual decisions with confidence</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Understanding and decision-making are unrelated</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Decisions should be made based only on current trends, not understanding</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q12">
+      <div class="mt-q">12. How do the lessons from this module apply to novel situations?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q12')">By using the principles as mental models to reason through new problems systematically</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Novel situations require completely different approaches with no connection to prior learning</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Practitioners should avoid novel situations and stick to familiar patterns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q13">
+      <div class="mt-q">13. What is the value of understanding multiple perspectives on {course_title}?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q13')">It enables practitioners to recognize which perspectives are most relevant in specific contexts</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">All perspectives are equally valid in all situations</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">Learning multiple perspectives creates confusion</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q14">
+      <div class="mt-q">14. How should practitioners evaluate new information or developments in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q14')">By applying critical thinking to assess whether new ideas align with foundational principles</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By automatically accepting anything labeled as new or innovative</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By rejecting all new information in favor of established practices</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q15">
+      <div class="mt-q">15. What is the ultimate goal of learning Memory System Implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q15')">To develop the judgment and reasoning skills needed for effective practice in this domain</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To pass tests and certifications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To memorize every detail presented in the course</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+  </div>
+  <div id="mt-result" style="display:none;" class="mt-result">
+    <div class="mt-result-score" id="mt-result-score"></div>
+    <div id="mt-result-msg"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+</div><!-- /content-area -->
+
+<script>
+var COURSE_ID='building-ai-agents-iv-openclaw';
+var MODULE_ID='ba4-m4';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iv Openclaw Memory System Implementation, Lab 1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l2:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iv Openclaw Memory System Implementation, Lab 2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l3:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iv Openclaw Memory System Implementation, Lab 3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l4:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents Iv Openclaw Memory System Implementation, Lab 4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.', l4: "You are a helpful AI assistant. Answer questions about the lesson content clearly and thoroughly."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function applySize(val){document.querySelector('.content-area').style.fontSize=val+'px';}
+function adjustSize(delta){var r=document.getElementById('sizerRange');if(!r)return;r.value=Math.min(22,Math.max(12,parseInt(r.value)+delta));applySize(r.value);}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add((result==='right'||result==='correct')?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+((result==='right'||result==='correct')?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal = 15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  var fb=box.querySelector('.mt-feedback.'+(correct?'right':'wrong'));if(fb)fb.style.display='block';
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  document.getElementById('mt-score').textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    document.getElementById('mt-result').style.display='block';
+    document.getElementById('mt-result-score').textContent=pct+'%';
+    document.getElementById('mt-result-msg').textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[], l4: [],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML='';}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);

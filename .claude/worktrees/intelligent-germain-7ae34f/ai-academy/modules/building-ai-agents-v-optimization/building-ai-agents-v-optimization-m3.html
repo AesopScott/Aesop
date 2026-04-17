@@ -1,0 +1,922 @@
+<!-- AESOP-FRAGMENT: true (injected into electives-hub.html — no <html>/<head>
+<!-- v1.0.1 | 2026-04-15 -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+<!-- v1.0.0 | 2026-04-14 -->
+<!-- building-ai-agents-v-optimization-m3 -->
+<!-- AESOP AI Academy — Electives Module (content injection format) -->
+<!-- Hub extracts: .tab-strip, .content-area, <script> -->
+<!-- Styles loaded by electives-hub.html via elective-module.css -->
+
+<!-- TAB STRIP -->
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<!-- CONTENT AREA -->
+<div class="content-area">
+
+<!-- LESSON 1 -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Token Cost Reality</h1>
+    <div class="tagline">Understanding what tokens actually cost in production agent systems — and why unchecked usage destroyed real products.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In late 2023, Cursor AI — the AI-powered code editor — faced a widely discussed cost crisis. Early versions sent entire codebases as context on nearly every keystroke-triggered completion. Engineering teams analyzing their Claude and GPT-4 API bills reported per-user monthly costs exceeding $50–$100 at scale, a figure that made the $20/month subscription model algebraically impossible. The team's public post-mortems named indiscriminate token usage as the core issue: they were paying for tokens the model never needed. Aggressive context windowing and retrieval-augmented generation cut their effective cost per session by more than 60% without measurable quality regression.</p>
+    <p class="story-text">This is not unique to Cursor. Every agent system that survives past prototype stage confronts the same arithmetic: tokens are the unit of production cost, and production cost determines whether your product exists.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">How Token Pricing Actually Works</h2>
+    <div class="section-body">
+      <p>LLM APIs price separately on <strong>input tokens</strong> (everything you send: system prompt, conversation history, retrieved documents, tool schemas) and <strong>output tokens</strong> (what the model generates). As of mid-2024, Anthropic's Claude 3.5 Sonnet charges $3 per million input tokens and $15 per million output tokens. OpenAI's GPT-4o charges $5 input / $15 output. These numbers shift, but the asymmetry is consistent: output costs 3–5× more per token than input.</p>
+      <p>For an agent that makes 10 LLM calls per user task, with an average context of 4,000 tokens per call and 500 output tokens, a single task costs approximately 40,000 input + 5,000 output tokens. At Claude 3.5 Sonnet pricing that is $0.12 + $0.075 = $0.195 per task. At 10,000 daily tasks, that is $1,950/day — $712,000/year — for one agent workflow. Token optimization is therefore a core business function, not an engineering nicety.</p>
+      <div class="callout">
+        <div class="callout-label">The Hidden Multiplier</div>
+        <p>Agent systems compound token costs in ways single-call applications do not. Retry logic, tool call roundtrips, chain-of-thought reasoning, and multi-agent orchestration all multiply the base token count. A naive ReAct-style agent solving a 5-step task may issue 8–12 LLM calls, each carrying the full prior context. The effective token spend per "task" can be 10–20× what a naive estimate predicts.</p>
+      </div>
+      <p>Context window size has increased dramatically — Claude 3.5 supports 200K tokens, GPT-4o supports 128K — but larger windows do not solve cost. They enable new capabilities while simultaneously enabling new waste. A 200K context filled carelessly is simply a more expensive mistake.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Token Waste Patterns in Real Agent Systems</h2>
+    <div class="section-body">
+      <p>Observability teams at companies running large agent deployments have consistently identified the same categories of waste. Understanding these patterns is the prerequisite to eliminating them.</p>
+      <ul class="ul-body">
+        <li><strong>History Bloat:</strong> Appending every message to context verbatim. A 30-turn conversation accumulates 15,000–30,000 tokens of history, most of which is irrelevant to the current query.</li>
+        <li><strong>Over-retrieved Context:</strong> RAG pipelines that return top-20 chunks when top-3 would suffice. Langchain's default retrieval settings in early versions returned 4 documents; teams using Pinecone reported routinely switching to 2 and seeing no quality drop.</li>
+        <li><strong>Verbose System Prompts:</strong> System prompts that explain the same constraint five different ways. A 2,000-token system prompt that could be 400 tokens adds $0.048 per 1,000 calls — $48 per million calls that buys nothing.</li>
+        <li><strong>Tool Schema Flooding:</strong> Injecting all available tool definitions every call. Each OpenAI function definition averages 60–120 tokens. Twenty tools add 1,200–2,400 tokens to every single call in the pipeline.</li>
+        <li><strong>Redundant Reasoning:</strong> Prompts that ask the model to "think step by step" without gating that output — generating 300–800 tokens of chain-of-thought that is never used downstream.</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Industry Benchmark</div>
+        <p>A 2024 analysis by the team at LangSmith (LangChain's observability product) found that across monitored agent deployments, 38% of input tokens were classified as "low-relevance" — content that appeared in context but had near-zero attention weight influence on outputs. This is not theoretical waste; it is measured waste.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Building a Token Budget Mentality</h2>
+    <div class="section-body">
+      <p>Production agent engineers think in token budgets the same way frontend engineers think in kilobytes. Every component of your prompt gets a budget: system prompt ≤ 500 tokens, retrieved context ≤ 2,000 tokens, conversation history ≤ 1,500 tokens, tool schemas ≤ 600 tokens. The sum is your call budget. Anything over budget triggers compression before the call is made.</p>
+      <p>Anthropic's documentation on prompt engineering explicitly recommends auditing your system prompt for redundancy before deployment. The OpenAI Cookbook contains a worked example showing a customer service system prompt reduced from 1,847 to 612 tokens with identical benchmark performance. These are not edge cases — they are the norm when prompts are written without a cost lens.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <span></span>
+    <a class="pnav-btn primary" onclick="goPage('p-q1')">
+      <span class="pnav-arrow">→</span>
+      <span class="pnav-label">Lesson 1 Quiz</span>
+    </a>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l1">
+    <div class="quiz-q">1. Why do agent systems often have 10–20× higher token costs than a simple estimate predicts?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Models generate more output tokens when given longer system prompts</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l1')">Multi-step tasks trigger multiple LLM calls, each carrying the full accumulated context</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">API providers charge a per-call fee on top of token costs</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l1')">Output tokens are billed at the same rate as input tokens</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Each call in a ReAct or chain-of-thought loop carries the full prior history, multiplying costs with every step.</div>
+    <div class="quiz-feedback wrong">❌ Not quite. The key multiplier is that every LLM call in a multi-step agent carries the growing full context forward.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l1">
+    <div class="quiz-q">2. In the Cursor AI cost case, what was the primary technical cause of runaway token spend?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Using GPT-4 instead of a cheaper model</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Generating excessively long code completions</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l1')">Sending entire codebases as context on nearly every completion request</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l1')">Running completions on the server instead of the client</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Sending full codebase context indiscriminately — not model choice or output length — was the primary driver.</div>
+    <div class="quiz-feedback wrong">❌ The documented cause was indiscriminate context inclusion — full codebases sent per request — not model tier or output size.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l1">
+    <div class="quiz-q">3. According to LangSmith's 2024 analysis of monitored agent deployments, approximately what percentage of input tokens were classified as low-relevance?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">12%</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">22%</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l1')">38%</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l1')">61%</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. 38% of input tokens across monitored deployments had near-zero influence on outputs — measured, not estimated, waste.</div>
+    <div class="quiz-feedback wrong">❌ The figure was 38% — a substantial fraction of all input spend producing no measurable effect on model outputs.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab1')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 1</span></a>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lab 1: Token Cost Audit</h1>
+    <div class="tagline">Analyze a bloated agent prompt and identify concrete waste categories.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Challenge</h4>
+    <p>Below is a realistic (bloated) system prompt used by an early-stage customer support agent. Your job is to work with the AI tutor to:</p>
+    <ol>
+      <li>Identify every token waste category present in the prompt</li>
+      <li>Estimate how many tokens each waste category is costing per call</li>
+      <li>Propose a compressed version and quantify the savings</li>
+    </ol>
+    <div class="lab-prompt">
+      "You are a helpful customer support assistant. You are always helpful. You should always be helpful and polite. When a user asks you a question, you should answer it helpfully. You are an assistant for AcmeCorp. AcmeCorp sells software. AcmeCorp's software helps businesses. You should never say anything harmful. You should never be rude. Always be professional. Always respond in English. If the user writes in another language, respond in English. Our return policy is 30 days. Refunds take 5–10 business days. For billing issues contact billing@acmecorp.com. For technical support contact support@acmecorp.com. You have access to the following tools: [search_kb, lookup_order, escalate_ticket, send_email, check_status, update_record, create_ticket, close_ticket, add_note, get_history]"
+    </div>
+    <p>Ask the tutor to walk through the audit with you, or start by naming one waste pattern you can already see.</p>
+  </div>
+  <div class="lab-chat" id="chat-l1">
+    <div class="lab-chat-header">
+      <span>🧪 Token Cost Lab — Tutor</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l1"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l1" rows="2" placeholder="Type your response..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+      <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q1')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-l2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2</span></a>
+  </div>
+</div>
+
+<!-- LESSON 2 -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Context Compression</h1>
+    <div class="tagline">Techniques for shrinking what enters the context window without losing what the model needs.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">In 2024, the Cognition AI team — builders of the Devin software engineering agent — published details on how they managed context for long-running coding sessions. Devin's tasks regularly spanned hours and involved hundreds of tool calls, file reads, terminal outputs, and browser observations. Naively accumulating all of this would have exceeded any model's context window within the first 30 minutes of a complex task.</p>
+    <p class="story-text">Their solution was a tiered context architecture: a small "active scratchpad" of recent actions, a compressed "episode summary" of completed subtasks, and a retrieval layer for specific earlier details on demand. The active scratchpad contained the last 3–5 actions verbatim. Older content was compressed into structured summaries before being stored. This allowed sessions of arbitrary length while keeping per-call token counts bounded and predictable.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">The Context Compression Toolkit</h2>
+    <div class="section-body">
+      <p>Context compression refers to any technique that reduces the token count of information before it enters the model's context window, while preserving the semantic content needed for the current task. The main approaches each have different trade-offs.</p>
+      <ul class="ul-body">
+        <li><strong>Sliding Window:</strong> Keep only the most recent N turns of conversation verbatim. Simple, deterministic, cheap. Loses older information entirely. Best for tasks where only recent context matters (e.g., step-by-step workflows).</li>
+        <li><strong>Extractive Summarization:</strong> Select sentences or spans from prior turns that are most relevant to the current query, discarding the rest. Preserves original wording. Can be done with lightweight local models (e.g., a small BERT-based extractive summarizer) without an LLM call.</li>
+        <li><strong>Abstractive Summarization:</strong> Use an LLM to produce a condensed restatement of prior context. Highest quality but costs tokens itself. Amortized over many subsequent calls, the investment pays off.</li>
+        <li><strong>Structured State:</strong> Replace free-text history with a structured JSON or YAML state object that tracks key entities, decisions, and facts. A 2,000-token conversation becomes a 200-token state object. Used heavily in tool-calling agents.</li>
+        <li><strong>Selective Retrieval:</strong> Store prior context in a vector database and retrieve only relevant chunks. Requires an embedding call but eliminates the need to carry history in-context at all.</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Real Implementation</div>
+        <p>MemGPT (now Letta), published by researchers at UC Berkeley in 2023, implemented a hierarchical memory system for LLM agents inspired by OS virtual memory. Main context holds active working memory; a compressed archival memory stores older summaries; retrieval queries fetch from archival on demand. Their benchmarks showed context windows of 2K tokens supporting tasks that naive approaches required 128K+ tokens to complete.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Compression Without Quality Loss</h2>
+    <div class="section-body">
+      <p>The core tension in context compression is between token reduction and information fidelity. Aggressive compression that discards critical details produces agents that forget important constraints, repeat questions users already answered, or contradict their own earlier statements. The goal is not minimum tokens — it is minimum tokens sufficient for the task.</p>
+      <p>Several empirical findings from research help calibrate this trade-off. A 2024 paper from Stanford NLP ("LongAgent") found that for multi-hop reasoning tasks, selectively including the 3–5 most relevant prior turns produced answers of equal quality to full-history inclusion 87% of the time, at 23% of the token cost. The 13% quality gap appeared only on tasks requiring integration of widely separated information — a detectable pattern that can trigger a fallback to fuller context retrieval.</p>
+      <div class="callout">
+        <div class="callout-label">Compression Strategy</div>
+        <p>Design your compression tier to be task-aware, not one-size-fits-all. Simple Q&amp;A tasks tolerate aggressive windowing. Multi-document synthesis tasks require more complete context. Instrument your agent to track task type and apply different compression policies accordingly. This is standard practice at companies like Cohere and AI21 Labs for their production conversational AI deployments.</p>
+      </div>
+      <p>A critical implementation detail: never compress in a way that destroys tool call results or structured data returned from external systems. These are often the highest-density information in a context window — small token count, high semantic value. System prompts and verbose LLM reasoning are the right compression targets; tool outputs and user statements are not.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-lab1')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 1</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-q2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 2 Quiz</span></a>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l2">
+    <div class="quiz-q">1. What was the core architectural approach Cognition AI (Devin) used to manage context for long-running coding sessions?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Using a 200K-token model to fit all session history verbatim</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l2')">A tiered system: recent actions verbatim, older subtasks as compressed summaries, specific details via retrieval</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Deleting all context after each subtask completes</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l2')">Running multiple parallel model instances each with a subset of history</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Tiered context — active scratchpad, episode summary, retrieval layer — kept per-call tokens bounded regardless of session length.</div>
+    <div class="quiz-feedback wrong">❌ Cognition used a three-tier approach: verbatim recent actions, compressed summaries of older subtasks, and on-demand retrieval for specifics.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l2">
+    <div class="quiz-q">2. Which compression technique involves replacing free-text conversation history with a compact JSON or YAML representation of key facts and decisions?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Sliding window</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Abstractive summarization</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l2')">Selective retrieval</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l2')">Structured state</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Structured state converts verbose conversation history into dense structured data — often achieving 10:1 compression ratios.</div>
+    <div class="quiz-feedback wrong">❌ The technique described — replacing conversation with structured key-value state — is called structured state.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l2">
+    <div class="quiz-q">3. According to the Stanford NLP LongAgent research, what fraction of the time did selecting only 3–5 relevant prior turns match full-history quality on multi-hop reasoning tasks?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">62%</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">74%</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l2')">87%</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l2')">95%</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. 87% quality parity at 23% of the token cost — a compelling trade-off that justifies selective context inclusion in most production scenarios.</div>
+    <div class="quiz-feedback wrong">❌ The figure was 87% quality parity — meaning selective inclusion worked as well as full history on the large majority of tasks.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab2')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 2</span></a>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lab 2: Design a Compression Architecture</h1>
+    <div class="tagline">Architect a tiered context system for a real agent scenario.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Challenge</h4>
+    <p>You are building a research assistant agent that helps analysts work through complex multi-day research projects. The agent can search the web, read documents, and maintain notes across sessions that can last hours.</p>
+    <p>Work with the tutor to design a complete context compression architecture for this agent. Address:</p>
+    <ol>
+      <li>What goes in the active context window verbatim (and how large is this budget)?</li>
+      <li>What gets compressed into structured state vs. abstractive summaries?</li>
+      <li>What triggers a retrieval call vs. relying on in-context history?</li>
+      <li>How do you handle cross-session memory without unbounded growth?</li>
+    </ol>
+    <p>The tutor will challenge your design decisions and push you toward concrete token budget numbers.</p>
+  </div>
+  <div class="lab-chat" id="chat-l2">
+    <div class="lab-chat-header">
+      <span>🧪 Context Architecture Lab — Tutor</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l2"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l2" rows="2" placeholder="Describe your initial architecture design..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+      <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q2')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-l3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3</span></a>
+  </div>
+</div>
+
+<!-- LESSON 3 -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Summarization Pipelines</h1>
+    <div class="tagline">Building production-grade systems that condense agent history without creating new failure modes.</div>
+  </div>
+
+  <div class="story-scene" data-label="CASE STUDY">
+    <p class="story-text">Anthropic's Claude.ai introduced memory summarization for long conversations in 2024. When a conversation exceeds a threshold, the system generates a structured summary of earlier turns and replaces those turns in the context. The challenge that Anthropic's team documented in their system prompt research: naive summarization consistently lost what they called "soft constraints" — user preferences stated casually early in a conversation ("I prefer bullet points" or "don't suggest solutions, just explore the problem") that weren't repeated but were load-bearing for user satisfaction. Their solution was a hybrid approach: a structured slot-filling pass for named entities and explicit facts, followed by a narrative summary that captured tone and implicit preferences.</p>
+    <p class="story-text">The same problem appears in any production summarization pipeline. Summarization that preserves facts but loses intent creates agents that know what happened but behave as if they don't understand why.</p>
+  </div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Anatomy of a Production Summarization Pipeline</h2>
+    <div class="section-body">
+      <p>A summarization pipeline is triggered when accumulated context exceeds a threshold, and it produces a compressed representation to replace the original. The pipeline has three distinct phases, each with its own failure modes.</p>
+      <p><strong>Phase 1 — Segmentation.</strong> Divide the context into summarization units. Naive approaches summarize everything older than N turns uniformly. Better approaches identify natural boundaries: completed subtasks, topic shifts, or time gaps. Summarizing within a coherent episode produces better results than summarizing across episode boundaries.</p>
+      <p><strong>Phase 2 — Multi-pass Extraction.</strong> Before the abstractive summary pass, run a structured extraction to capture: named entities (people, systems, files), explicit decisions made, user preferences stated, constraints given, and open questions. This extraction can be done with a much cheaper, smaller model — even a locally-running model — because the task is classification and extraction, not generation.</p>
+      <div class="callout">
+        <div class="callout-label">Cost Architecture</div>
+        <p>Use a cheap local model (e.g., Llama 3 8B running via Ollama) for the extraction pass and reserve the expensive frontier model only for the abstractive narrative summary. This hybrid approach cuts summarization cost by 60–80% while maintaining quality on the extraction pass where a weaker model is sufficient.</p>
+      </div>
+      <p><strong>Phase 3 — Summary Generation.</strong> The abstractive summary synthesizes extracted facts into a coherent narrative. Critical: include a summary header that explicitly lists user preferences, open constraints, and the current state of the task. These are the elements most commonly lost in naive summarization and most consequential when lost.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <div class="lesson-section">
+    <h2 class="section-heading">Summary Quality Evaluation and Failure Recovery</h2>
+    <div class="section-body">
+      <p>Production summarization pipelines require quality evaluation — you cannot trust that every summary is faithful without verification. The most practical approach is a lightweight "summary audit" prompt that presents the original context and the summary to a model and asks it to flag any factual discrepancies or omitted constraints. This adds tokens but prevents a class of subtle, hard-to-debug agent failures.</p>
+      <ul class="ul-body">
+        <li><strong>Hallucinated facts:</strong> Summaries occasionally introduce facts not present in the original, especially dates, numbers, and proper nouns. Always verify these categories.</li>
+        <li><strong>Lost negations:</strong> "Do NOT contact the client before Tuesday" becomes "Contact the client on Tuesday" in a careless summary. Negations and temporal constraints require explicit verification.</li>
+        <li><strong>Preference drift:</strong> Summarizing preferences multiple times through a pipeline can cause them to drift toward generic defaults. Preserve user preference statements verbatim in a dedicated slot rather than summarizing them.</li>
+      </ul>
+      <div class="callout">
+        <div class="callout-label">Real Implementation Note</div>
+        <p>The open-source agent framework AutoGen (Microsoft Research) implements a ConversableAgent class with a built-in summarization hook called <code>max_consecutive_auto_reply</code>. When this limit is hit, a summary is generated. Teams extending AutoGen for production use — including published case studies from enterprise users at Microsoft — universally add a constraint-preservation pass before the summary to avoid lost negations and user preferences.</p>
+      </div>
+      <p>Finally: always store the original context segments before summarizing, at least temporarily. Summaries are lossy by design. When an agent starts behaving unexpectedly, being able to inspect the original context is essential for debugging. A cheap object storage bucket (S3, GCS) for raw conversation logs is a standard production pattern at companies running LLM agents at scale.</p>
+    </div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-lab2')"><span class="pnav-arrow">←</span><span class="pnav-label">Lab 2</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-q3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 3 Quiz</span></a>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+  </div>
+
+  <div class="quiz-box" id="q0-l3">
+    <div class="quiz-q">1. What category of information did Anthropic find was most commonly lost in naive conversational summarization?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Named entities like names and file paths</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">Explicit decisions the user made</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q0-l3')">Soft constraints — casually stated user preferences that weren't repeated</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q0-l3')">The sequence of topics discussed</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Soft constraints — like "I prefer bullet points" stated once early — were the hardest to preserve and the most consequential when lost.</div>
+    <div class="quiz-feedback wrong">❌ Anthropic's research identified "soft constraints" — casually stated preferences not repeated — as the most commonly lost and most impactful category.</div>
+  </div>
+
+  <div class="quiz-box" id="q1-l3">
+    <div class="quiz-q">2. In a multi-pass summarization pipeline, why is the extraction pass well-suited to a cheap local model rather than a frontier model?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Local models are faster and speed is the primary constraint in summarization</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q1-l3')">Extraction is classification/identification work — a task small models handle well — not open-ended generation</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Frontier models cannot reliably identify named entities in conversations</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q1-l3')">Local models have better accuracy on structured data extraction than cloud models</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Classifying and extracting named entities, decisions, and preferences is a constrained task — small models are sufficient and far cheaper.</div>
+    <div class="quiz-feedback wrong">❌ The key is task type: extraction is classification work (bounded outputs), which small models handle as well as frontier models at a fraction of the cost.</div>
+  </div>
+
+  <div class="quiz-box" id="q2-l3">
+    <div class="quiz-q">3. Which specific summarization failure mode involves "Do NOT contact the client before Tuesday" becoming "Contact the client on Tuesday"?</div>
+    <div class="quiz-opts">
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Hallucinated facts</button>
+      <button class="quiz-opt" onclick="answer(this,'right','q2-l3')">Lost negations</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Preference drift</button>
+      <button class="quiz-opt" onclick="answer(this,'wrong','q2-l3')">Episode boundary confusion</button>
+    </div>
+    <div class="quiz-feedback right">✅ Correct. Lost negations are a distinct and dangerous failure mode — summaries that invert constraints while preserving surface meaning.</div>
+    <div class="quiz-feedback wrong">❌ This is the "lost negations" failure mode — negations and temporal constraints are particularly vulnerable in abstractive summarization.</div>
+  </div>
+
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-l3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Lesson</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-lab3')"><span class="pnav-arrow">→</span><span class="pnav-label">Lab 3</span></a>
+  </div>
+</div>
+
+<!-- LAB 3 -->
+<div class="page" id="p-lab3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced</div>
+    <h1>Lab 3: Build a Summarization Prompt</h1>
+    <div class="tagline">Write and evaluate a production-quality summarization prompt that preserves soft constraints.</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Challenge</h4>
+    <p>You need to write the actual summarization prompt that your agent will use when a conversation hits the compression threshold. The conversation below contains several soft constraints that a naive summarizer would lose:</p>
+    <div class="lab-prompt">
+      Turn 1 (User): "Can you help me draft an email to my team about the Q3 planning delay? Keep it brief — I hate long emails. And don't make it sound like we're panicking."<br><br>
+      Turn 3 (User): "Also, whenever I'm writing for my team, always use 'we' language, never 'I'. It's a culture thing."<br><br>
+      Turn 7 (User): "One more thing — don't mention the vendor issue in any external communications. Internal only."<br><br>
+      [... 20 more turns of email drafting and revision ...]
+    </div>
+    <p>Share your summarization prompt with the tutor. It should: preserve soft constraints verbatim in a dedicated section, handle negations explicitly, and produce a summary an agent could use in a fresh context window without losing critical preferences.</p>
+  </div>
+  <div class="lab-chat" id="chat-l3">
+    <div class="lab-chat-header">
+      <span>🧪 Summarization Prompt Lab — Tutor</span>
+      <span class="chat-badge">AI Tutor</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l3"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l3" rows="2" placeholder="Share your summarization prompt design..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+      <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <a class="pnav-btn" onclick="goPage('p-q3')"><span class="pnav-arrow">←</span><span class="pnav-label">Back to Quiz</span></a>
+    <a class="pnav-btn primary" onclick="goPage('p-l4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4</span></a>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════ LESSON 4 ═══════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Building AI Agents V — Optimization · Module 3 · Lesson 4</div>
+    <h1>L4: Reducing LLM Calls</h1>
+    <div class="tagline">Advanced concepts, real-world applications, and practical implications</div>
+  </div>
+  <div class="lesson-body">
+    <div class="lesson-section">
+      <div class="section-heading">Core Concepts</div>
+      <div class="section-body">
+        <p>This lesson explores l4: reducing llm calls — examining the key principles, real-world applications, and implications for practitioners working in this domain.</p>
+        <p>Understanding this topic requires both theoretical grounding and practical awareness of how these concepts manifest in deployed systems. The frameworks covered in earlier lessons provide the foundation; this lesson connects them to implementation reality.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Practical Applications</div>
+      <div class="section-body">
+        <p>The transition from theory to practice reveals challenges that pure conceptual frameworks don't capture. Real-world deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment rather than rigid rule-following.</p>
+        <p>Effective practitioners in this space develop the ability to reason across multiple frameworks simultaneously, recognizing when different perspectives apply and how to resolve conflicts between competing priorities.</p>
+      </div>
+    </div>
+    <div class="lesson-section">
+      <div class="section-heading">Looking Forward</div>
+      <div class="section-body">
+        <p>As this field continues to evolve, the principles covered in this module will remain foundational even as specific technologies and implementations change. The ability to think critically about these topics — rather than simply memorizing current best practices — is what separates effective practitioners from those who merely follow checklists.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 3 Lab</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ QUIZ 4 ═══════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero"><h1>Lesson 4 Quiz</h1><div class="tagline">L4: Reducing LLM Calls</div></div>
+  <div class="quiz-area">
+    <div class="quiz-box" id="q1-l4">
+      <div class="quiz-q">What is the primary focus of L4: Reducing LLM Calls?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">Connecting theoretical frameworks to practical implementation challenges and real-world deployment considerations</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Memorizing specific technical procedures without understanding their context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">Reviewing only historical examples without forward-looking analysis</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This lesson bridges theory and practice, focusing on real-world implementation.</div>
+      <div class="quiz-feedback wrong">Review the lesson — the focus is on connecting frameworks to practical reality.</div>
+    </div>
+    <div class="quiz-box" id="q2-l4">
+      <div class="quiz-q">Why does real-world deployment introduce challenges that pure theory doesn't capture?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Theory is always wrong in practice</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Deployment introduces constraints, trade-offs, and edge cases that demand nuanced judgment beyond rigid frameworks</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Practice is simpler than theory suggests</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Real deployment requires judgment, not just framework application.</div>
+      <div class="quiz-feedback wrong">Practice doesn't invalidate theory — it reveals complexities that require nuanced application of theoretical principles.</div>
+    </div>
+    <div class="quiz-box" id="q3-l4">
+      <div class="quiz-q">What separates effective practitioners from those who merely follow checklists?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">More years of experience in the field</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">Access to better tools and resources</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-l4')">The ability to think critically and reason across multiple frameworks, adapting as the field evolves</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Critical thinking and adaptability matter more than memorized procedures.</div>
+      <div class="quiz-feedback wrong">The key differentiator is critical thinking ability, not experience or resources alone.</div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')"><span class="pnav-arrow">→</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ LAB 4 ═══════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">🎯 Advanced · Lesson 4 Lab</div>
+    <h1>Lab: Apply What You've Learned</h1>
+    <div class="tagline">Synthesize concepts from L4: Reducing LLM Calls through guided AI conversation</div>
+  </div>
+  <div class="lab-intro">
+    <h4>Your Task</h4>
+    <p>Use the AI below to explore the concepts from Lesson 4 in depth. Ask questions, challenge assumptions, and work through practical scenarios related to l4: reducing llm calls.</p>
+    <div class="lab-prompt">Try: "How would the concepts from this lesson apply to a real-world scenario in this field?"</div>
+  </div>
+  <div class="lab-chat" id="chat-l4">
+    <div class="lab-chat-header">
+      <span>🤖 AESOP Lab Assistant</span>
+      <span class="chat-badge">Lesson 4 Lab</span>
+    </div>
+    <div class="lab-chat-msgs" id="msgs-l4"></div>
+    <div class="lab-chat-input">
+      <textarea class="lab-chat-input textarea" id="inp-l4" rows="1" placeholder="Ask about l4: reducing llm calls…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4')}"></textarea>
+      <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Quiz</span></button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')"><span class="pnav-arrow">→</span><span class="pnav-label">Module Test</span></button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODULE TEST ═══════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 3 Test</h1>
+    <div class="tagline">Token Optimization Strategies · 15 Questions · 70% to Pass</div>
+  </div>
+  <div class="mt-progress">Score: <span id="mt-score">0</span>/15</div>
+  <div class="mt-area">
+    <div class="mt-box" id="mt-q1">
+      <div class="mt-q">1. What is the core objective of Token Optimization Strategies?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q1')">To provide comprehensive understanding of key concepts and their practical applications in Building AI Agents V — Optimization</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To memorize technical jargon without understanding context</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">To focus exclusively on historical approaches without considering modern developments</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q1')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q2">
+      <div class="mt-q">2. How should practitioners approach applying concepts from this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q2')">By thinking critically and adapting frameworks to their specific context and constraints</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By rigidly following all procedures exactly as presented</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">By ignoring practical constraints and focusing only on theory</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q2')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q3">
+      <div class="mt-q">3. Which best describes the relationship between theory and practice in Building AI Agents V — Optimization?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q3')">Theory provides frameworks; practice reveals complexities that require nuanced judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Theory and practice are completely separate concerns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">Practice is simply theory applied without modification</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q3')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q4">
+      <div class="mt-q">4. What distinguishes expert practitioners from novices in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q4')">The ability to reason across multiple perspectives and adapt their approach contextually</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Simply accumulating more years of experience</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">Access to better tools and resources</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q4')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q5">
+      <div class="mt-q">5. How does Token Optimization Strategies build on previous modules?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q5')">By connecting foundational concepts to real-world implementation challenges</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By repeating the same material in different formats</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">By introducing completely unrelated topics</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q5')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q6">
+      <div class="mt-q">6. What role do constraints play in practical implementation?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q6')">They create real-world challenges that demand nuanced judgment and trade-off analysis</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They are obstacles to be ignored in favor of ideal solutions</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">They have no significant impact on decision-making</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q6')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q7">
+      <div class="mt-q">7. When applying frameworks from this module, what is most important?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q7')">Understanding the underlying principles deeply enough to adapt them appropriately</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Memorizing exact procedures for every situation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">Following the most recent industry trends without evaluation</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q7')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q8">
+      <div class="mt-q">8. How should practitioners handle conflicting perspectives in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q8')">By recognizing that different frameworks apply in different contexts and using judgment</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By selecting one perspective and rigidly adhering to it</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">By avoiding learning about different approaches</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q8')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q9">
+      <div class="mt-q">9. What makes the concepts in Token Optimization Strategies relevant beyond their immediate context?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q9')">The underlying principles remain foundational even as specific technologies and practices evolve</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are only relevant for current, cutting-edge applications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">They are purely historical with no modern relevance</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q9')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q10">
+      <div class="mt-q">10. How should practitioners continue developing expertise after completing this module?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q10')">By applying critical thinking to new situations and continuously refining their mental models</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By memorizing more procedures and checklists</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">By focusing solely on theoretical advancement</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q10')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q11">
+      <div class="mt-q">11. What is the relationship between understanding Building AI Agents V — Optimization concepts and making decisions?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q11')">Deep understanding enables practitioners to make better contextual decisions with confidence</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Understanding and decision-making are unrelated</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">Decisions should be made based only on current trends, not understanding</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q11')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q12">
+      <div class="mt-q">12. How do the lessons from this module apply to novel situations?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q12')">By using the principles as mental models to reason through new problems systematically</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Novel situations require completely different approaches with no connection to prior learning</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">Practitioners should avoid novel situations and stick to familiar patterns</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q12')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q13">
+      <div class="mt-q">13. What is the value of understanding multiple perspectives on {course_title}?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q13')">It enables practitioners to recognize which perspectives are most relevant in specific contexts</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">All perspectives are equally valid in all situations</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">Learning multiple perspectives creates confusion</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q13')">S - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q14">
+      <div class="mt-q">14. How should practitioners evaluate new information or developments in this field?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q14')">By applying critical thinking to assess whether new ideas align with foundational principles</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By automatically accepting anything labeled as new or innovative</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">By rejecting all new information in favor of established practices</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q14')">T - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+    <div class="mt-box" id="mt-q15">
+      <div class="mt-q">15. What is the ultimate goal of learning Token Optimization Strategies?</div>
+      <div class="mt-opts">
+        <button class="mt-opt" onclick="mtAnswer(this, true, 'mt-q15')">To develop the judgment and reasoning skills needed for effective practice in this domain</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To pass tests and certifications</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">To memorize every detail presented in the course</button>
+        <button class="mt-opt" onclick="mtAnswer(this, false, 'mt-q15')">R - Additional consideration or context-dependent factor</button>
+      </div>
+      <div class="mt-feedback right" style="display:none;">Correct!</div>
+      <div class="mt-feedback wrong" style="display:none;">Incorrect. Review the relevant lesson for more information.</div>
+    </div>
+  </div>
+  <div id="mt-result" style="display:none;" class="mt-result">
+    <div class="mt-result-score" id="mt-result-score"></div>
+    <div id="mt-result-msg"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')"><span class="pnav-arrow">←</span><span class="pnav-label">Lesson 4 Lab</span></button>
+  </div>
+</div>
+
+</div><!-- /content-area -->
+
+<script>
+var COURSE_ID='building-ai-agents-v-optimization';
+var MODULE_ID='ba5-m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
+
+
+/* ── Offline fallback system ──────────────────────────────────────── */
+var _offlineMode={};
+var _fallbackIdx={};
+var LAB_FALLBACK=[
+  "That's a thoughtful response. Can you build on that? What specific examples or evidence come to mind that support your thinking?",
+  "Good point. Now let's look at it from another angle — what challenges or counterarguments might someone raise? How would you address them?",
+  "You're doing well with this. Think about the bigger picture: what are the practical, real-world implications of what you've described?",
+  "Great work engaging with this topic. As a final reflection: what's your key takeaway from this conversation, and how does it connect to the lesson material?"
+];
+function _fallbackReply(labId){var i=_fallbackIdx[labId]||0;var r=LAB_FALLBACK[Math.min(i,LAB_FALLBACK.length-1)];_fallbackIdx[labId]=i+1;return r;}
+/* ── End fallback system ──────────────────────────────────────────── */
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Token Optimization, Lab 1. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l2:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Token Optimization, Lab 2. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l3:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Token Optimization, Lab 3. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.',
+  l4:'You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.\n\nBuilding Ai Agents V Optimization Token Optimization, Lab 4. Help students explore the topic through guided conversation. Push for specificity and evidence-based reasoning. Stay on topic. 2-3 paragraphs per response.', l4: "You are a helpful AI assistant. Answer questions about the lesson content clearly and thoroughly."};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function applySize(val){document.querySelector('.content-area').style.fontSize=val+'px';}
+function adjustSize(delta){var r=document.getElementById('sizerRange');if(!r)return;r.value=Math.min(22,Math.max(12,parseInt(r.value)+delta));applySize(r.value);}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add((result==='right'||result==='correct')?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  box.querySelector('.quiz-feedback.'+((result==='right'||result==='correct')?'right':'wrong')).classList.add('show');
+}
+
+var mtTotal = 15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,correct,qNum){
+  var box=document.getElementById(qNum);
+  if(box.classList.contains('answered')) return;
+  box.classList.add('answered');
+  box.querySelectorAll('.mt-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(correct?'correct':'wrong');
+  var fb=box.querySelector('.mt-feedback.'+(correct?'right':'wrong'));if(fb)fb.style.display='block';
+  if(correct) mtCorrect++;
+  mtAnswered++;
+  document.getElementById('mt-score').textContent=mtCorrect;
+  if(mtAnswered>=mtTotal){
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    var passed=pct>=70;
+    document.getElementById('mt-result').style.display='block';
+    document.getElementById('mt-result-score').textContent=pct+'%';
+    document.getElementById('mt-result-msg').textContent=passed?'Module complete! Well done.':'Below 70% — review lessons and retake.';
+    if(passed) window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[], l4: [],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+function chatAppend(labId,role,text){
+  var el=document.createElement('div');
+  el.className='chat-msg '+role;
+  el.textContent=text;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){msgs.appendChild(el);msgs.scrollTop=msgs.scrollHeight;}
+}
+function chatSetLoading(labId,on){var btn=document.getElementById('send-'+labId);if(btn)btn.disabled=on;}
+function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(labId);}}
+function chatReset(labId){chatHistories[labId]=[];chatExchanges[labId]=0;var msgs=document.getElementById('msgs-'+labId);if(msgs)msgs.innerHTML='';}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  if(!inp) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  chatHistories[labId].push({role:'user',content:text});
+  chatAppend(labId,'user',text);
+  /* Offline mode — use fallback immediately */
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    chatAppend(labId,'ai',reply);
+    chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    return;
+  }
+  chatSetLoading(labId,true);
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:chatHistories[labId],system_prompt:ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||''),max_tokens:1024})});
+      if(!res.ok) throw new Error('Server error '+res.status);
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||data.reply||'(No response)';
+      chatHistories[labId].push({role:'assistant',content:reply});
+      chatAppend(labId,'ai',reply);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      chatSetLoading(labId,false);
+      return;
+    }catch(err){
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);

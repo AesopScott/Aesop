@@ -22,6 +22,9 @@
 
   /* ─── CSS ─────────────────────────────────────────────── */
   var CSS = '' +
+    /* Reserve space for the fixed banner on every page, and add scroll
+       padding so #anchor links don't land hidden underneath it. */
+    'html { scroll-padding-top: 140px; }' +
     'body { padding-top: 118px; overflow-x: hidden; }' +
     'body.banner-dismissed { padding-top: 0; }' +
     '.top-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999;' +
@@ -127,12 +130,14 @@
     '  border-color: rgba(255,255,255,0.1); }' +
     '[data-theme="dark"] .tb-stat-lbl { color: rgba(255,255,255,0.55); }' +
     '@media (max-width: 760px) {' +
+    '  html { scroll-padding-top: 160px; }' +
     '  body { padding-top: 140px; }' +
     '  .tb-stats { gap: 0.6rem; padding: 0.5rem 1rem; }' +
     '  .tb-stat-row { gap: 1rem; }' +
     '  .tb-stat-num { font-size: 1.1rem; }' +
     '}' +
     '@media (max-width: 520px) {' +
+    '  html { scroll-padding-top: 184px; }' +
     '  body { padding-top: 164px; }' +
     '  .tb-pills { padding: 0.45rem 0.9rem; }' +
     '  .tb-pills a { padding: 0.35rem 0.75rem; font-size: 0.8rem; }' +

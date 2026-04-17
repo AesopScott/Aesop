@@ -124,7 +124,7 @@
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__track { background: #c9a05a; }' +
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__thumb {' +
     '  transform: translateX(12px); background: #0f1923; }' +
-    '[data-theme="dark"] .top-banner { background: #0a1220; }' +
+    '[data-theme="dark"] .top-banner { background: #16293d; }' +
     '[data-theme="dark"] .tb-pills a {' +
     '  background: rgba(255,255,255,0.05); color: #fff !important;' +
     '  border-color: rgba(255,255,255,0.1); }' +

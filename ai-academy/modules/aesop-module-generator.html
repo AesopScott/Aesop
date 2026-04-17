@@ -261,7 +261,11 @@ function liveCids() {
     .map(([cid]) => cid);
 }
 function isLive(cid) {
-  const e = REGISTRY[cid];
+  if (!cid) return false;
+  // Canonical registry keys use hyphens; courses-data.json historically used
+  // underscores for some courses. Look up both forms so the ⟡ marker appears
+  // regardless of which convention the courses-data entry uses.
+  const e = REGISTRY[cid] || REGISTRY[cid.replace(/_/g, '-')];
   return !!(e && e.status === 'live');
 }
 // Back-compat: any code that does `LIVE_COURSES.has(x)`, `LIVE_COURSES.size`,
@@ -1913,9 +1917,14 @@ async function writeRegistryEntry(cid) {
   const course = COURSES.find(c => c.id === cid);
   if (!course) return;
 
-  const meta = REGISTRY_META[cid] || {
+  // Canonical registry key: hyphenated form of the course id. Historic
+  // courses-data entries used underscores; we always write the hyphen form
+  // so the registry stays consistent and lookups via isLive() succeed.
+  const regKey = cid.replace(/_/g, '-');
+
+  const meta = REGISTRY_META[cid] || REGISTRY_META[regKey] || {
     icon:'📘', accent:'#64748b', accentRgb:'100,116,139',
-    pts:1, days:1, prefix: cid.substring(0,3),
+    pts:1, days:1, prefix: regKey.substring(0,3),
     desc: course.name + ' — AESOP AI Academy elective course.'
   };
 
@@ -1993,7 +2002,7 @@ async function writeRegistryEntry(cid) {
   }
 
   const entry = {
-    id: cid,
+    id: regKey,
     title: course.name,
     icon: meta.icon,
     sub: panelSub || (panelCategory ? panelCategory + ' · Elective' : 'Elective'),
@@ -2018,13 +2027,19 @@ async function writeRegistryEntry(cid) {
     registry = JSON.parse(await existingFile.text());
   } catch(e) { /* file doesn't exist yet — that's fine */ }
 
-  // Preserve existing languages array and add current language
-  const existingLangs = registry[cid]?.languages || ['en'];
+  // Preserve existing languages array and add current language. Check both
+  // regKey and legacy underscored cid so we inherit languages from any older
+  // registry entry that may have been written before normalization.
+  const existingLangs = registry[regKey]?.languages
+    || registry[cid]?.languages
+    || ['en'];
   if (!existingLangs.includes(selectedLang)) existingLangs.push(selectedLang);
   entry.languages = existingLangs;
 
-  // Add/update this course
-  registry[cid] = entry;
+  // Add/update this course under the canonical hyphenated key, and remove
+  // any stale underscored duplicate from prior activations.
+  registry[regKey] = entry;
+  if (regKey !== cid) delete registry[cid];
 
   // Write back
   const writeHandle = await repoFolderHandle.getFileHandle('course-registry.json', { create: true });

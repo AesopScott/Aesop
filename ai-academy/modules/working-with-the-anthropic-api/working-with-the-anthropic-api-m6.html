@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Working with the Anthropic API – M6: Rate Limits and Error Handling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- working-with-the-anthropic-api-m6 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;font-style:italic;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.code-block{background:#060e18;border:1px solid var(--border-dark);border-radius:4px;padding:1rem 1.25rem;margin:1rem 0;font-family:'Courier New',monospace;font-size:0.8rem;line-height:1.7;color:#a89f93;overflow-x:auto;}
+.code-block .kw{color:#f43f5e;}
+.code-block .fn{color:#c9a05a;}
+.code-block .str{color:#4fcf8a;}
+.code-block .cm{color:#3a4a5a;font-style:italic;}
+.http-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.82rem;}
+.http-table th{text-align:left;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;border-bottom:1px solid var(--border-dark);}
+.http-table td{padding:0.55rem 0.75rem;border-bottom:1px solid rgba(26,39,56,0.5);color:#a89f93;vertical-align:top;}
+.http-table tr:last-child td{border-bottom:none;}
+.http-table .code{font-family:'Courier New',monospace;color:var(--accent);font-size:0.78rem;}
+.http-table .green{color:#4fcf8a;}
+.http-table .gold{color:var(--gold);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ LESSON 1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 1</div>
+      <h1>Understanding Anthropic's Rate Limit Architecture</h1>
+      <div class="tagline">Tokens per minute, requests per minute, and the daily token ceiling — what they are and why they exist.</div>
+      <div class="lesson-question">What exactly gets throttled when the API returns 429, and how does Anthropic decide your limits?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Event · November 2023">
+        <p class="story-text">When Anthropic opened Claude API access broadly after the GPT-4 launch wave, demand spiked faster than anticipated. Several production teams building on the API reported <em>sustained 429 storms</em> — every request rejected for minutes at a time — because they had not accounted for the input-token dimension of rate limits. They optimised for request count but ignored that a single long-context call could consume the entire per-minute token budget. The incident became a reference case in Anthropic's developer documentation updates in early 2024.</p>
+      </div>
+
+      <div class="section-heading">Three Independent Rate-Limit Axes</div>
+      <div class="section-body">
+        <p>Anthropic enforces limits on three independent axes simultaneously. Breaching <em>any one</em> triggers a 429:</p>
+        <p><strong>Requests Per Minute (RPM)</strong> — the raw count of API calls in any rolling 60-second window.</p>
+        <p><strong>Input Tokens Per Minute (ITPM)</strong> — the sum of prompt tokens across all requests in any 60-second window. A single large-context request can exhaust this budget even if RPM is fine.</p>
+        <p><strong>Output Tokens Per Minute (OTPM)</strong> — the sum of completion tokens generated. This is often the binding constraint for streaming pipelines that request long completions.</p>
+        <p>A fourth constraint — <strong>Tokens Per Day (TPD)</strong> — applies cumulatively and resets at midnight UTC. TPD limits do not trigger 429; instead requests are rejected with a dedicated error message once the daily ceiling is hit.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Documented Tier Limits (as of mid-2024)</div>
+        <p>Anthropic's published Tier 1 limits for claude-3-5-sonnet-20241022: 50 RPM · 40,000 ITPM · 8,000 OTPM · 1,000,000 TPD. Tier 4 (high-spend) raises these to 4,000 RPM · 400,000 ITPM · 80,000 OTPM · 5,000,000 TPD. Limits are per-key, not per-account, so multiple keys on the same account each carry their own quota.</p>
+      </div>
+
+      <div class="section-heading">How Tiers Are Assigned</div>
+      <div class="section-body">
+        <p>Anthropic uses a <em>spend-gated tier system</em>. Tier 1 is granted on account creation with a valid payment method. Tier 2 requires $40 in cumulative spend and seven days since first use. Tier 3 requires $200 and 14 days. Tier 4 requires $4,000 and 30 days. There is no application process — the system promotes automatically when both conditions are met.</p>
+        <p>Usage tier information is visible in the <strong>Anthropic Console → Settings → Limits</strong> panel and is also returned in response headers (see Lesson 2). Some high-volume enterprise customers negotiate custom limits directly; those are outside the tier system.</p>
+      </div>
+
+      <div class="section-heading">The Response-Header Clock</div>
+      <div class="section-body">
+        <p>Every successful API response carries six rate-limit headers that show the state of your quota <em>after</em> the request was applied:</p>
+      </div>
+      <table class="http-table">
+        <tr><th>Header</th><th>Meaning</th></tr>
+        <tr><td class="code">x-ratelimit-limit-requests</td><td>Your RPM ceiling</td></tr>
+        <tr><td class="code">x-ratelimit-limit-tokens</td><td>Your combined token-per-minute ceiling</td></tr>
+        <tr><td class="code">x-ratelimit-remaining-requests</td><td>Requests still available this minute</td></tr>
+        <tr><td class="code">x-ratelimit-remaining-tokens</td><td>Tokens still available this minute</td></tr>
+        <tr><td class="code">x-ratelimit-reset-requests</td><td>ISO 8601 timestamp when RPM counter resets</td></tr>
+        <tr><td class="code">x-ratelimit-reset-tokens</td><td>ISO 8601 timestamp when token counter resets</td></tr>
+      </table>
+      <div class="section-body">
+        <p>These headers are your primary tool for building <em>proactive</em> rate control — slowing down before you hit the ceiling rather than reacting to 429s. Reading them on every response adds no latency and eliminates entire classes of retry logic.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Architecture Insight</div>
+        <p>The token counters count <em>input tokens</em> at request submission time using estimated values, then reconcile against actual output tokens at completion. This means a request can be accepted at submission but still exhaust a budget mid-stream on very long outputs. Design your per-request <code>max_tokens</code> defensively — lower values leave more headroom for concurrent calls.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">RPM</span><span class="kt-def">Requests Per Minute — raw call count enforced in a rolling 60-second window.</span></div>
+      <div class="key-term"><span class="kt-term">ITPM</span><span class="kt-def">Input Tokens Per Minute — prompt token consumption summed across concurrent requests.</span></div>
+      <div class="key-term"><span class="kt-term">TPD</span><span class="kt-def">Tokens Per Day — cumulative daily ceiling, resets midnight UTC, produces a distinct error when exceeded.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn primary" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Rate limit architecture — 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq1">
+        <div class="quiz-q">Which single factor can exhaust your per-minute budget even when your request count is very low?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">High RPM from rapid polling</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq1')">A small number of large-context requests consuming all available ITPM</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Using streaming mode instead of batch mode</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Sending requests during peak hours UTC</button>
+        </div>
+        <div class="quiz-feedback right">Correct. ITPM is independent of RPM. One enormous prompt can consume the entire token budget for the minute even if you've only made a single request.</div>
+        <div class="quiz-feedback wrong">Not quite. The key insight from the 2023 incident is that token budgets (ITPM) and request budgets (RPM) are independent axes — a low request count is no protection against ITPM exhaustion from large contexts.</div>
+      </div>
+
+      <div class="quiz-box" id="qq2">
+        <div class="quiz-q">When does Anthropic automatically promote an account from Tier 2 to Tier 3?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">After submitting a written upgrade request through the Console</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">After spending $40 and waiting seven days from first use</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq2')">After spending $200 and waiting at least 14 days since first use</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">After reaching one million tokens per day in usage</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tier 3 requires $200 cumulative spend and 14 days account age. Both conditions must be met — promotion is automatic, no application needed.</div>
+        <div class="quiz-feedback wrong">Review the tier table. Tier 3 specifically requires $200 in spend and 14 days. $40 / 7 days are the Tier 2 thresholds.</div>
+      </div>
+
+      <div class="quiz-box" id="qq3">
+        <div class="quiz-q">What HTTP status code does Anthropic return when a daily token limit (TPD) is exceeded?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">503 Service Unavailable</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">402 Payment Required</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq3')">429 Too Many Requests, with a distinct daily-limit error message</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">403 Forbidden</button>
+        </div>
+        <div class="quiz-feedback right">Correct. TPD exhaustion produces a 429, but with a specific error_type in the body indicating the daily ceiling was hit rather than a per-minute limit.</div>
+        <div class="quiz-feedback wrong">Both per-minute and per-day limits use 429. The distinction lies in the error body's type field, not the status code itself.</div>
+      </div>
+
+      <div class="quiz-box" id="qq4">
+        <div class="quiz-q">Which response header tells you the exact moment your per-minute token counter will reset?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">x-ratelimit-remaining-tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq4')">x-ratelimit-reset-tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">x-ratelimit-limit-tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">x-request-id</button>
+        </div>
+        <div class="quiz-feedback right">Correct. x-ratelimit-reset-tokens is an ISO 8601 timestamp. Your code can parse it and schedule the next request to fire just after that moment.</div>
+        <div class="quiz-feedback wrong">x-ratelimit-remaining-tokens tells you how many tokens remain, not when the counter resets. The reset timestamp lives in x-ratelimit-reset-tokens.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Rate Limit Architecture</h1>
+      <div class="tagline">Chat with your AI lab assistant about Anthropic's rate limit system</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Practice discussing Anthropic's rate limit architecture. Ask the assistant about the differences between RPM, ITPM, OTPM, and TPD — or describe a hypothetical scenario and ask how you'd calculate whether your workload fits within a given tier.</p>
+        <div class="lab-prompt">Starter: "My app makes 20 requests per minute, each with a 2,000-token prompt and requesting up to 500 tokens of output. Which Tier 1 limits am I closest to exhausting?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Rate Limit Architecture</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Hello! I'm your lab assistant for rate limit architecture. Ask me about RPM, ITPM, OTPM, TPD, tier thresholds, or walk me through your usage scenario and I'll help you work out which limits apply.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" rows="1" placeholder="Ask about rate limits…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 2</div>
+      <h1>The Anthropic Error Taxonomy</h1>
+      <div class="tagline">Every error type the API can return, what causes it, and which require retrying versus fixing code.</div>
+      <div class="lesson-question">Which errors should trigger automatic retry and which are permanent failures your code must handle differently?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Incident · GitHub Issues · 2024">
+        <p class="story-text">In February 2024, multiple developers reported on the Anthropic Discord and GitHub that their SDKs were retrying <em>400 Bad Request</em> errors indefinitely — burning their daily token budget on requests that could never succeed. The root cause was generic retry logic that treated all non-200 responses as transient. Anthropic responded by publishing explicit guidance distinguishing <em>retryable</em> from <em>non-retryable</em> errors, and the Python SDK was updated to stop retrying 400-class errors by default.</p>
+      </div>
+
+      <div class="section-heading">The Complete Error Taxonomy</div>
+      <div class="section-body"><p>Anthropic errors follow standard HTTP semantics but add a structured JSON body with <code>type</code>, <code>error.type</code>, and <code>error.message</code> fields that carry fine-grained information:</p></div>
+      <table class="http-table">
+        <tr><th>HTTP</th><th>error.type</th><th>Retryable?</th><th>Common Cause</th></tr>
+        <tr><td class="code">400</td><td class="code">invalid_request_error</td><td style="color:#f07070">No</td><td>Malformed JSON, missing required field, invalid model ID</td></tr>
+        <tr><td class="code">401</td><td class="code">authentication_error</td><td style="color:#f07070">No</td><td>Invalid or missing API key</td></tr>
+        <tr><td class="code">403</td><td class="code">permission_error</td><td style="color:#f07070">No</td><td>Key lacks access to requested model or feature</td></tr>
+        <tr><td class="code">404</td><td class="code">not_found_error</td><td style="color:#f07070">No</td><td>Endpoint path typo, deprecated model string</td></tr>
+        <tr><td class="code">413</td><td class="code">request_too_large</td><td style="color:#f07070">No</td><td>Prompt exceeds model's context window</td></tr>
+        <tr><td class="code">429</td><td class="code">rate_limit_error</td><td class="green">Yes — with backoff</td><td>RPM, ITPM, OTPM, or TPD ceiling hit</td></tr>
+        <tr><td class="code">500</td><td class="code">api_error</td><td class="gold">Yes — limited</td><td>Anthropic-side error; retry up to 2–3 times</td></tr>
+        <tr><td class="code">529</td><td class="code">overloaded_error</td><td class="gold">Yes — with backoff</td><td>Anthropic infrastructure under heavy load</td></tr>
+      </table>
+
+      <div class="section-heading">Reading the Error Body</div>
+      <div class="section-body"><p>The structured error body gives you exact diagnosis without guessing from the status code alone:</p></div>
+      <div class="code-block">
+<span class="cm">// Example 429 response body</span><br>
+{<br>
+&nbsp;&nbsp;<span class="str">"type"</span>: <span class="str">"error"</span>,<br>
+&nbsp;&nbsp;<span class="str">"error"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"type"</span>: <span class="str">"rate_limit_error"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">"message"</span>: <span class="str">"Rate limit exceeded: you have exceeded your daily token limit"</span><br>
+&nbsp;&nbsp;}<br>
+}
+      </div>
+      <div class="section-body">
+        <p>The <code>message</code> field differentiates a per-minute rate limit from a per-day exhaustion — both arrive as 429 but your handling differs: per-minute errors should back off and retry; per-day exhaustion should halt all requests until midnight UTC and alert the on-call engineer.</p>
+      </div>
+
+      <div class="section-heading">The Retry Decision Tree</div>
+      <div class="section-body">
+        <p><strong>Never retry:</strong> 400, 401, 403, 404, 413. These are deterministic failures. Retrying wastes quota and signals a bug in your code or configuration, not a transient infrastructure issue.</p>
+        <p><strong>Retry with exponential backoff:</strong> 429 (per-minute) and 529. Parse <code>retry-after</code> header if present; otherwise use the reset timestamp from rate-limit headers to compute exact wait time.</p>
+        <p><strong>Retry conservatively (2–3 attempts max):</strong> 500. Anthropic's servers occasionally return transient 500s. Three retries with a short fixed delay is the standard practice per Anthropic's own SDK implementation.</p>
+        <p><strong>Special case — 429 TPD:</strong> Do not retry. Stop all requests for the remainder of the day and notify stakeholders. Add TPD headroom monitoring to prevent recurrence.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">SDK Default Behaviour</div>
+        <p>As of anthropic-sdk-python v0.25+, the SDK automatically retries 429 and 529 up to two times using exponential backoff. It does NOT retry 400-class errors. You can override this with <code>max_retries=0</code> for full manual control, or increase it — but the SDK caps at sensible defaults and respects the <code>retry-after</code> header.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">overloaded_error</span><span class="kt-def">HTTP 529 — Anthropic-specific status indicating infrastructure saturation, not a client error. Backoff and retry.</span></div>
+      <div class="key-term"><span class="kt-term">invalid_request_error</span><span class="kt-def">HTTP 400 — Your request is structurally wrong. Retry will always fail. Fix the code.</span></div>
+      <div class="key-term"><span class="kt-term">retry-after</span><span class="kt-def">Optional response header on 429 responses indicating minimum seconds to wait before retrying.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson 2 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Error taxonomy — 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq5">
+        <div class="quiz-q">A request returns HTTP 400 with error.type "invalid_request_error". What is the correct action?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Retry immediately with exponential backoff</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Retry after parsing the retry-after header</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq5')">Do not retry — fix the request structure in your code</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Wait until midnight UTC and retry</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 400 errors are deterministic — the server fully understood your request and rejected it. Retrying the same request will always produce the same 400. You must fix the request.</div>
+        <div class="quiz-feedback wrong">400 is non-retryable. The server understood your request perfectly and rejected it because it's invalid. No amount of waiting or backoff will change the outcome — only fixing the request will.</div>
+      </div>
+
+      <div class="quiz-box" id="qq6">
+        <div class="quiz-q">What distinguishes an HTTP 529 "overloaded_error" from an HTTP 500 "api_error" in terms of handling?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">529 should never be retried; 500 should be retried with exponential backoff</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq6')">Both are retryable, but 529 is a normal infrastructure-load signal while 500 indicates a more unusual server fault — both warrant backoff, 500 limited to 2–3 attempts</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">529 is a client error requiring code changes; 500 is a server error requiring retry</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">529 and 500 are handled identically in all cases</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 529 is Anthropic's custom status for capacity saturation — common during demand spikes and very retryable with backoff. 500s are genuine server faults — retry conservatively (2–3 times max).</div>
+        <div class="quiz-feedback wrong">Both 529 and 500 are retryable, but they have different expected frequencies and retry strategies. 529 is expected during high-traffic periods; 500 is rarer and should be retried more conservatively.</div>
+      </div>
+
+      <div class="quiz-box" id="qq7">
+        <div class="quiz-q">Your app hits a 429 with the message "you have exceeded your daily token limit." What is the correct response?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Apply exponential backoff and retry within the same minute</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Switch to a different API key on the same account</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq7')">Halt all requests until midnight UTC and alert stakeholders; different error from per-minute rate limit</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Reduce max_tokens and retry immediately</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A TPD exhaustion 429 will not recover until midnight UTC. Retrying burns nothing because tokens from already-consumed requests won't come back. Halt, alert, and review daily usage patterns.</div>
+        <div class="quiz-feedback wrong">TPD exhaustion is not a transient per-minute issue — it won't recover until the daily counter resets at midnight UTC. Backoff and retry logic is the wrong tool here.</div>
+      </div>
+
+      <div class="quiz-box" id="qq8">
+        <div class="quiz-q">Which SDK parameter controls how many automatic retries the official Anthropic Python SDK performs on 429 and 529 errors?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">retry_policy</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq8')">max_retries</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">backoff_factor</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">timeout_retries</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Anthropic client accepts <code>max_retries</code> at instantiation — e.g., <code>Anthropic(max_retries=0)</code> disables automatic retries entirely for full manual control.</div>
+        <div class="quiz-feedback wrong">The correct parameter is <code>max_retries</code>. You pass it when constructing the Anthropic client instance: <code>client = Anthropic(api_key=..., max_retries=3)</code>.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Error Taxonomy</h1>
+      <div class="tagline">Diagnose error scenarios with your AI assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Describe error scenarios to the assistant and work through the correct diagnosis and handling strategy. Practice distinguishing retryable from non-retryable errors and understanding what each error type signals about your code or the API's state.</p>
+        <div class="lab-prompt">Starter: "My app is getting a 403 permission_error when calling claude-3-opus-20240229 but my API key works fine for claude-3-haiku. What's likely happening and what should I do?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Error Taxonomy</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">I'm here to help you diagnose Anthropic API errors. Describe an error you're seeing — include the HTTP status code and error.type if you have it — and I'll walk you through what it means and how to handle it correctly.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" rows="1" placeholder="Describe an error scenario…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 3</div>
+      <h1>Exponential Backoff and Jitter</h1>
+      <div class="tagline">Building retry logic that recovers fast without making congestion worse.</div>
+      <div class="lesson-question">Why does naive retry logic often make API overload situations worse, and what does proper jitter actually change?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Pattern · AWS & Google SRE Literature">
+        <p class="story-text">The "thundering herd" problem — thousands of clients retrying a failed service simultaneously at fixed intervals — has been documented in production incidents at AWS, Google, and Netflix. When a brief API outage recovers, all waiting clients fire at exactly the same moment, causing an immediate second overload. <em>Jitter</em> — randomising the retry delay — was formalised as a solution in AWS's 2015 blog post "Exponential Backoff and Jitter" by Marc Brooker, which remains the canonical reference. Anthropic's own SDK retry implementation uses full-jitter as described in that post.</p>
+      </div>
+
+      <div class="section-heading">The Three Retry Strategies</div>
+      <div class="section-body">
+        <p><strong>Fixed delay:</strong> Wait the same duration every time (e.g., 1 second). Simple but creates thundering herds when many clients fail simultaneously. Acceptable for rare, isolated errors. Never use for 429s under load.</p>
+        <p><strong>Exponential backoff (no jitter):</strong> Wait <code>base × 2^attempt</code>. Clients spread out over time but any group of clients that failed at the same moment will still retry at exactly the same times, causing secondary load spikes at each doubling interval.</p>
+        <p><strong>Exponential backoff with full jitter:</strong> Wait <code>random(0, base × 2^attempt)</code>. Clients that failed together retry at uniformly random points within the growing window. This is the AWS-recommended "full jitter" approach and what the Anthropic Python SDK uses internally.</p>
+      </div>
+
+      <div class="section-heading">Reference Implementation (Python)</div>
+      <div class="code-block">
+<span class="kw">import</span> time, random<br>
+<span class="kw">import</span> anthropic<br><br>
+<span class="fn">def</span> <span class="fn">call_with_backoff</span>(client, **kwargs):<br>
+&nbsp;&nbsp;max_retries = <span class="str">5</span><br>
+&nbsp;&nbsp;base_delay = <span class="str">1.0</span>  <span class="cm"># seconds</span><br>
+&nbsp;&nbsp;max_delay = <span class="str">60.0</span><br><br>
+&nbsp;&nbsp;<span class="kw">for</span> attempt <span class="kw">in</span> range(max_retries):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">try</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> client.messages.create(**kwargs)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">except</span> anthropic.RateLimitError <span class="kw">as</span> e:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="str">"daily"</span> <span class="kw">in</span> str(e).lower():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">raise</span>  <span class="cm"># TPD — never retry</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cap = min(max_delay, base_delay * (<span class="str">2</span> ** attempt))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;wait = random.uniform(<span class="str">0</span>, cap)  <span class="cm"># full jitter</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.sleep(wait)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">except</span> anthropic.APIStatusError <span class="kw">as</span> e:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> e.status_code &lt; <span class="str">500</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">raise</span>  <span class="cm"># 4xx — never retry</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> attempt == max_retries - <span class="str">1</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">raise</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time.sleep(random.uniform(<span class="str">0</span>, <span class="str">2</span>))<br>
+&nbsp;&nbsp;<span class="kw">raise</span> RuntimeError(<span class="str">"Exhausted retries"</span>)
+      </div>
+
+      <div class="section-heading">Honouring the retry-after Header</div>
+      <div class="section-body">
+        <p>When Anthropic includes a <code>retry-after</code> header (numeric seconds) or <code>retry-after-ms</code> (milliseconds), your minimum wait must be at least that long. Your jitter should be applied <em>on top of</em> the server-specified minimum, not instead of it:</p>
+      </div>
+      <div class="code-block">
+<span class="kw">def</span> <span class="fn">parse_retry_after</span>(response_headers):<br>
+&nbsp;&nbsp;ra = response_headers.get(<span class="str">"retry-after"</span>)<br>
+&nbsp;&nbsp;<span class="kw">if</span> ra:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> float(ra)<br>
+&nbsp;&nbsp;ra_ms = response_headers.get(<span class="str">"retry-after-ms"</span>)<br>
+&nbsp;&nbsp;<span class="kw">if</span> ra_ms:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> float(ra_ms) / <span class="str">1000</span><br>
+&nbsp;&nbsp;<span class="kw">return</span> <span class="str">None</span><br><br>
+<span class="cm"># In retry loop:</span><br>
+server_min = parse_retry_after(e.response.headers) <span class="kw">or</span> <span class="str">0</span><br>
+wait = server_min + random.uniform(<span class="str">0</span>, cap)
+      </div>
+
+      <div class="section-heading">Max Retries and Circuit Breakers</div>
+      <div class="section-body">
+        <p>Even well-designed retry logic needs a ceiling. A retry loop without a maximum retry count can turn a brief outage into a request backlog that grows without bound. Standard practice is 3–5 retries for 429s and 2–3 for 500s. Beyond that, surface the error to the caller — they need the opportunity to degrade gracefully, queue the work, or alert an operator.</p>
+        <p>In high-volume systems, consider a <strong>circuit breaker</strong>: after N consecutive failures, stop sending requests entirely for a fixed window (e.g., 30 seconds). This prevents your application from hammering a struggling API and allows headroom for recovery. Libraries like <em>tenacity</em> (Python) and <em>p-retry</em> (Node.js) provide circuit breaker primitives that integrate cleanly with async workflows.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Use the Reset Header Instead of Guessing</div>
+        <p>For 429 per-minute errors, the <code>x-ratelimit-reset-tokens</code> and <code>x-ratelimit-reset-requests</code> headers give you the exact reset timestamp. Computing <code>reset_time - now</code> and sleeping that duration is more efficient than exponential backoff because you know exactly when capacity resumes. Add a small jitter (0–500ms) to avoid a thundering herd of clients resuming simultaneously.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Full jitter</span><span class="kt-def">random(0, cap) — the most effective jitter strategy; uniformly distributes retries across the entire backoff window.</span></div>
+      <div class="key-term"><span class="kt-term">Circuit breaker</span><span class="kt-def">Pattern that stops sending requests entirely after N consecutive failures, preventing cascading load during API degradation.</span></div>
+      <div class="key-term"><span class="kt-term">retry-after</span><span class="kt-def">Server-specified minimum wait in seconds — your wait must be at least this; jitter should be added on top.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson 3 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Exponential backoff and jitter — 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq9">
+        <div class="quiz-q">Why does exponential backoff without jitter still cause thundering herd problems?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Because exponential backoff grows too slowly for heavy load scenarios</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq9')">Because clients that failed simultaneously will retry at exactly the same doubled-delay intervals, creating new load spikes at each retry round</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Because exponential backoff doesn't account for the retry-after header</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Because exponential backoff always retries non-retryable errors</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Synchronised clients remain synchronised even with exponential backoff — they all wait 1s, then 2s, then 4s together. Full jitter breaks this synchronisation.</div>
+        <div class="quiz-feedback wrong">The issue isn't speed — it's synchronisation. Clients that entered the retry loop at the same time will all wake up at the same doubled intervals, creating repeated mini-waves of load.</div>
+      </div>
+
+      <div class="quiz-box" id="qq10">
+        <div class="quiz-q">Your backoff cap is 60 seconds, base delay is 1 second, and this is attempt number 3 (0-indexed). What is the full-jitter wait range?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">0 to 3 seconds</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq10')">0 to 8 seconds (random(0, min(60, 1 × 2³)))</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">4 to 8 seconds</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">0 to 60 seconds</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 1 × 2³ = 8, which is under the 60-second cap. Full jitter picks uniformly from 0 to 8 seconds. The cap would only apply from attempt 6 onward (1 × 2⁶ = 64 &gt; 60).</div>
+        <div class="quiz-feedback wrong">Attempt 3 (0-indexed): base × 2^3 = 1 × 8 = 8. That's below the 60-second cap so the range is random(0, 8). The cap only bites when the exponential exceeds 60.</div>
+      </div>
+
+      <div class="quiz-box" id="qq11">
+        <div class="quiz-q">The API returns a 429 with a "retry-after: 12" header. Your calculated backoff cap for this attempt is 8 seconds. What should your wait be?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">8 seconds (your backoff cap takes precedence)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">12 seconds exactly, no jitter</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq11')">At least 12 seconds — server minimum plus optional jitter on top</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Average of 12 and 8 = 10 seconds</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The server-specified retry-after is a hard minimum. Your computed backoff is secondary — the final wait must be max(server_min, computed_backoff) plus jitter. Never wait less than the server says.</div>
+        <div class="quiz-feedback wrong">Your computed backoff is irrelevant when it's shorter than the server-specified minimum. retry-after: 12 means you cannot retry before 12 seconds. Your cap only applies if it's larger than the server's value.</div>
+      </div>
+
+      <div class="quiz-box" id="qq12">
+        <div class="quiz-q">What is the primary benefit of using a circuit breaker on top of retry logic?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">It eliminates the need for exponential backoff</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">It allows retrying 400-class errors safely</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq12')">It stops all requests during sustained failures, preventing an ever-growing backlog and giving the API time to recover</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">It automatically increases your rate limit tier</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Without a circuit breaker, retry queues grow unbounded during sustained outages. The circuit breaker provides a hard stop — and more importantly, signals to the rest of your system that the dependency is degraded.</div>
+        <div class="quiz-feedback wrong">Circuit breakers don't replace backoff — they complement it. Their key function is stopping requests entirely during prolonged failures rather than letting queues grow forever.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Backoff and Retry Design</h1>
+      <div class="tagline">Design and review retry strategies with your AI assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Work through retry strategy design problems with the assistant. Describe your system's requirements — concurrency level, acceptable latency, retry budget — and get feedback on your approach. You can also paste pseudocode or describe an existing retry implementation for review.</p>
+        <div class="lab-prompt">Starter: "I have 50 concurrent workers all calling the Anthropic API. When I get 429s they all back off and retry at the same time. What specific changes should I make to my retry logic to fix this?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Backoff & Retry Design</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">I'm ready to help you design or review retry strategies for the Anthropic API. Tell me about your workload — how many concurrent callers, what latency budget, and what your current retry logic looks like — and I'll give specific recommendations.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" rows="1" placeholder="Describe your retry scenario…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 4</div>
+      <h1>Proactive Rate Management and Production Patterns</h1>
+      <div class="tagline">Token budgeting, request queues, header-driven pacing, and observability for high-volume deployments.</div>
+      <div class="lesson-question">How do production teams stay within limits without sacrificing throughput — and how do they catch limit issues before users do?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Reported Pattern · Anthropic Developer Forum · 2024">
+        <p class="story-text">Several teams building document-processing pipelines on the Anthropic API reported that their throughput was far below theoretical limits because they were processing requests sequentially. When they moved to a <em>token-budget-aware concurrency pool</em> — tracking remaining tokens from response headers and dynamically adjusting the number of concurrent workers — throughput increased 8–12× while 429 rates fell to near zero. The pattern was discussed in Anthropic's developer forum in mid-2024 and subsequently referenced in third-party integration guides.</p>
+      </div>
+
+      <div class="section-heading">Proactive vs. Reactive Rate Control</div>
+      <div class="section-body">
+        <p>Most developers start with <em>reactive</em> rate control: send requests freely, handle 429s with backoff. This works but is inefficient — every 429 represents wasted latency and a request that made it to the server before being rejected.</p>
+        <p><em>Proactive</em> rate control reads the rate-limit headers on each successful response and uses that information to govern when the <em>next</em> request fires. You never hit the ceiling because you're continuously tracking remaining headroom.</p>
+      </div>
+
+      <div class="section-heading">Token-Budget-Aware Concurrency</div>
+      <div class="section-body"><p>The core pattern for high-throughput pipelines:</p></div>
+      <div class="code-block">
+<span class="kw">class</span> <span class="fn">TokenBudgetPool</span>:<br>
+&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, max_workers=<span class="str">10</span>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;self.remaining_tokens = <span class="str">40000</span>  <span class="cm"># start conservative</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;self.reset_at = <span class="str">None</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;self.lock = threading.Lock()<br><br>
+&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">update_from_headers</span>(self, headers):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">with</span> self.lock:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remaining = headers.get(<span class="str">"x-ratelimit-remaining-tokens"</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> remaining:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.remaining_tokens = int(remaining)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reset = headers.get(<span class="str">"x-ratelimit-reset-tokens"</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> reset:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.reset_at = datetime.fromisoformat(reset)<br><br>
+&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">can_submit</span>(self, estimated_tokens):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">with</span> self.lock:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.remaining_tokens >= estimated_tokens * <span class="str">1.1</span>  <span class="cm"># 10% safety margin</span>
+      </div>
+
+      <div class="section-heading">Request Queueing Pattern</div>
+      <div class="section-body">
+        <p>For batch workloads, a request queue decouples task submission from API execution. Workers pull from the queue only when the token-budget pool signals headroom. This pattern smooths bursty workloads into steady API consumption:</p>
+        <p><strong>1.</strong> Accept all tasks into an internal queue immediately (no blocking on API limits).<br>
+        <strong>2.</strong> A dispatcher loop checks token headroom before dispatching each item.<br>
+        <strong>3.</strong> If headroom is insufficient, the dispatcher sleeps until the reset timestamp.<br>
+        <strong>4.</strong> Completed tasks post their header data back to update the budget pool.</p>
+        <p>This design never produces a 429 under normal operation because the dispatcher enforces limits before the API does.</p>
+      </div>
+
+      <div class="section-heading">Observability: What to Monitor in Production</div>
+      <div class="section-body">
+        <p>Rate limit incidents are difficult to debug after the fact without metrics. Emit these as time-series data:</p>
+      </div>
+      <table class="http-table">
+        <tr><th>Metric</th><th>Alert Threshold</th><th>Why It Matters</th></tr>
+        <tr><td>429 rate (per minute)</td><td>&gt;5% of requests</td><td>Indicates reactive control is failing; switch to proactive</td></tr>
+        <tr><td>x-ratelimit-remaining-tokens (min per minute)</td><td>&lt;10% of limit</td><td>Early warning before hitting ceiling</td></tr>
+        <tr><td>Retry count per request (p95)</td><td>&gt;2 retries</td><td>Signals sustained pressure, not transient spikes</td></tr>
+        <tr><td>Daily token consumption (% of TPD)</td><td>&gt;80% by 18:00 UTC</td><td>Predicts end-of-day exhaustion before it happens</td></tr>
+        <tr><td>Time to first token (p99)</td><td>Spike &gt;2× baseline</td><td>Backoff delays propagating to users</td></tr>
+      </table>
+
+      <div class="section-heading">max_tokens as a Rate Control Tool</div>
+      <div class="section-body">
+        <p>Setting <code>max_tokens</code> conservatively is one of the most underused rate control levers. For a pipeline that generates short classifications, setting <code>max_tokens=150</code> instead of <code>max_tokens=1000</code> reduces your OTPM consumption by 85% per request — directly translating to higher throughput under the same limits. Never leave <code>max_tokens</code> at the model maximum unless you genuinely need it.</p>
+        <p>For streaming responses, the <em>actual</em> output token count differs from <code>max_tokens</code>. Your monitoring should track actual output tokens from the <code>usage.output_tokens</code> field in the response, not the cap you set.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Batch API for Non-Realtime Workloads</div>
+        <p>Anthropic launched the <strong>Message Batches API</strong> in late 2024. Batch requests are processed asynchronously with a 24-hour SLA and carry a 50% price discount. Critically, batch requests consume from a separate quota pool — they do not count against your standard RPM/ITPM limits. For document processing, embedding, or any non-realtime workload, the Batches API is the correct tool and eliminates rate limit concerns almost entirely.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Token-budget-aware concurrency</span><span class="kt-def">A pattern where workers track remaining token headroom from response headers and gate new requests before limits are hit.</span></div>
+      <div class="key-term"><span class="kt-term">Message Batches API</span><span class="kt-def">Anthropic's async batch processing API — separate quota pool, 50% discount, 24-hour SLA. Ideal for non-realtime workloads.</span></div>
+      <div class="key-term"><span class="kt-term">usage.output_tokens</span><span class="kt-def">The actual token count in a response — always monitor this, not max_tokens, for accurate quota accounting.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson 4 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Proactive rate management — 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq13">
+        <div class="quiz-q">What is the key difference between proactive and reactive rate control?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">Proactive control uses circuit breakers; reactive uses backoff</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq13')">Proactive control reads remaining-headroom headers and governs the next request; reactive control handles 429s after they occur</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">Proactive control is only available for Tier 4 accounts</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">Reactive control is always more efficient because it allows maximum request rate</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Proactive control prevents 429s from ever occurring by tracking headroom from response headers. Reactive control is simpler but wastes latency on every rejected request.</div>
+        <div class="quiz-feedback wrong">The distinction is about timing: proactive control acts before hitting limits using header data; reactive control responds after receiving a 429. Both use backoff, but proactive control rarely needs it.</div>
+      </div>
+
+      <div class="quiz-box" id="qq14">
+        <div class="quiz-q">Your pipeline processes 10,000 documents overnight. Which Anthropic API capability is most appropriate and why?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Standard Messages API with 50 concurrent workers and backoff</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq14')">Message Batches API — separate quota pool, 50% cost reduction, 24-hour SLA fits overnight processing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Streaming API to reduce per-request token cost</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Standard API with max_retries=10 to handle rate limits automatically</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Message Batches API was designed exactly for this — non-realtime bulk processing. Its separate quota pool means your overnight job won't compete with your realtime API traffic for the same limits.</div>
+        <div class="quiz-feedback wrong">For overnight bulk processing with no realtime requirement, the Message Batches API is the right tool: it uses a separate quota pool (no competition with live traffic), costs 50% less, and handles 10,000 documents easily within a 24-hour window.</div>
+      </div>
+
+      <div class="quiz-box" id="qq15">
+        <div class="quiz-q">Your daily TPD monitoring shows 80% consumption by 18:00 UTC. What should this trigger?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Immediate request throttling to zero</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq15')">A proactive alert — at current rate you'll exhaust the daily budget before midnight; reduce request rate or shift low-priority workloads to batch</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Nothing — 80% is within normal parameters</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Automatic tier upgrade request</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 80% consumed with 6 hours remaining means exhaustion is likely. Alerting at this threshold gives engineers time to act — rate-limit non-critical workloads, defer batch jobs, or temporarily reduce max_tokens — before users are impacted.</div>
+        <div class="quiz-feedback wrong">At 80% with 6 hours to midnight, the trajectory will hit 100% before reset. The alert threshold exists specifically to give engineers lead time to act before the limit is hit.</div>
+      </div>
+
+      <div class="quiz-box" id="qq16">
+        <div class="quiz-q">Why should you monitor usage.output_tokens from API responses rather than relying on your max_tokens setting for quota accounting?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">max_tokens is not sent to the API and has no effect on output length</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq16')">Actual output is often much shorter than max_tokens — tracking the cap over-estimates consumption and leads to incorrect quota forecasts</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">usage.output_tokens includes input tokens, making it a more complete metric</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">max_tokens is deprecated in newer Claude models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Claude regularly produces outputs much shorter than max_tokens. If you forecast quota usage based on max_tokens, you'll systematically over-estimate consumption. usage.output_tokens gives you actual consumption for accurate forecasting.</div>
+        <div class="quiz-feedback wrong">max_tokens is a ceiling, not a prediction. Actual output — returned in usage.output_tokens — is typically well below the cap. Accurate quota accounting requires actual numbers, not ceiling values.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Production Rate Management</h1>
+      <div class="tagline">Design production rate management strategies with your AI assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Design or review production rate management architectures. Describe your system's API usage patterns — request volume, latency requirements, workload type — and get specific recommendations on concurrency models, queueing strategies, observability setup, and when to use the Batches API.</p>
+        <div class="lab-prompt">Starter: "I'm building a legal document review system that processes 500 documents per day with 30-minute SLA requirements and also handles real-time chat queries from lawyers. How should I architect the rate management to keep both workloads healthy?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Production Rate Management</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">I'm here to help you design production rate management for the Anthropic API. Tell me about your system — request volumes, latency requirements, workload mix, and any existing infrastructure — and I'll recommend specific patterns for token budgeting, concurrency, queueing, and observability.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" rows="1" placeholder="Describe your production scenario…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 6 Test</h1>
+      <div class="tagline">Rate Limits and Error Handling — 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt1">
+        <div class="quiz-q">1. Which Anthropic rate limit axis is most commonly the binding constraint for large-context document pipelines?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">RPM (Requests Per Minute)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">ITPM (Input Tokens Per Minute)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">TPD (Tokens Per Day)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">OTPM (Output Tokens Per Minute)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Long prompts consume large amounts of ITPM even with few requests, making ITPM the typical bottleneck for document pipelines.</div>
+        <div class="quiz-feedback wrong">For document pipelines with large contexts, ITPM is typically the binding constraint — each request carries a large prompt consuming disproportionate token budget relative to request count.</div>
+      </div>
+
+      <div class="quiz-box" id="mt2">
+        <div class="quiz-q">2. Anthropic Tier 3 requires which conditions to be met?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">$40 spend and 7 days account age</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">$200 spend and 14 days account age</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">$4,000 spend and 30 days account age</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">An approved upgrade application</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tier 3: $200 + 14 days. Promotion is automatic when both thresholds are met.</div>
+        <div class="quiz-feedback wrong">Review tier thresholds: Tier 2 is $40/7 days, Tier 3 is $200/14 days, Tier 4 is $4,000/30 days. No application required for any tier.</div>
+      </div>
+
+      <div class="quiz-box" id="mt3">
+        <div class="quiz-q">3. Which header gives you the ISO 8601 timestamp for when your request count resets?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">x-ratelimit-remaining-requests</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">x-ratelimit-limit-requests</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">x-ratelimit-reset-requests</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">x-request-id</button>
+        </div>
+        <div class="quiz-feedback right">Correct. x-ratelimit-reset-requests provides the exact reset time for the RPM counter.</div>
+        <div class="quiz-feedback wrong">The reset timestamps are in x-ratelimit-reset-requests (for RPM) and x-ratelimit-reset-tokens (for token limits).</div>
+      </div>
+
+      <div class="quiz-box" id="mt4">
+        <div class="quiz-q">4. An HTTP 413 error from the Anthropic API indicates what, and should it be retried?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Server overload — yes, retry with backoff</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">Prompt exceeds context window — no, shorten the prompt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Daily token limit exceeded — no, wait until midnight</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Rate limit hit — yes, retry after delay</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 413 request_too_large is non-retryable. The request itself is too large — you must shorten it before retrying.</div>
+        <div class="quiz-feedback wrong">413 means the request payload exceeds the model's context window. Retrying the same request will always fail. You must reduce prompt length.</div>
+      </div>
+
+      <div class="quiz-box" id="mt5">
+        <div class="quiz-q">5. Which HTTP status code does Anthropic use for infrastructure saturation (distinct from rate limiting)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">503</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">500</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">529</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">429</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HTTP 529 (overloaded_error) is Anthropic's custom status for capacity saturation. It's retryable with backoff.</div>
+        <div class="quiz-feedback wrong">Anthropic uses the non-standard HTTP 529 for infrastructure saturation (overloaded_error). 429 is for rate limits, 500 for server errors.</div>
+      </div>
+
+      <div class="quiz-box" id="mt6">
+        <div class="quiz-q">6. The Anthropic Python SDK (v0.25+) automatically retries which error classes by default?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">All non-200 responses including 400-class errors</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">429 and 529 only — it does not retry 400-class errors</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">500 and 529 only</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">All errors up to 3 attempts</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The SDK retries 429 and 529 by default (up to 2 times). 400-class errors are never retried automatically.</div>
+        <div class="quiz-feedback wrong">The SDK correctly identifies 400-class errors as non-retryable. It auto-retries only 429 (rate limit) and 529 (overloaded) — the two transient server-side conditions.</div>
+      </div>
+
+      <div class="quiz-box" id="mt7">
+        <div class="quiz-q">7. "Full jitter" exponential backoff computes the wait as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">base × 2^attempt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">base × 2^attempt + fixed_offset</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">random(0, min(cap, base × 2^attempt))</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">random(base × 2^(attempt-1), base × 2^attempt)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Full jitter selects uniformly from zero to the capped exponential ceiling — this is the AWS-recommended approach that best prevents thundering herds.</div>
+        <div class="quiz-feedback wrong">Full jitter: random(0, cap) where cap = min(max_delay, base × 2^attempt). The key is the lower bound is zero — distributing clients uniformly across the entire window.</div>
+      </div>
+
+      <div class="quiz-box" id="mt8">
+        <div class="quiz-q">8. A 429 response includes "retry-after: 15". Your computed full-jitter backoff for this attempt is 6 seconds. What should your actual wait be?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">6 seconds</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">10.5 seconds (average of 6 and 15)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">At least 15 seconds (server minimum) plus optional jitter</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">21 seconds (6 + 15)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. retry-after is a hard minimum floor. Your 6-second backoff is irrelevant when it's below the server's required wait. Wait at least 15 seconds; you may add jitter on top.</div>
+        <div class="quiz-feedback wrong">The server's retry-after value is a minimum — you must wait at least that long. Your computed backoff only matters if it exceeds the server minimum. Here 15 &gt; 6, so 15 seconds is the floor.</div>
+      </div>
+
+      <div class="quiz-box" id="mt9">
+        <div class="quiz-q">9. What is the primary purpose of a circuit breaker in an API integration?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">To automatically increase retry attempts during outages</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">To convert 400 errors into retryable requests</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">To stop sending requests entirely after N consecutive failures, preventing backlog buildup and allowing API recovery time</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">To balance requests across multiple API keys</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Circuit breakers provide a hard stop during sustained outages. Without them, request queues grow unbounded and the API never gets breathing room to recover.</div>
+        <div class="quiz-feedback wrong">Circuit breakers open (stop requests) after N failures. This is distinct from backoff — it's a complete halt, not a delay. It prevents cascading queue buildup during prolonged API degradation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt10">
+        <div class="quiz-q">10. Which of these workloads is the best candidate for Anthropic's Message Batches API?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Real-time customer support chat requiring &lt;2 second response</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">Nightly generation of product descriptions for 5,000 catalog items</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Streaming code completions in an IDE plugin</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Interactive document Q&A with a 10-second SLA</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Nightly batch processing with no realtime requirement is ideal for the Batches API: separate quota pool, 50% discount, 24-hour completion window fits perfectly.</div>
+        <div class="quiz-feedback wrong">The Batches API is for non-realtime workloads with flexible SLAs (up to 24 hours). Real-time, streaming, and interactive use cases require the standard synchronous API.</div>
+      </div>
+
+      <div class="quiz-box" id="mt11">
+        <div class="quiz-q">11. What does "token-budget-aware concurrency" mean in practice?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Setting max_tokens equal to your remaining daily token budget</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Workers read x-ratelimit-remaining-tokens from responses and gate new requests when headroom falls below the estimated next request's cost</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Limiting concurrency to one request at a time to avoid rate limits</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Tracking token costs for billing purposes only</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Workers update a shared remaining-token counter from response headers and only dispatch the next request when sufficient headroom exists — preventing 429s without sacrificing throughput.</div>
+        <div class="quiz-feedback wrong">Token-budget-aware concurrency uses the remaining-tokens header to govern dispatch decisions — not billing, not a fixed concurrency cap, but dynamic adjustment based on actual remaining API capacity.</div>
+      </div>
+
+      <div class="quiz-box" id="mt12">
+        <div class="quiz-q">12. At what daily token consumption percentage (by 18:00 UTC) should you trigger a proactive alert?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">50%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">95%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">80%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">100% — only when exhausted</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 80% by 18:00 UTC gives engineers 6 hours to act before midnight reset — enough time to shift workloads, reduce rate, or arrange temporary capacity, without impacting users.</div>
+        <div class="quiz-feedback wrong">Alerting at 100% is too late — you're already out of budget. 80% by 18:00 UTC (6 hours before reset) gives meaningful lead time for intervention.</div>
+      </div>
+
+      <div class="quiz-box" id="mt13">
+        <div class="quiz-q">13. Why should max_tokens be set conservatively rather than at the model maximum?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">High max_tokens values cause the API to generate lower-quality output</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">It directly reduces OTPM consumption per request, increasing throughput capacity under the same rate limits</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">The API charges for max_tokens even when actual output is shorter</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">High max_tokens triggers more aggressive rate limiting from Anthropic</button>
+        </div>
+        <div class="quiz-feedback right">Correct. max_tokens caps output length, which bounds OTPM consumption per request. Tighter caps mean more requests can fit within the same per-minute token budget.</div>
+        <div class="quiz-feedback wrong">The rate management benefit: lower max_tokens limits OTPM per request, leaving more token budget for concurrent or subsequent requests. This directly increases throughput without changing your limit tier.</div>
+      </div>
+
+      <div class="quiz-box" id="mt14">
+        <div class="quiz-q">14. Which field in the API response gives the actual output token count (not the cap)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">max_tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">x-ratelimit-remaining-tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">usage.output_tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">usage.total_tokens minus usage.input_tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. usage.output_tokens is the precise completion token count. It's always ≤ max_tokens and is the value to use for accurate quota accounting.</div>
+        <div class="quiz-feedback wrong">usage.output_tokens is the direct field. While usage.total_tokens - usage.input_tokens would give the same number mathematically, usage.output_tokens is the explicit and correct field to read.</div>
+      </div>
+
+      <div class="quiz-box" id="mt15">
+        <div class="quiz-q">15. The Message Batches API does NOT count against which resource?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Your account's billing total</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Your standard synchronous API RPM and ITPM limits</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Your account's daily token ceiling</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">The model's context window</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Batch requests consume from a separate quota pool — they don't compete with your synchronous API's RPM/ITPM limits. This is a key advantage for mixed workloads.</div>
+        <div class="quiz-feedback wrong">The Batches API uses a separate quota pool, meaning batch jobs don't reduce the RPM/ITPM headroom available for your real-time synchronous calls. Billing still applies (at 50% discount).</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">↺ Review from L1</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='working-with-the-anthropic-api';
+var MODULE_ID='wor-m6';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI lab assistant for AESOP AI Academy, specifically for the module "Working with the Anthropic API — Module 6: Rate Limits and Error Handling." You help learners understand Anthropic\'s rate limit architecture: the three per-minute axes (RPM, ITPM, OTPM), the daily token ceiling (TPD), tier thresholds ($40/7d for Tier 2, $200/14d for Tier 3, $4000/30d for Tier 4), the six x-ratelimit response headers, and how to calculate whether a given workload fits within tier limits. Be specific, use real numbers, and help learners work through concrete examples. Stay on topic; warmly redirect off-topic questions.',
+  l2:'You are an expert AI lab assistant for AESOP AI Academy, specifically for the module "Working with the Anthropic API — Module 6: Rate Limits and Error Handling." You help learners diagnose and handle Anthropic API errors. Cover the full error taxonomy: 400 invalid_request_error (never retry), 401 authentication_error (never retry), 403 permission_error (never retry), 404 not_found_error (never retry), 413 request_too_large (never retry), 429 rate_limit_error (retry with backoff, except TPD exhaustion), 500 api_error (retry conservatively), 529 overloaded_error (retry with backoff). Help learners interpret error messages, identify root causes, and choose correct handling strategies. Stay on topic; warmly redirect off-topic questions.',
+  l3:'You are an expert AI lab assistant for AESOP AI Academy, specifically for the module "Working with the Anthropic API — Module 6: Rate Limits and Error Handling." You help learners design effective retry strategies using exponential backoff with full jitter. Cover: why fixed delay and backoff without jitter create thundering herds, the full-jitter formula random(0, min(cap, base*2^attempt)), respecting the retry-after header as a hard minimum floor, circuit breaker patterns, the max_retries SDK parameter, and when to stop retrying entirely. Help learners review or design retry implementations. Stay on topic; warmly redirect off-topic questions.',
+  l4:'You are an expert AI lab assistant for AESOP AI Academy, specifically for the module "Working with the Anthropic API — Module 6: Rate Limits and Error Handling." You help learners design production rate management architectures. Cover: proactive vs reactive rate control, reading x-ratelimit-remaining headers to gate requests, token-budget-aware concurrency pools, request queueing patterns, observability metrics (429 rate, remaining tokens, retry count p95, TPD %age, time to first token), setting max_tokens conservatively, monitoring usage.output_tokens, and when to use the Message Batches API (separate quota pool, 50% discount, 24h SLA). Help learners design systems that handle high volumes without hitting rate limits. Stay on topic; warmly redirect off-topic questions.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Let's work through your rate limit scenario offline. For a Tier 1 account with 40,000 ITPM: 20 requests × 2,000 tokens = 40,000 input tokens per minute — you'd be right at the ITPM ceiling. Output-wise, 20 × 500 = 10,000 OTPM against an 8,000 OTPM limit means output tokens would actually be the binding constraint. You'd need to either reduce output size or upgrade to Tier 2.",
+    "Great question. The x-ratelimit-remaining-tokens header updates after every request. For proactive control, read it after each response and pause before the next request if remaining tokens fall below your estimated next request's cost. This eliminates 429s entirely under normal operation.",
+    "The TPD limit resets at midnight UTC daily. If you're consuming tokens across multiple time zones, plan for the reset cliff — heavy usage just before midnight UTC means a fresh full budget one minute later. Many teams schedule their heaviest batch work in the window just after midnight UTC."
+  ],
+  l2:[
+    "For a 403 permission_error on claude-3-opus but not claude-3-haiku: your API key is likely on Tier 1 or Tier 2. Access to certain Claude 3 Opus tiers requires higher spend thresholds. Check your Console → Settings → Limits page to see which models your current tier permits. This is non-retryable — you need to either upgrade tier or switch to a model your tier supports.",
+    "A 400 invalid_request_error typically means one of: missing required field (model, messages, max_tokens), malformed message structure (wrong roles, empty content), or an invalid parameter value. Never retry this — read the error.message field carefully, it usually pinpoints the exact problem. Fix the request structure before trying again.",
+    "The distinction between a per-minute 429 and a TPD 429 is in the message field: a TPD exhaustion will say something like 'daily token limit' or 'tokens per day'. Code your error handler to check for this string and halt all requests until midnight UTC rather than retrying with backoff."
+  ],
+  l3:[
+    "For 50 concurrent workers all retrying simultaneously: the fix is full jitter. Change your backoff from 'sleep(base * 2^attempt)' to 'sleep(random.uniform(0, min(60, base * 2^attempt)))'. This spreads 50 simultaneous retries randomly across the window. At attempt 1 with a 2-second base, workers will wake up at random points between 0 and 4 seconds instead of all at exactly 4 seconds.",
+    "Your retry logic looks solid, but I'd add one thing: check for the 'retry-after' header before applying your computed backoff. If the server says 'wait 20 seconds' but your backoff computed 8 seconds, you must wait at least 20. Use: wait = max(server_retry_after or 0, computed_jitter_backoff). Add your jitter on top of the server minimum, not instead of it.",
+    "For a circuit breaker implementation, the tenacity library in Python is excellent. Use @retry with stop=stop_after_attempt(5) and wait=wait_random_exponential(min=1, max=60) — this gives you full-jitter exponential backoff built-in. Add a before_sleep callback to log each retry attempt with the wait duration for observability."
+  ],
+  l4:[
+    "For your legal document system with two workloads: separate them completely. Run the 500 daily documents through the Message Batches API — separate quota pool, 50% cost reduction, 24-hour SLA fits overnight. This frees your entire synchronous API quota exclusively for lawyer chat queries, which need the low latency. Never let batch jobs compete with interactive traffic for the same quota.",
+    "For token-budget-aware concurrency, the pattern is: maintain a shared 'remaining_tokens' counter (thread-safe). After each response, update it from the x-ratelimit-remaining-tokens header. Before dispatching the next request, check if remaining_tokens >= estimated_cost * 1.1 (10% safety buffer). If not, sleep until x-ratelimit-reset-tokens. This eliminates 429s without sacrificing throughput.",
+    "Your observability setup should track at minimum: 429 rate per minute (alert if >5%), remaining tokens at the p5 percentile each minute (alert if <10% of limit), retry count per request at p95 (alert if >2), and daily token consumption % at 18:00 UTC (alert if >80%). Ship these as metrics to your monitoring stack — debugging rate limit incidents without historical metrics is nearly impossible."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId];
+  var idx=_fallbackIdx[labId]%replies.length;
+  _fallbackIdx[labId]++;
+  return replies[idx];
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var greetings={
+    l1:'Hello! I\'m your lab assistant for rate limit architecture. Ask me about RPM, ITPM, OTPM, TPD, tier thresholds, or walk me through your usage scenario and I\'ll help you work out which limits apply.',
+    l2:'I\'m here to help you diagnose Anthropic API errors. Describe an error you\'re seeing — include the HTTP status code and error.type if you have it — and I\'ll walk you through what it means and how to handle it correctly.',
+    l3:'I\'m ready to help you design or review retry strategies for the Anthropic API. Tell me about your workload — how many concurrent callers, what latency budget, and what your current retry logic looks like — and I\'ll give specific recommendations.',
+    l4:'I\'m here to help you design production rate management for the Anthropic API. Tell me about your system — request volumes, latency requirements, workload mix, and any existing infrastructure — and I\'ll recommend specific patterns for token budgeting, concurrency, queueing, and observability.'
+  };
+  addMsg(labId,'ai',greetings[labId]||'Ready to help.');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]){chatHistories[labId]=[];chatExchanges[labId]=0;}
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an issue generating a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE

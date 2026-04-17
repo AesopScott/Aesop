@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>How Large Language Models Work — M2: Pre-Training at Scale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m2 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-reset-btn:hover{border-color:var(--accent);color:var(--accent);}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.stat-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin:1.25rem 0;}
+.stat-card{flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.25rem;}
+.stat-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.stat-val{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:var(--gold);line-height:1;}
+.stat-note{font-size:0.72rem;color:var(--muted);margin-top:0.25rem;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1.25rem 0;}
+@media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+.info-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.25rem;}
+.info-card-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:0.6rem;}
+.info-card p{font-size:0.83rem;line-height:1.75;color:#6e6861;}
+.info-card p+p{margin-top:0.5rem;}
+.timeline{margin:1.25rem 0;display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;gap:1rem;padding:0.9rem 0;border-bottom:1px solid var(--border-dark);}
+.tl-item:last-child{border-bottom:none;}
+.tl-year{font-family:'Crimson Pro',Georgia,serif;font-size:0.9rem;font-weight:600;color:var(--gold);min-width:50px;}
+.tl-body{font-size:0.84rem;line-height:1.7;color:#6e6861;}
+.tl-body strong{color:#a89f93;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- LESSON 1: What Is Pre-Training? -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 2 · Lesson 1</div>
+    <h1>What Is Pre-Training?</h1>
+    <div class="tagline">The phase in which a model reads nearly everything humans have written — and learns to predict what comes next.</div>
+    <div class="lesson-question">How does exposure to billions of text examples produce a model capable of reasoning, translation, and code?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Context">
+      <p class="story-text">In June 2020, OpenAI released a technical report describing GPT-3 — a model trained on roughly <em>45 terabytes</em> of text. The training run consumed an estimated 3.14 × 10²³ floating-point operations. No fine-tuning on downstream tasks was used. The same weights answered trivia, translated French, and wrote working Python. The community called it <em>"few-shot learning"</em> and spent months debating whether the model was reasoning or merely pattern-matching at extraordinary scale.</p>
+    </div>
+
+    <h2 class="section-heading">The Core Idea: Next-Token Prediction</h2>
+    <div class="section-body">
+      <p>Pre-training is the foundational phase of building a large language model. The objective is deceptively simple: given a sequence of tokens, predict the next token. This is called the <em>language modeling objective</em>, sometimes written as maximizing the log-probability of the training corpus.</p>
+      <p>Every parameter update during pre-training is driven by this single signal — the difference between what the model predicted and what actually appeared next in the text. Multiplied across trillions of examples, this pressure sculpts the model's weights into representations that capture grammar, facts, reasoning patterns, and stylistic conventions.</p>
+      <p>There is no labeled dataset, no human annotator telling the model what a "good" answer looks like. The training data itself provides supervision — the next word in a Wikipedia article, the next line of a Python function, the next sentence in a legal brief.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Why This Matters</div>
+      <p>Because language is a compressed representation of human knowledge, a model that genuinely predicts text well must implicitly encode enormous amounts of world knowledge. Predicting "the capital of France is ___" correctly requires knowing geography. Predicting the next line of a proof requires understanding logical structure.</p>
+    </div>
+
+    <h2 class="section-heading">Self-Supervised Learning</h2>
+    <div class="section-body">
+      <p>Pre-training belongs to a paradigm called <em>self-supervised learning</em>. The labels are derived from the input data itself — no external annotation is needed. For a causal (autoregressive) language model like GPT, the label for position <em>i</em> in the sequence is simply the token at position <em>i+1</em>.</p>
+      <p>BERT, introduced by Google in 2018, used a variant called <em>masked language modeling</em>: randomly mask 15% of tokens and train the model to predict the masked words using surrounding context. Both approaches are self-supervised, but they produce models with different strengths — BERT excels at understanding tasks; autoregressive models excel at generation.</p>
+      <p>Modern LLMs like GPT-4, Claude, and Gemini all use autoregressive pre-training as their foundation, with masked approaches now mostly reserved for encoder models used in search and classification.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Key Terms</h2>
+    <div class="key-term"><span class="kt-term">Pre-training</span><span class="kt-def">The initial phase of LLM development where a model learns from massive unlabeled text corpora via self-supervised objectives before any task-specific fine-tuning.</span></div>
+    <div class="key-term"><span class="kt-term">Next-token prediction</span><span class="kt-def">The training objective of predicting the next token in a sequence given all preceding tokens; also called the causal language modeling objective.</span></div>
+    <div class="key-term"><span class="kt-term">Self-supervised learning</span><span class="kt-def">A learning paradigm where labels are automatically derived from the input data, requiring no human annotation.</span></div>
+    <div class="key-term"><span class="kt-term">Masked language modeling (MLM)</span><span class="kt-def">A variant where random tokens are hidden and the model predicts them using bidirectional context; used to train BERT-style encoder models.</span></div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Historical Marker</div>
+      <p>The GPT-3 paper (Brown et al., 2020) demonstrated that scale alone — without any task-specific fine-tuning — could unlock capabilities like arithmetic, translation, and code generation that researchers had previously assumed required explicit training on each task. This finding fundamentally reframed how the field thought about pre-training.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+  </div>
+</div>
+
+<!-- QUIZ 1 -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">What Is Pre-Training? — 4 questions</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq1">
+      <div class="quiz-q">1. What is the primary training objective used during autoregressive pre-training?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Classifying sentences as positive or negative sentiment</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq1')">Predicting the next token given all preceding tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Minimizing the distance between image and text embeddings</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Predicting masked tokens using bidirectional context</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Next-token prediction (causal language modeling) is the core objective for autoregressive LLMs like GPT, Claude, and Llama.</div>
+      <div class="quiz-feedback wrong">Not quite. Autoregressive pre-training predicts the next token from left-to-right context only. Sentiment classification requires labeled data; image-text alignment is contrastive learning; masked prediction is BERT's objective.</div>
+    </div>
+
+    <div class="quiz-box" id="qq2">
+      <div class="quiz-q">2. Why is pre-training called "self-supervised"?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Human supervisors review every output during training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">The model supervises its own reward function via RL</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq2')">Labels are derived automatically from the input data itself</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">The training set is manually curated by domain experts</button>
+      </div>
+      <div class="quiz-feedback right">Correct. In self-supervised learning, labels (e.g., the next token) come directly from the data — no human annotation is needed, enabling training at internet scale.</div>
+      <div class="quiz-feedback wrong">Not quite. "Self-supervised" means the supervision signal — what the correct next token is — is derived from the data itself, not from human labels or an external reward model.</div>
+    </div>
+
+    <div class="quiz-box" id="qq3">
+      <div class="quiz-q">3. GPT-3's 2020 paper showed that, without task-specific fine-tuning, a large pre-trained model could perform arithmetic, translation, and code generation. What term describes this ability?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">Transfer entropy</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq3')">Few-shot learning</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">Reinforcement learning from human feedback</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">Contrastive pre-training</button>
+      </div>
+      <div class="quiz-feedback right">Correct. GPT-3 demonstrated "few-shot learning" — providing a handful of examples in the prompt was enough for the model to perform new tasks without weight updates.</div>
+      <div class="quiz-feedback wrong">Not quite. The capability described is "few-shot learning," a key finding of the GPT-3 paper (Brown et al., 2020), where task instructions in the prompt substitute for fine-tuning.</div>
+    </div>
+
+    <div class="quiz-box" id="qq4">
+      <div class="quiz-q">4. Masked language modeling (MLM), as used in BERT, differs from autoregressive pre-training in that:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">MLM requires human-annotated labels for every sentence</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq4')">MLM predicts hidden tokens using context from both directions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">MLM generates tokens left-to-right at inference time</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">MLM trains only on code corpora, not natural language</button>
+      </div>
+      <div class="quiz-feedback right">Correct. BERT uses bidirectional context — surrounding tokens on both sides — to predict randomly masked tokens. This contrasts with the left-to-right causal approach of GPT-style models.</div>
+      <div class="quiz-feedback wrong">Not quite. MLM is still self-supervised (no human labels needed) and uses natural language. Its distinguishing feature is using both left and right context to predict masked tokens, unlike left-to-right autoregressive models.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAB 1 -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1: Exploring the Pre-Training Objective</h1>
+    <div class="tagline">Chat with an AI tutor about next-token prediction and self-supervised learning</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>You have a direct line to an AI tutor specialized in LLM pre-training mechanics. Use it to deepen your understanding of the concepts covered in Lesson 1. Ask about next-token prediction, how self-supervised learning works at scale, or why predicting text forces a model to encode world knowledge.</p>
+      <div class="lab-prompt">Starter prompts: "Why does next-token prediction force the model to learn facts?" · "How does BERT's MLM objective differ mechanically from GPT's causal LM?" · "Could you give me an intuitive example of self-supervised learning?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l1">
+      <div class="lab-chat-header">
+        <span>Pre-Training Tutor</span>
+        <div class="chat-badge">Lesson 1</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Hello! I'm your pre-training specialist. Ask me anything about next-token prediction, self-supervised learning, or the history of how GPT-3 changed our understanding of what scale can achieve. What would you like to explore?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Ask about pre-training mechanics…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- LESSON 2: Data at Scale — What Goes Into the Training Corpus -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 2 · Lesson 2</div>
+    <h1>Data at Scale</h1>
+    <div class="tagline">The composition, curation, and controversies of the trillion-token corpora that define what a model knows.</div>
+    <div class="lesson-question">What exactly do LLMs train on — and why does data quality matter as much as quantity?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Case: The Pile">
+      <p class="story-text">In December 2020, EleutherAI released <em>The Pile</em> — an 825 GB open dataset assembled from 22 distinct sources including Common Crawl, PubMed, arXiv, GitHub, the FreeLaw Project, and Project Gutenberg. The paper explicitly documented every source's size, license status, and intended contribution. It was the first large-scale attempt to <em>publicly audit</em> what an LLM training corpus actually contains — a stark contrast to the opaque "internet data" descriptions common at the time.</p>
+    </div>
+
+    <h2 class="section-heading">Sources and Their Trade-Offs</h2>
+    <div class="section-body">
+      <p>Modern LLM corpora blend many source types, each contributing different properties:</p>
+    </div>
+
+    <div class="two-col">
+      <div class="info-card">
+        <div class="info-card-label">Web Crawl (Common Crawl)</div>
+        <p>The largest source by volume — petabytes of raw HTML from across the web. Highly diverse but noisy: duplicate content, spam, hate speech, and low-quality writing require aggressive filtering. GPT-3 used a filtered version of Common Crawl weighted at ~60% of the training mix.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Books & Long-Form Text</div>
+        <p>Books provide long-range coherence that web text lacks. GPT-3 used the Books1 and Books2 corpora. LLaMA (Meta, 2023) used Project Gutenberg and Books3. Long documents teach models to maintain consistent context and argument structure over thousands of tokens.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Code (GitHub)</div>
+        <p>GitHub code is present in nearly every modern LLM corpus. Code has strict syntax, explicit logic, and comments explaining intent — a uniquely structured form of text. Researchers at DeepMind found that training on code improves mathematical and logical reasoning even on purely natural-language benchmarks.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Curated High-Quality Sources</div>
+        <p>Wikipedia, academic papers (arXiv, PubMed, Semantic Scholar), legal documents (FreeLaw), and filtered Reddit (WebText / OpenWebText) are typically up-weighted relative to their raw volume to increase factual density.</p>
+      </div>
+    </div>
+
+    <h2 class="section-heading">Data Curation Techniques</h2>
+    <div class="section-body">
+      <p>Raw web crawl data is far too noisy to use directly. Standard curation steps include:</p>
+      <p><strong>Deduplication:</strong> Near-duplicate documents inflate the effective weight of repeated content. Facebook's RoBERTa team showed that removing duplicates improved model performance even when total token count decreased. Tools like MinHash are used to detect fuzzy duplicates at scale.</p>
+      <p><strong>Quality filtering:</strong> Heuristic filters remove documents with high character-level perplexity, too-short texts, excessive repetition, or too few natural language words. Some pipelines use a classifier trained on Wikipedia-quality text to score and filter web pages.</p>
+      <p><strong>Decontamination:</strong> Benchmark test sets (MMLU, HumanEval, etc.) must be identified and removed from training data to prevent inadvertent memorization inflating evaluation scores.</p>
+      <p><strong>Up-weighting:</strong> High-quality sources are seen multiple times (epochs > 1 on selected subsets) while low-quality sources are down-sampled. The Chinchilla paper found that data quality and quantity jointly determine optimal training efficiency.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">The Toxicity Problem</div>
+      <p>Internet-scale corpora inevitably contain harmful content. The GPT-3 paper acknowledged this, noting that the model could generate biased or toxic completions. Subsequent work (Bender et al., "Stochastic Parrots," 2021) argued that the costs of massive data collection — including encoding social biases at scale — had been systematically underweighted in the field's cost-benefit analysis.</p>
+    </div>
+
+    <h2 class="section-heading">Scale Numbers in Context</h2>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">GPT-3 (2020)</div>
+        <div class="stat-val">300B</div>
+        <div class="stat-note">training tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Chinchilla (2022)</div>
+        <div class="stat-val">1.4T</div>
+        <div class="stat-note">training tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">LLaMA 3 (2024)</div>
+        <div class="stat-val">15T</div>
+        <div class="stat-note">training tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">FineWeb (2024)</div>
+        <div class="stat-val">15T</div>
+        <div class="stat-note">tokens (open dataset)</div>
+      </div>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Key Insight</div>
+      <p>The Chinchilla paper (Hoffmann et al., DeepMind, 2022) found that many large models were undertrained relative to their size. Optimal training requires scaling data tokens proportionally with model parameters — roughly 20 tokens per parameter. This finding drove the shift toward training smaller models on far more data, producing models that are both cheaper to run and better performing.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+  </div>
+</div>
+
+<!-- QUIZ 2 -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">Data at Scale — 4 questions</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq5">
+      <div class="quiz-q">1. What is "decontamination" in the context of training data preparation?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Removing all profanity and adult content from web crawls</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq5')">Removing benchmark test set examples from training data to prevent evaluation leakage</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Filtering out non-English documents</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Deleting near-duplicate documents using MinHash</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Decontamination ensures that test benchmarks (like MMLU or HumanEval) are not memorized during training, which would inflate apparent performance scores.</div>
+      <div class="quiz-feedback wrong">Not quite. Decontamination specifically means removing test-set examples from training data so evaluations measure genuine generalization, not memorization.</div>
+    </div>
+
+    <div class="quiz-box" id="qq6">
+      <div class="quiz-q">2. According to the Chinchilla paper (Hoffmann et al., 2022), the key insight about training efficiency was:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Larger models always outperform smaller ones regardless of training duration</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Quality filters should be applied only to non-English data</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq6')">Many large models were undertrained; optimal performance requires scaling data tokens proportionally with parameters</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">GitHub code should be excluded because it inflates benchmark scores</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Chinchilla demonstrated that compute should be split roughly equally between model size and training tokens — about 20 tokens per parameter — leading to smaller but better-trained models.</div>
+      <div class="quiz-feedback wrong">Not quite. Chinchilla's key finding was that prior large models (like Gopher) were trained on too few tokens for their size. Optimal training requires ~20 tokens per parameter.</div>
+    </div>
+
+    <div class="quiz-box" id="qq7">
+      <div class="quiz-q">3. Why is GitHub code commonly included in LLM training corpora even when the model is intended for natural language tasks?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','qq7')">Code's explicit logical structure improves mathematical and reasoning capabilities on natural language benchmarks</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Code is the only copyright-free text source available at scale</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Code increases vocabulary diversity which helps multilingual performance</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Code training data requires no deduplication, saving pipeline costs</button>
+      </div>
+      <div class="quiz-feedback right">Correct. DeepMind and other researchers found that training on code — with its explicit logic, structured syntax, and intent-explaining comments — transfers positively to reasoning tasks in natural language.</div>
+      <div class="quiz-feedback wrong">Not quite. Code improves reasoning because it contains explicit logical relationships and structured problem-solving patterns that transfer to mathematical and reasoning tasks in natural language contexts.</div>
+    </div>
+
+    <div class="quiz-box" id="qq8">
+      <div class="quiz-q">4. EleutherAI's "The Pile" (2020) was significant primarily because it:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Was the first corpus to exceed 1 trillion tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Contained only peer-reviewed scientific literature</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq8')">Publicly documented 22 distinct data sources, their sizes, and licenses — making corpus composition auditable</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Excluded all web-crawled text due to quality concerns</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The Pile was notable for its transparency — explicitly documenting every constituent source, enabling the research community to scrutinize corpus composition rather than accepting opaque "internet data" descriptions.</div>
+      <div class="quiz-feedback wrong">Not quite. The Pile's contribution was transparency: it documented 22 sources with sizes and licenses, making it the first publicly audited large-scale training corpus.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAB 2 -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2: Training Data Decisions</h1>
+    <div class="tagline">Discuss corpus curation trade-offs with an AI tutor</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>Engage with the tutor about the hard decisions behind assembling a trillion-token training corpus. Ask about data source trade-offs, filtering strategies, the Chinchilla findings, or the ethical tensions around what gets included or excluded.</p>
+      <div class="lab-prompt">Starter prompts: "If I were building an LLM corpus today, how would I decide what sources to include?" · "Why does deduplication help even if it reduces total token count?" · "What are the ethical arguments against training on web-scale data?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l2">
+      <div class="lab-chat-header">
+        <span>Data Curation Tutor</span>
+        <div class="chat-badge">Lesson 2</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">Welcome! I specialize in training data decisions — corpus composition, filtering pipelines, deduplication, and the ethical dimensions of data at scale. What would you like to dig into?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Ask about corpus curation, data sources, filtering…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- LESSON 3: Compute, Hardware, and the Training Loop -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 2 · Lesson 3</div>
+    <h1>Compute, Hardware, and the Training Loop</h1>
+    <div class="tagline">How thousands of GPUs move gradients through hundreds of billions of parameters — repeatedly, for months.</div>
+    <div class="lesson-question">What happens inside a pre-training run, and why does hardware topology matter as much as algorithm design?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Case: GPT-4 Infrastructure">
+      <p class="story-text">Microsoft's Azure infrastructure for OpenAI's GPT-4 training run reportedly used around <em>25,000 A100 GPUs</em> connected by high-speed InfiniBand networking. At peak, the cluster sustained communication bandwidth measured in terabits per second between nodes. A single training run at this scale costs tens of millions of dollars in compute alone. Managing failure gracefully — a single GPU failure in a 25,000-node cluster is not unusual — required checkpoint systems that could resume training within minutes of hardware faults.</p>
+    </div>
+
+    <h2 class="section-heading">The Forward and Backward Pass</h2>
+    <div class="section-body">
+      <p>Each step of pre-training consists of two phases. In the <em>forward pass</em>, a batch of token sequences is fed through the model layer by layer. Each transformer block applies attention and feedforward operations, producing a probability distribution over the vocabulary at the final layer. The cross-entropy loss between the predicted distribution and the actual next tokens is computed.</p>
+      <p>In the <em>backward pass</em>, gradients of the loss with respect to every parameter are computed via backpropagation through time (BPTT). An optimizer — typically AdamW for LLMs — uses these gradients to update parameters. This forward-backward cycle is called a <em>training step</em>, and modern runs execute millions of steps.</p>
+    </div>
+
+    <h2 class="section-heading">Distributed Training Strategies</h2>
+    <div class="section-body">
+      <p>No single GPU can hold a model with hundreds of billions of parameters. Training is distributed across hundreds or thousands of devices using several complementary strategies:</p>
+    </div>
+
+    <div class="two-col">
+      <div class="info-card">
+        <div class="info-card-label">Data Parallelism</div>
+        <p>Each GPU holds a full copy of the model and processes a different mini-batch. Gradients are averaged across all devices (AllReduce) before each parameter update. This is the simplest form of parallelism and scales well to many GPUs.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Model (Tensor) Parallelism</div>
+        <p>Individual weight matrices are split across GPUs — rows on one device, columns on another. Used when a single layer is too large for one GPU's memory. Megatron-LM (NVIDIA, 2019) pioneered efficient tensor parallelism for transformer LLMs.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">Pipeline Parallelism</div>
+        <p>Different transformer layers run on different GPUs, with activations passed between pipeline stages. GPipe (Google, 2019) demonstrated that micro-batching could keep all pipeline stages busy, avoiding the "bubble" of idle computation.</p>
+      </div>
+      <div class="info-card">
+        <div class="info-card-label">ZeRO (Zero Redundancy Optimizer)</div>
+        <p>DeepSpeed's ZeRO (Microsoft, 2020) shards optimizer states, gradients, and parameters across data-parallel ranks, reducing per-GPU memory by up to 8× compared to naive data parallelism — enabling training of trillion-parameter models.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Mixed Precision and Memory Management</h2>
+    <div class="section-body">
+      <p>Training in FP16 or BF16 (16-bit floating point) rather than FP32 roughly halves memory usage and doubles throughput on modern hardware. NVIDIA A100 and H100 GPUs include hardware-accelerated support for BF16, which has better numerical stability than FP16 due to a wider exponent range. Master weights are kept in FP32 for numerical precision; activations and communications use lower precision.</p>
+      <p><em>Gradient checkpointing</em> (also called activation recomputation) trades compute for memory: instead of storing all intermediate activations during the forward pass, they are recomputed during backprop. This allows training larger models at the cost of ~30% more compute per step.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Training Stability</div>
+      <p>Pre-training runs at scale are prone to loss spikes — sudden increases in training loss that can corrupt weeks of computation if not caught. Teams monitor loss curves continuously and may roll back to an earlier checkpoint when spikes occur. PaLM (Google, 2022) reported and diagnosed several such spikes during its 540B parameter training run, attributing them to particular batches with unusually high gradient norms.</p>
+    </div>
+
+    <h2 class="section-heading">The Cost Trajectory</h2>
+    <div class="timeline">
+      <div class="tl-item"><div class="tl-year">2018</div><div class="tl-body"><strong>BERT-Large</strong> — estimated ~$7,000 on cloud TPUs. Set the baseline for large-scale pre-training costs.</div></div>
+      <div class="tl-item"><div class="tl-year">2020</div><div class="tl-body"><strong>GPT-3 (175B)</strong> — estimated $4–12M. Sparked debate about whether only well-funded labs could do frontier AI research.</div></div>
+      <div class="tl-item"><div class="tl-year">2022</div><div class="tl-body"><strong>Chinchilla (70B)</strong> — smaller model, more tokens. Showed compute-optimal training could match GPT-3 at a fraction of the cost.</div></div>
+      <div class="tl-item"><div class="tl-year">2023</div><div class="tl-body"><strong>LLaMA-2 (70B)</strong> — Meta released weights publicly, demonstrating that open-weight models trained efficiently could approach proprietary performance.</div></div>
+      <div class="tl-item"><div class="tl-year">2024</div><div class="tl-body"><strong>Frontier runs</strong> — GPT-4, Claude 3, Gemini Ultra estimated at $50–100M+. H100 clusters with 10,000–50,000 GPUs now standard for frontier training.</div></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+  </div>
+</div>
+
+<!-- QUIZ 3 -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">Compute, Hardware, and the Training Loop — 4 questions</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq9">
+      <div class="quiz-q">1. In the context of distributed LLM training, what does "tensor parallelism" specifically involve?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Sending different mini-batches to different GPUs while each holds the full model</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq9')">Splitting individual weight matrices across multiple GPUs</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Placing consecutive transformer layers on different GPUs</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Reducing optimizer state memory by sharding across data-parallel ranks</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Tensor parallelism splits weight matrices themselves — for instance, splitting a large matrix multiply across multiple GPUs. Megatron-LM (NVIDIA, 2019) is the seminal implementation.</div>
+      <div class="quiz-feedback wrong">Not quite. You've described data parallelism, pipeline parallelism, or ZeRO. Tensor parallelism specifically shards individual weight tensors across GPUs, requiring synchronization within each layer.</div>
+    </div>
+
+    <div class="quiz-box" id="qq10">
+      <div class="quiz-q">2. Why is BF16 often preferred over FP16 for LLM training despite both being 16-bit formats?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">BF16 uses more mantissa bits, providing higher numerical precision for small values</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq10')">BF16 has a wider exponent range, giving better numerical stability and avoiding overflow during training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">BF16 is faster than FP16 on all hardware regardless of GPU generation</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">BF16 automatically handles gradient clipping, eliminating the need for manual thresholds</button>
+      </div>
+      <div class="quiz-feedback right">Correct. BF16 and FP32 share the same 8-bit exponent, meaning BF16 can represent the same dynamic range as FP32. FP16's narrower exponent makes it prone to overflow/underflow during training, requiring loss scaling workarounds.</div>
+      <div class="quiz-feedback wrong">Not quite. BF16's key advantage is its wider exponent (same as FP32), which avoids the numerical instability (overflow and underflow) that FP16 suffers during training due to large gradient values.</div>
+    </div>
+
+    <div class="quiz-box" id="qq11">
+      <div class="quiz-q">3. What problem does "gradient checkpointing" (activation recomputation) solve?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">It eliminates gradient vanishing by normalizing gradients after each layer</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">It speeds up backward pass by caching all intermediate activations</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq11')">It reduces GPU memory usage by not storing all forward activations, recomputing them during backprop instead</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">It synchronizes gradients across data-parallel GPUs more efficiently than AllReduce</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Gradient checkpointing discards intermediate activations after the forward pass and recomputes them during backpropagation, trading ~30% extra compute for significantly reduced memory consumption.</div>
+      <div class="quiz-feedback wrong">Not quite. Gradient checkpointing addresses GPU memory — by not storing all activations from the forward pass, memory is freed, at the cost of recomputing those activations during backprop (~30% more compute).</div>
+    </div>
+
+    <div class="quiz-box" id="qq12">
+      <div class="quiz-q">4. Google's PaLM training paper (2022) documented "loss spikes" during pre-training. What is a loss spike, and how is it typically addressed?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">A gradual increase in validation loss indicating overfitting; addressed by reducing learning rate</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq12')">A sudden sharp increase in training loss, typically addressed by rolling back to an earlier checkpoint</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">A hardware fault causing NaN gradients; addressed by replacing the faulty GPU node</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">An expected phase transition when the model first learns long-range dependencies</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Loss spikes are sudden training instabilities often caused by problematic data batches with extreme gradient norms. Rolling back to an earlier checkpoint and either skipping or reprocessing the offending batch is the standard mitigation.</div>
+      <div class="quiz-feedback wrong">Not quite. Loss spikes are sudden (not gradual) jumps in training loss. PaLM's team responded by identifying the problematic batches that caused high gradient norms and rolling back to a checkpoint before the spike occurred.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAB 3 -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3: Inside the Training Loop</h1>
+    <div class="tagline">Explore distributed training mechanics with an AI tutor</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>Use this lab to work through the hardware and systems side of pre-training. Ask about distributed training strategies, memory management techniques, why training runs cost millions of dollars, or how engineers deal with hardware failures at scale.</p>
+      <div class="lab-prompt">Starter prompts: "Can you walk me through what happens in a single training step from data loading to parameter update?" · "What's the difference between pipeline parallelism and tensor parallelism?" · "How does ZeRO reduce memory compared to standard data parallelism?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l3">
+      <div class="lab-chat-header">
+        <span>Training Systems Tutor</span>
+        <div class="chat-badge">Lesson 3</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">Hello! I'm your training systems specialist. I can walk you through forward and backward passes, the different parallelism strategies, memory management tricks like gradient checkpointing, and the engineering realities of running a 25,000-GPU training cluster. What would you like to explore?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Ask about training infrastructure, parallelism, hardware…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- LESSON 4: Scaling Laws and Emergent Capabilities -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 2 · Lesson 4</div>
+    <h1>Scaling Laws and Emergent Capabilities</h1>
+    <div class="tagline">The mathematical regularities that predict model performance — and the sudden capability jumps that still surprise researchers.</div>
+    <div class="lesson-question">Can we predict what an LLM will be able to do before we train it — and why do some abilities appear suddenly at scale thresholds?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Case: The Kaplan Scaling Laws">
+      <p class="story-text">In January 2020, Jared Kaplan and colleagues at OpenAI published "Scaling Laws for Neural Language Models." They found that test loss follows smooth power laws with model size, dataset size, and compute — each varying across orders of magnitude. The relationship was <em>strikingly regular</em>: double the model parameters and loss falls by a predictable amount. The paper gave labs a quantitative tool to forecast performance before spending millions on training, fundamentally changing how frontier LLM development was planned and justified.</p>
+    </div>
+
+    <h2 class="section-heading">The Three Axes of Scale</h2>
+    <div class="section-body">
+      <p>The Kaplan scaling laws identified three independent axes that drive language model performance:</p>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-label">Parameters (N)</div>
+        <div class="stat-val">N^0.07</div>
+        <div class="stat-note">loss scales as inverse power of N</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Data Tokens (D)</div>
+        <div class="stat-val">D^0.28</div>
+        <div class="stat-note">loss scales as inverse power of D</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Compute (C)</div>
+        <div class="stat-val">C^0.05</div>
+        <div class="stat-note">loss scales as inverse power of C</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p>Each axis drives loss reduction independently, but with different efficiency. Critically, Kaplan et al. found that model size was the primary driver and recommended concentrating compute on larger models trained on relatively less data. The Chinchilla paper (2022) later revised this, arguing data and model size should scale together — a finding that redirected the entire field's resource allocation strategy.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Emergent Capabilities</h2>
+    <div class="section-body">
+      <p>Beyond the smooth scaling of perplexity, researchers at Google Brain documented a more striking phenomenon in 2022: certain capabilities appear to emerge discontinuously as model scale crosses thresholds. Wei et al. (2022) catalogued over 100 such "emergent abilities" across benchmarks — tasks on which smaller models perform near random chance and larger models abruptly perform well.</p>
+      <p>Examples from the literature include:</p>
+      <p><em>Chain-of-thought reasoning:</em> Models below ~100B parameters showed minimal improvement from chain-of-thought prompting. Above that threshold, step-by-step reasoning prompts dramatically improved performance on multi-step math problems.</p>
+      <p><em>Arithmetic:</em> GPT-3 (175B) could perform 2-digit addition reliably; 3-digit addition appeared much earlier in PaLM (540B), suggesting the capability threshold depends on both scale and training data composition.</p>
+      <p><em>Instruction following:</em> The ability to follow novel task descriptions without examples appeared to emerge rather than improve gradually, though the precise threshold varies by task.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">The Debate: Are Emergent Abilities Real?</div>
+      <p>Schaeffer et al. (2023) argued that many apparent "emergent abilities" are artifacts of discontinuous evaluation metrics. When continuous metrics are used instead of pass/fail benchmarks, capability improvements often appear smooth rather than sudden. This sparked ongoing debate: are LLMs undergoing genuine qualitative phase transitions, or do researchers simply choose metrics that make smooth improvements look like discontinuous jumps?</p>
+    </div>
+
+    <h2 class="section-heading">Compute-Optimal Training and the Chinchilla Revision</h2>
+    <div class="section-body">
+      <p>The Chinchilla paper (Hoffmann et al., DeepMind, 2022) ran a series of controlled experiments varying both model size and token count across hundreds of training runs. They fit scaling law coefficients to the results and derived a key rule: for a given compute budget, loss is minimized by using roughly <strong>20 tokens per parameter</strong>.</p>
+      <p>This directly contradicted the prior field consensus. GPT-3 (175B parameters) was trained on 300B tokens — about 1.7 tokens per parameter. Chinchilla (70B parameters) trained on 1.4T tokens achieved better performance than Gopher (280B) despite having far fewer parameters. The lesson: data quantity and model size must scale together, not size alone.</p>
+      <p>The Chinchilla findings reverberated through 2023 training decisions. Meta's LLaMA models, Mistral, and others trained smaller models on far more tokens — producing models that are cheaper to serve while matching or exceeding larger, undertrained predecessors.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Implications for AI Development</div>
+      <p>Scaling laws give organizations quantitative tools to forecast capability improvements before committing compute — enabling rational investment decisions. But emergent abilities create a complementary uncertainty: even a well-calibrated scaling law for perplexity may not predict when qualitatively new capabilities will appear. Both phenomena shape the economics and risk calculus of frontier LLM development.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+  </div>
+</div>
+
+<!-- QUIZ 4 -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Lesson 4 Quiz</h1>
+    <div class="tagline">Scaling Laws and Emergent Capabilities — 4 questions</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq13">
+      <div class="quiz-q">1. What was the key practical contribution of Kaplan et al.'s scaling laws paper (2020)?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">It proved that model size is irrelevant if training data is large enough</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq13')">It showed that test loss follows predictable power laws with scale, enabling performance forecasting before training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">It established that emergent capabilities always appear at exactly 100B parameters</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">It demonstrated that compute budget should be split equally between data and model size</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The scaling laws gave researchers a quantitative framework to predict loss (and therefore capability) as a function of model size, data, and compute — enabling systematic planning of expensive training runs.</div>
+      <div class="quiz-feedback wrong">Not quite. The key contribution was the discovery that loss follows smooth, predictable power laws across many orders of magnitude in scale — providing a planning tool for large-scale training investments.</div>
+    </div>
+
+    <div class="quiz-box" id="qq14">
+      <div class="quiz-q">2. How did the Chinchilla paper revise the consensus established by the Kaplan scaling laws?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Chinchilla showed that data quality matters more than data quantity</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Chinchilla proved that pipeline parallelism is superior to tensor parallelism for large models</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq14')">Chinchilla showed that many large models were undertrained — data tokens and parameters should scale together, not parameters alone</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">Chinchilla demonstrated that emergent abilities follow the same power laws as perplexity</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Chinchilla's 70B model, trained on 1.4T tokens (~20 tokens per parameter), outperformed Gopher (280B) trained on far fewer tokens — showing that prior large models were parameter-rich but data-poor.</div>
+      <div class="quiz-feedback wrong">Not quite. Chinchilla's revision was specifically about the balance between model size and training tokens: prior models overinvested in parameters and underinvested in data, yielding suboptimal compute efficiency.</div>
+    </div>
+
+    <div class="quiz-box" id="qq15">
+      <div class="quiz-q">3. According to Wei et al. (2022), what defines an "emergent ability" in large language models?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Any capability that requires more than 50B parameters to function correctly</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq15')">A capability that is absent or near-random in smaller models but appears sharply as scale increases past a threshold</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">A skill that appears only after RLHF fine-tuning, not during pre-training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Any performance improvement that cannot be predicted by the Kaplan scaling laws</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Wei et al. defined emergent abilities as those showing near-chance performance in smaller models that appear to "emerge" discontinuously as scale crosses thresholds — cataloguing over 100 such abilities across benchmarks.</div>
+      <div class="quiz-feedback wrong">Not quite. Emergent abilities are specifically characterized by their discontinuous appearance with scale — small models show near-random performance, while models above a scale threshold perform significantly better, seemingly without gradual improvement in between.</div>
+    </div>
+
+    <div class="quiz-box" id="qq16">
+      <div class="quiz-q">4. Schaeffer et al. (2023) challenged the concept of emergent abilities by arguing:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">Emergent abilities only appear in models trained with RLHF, not pre-training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">Scaling laws break down above 100B parameters, making emergence unpredictable</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq16')">Many apparent emergent abilities are artifacts of using discontinuous metrics; continuous metrics often reveal smooth underlying improvement</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">Emergent abilities are caused by overfitting to benchmark test sets during pre-training</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Schaeffer et al. showed that pass/fail benchmarks create the illusion of discontinuous jumps when the underlying capability may be improving smoothly — a methodological challenge to how emergence is measured.</div>
+      <div class="quiz-feedback wrong">Not quite. Schaeffer's critique was methodological: using continuous evaluation metrics often reveals smooth improvement where discontinuous metrics (like exact-match accuracy) had suggested sudden emergence. Whether "true" phase transitions exist remains debated.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAB 4 -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4: Scaling Laws in Practice</h1>
+    <div class="tagline">Reason through scaling decisions with an AI tutor</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>Work through the implications of scaling laws and emergent capabilities. Ask the tutor to help you reason through compute allocation decisions, challenge you on Chinchilla vs. Kaplan trade-offs, or explain why emergent abilities matter for AI safety.</p>
+      <div class="lab-prompt">Starter prompts: "If I have a $1M compute budget, how would the Chinchilla findings change how I allocate it compared to following the Kaplan recommendations?" · "Are emergent abilities dangerous from a safety perspective?" · "Why do scaling laws matter for organizations that don't train frontier models?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l4">
+      <div class="lab-chat-header">
+        <span>Scaling Laws Tutor</span>
+        <div class="chat-badge">Lesson 4</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">Welcome! I specialize in scaling laws, emergent capabilities, and compute-optimal training decisions. Whether you want to reason through the Kaplan vs. Chinchilla trade-offs, understand what "emergence" means for AI safety, or just work through the math — I'm here. What would you like to explore?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Ask about scaling laws, emergent abilities, compute allocation…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODULE TEST -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 2 Test</h1>
+    <div class="tagline">Pre-Training at Scale — 15 questions · Pass at 80%</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt1">
+      <div class="quiz-q">1. The training objective for autoregressive LLMs like GPT is best described as:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">Maximizing the log-probability of each token given all preceding tokens in the sequence</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Minimizing mean squared error between predicted and target embeddings</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Predicting masked tokens using bidirectional attention over the full sequence</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Maximizing cosine similarity between input and output representations</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Autoregressive language modeling maximizes log-probability of each token given its left context — the cross-entropy loss summed over all positions.</div>
+      <div class="quiz-feedback wrong">Incorrect. Autoregressive LLMs use the causal language modeling objective: maximize log P(token_i | token_1 ... token_{i-1}) for every position i.</div>
+    </div>
+
+    <div class="quiz-box" id="mt2">
+      <div class="quiz-q">2. BERT's masked language modeling objective differs from GPT's causal language modeling in that:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">BERT requires labeled data; GPT does not</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">BERT predicts masked tokens using both left and right context; GPT predicts the next token using only left context</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">BERT generates tokens autoregressively; GPT predicts all tokens simultaneously</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">BERT trains on code; GPT trains on natural language exclusively</button>
+      </div>
+      <div class="quiz-feedback right">Correct. BERT is bidirectional — it attends to context on both sides to predict masked tokens. GPT is causal/autoregressive — it only uses tokens to the left when predicting the next token.</div>
+      <div class="quiz-feedback wrong">Incorrect. The key distinction is directionality: BERT uses bidirectional context for masked prediction; GPT uses only left-to-right context for next-token prediction.</div>
+    </div>
+
+    <div class="quiz-box" id="mt3">
+      <div class="quiz-q">3. GPT-3 was trained on approximately how many tokens?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">3 billion tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">30 billion tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">300 billion tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">3 trillion tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. GPT-3 (175B parameters) was trained on ~300 billion tokens — which Chinchilla later showed was significantly fewer than optimal for a model that size.</div>
+      <div class="quiz-feedback wrong">Incorrect. GPT-3 was trained on approximately 300 billion tokens across its filtered web crawl, books, and Wikipedia sources.</div>
+    </div>
+
+    <div class="quiz-box" id="mt4">
+      <div class="quiz-q">4. What role does up-weighting play in training corpus preparation?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Increasing the learning rate when training on high-quality data batches</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">Sampling high-quality sources more frequently than their raw volume would dictate, increasing their influence on the model</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Adding more parameters to layers that process rare tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Scaling gradient updates proportionally to document length</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Up-weighting means high-quality sources (e.g., Wikipedia, curated books) are seen multiple times or sampled at higher rates than raw volume would suggest, improving the ratio of high-quality to low-quality signal.</div>
+      <div class="quiz-feedback wrong">Incorrect. Up-weighting is a corpus sampling strategy: high-quality sources are sampled more frequently than their raw proportion, giving the model more exposure to reliable, well-structured text.</div>
+    </div>
+
+    <div class="quiz-box" id="mt5">
+      <div class="quiz-q">5. Which technique uses MinHash to identify and remove similar documents from training data?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Quality filtering</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Decontamination</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">Deduplication</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Up-weighting</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Deduplication uses approximate matching techniques like MinHash (locality-sensitive hashing) to identify and remove near-duplicate documents, which RoBERTa's team showed improves model performance even when total token count decreases.</div>
+      <div class="quiz-feedback wrong">Incorrect. MinHash is used for deduplication — identifying near-duplicate documents so they can be removed or reduced in the training corpus.</div>
+    </div>
+
+    <div class="quiz-box" id="mt6">
+      <div class="quiz-q">6. In data parallelism for distributed LLM training, how are gradients reconciled across devices?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Each device updates parameters independently, then weights are averaged every 1000 steps</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">Gradients are averaged across all devices via an AllReduce collective operation before each parameter update</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">One master device collects gradients from all others and performs the sole parameter update</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Gradients are not shared; each device specializes in different parameter subsets</button>
+      </div>
+      <div class="quiz-feedback right">Correct. In data parallelism, each device computes gradients on its local mini-batch, then an AllReduce operation averages gradients across all devices before the synchronized parameter update.</div>
+      <div class="quiz-feedback wrong">Incorrect. In standard data parallelism, gradients are synchronized every step via AllReduce — computing the average gradient across all devices before any parameter update occurs.</div>
+    </div>
+
+    <div class="quiz-box" id="mt7">
+      <div class="quiz-q">7. DeepSpeed's ZeRO optimizer primarily reduces memory usage by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Using 8-bit integers for all weight computations</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Recomputing activations during backpropagation instead of storing them</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">Sharding optimizer states, gradients, and/or parameters across data-parallel ranks rather than replicating them on every device</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Offloading inactive layers to CPU RAM during forward computation</button>
+      </div>
+      <div class="quiz-feedback right">Correct. ZeRO (Zero Redundancy Optimizer) eliminates memory redundancy in data-parallel training by partitioning optimizer states, gradients, and parameters across all devices — each device holds only a shard, reducing per-device memory by up to 8×.</div>
+      <div class="quiz-feedback wrong">Incorrect. ZeRO's contribution is partitioning (sharding) optimizer states, gradients, and parameters across ranks instead of replicating all three on every GPU, dramatically reducing per-device memory requirements.</div>
+    </div>
+
+    <div class="quiz-box" id="mt8">
+      <div class="quiz-q">8. Why might training on GitHub code improve a model's performance on natural language math benchmarks?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">Code contains explicit logical structure and step-by-step reasoning patterns that transfer to mathematical problem-solving in natural language</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Math benchmarks typically contain embedded Python code that the model recognizes and executes</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Code training increases vocabulary size, giving the model more tokens for expressing mathematical concepts</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">GitHub documentation is written in formal English that matches the style of academic math benchmarks</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Code's structured syntax, explicit conditionals, loops, and inline comments explaining intent all reinforce logical reasoning patterns. DeepMind researchers found these patterns transfer positively to non-code reasoning tasks.</div>
+      <div class="quiz-feedback wrong">Incorrect. The benefit comes from code's inherent logical structure — explicit if-then reasoning, structured problem decomposition — which reinforces reasoning patterns that generalize to math and logic tasks in natural language.</div>
+    </div>
+
+    <div class="quiz-box" id="mt9">
+      <div class="quiz-q">9. The Kaplan scaling law for model size found that test loss scales approximately as:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Linearly with the number of parameters</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Logarithmically with the number of parameters</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">As a power law (inverse power) of the number of parameters</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Exponentially with the square root of parameters</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Loss ∝ N^(-α) where α ≈ 0.07 for model size. This smooth power-law relationship held across many orders of magnitude, enabling reliable performance extrapolation.</div>
+      <div class="quiz-feedback wrong">Incorrect. Kaplan et al. found loss follows a power law — specifically L ∝ N^(-0.07) — meaning each doubling of parameters yields a predictable percentage drop in test loss.</div>
+    </div>
+
+    <div class="quiz-box" id="mt10">
+      <div class="quiz-q">10. Chinchilla's training compute-optimal rule of thumb states that:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Training tokens should be capped at 1 trillion regardless of model size</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Model parameters should always exceed training tokens by a factor of 10</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">For compute-optimal training, use approximately 20 training tokens per model parameter</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">The learning rate should decay proportionally to the square root of the number of parameters</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Chinchilla found that ~20 tokens per parameter is compute-optimal. A 70B parameter model should see ~1.4T tokens — far more than GPT-3's 300B tokens for 175B parameters (~1.7 tokens/param).</div>
+      <div class="quiz-feedback wrong">Incorrect. Chinchilla's key finding: for any parameter count N, optimal training uses approximately 20 × N tokens. This ratio was derived by fitting scaling law coefficients to hundreds of controlled training runs.</div>
+    </div>
+
+    <div class="quiz-box" id="mt11">
+      <div class="quiz-q">11. Which of the following is an example of an "emergent ability" as defined by Wei et al. (2022)?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Perplexity steadily decreasing as model parameters increase from 1M to 100B</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Chain-of-thought prompting having no effect on 10B models but dramatically improving performance on 100B+ models</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Larger models requiring more GPU memory during inference</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Training loss being lower with more data at any model size</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Chain-of-thought reasoning is a canonical emergent ability — below a scale threshold it provides no benefit; above that threshold it substantially improves multi-step reasoning, appearing as a discontinuous jump rather than gradual improvement.</div>
+      <div class="quiz-feedback wrong">Incorrect. Emergent abilities are specifically those that appear discontinuously with scale — like chain-of-thought prompting only working above ~100B parameters, in contrast to perplexity which improves smoothly.</div>
+    </div>
+
+    <div class="quiz-box" id="mt12">
+      <div class="quiz-q">12. BF16's main advantage over FP16 for LLM training is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Higher mantissa precision enabling more accurate gradient computation</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">A wider exponent range (matching FP32) that prevents numerical overflow and underflow during training</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Compatibility with older GPU architectures that don't support FP16</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Automatic loss scaling that eliminates the need for gradient clipping</button>
+      </div>
+      <div class="quiz-feedback right">Correct. BF16 uses 8 exponent bits (same as FP32) vs. FP16's 5, giving it the same dynamic range as FP32. This prevents the overflow/underflow that plagues FP16 training without requiring manual loss scaling.</div>
+      <div class="quiz-feedback wrong">Incorrect. BF16's key advantage is its exponent width (8 bits, matching FP32) rather than mantissa precision. This wide exponent range means BF16 can represent the same dynamic range as FP32, avoiding FP16's overflow instability.</div>
+    </div>
+
+    <div class="quiz-box" id="mt13">
+      <div class="quiz-q">13. The EleutherAI "Pile" dataset (2020) was notable primarily for:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Being the first training dataset to exceed 1 trillion tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">Publicly documenting all 22 data sources with sizes and licenses, enabling the first large-scale audit of LLM corpus composition</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Including human preference annotations for every document to support RLHF</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Demonstrating that web-crawled data alone is sufficient for competitive LLM performance</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The Pile was the first large training corpus to fully document its composition — 22 sources, sizes, and license status — enabling the community to scrutinize what went into an LLM's training data.</div>
+      <div class="quiz-feedback wrong">Incorrect. The Pile's contribution was transparency: it publicly documented all 22 source datasets with sizes and license information, in contrast to opaque "internet data" descriptions common at the time.</div>
+    </div>
+
+    <div class="quiz-box" id="mt14">
+      <div class="quiz-q">14. Schaeffer et al.'s (2023) critique of "emergent abilities" argued that:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Emergent abilities only appear in models trained with instruction tuning, not in base pre-trained models</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The concept of emergence is well-established and Schaeffer confirmed it is a real phase transition</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">Many apparent emergent abilities are artifacts of discontinuous evaluation metrics; switching to continuous metrics reveals smooth underlying improvement</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Only capabilities below 50B parameters are truly emergent; larger models show only smooth scaling</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Schaeffer showed that when pass/fail metrics are replaced with continuous measures of task performance, the discontinuous "emergence" often disappears — suggesting the phenomenon may be a measurement artifact rather than a true phase transition.</div>
+      <div class="quiz-feedback wrong">Incorrect. Schaeffer's argument was that emergence is partly a measurement artifact: discontinuous metrics (like exact-match accuracy) create the appearance of sudden jumps even when underlying capability improves smoothly.</div>
+    </div>
+
+    <div class="quiz-box" id="mt15">
+      <div class="quiz-q">15. A company with a $10M compute budget wants to train the best possible language model. Based on the Chinchilla findings, which strategy is most likely to produce the best performance?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Train the largest model possible (500B+ parameters) on as many tokens as the budget allows after model allocation</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Use all compute for data processing and filtering; model size doesn't matter for quality</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Choose a model size and training token count such that tokens ≈ 20 × parameters, splitting compute optimally between the two</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Follow Kaplan's original recommendation and concentrate all compute on a single very large model, as size is the primary driver</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Chinchilla demonstrated that compute-optimal training requires balancing model size and data volume — roughly 20 tokens per parameter. The same budget on a smaller model with more tokens typically outperforms a larger undertrained model.</div>
+      <div class="quiz-feedback wrong">Incorrect. The Chinchilla findings directly address this scenario: for a fixed compute budget, allocate to balance model size and training tokens at roughly 20 tokens per parameter, rather than maximizing model size as Kaplan's original work suggested.</div>
+    </div>
+
+    <div id="mt-score" class="mt-score"></div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="window.parent.postMessage({type:'moduleComplete',courseId:COURSE_ID,moduleId:MODULE_ID},'*')">Complete Module</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m2';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed. ✓':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are a specialist AI tutor for the AESOP AI Academy course "How Large Language Models Work," Module 2, Lesson 1: What Is Pre-Training? Your focus areas: (1) next-token prediction as a training objective, (2) self-supervised learning and why no labels are needed, (3) why predicting text forces encoding of world knowledge, (4) the difference between autoregressive (GPT-style) and masked (BERT-style) pre-training, (5) the historical significance of GPT-3\'s few-shot learning findings (Brown et al., 2020). Be precise, use concrete examples, cite real papers and dates when relevant. Keep responses under 200 words. If asked about unrelated topics, warmly redirect to pre-training concepts.',
+
+  l2:'You are a specialist AI tutor for the AESOP AI Academy course "How Large Language Models Work," Module 2, Lesson 2: Data at Scale. Your focus areas: (1) composition of LLM training corpora — Common Crawl, books, code, academic text, (2) data curation techniques: deduplication (MinHash), quality filtering, decontamination, up-weighting, (3) The Pile dataset and its transparency contribution (EleutherAI, 2020), (4) the Chinchilla compute-optimal data findings (Hoffmann et al., 2022), (5) ethical tensions around web-scale data collection including the Stochastic Parrots paper (Bender et al., 2021). Be precise with numbers and sources. Keep responses under 200 words. Warmly redirect off-topic questions.',
+
+  l3:'You are a specialist AI tutor for the AESOP AI Academy course "How Large Language Models Work," Module 2, Lesson 3: Compute, Hardware, and the Training Loop. Your focus areas: (1) the forward and backward pass mechanics in transformer pre-training, (2) data parallelism and AllReduce gradient synchronization, (3) tensor parallelism (Megatron-LM, NVIDIA 2019), (4) pipeline parallelism (GPipe, Google 2019), (5) ZeRO optimizer memory sharding (DeepSpeed, Microsoft 2020), (6) mixed precision training — BF16 vs FP16, (7) gradient checkpointing, (8) training stability and loss spikes (PaLM case study), (9) real training cost trajectories from BERT to frontier models. Be technically precise but accessible. Keep responses under 200 words. Redirect off-topic questions warmly.',
+
+  l4:'You are a specialist AI tutor for the AESOP AI Academy course "How Large Language Models Work," Module 2, Lesson 4: Scaling Laws and Emergent Capabilities. Your focus areas: (1) the Kaplan et al. (2020) scaling laws — power law relationships between loss and N, D, C, (2) the Chinchilla revision (Hoffmann et al., 2022) — compute-optimal ~20 tokens/parameter rule, (3) emergent abilities as defined by Wei et al. (2022) — capabilities appearing discontinuously with scale, (4) specific emergent ability examples: chain-of-thought reasoning, arithmetic, instruction following, (5) the Schaeffer et al. (2023) critique that emergence may be a measurement artifact, (6) implications for compute allocation decisions and AI safety. Help learners reason through practical scenarios involving these trade-offs. Keep responses under 200 words. Redirect off-topic questions warmly.'
+};
+
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var _fallbacks={
+  l1:[
+    "Next-token prediction works as implicit supervision because the correct answer — the next word — is always available in the text itself. The model must compress world knowledge to predict accurately: to predict 'Paris' after 'the capital of France is', it must encode that fact. No human labeler required.",
+    "BERT's masked language modeling and GPT's causal LM both self-supervise, but differ in directionality. BERT sees tokens on both sides of a mask, enabling richer bidirectional context but preventing left-to-right generation. GPT sees only left context, which is why it can generate text token-by-token at inference time.",
+    "GPT-3's few-shot paper (Brown et al., 2020) showed something unexpected: a model trained purely to predict text could perform arithmetic, translation, and code generation when given a few examples in the prompt — with no weight updates. This suggested that sufficient scale compresses task structure into parameters implicitly."
+  ],
+  l2:[
+    "Deduplication improves model quality even when it reduces token count because duplicate documents inflate the effective learning signal weight of repeated content. The model sees, say, the same Wikipedia article hundreds of times from mirrors — learning to recite that specific text rather than generalizing. Removing duplicates forces broader generalization.",
+    "The Chinchilla finding (20 tokens per parameter) directly challenged GPT-3's data-light approach. GPT-3 used ~1.7 tokens per parameter; Chinchilla used ~20. The 70B Chinchilla model outperformed the 280B Gopher model on most benchmarks — demonstrating that compute spent on data delivers better returns than compute spent on more parameters at that scale.",
+    "The Stochastic Parrots paper (Bender et al., 2021) argued that internet-scale corpora encode and amplify social biases at scale. Filtering can reduce but not eliminate harmful content because biases are embedded in ordinary language patterns, not only in overtly toxic documents. This tension — between data richness and encoded harm — remains unresolved."
+  ],
+  l3:[
+    "A single training step: (1) a batch of token sequences is loaded, (2) the forward pass computes activations through each transformer layer, producing a probability distribution over vocabulary at each position, (3) cross-entropy loss is computed against the actual next tokens, (4) backprop computes gradients for every parameter, (5) AdamW applies gradient updates. Multiplied by millions of steps across thousands of GPUs.",
+    "Pipeline vs. tensor parallelism: pipeline parallelism places different layers on different GPUs — layer 0-10 on GPU 1, layers 11-20 on GPU 2, etc. Activations pass between stages. Tensor parallelism splits a single layer's weight matrix across GPUs — the multiply happens in parallel across devices and results are combined. Most large training runs use both simultaneously.",
+    "ZeRO (Zero Redundancy Optimizer) addresses the fact that in naive data parallelism, every GPU stores a full copy of optimizer states, gradients, and parameters — massive redundancy. ZeRO-1 shards optimizer states only; ZeRO-2 adds gradient sharding; ZeRO-3 shards parameters too. Each GPU holds only its shard, reducing memory by up to 8× at the cost of communication to reconstruct full tensors when needed."
+  ],
+  l4:[
+    "With a $1M compute budget, Kaplan's (2020) recommendation would be to train as large a model as possible on the available compute, since model size was identified as the primary driver. Chinchilla's revision says: pick a model size and training token count together such that tokens ≈ 20 × parameters. For $1M, this likely means a smaller model trained on proportionally more data — better inference cost and often better benchmark performance.",
+    "Emergent abilities matter for AI safety because they represent capability jumps that scaling-law extrapolations on perplexity may not predict. A lab may have a well-calibrated forecast for loss at a new scale, but a qualitatively new capability — like more coherent deception or novel persuasion strategies — could appear discontinuously. This creates a planning challenge: responsible scaling requires monitoring for emergent behaviors, not just loss metrics.",
+    "Schaeffer's 2023 critique is methodologically important: if emergence is partly a measurement artifact (pass/fail metrics making smooth improvement look discontinuous), then the field may be overstating the unpredictability of scaling. But the debate is unresolved — some researchers argue real phase transitions do occur in complex learned systems, similar to phase transitions in physics, and continuous metrics may obscure them."
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbacks[labId];
+  if(!arr) return "I'm in offline mode. Please ask a specific question about this lesson's topic and I'll do my best to help.";
+  var idx=_fallbackIdx[labId]%arr.length;
+  _fallbackIdx[labId]++;
+  return arr[idx];
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  while(container.firstChild) container.removeChild(container.firstChild);
+  var greetings={
+    l1:'Hello! I\'m your pre-training specialist. Ask me anything about next-token prediction, self-supervised learning, or the history of how GPT-3 changed our understanding of what scale can achieve. What would you like to explore?',
+    l2:'Welcome! I specialize in training data decisions — corpus composition, filtering pipelines, deduplication, and the ethical dimensions of data at scale. What would you like to dig into?',
+    l3:'Hello! I\'m your training systems specialist. I can walk you through forward and backward passes, the different parallelism strategies, memory management tricks like gradient checkpointing, and the engineering realities of running a 25,000-GPU training cluster. What would you like to explore?',
+    l4:'Welcome! I specialize in scaling laws, emergent capabilities, and compute-optimal training decisions. Whether you want to reason through the Kaplan vs. Chinchilla trade-offs, understand what "emergence" means for AI safety, or just work through the math — I\'m here. What would you like to explore?'
+  };
+  addMsg(labId,'ai',greetings[labId]||'Chat reset. How can I help?');
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(inp){inp.value='';inp.disabled=false;}
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  function signalLabComplete(){
+    if(!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+  }
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD) signalLabComplete();
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  var payload={
+    model:'claude-opus-4-5',
+    max_tokens:420,
+    system:LAB_SYSTEM_PROMPTS[labId],
+    messages:chatHistories[labId].map(function(m){return{role:m.role,content:m.content};})
+  };
+
+  var success=false;
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'Sorry, I couldn\'t generate a response.';
+      if(thinking&&thinking.parentNode) thinking.remove();
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD) signalLabComplete();
+      success=true;
+      break;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fallback=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fallback});
+      addMsg(labId,'ai',fallback);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD) signalLabComplete();
+      success=true;
+    }
+  }
+
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+// Initialize tabs on load
+updateTabs();
+</script>
+</body>
+</html>

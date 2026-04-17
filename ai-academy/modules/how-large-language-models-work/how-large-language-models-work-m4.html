@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How LLMs Work – M4: Temperature and Sampling</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m4 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.prob-vis{display:flex;flex-direction:column;gap:0.4rem;margin:1rem 0;}
+.prob-row{display:flex;align-items:center;gap:0.75rem;font-size:0.8rem;}
+.prob-label{width:90px;color:#a89f93;text-align:right;flex-shrink:0;}
+.prob-bar-wrap{flex:1;background:rgba(255,255,255,0.04);border-radius:2px;height:18px;overflow:hidden;}
+.prob-bar{height:100%;border-radius:2px;display:flex;align-items:center;padding-left:6px;font-size:0.68rem;font-weight:700;color:rgba(255,255,255,0.7);transition:width 0.4s ease;}
+.prob-bar.hot{background:linear-gradient(90deg,#f43f5e,#fb7185);}
+.prob-bar.cold{background:linear-gradient(90deg,#3b82f6,#60a5fa);}
+.prob-bar.neutral{background:linear-gradient(90deg,#c9a05a,#dbb96a);}
+.prob-pct{width:36px;color:var(--muted);font-size:0.72rem;text-align:right;flex-shrink:0;}
+.temp-demo{background:var(--panel);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin:1.25rem 0;}
+.temp-demo-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.75rem;}
+.temp-row{display:flex;gap:1.5rem;flex-wrap:wrap;}
+.temp-col{flex:1;min-width:140px;}
+.temp-col-head{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;}
+.temp-col-head.hot{color:#f43f5e;}
+.temp-col-head.cold{color:#60a5fa;}
+.temp-col-head.neutral{color:var(--gold);}
+.temp-col p{font-size:0.8rem;line-height:1.65;color:#6e6861;}
+.sampling-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin:1rem 0;}
+.samp-card{background:var(--panel);border:1px solid var(--border-dark);border-radius:5px;padding:0.9rem 1rem;}
+.samp-card-head{font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem;}
+.samp-card p{font-size:0.8rem;line-height:1.65;color:#6e6861;}
+@media(max-width:600px){.sampling-grid{grid-template-columns:1fr;}.temp-row{flex-direction:column;}}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1: What Is Temperature? ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 4 · Lesson 1</div>
+      <h1>What Is Temperature?</h1>
+      <div class="tagline">The single number that turns a calculator into a poet — or a parrot.</div>
+      <div class="lesson-question">How does one parameter change an LLM from deterministic machine to creative engine?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Observed Behaviour · 2023">
+        <p class="story-text">When OpenAI first exposed a <em>temperature</em> slider in the ChatGPT API playground, developers noticed something striking: the same prompt sent ten times at temperature 0 returned nearly identical text every single run, while the same prompt at temperature 2 produced ten wildly different paragraphs — some poetic, some incoherent. The parameter was not a mystery; it had been in research papers since the 1980s. But watching it operate live made the mechanism viscerally clear.</p>
+      </div>
+
+      <h2 class="section-heading">Logits, Softmax, and the Raw Probability Table</h2>
+      <div class="section-body">
+        <p>At every generation step an LLM produces a vector of raw scores called <em>logits</em> — one number per token in its vocabulary (GPT-4 uses roughly 100,000 tokens). These numbers are not yet probabilities. A softmax function converts them: it exponentiates each logit and divides by the sum, so all values are positive and sum to 1.0. The result is a probability distribution over the next token.</p>
+        <p>Before softmax is applied, temperature <em>T</em> is used to divide every logit by <em>T</em>. That is the entire operation. No neural network weights change. No fine-tuning occurs. Just division by a scalar.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Formula</div>
+        <p>P(token<sub>i</sub>) = exp(logit<sub>i</sub> / T) / Σ exp(logit<sub>j</sub> / T) — where T is temperature. When T = 1.0 the distribution is unmodified. When T → 0 the highest logit dominates completely. When T is large all logits converge toward equal probability.</p>
+      </div>
+
+      <h2 class="section-heading">Visualising the Effect</h2>
+      <div class="section-body">
+        <p>Imagine a five-token vocabulary and the model has assigned these raw logits: "cat" = 4.0, "dog" = 3.0, "bird" = 1.5, "fish" = 0.5, "rock" = −1.0. After softmax at T=1.0:</p>
+      </div>
+
+      <div class="prob-vis">
+        <div class="prob-row">
+          <span class="prob-label">cat</span>
+          <div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:52%">52%</div></div>
+          <span class="prob-pct">52%</span>
+        </div>
+        <div class="prob-row">
+          <span class="prob-label">dog</span>
+          <div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:29%">29%</div></div>
+          <span class="prob-pct">29%</span>
+        </div>
+        <div class="prob-row">
+          <span class="prob-label">bird</span>
+          <div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:11%">11%</div></div>
+          <span class="prob-pct">11%</span>
+        </div>
+        <div class="prob-row">
+          <span class="prob-label">fish</span>
+          <div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:5%">5%</div></div>
+          <span class="prob-pct">5%</span>
+        </div>
+        <div class="prob-row">
+          <span class="prob-label">rock</span>
+          <div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:3%">3%</div></div>
+          <span class="prob-pct">3%</span>
+        </div>
+      </div>
+
+      <div class="section-body">
+        <p>At <strong>T = 0.2</strong> (cold), dividing logits by 0.2 magnifies differences — "cat" absorbs nearly all probability mass, often exceeding 99%. At <strong>T = 2.0</strong> (hot), dividing by 2.0 flattens differences — all five tokens become more equally likely.</p>
+      </div>
+
+      <div class="temp-demo">
+        <div class="temp-demo-label">Temperature Effects at a Glance</div>
+        <div class="temp-row">
+          <div class="temp-col">
+            <div class="temp-col-head cold">T = 0.2 (Cold)</div>
+            <div class="prob-vis" style="margin:0;">
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">cat</span><div class="prob-bar-wrap"><div class="prob-bar cold" style="width:96%">96%</div></div></div>
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">dog</span><div class="prob-bar-wrap"><div class="prob-bar cold" style="width:3%">3%</div></div></div>
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">bird</span><div class="prob-bar-wrap"><div class="prob-bar cold" style="width:1%"></div></div></div>
+            </div>
+          </div>
+          <div class="temp-col">
+            <div class="temp-col-head neutral">T = 1.0 (Default)</div>
+            <div class="prob-vis" style="margin:0;">
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">cat</span><div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:52%">52%</div></div></div>
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">dog</span><div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:29%">29%</div></div></div>
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">bird</span><div class="prob-bar-wrap"><div class="prob-bar neutral" style="width:11%">11%</div></div></div>
+            </div>
+          </div>
+          <div class="temp-col">
+            <div class="temp-col-head hot">T = 2.0 (Hot)</div>
+            <div class="prob-vis" style="margin:0;">
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">cat</span><div class="prob-bar-wrap"><div class="prob-bar hot" style="width:33%">33%</div></div></div>
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">dog</span><div class="prob-bar-wrap"><div class="prob-bar hot" style="width:27%">27%</div></div></div>
+              <div class="prob-row"><span class="prob-label" style="width:50px;font-size:0.72rem;">bird</span><div class="prob-bar-wrap"><div class="prob-bar hot" style="width:21%">21%</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section-heading">The Thermodynamics Analogy</h2>
+      <div class="section-body">
+        <p>The word "temperature" is borrowed from statistical physics. In a cold system, particles settle into their lowest-energy states; in a hot system, they scatter. The mathematical form is identical — the Boltzmann distribution uses exactly this exponential-over-sum structure. When Geoff Hinton and colleagues adapted it for Boltzmann machines and later for language generation, the name came along naturally.</p>
+        <p>This is not merely metaphor. The same principle that describes why iron becomes paramagnetic above its Curie temperature governs why your LLM starts producing nonsense above temperature 1.5.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Logit</span><span class="kt-def">Raw unnormalized score output by the model's final linear layer for each vocabulary token.</span></div>
+      <div class="key-term"><span class="kt-term">Softmax</span><span class="kt-def">Function converting a vector of real numbers into a probability distribution summing to 1.0.</span></div>
+      <div class="key-term"><span class="kt-term">Temperature T</span><span class="kt-def">Scalar divisor applied to logits before softmax. T&lt;1 sharpens; T&gt;1 flattens the distribution.</span></div>
+      <div class="key-term"><span class="kt-term">Greedy Decoding</span><span class="kt-def">Special case where T→0: always select the token with the highest probability.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Insight</div>
+        <p>Temperature does not change what the model knows. It changes how confidently the model commits to what it knows. A model at T=0 always picks the statistically most likely next token. A model at T=1.5 picks from a much wider range — including tokens that are plausible but unusual.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Check Understanding →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">What Is Temperature?</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1a">
+        <div class="quiz-q">What mathematical operation does temperature perform on logits before softmax?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1a')">It multiplies each logit by T</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1a')">It divides each logit by T</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1a')">It subtracts T from each logit</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1a')">It applies a log transform scaled by T</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Temperature divides every logit by T before softmax. This single operation reshapes the entire probability distribution without changing any model weights.</div>
+        <div class="quiz-feedback wrong">Not quite. Temperature divides every logit by T — a simple scalar division before the softmax function is applied.</div>
+      </div>
+
+      <div class="quiz-box" id="q1b">
+        <div class="quiz-q">At temperature T = 0.1, what happens to the probability distribution over tokens?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1b')">It becomes nearly uniform — all tokens equally likely</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1b')">It stays exactly the same as T = 1.0</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1b')">It sharpens — the highest-probability token takes nearly all the mass</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1b')">It inverts — the least likely tokens become most likely</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Dividing by a small number magnifies the differences between logits, making the already-highest-scoring token dominate even more completely.</div>
+        <div class="quiz-feedback wrong">Not quite. Dividing by a small T magnifies differences between logits, causing the distribution to sharpen dramatically around the top token.</div>
+      </div>
+
+      <div class="quiz-box" id="q1c">
+        <div class="quiz-q">Where does the word "temperature" in LLM sampling originate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1c')">It was coined by OpenAI to describe how "warm" the output text feels</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1c')">It is borrowed from statistical physics — the Boltzmann distribution uses the same mathematical form</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1c')">It refers to the literal hardware temperature of GPUs during inference</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1c')">It was named after the temperature at which transformers were first trained</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Boltzmann distribution in statistical mechanics has exactly this exponential-over-sum structure, and the analogy was carried directly into machine learning by researchers including Geoff Hinton.</div>
+        <div class="quiz-feedback wrong">Not quite. The term comes from statistical physics — the Boltzmann distribution, which governs how particles distribute across energy states at a given temperature, uses the identical mathematical form.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Review Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1: Exploring Temperature</h1>
+      <div class="tagline">Conversation practice — ask 3+ questions to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are talking to an AI tutor specialised in temperature and logit mathematics. Explore how the logit → temperature division → softmax pipeline actually works. Ask it to walk you through a numerical example, or probe what happens at the extremes (T=0, T=100).</p>
+        <div class="lab-prompt">Suggested start: "Can you show me with actual numbers how dividing logits by T=0.5 versus T=2.0 changes the resulting probabilities?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Temperature Tutor</span>
+          <span class="chat-badge">Lesson 1</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome! I'm here to help you understand temperature in LLMs — the logit division, the softmax, and why it matters. What would you like to explore? You can ask me to crunch real numbers, explain edge cases, or connect this to how models you've used actually behave.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" rows="1" placeholder="Type your question…" onkeydown="labKey(event,'l1')"></textarea>
+          <button class="chat-reset-btn" onclick="labReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L2: Sampling Strategies ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 4 · Lesson 2</div>
+      <h1>Sampling Strategies</h1>
+      <div class="tagline">Temperature alone is blunt. Top-k, top-p, and min-p sculpt the distribution with precision.</div>
+      <div class="lesson-question">What techniques let engineers keep creativity without allowing the model to sample from garbage tokens?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Production Context · Anthropic Claude · 2023–2024">
+        <p class="story-text">Anthropic's model cards and API documentation for Claude explicitly expose three parameters: <em>temperature</em>, <em>top_p</em>, and <em>top_k</em>. Their guidance notes that raising temperature while simultaneously lowering top_p is redundant — both reshape the effective distribution — and recommends adjusting only one at a time. This reflects a genuine engineering tradeoff that shipped models navigated in practice: pure temperature is easy to reason about mathematically, but it can accidentally assign significant probability to tokens that are semantically absurd in context.</p>
+      </div>
+
+      <h2 class="section-heading">Why Temperature Alone Is Insufficient</h2>
+      <div class="section-body">
+        <p>Suppose a model's vocabulary has 100,000 tokens. At temperature 1.0, most probability mass sits on perhaps a few hundred plausible continuations. But the remaining 99,700+ tokens still receive tiny nonzero probabilities. Over many sampling steps, the model will eventually land on one of them. A single highly-improbable token can derail a coherent paragraph.</p>
+        <p>The solution is to restrict which tokens are even eligible for sampling <em>before</em> a final draw is made. Three strategies dominate in practice.</p>
+      </div>
+
+      <div class="sampling-grid">
+        <div class="samp-card">
+          <div class="samp-card-head">Greedy Decoding</div>
+          <p>Always select the argmax token. Equivalent to T→0. Completely deterministic. Fast and consistent, but prone to repetition loops and boring output. Used in translation tasks where precision matters most.</p>
+        </div>
+        <div class="samp-card">
+          <div class="samp-card-head">Top-K Sampling</div>
+          <p>Keep only the K highest-probability tokens; set all others to zero probability; renormalise; sample. K=50 is a common default. Problem: K=50 means very different things when the model is confident (top token has 80%) versus uncertain (top 50 tokens all near 2%).</p>
+        </div>
+        <div class="samp-card">
+          <div class="samp-card-head">Top-P (Nucleus) Sampling</div>
+          <p>Keep the smallest set of tokens whose cumulative probability exceeds P. Introduced by Holtzman et al. (2019) "The Curious Case of Neural Text Degeneration." P=0.9 means: keep tokens until we've covered 90% of the probability mass, then renormalise and sample. Adapts to confidence level automatically.</p>
+        </div>
+        <div class="samp-card">
+          <div class="samp-card-head">Min-P Sampling</div>
+          <p>Keep any token whose probability exceeds P × (probability of the top token). If top token has 60% probability and min_p=0.05, keep all tokens with ≥3% probability. Proposed in 2023–2024 as an improvement for creative tasks — handles both high- and low-confidence positions gracefully.</p>
+        </div>
+      </div>
+
+      <h2 class="section-heading">Nucleus Sampling in Detail</h2>
+      <div class="section-body">
+        <p>Ari Holtzman and colleagues at the University of Washington published "The Curious Case of Neural Text Degeneration" (ICLR 2020), demonstrating that pure temperature sampling leads to repetition and incoherence at scale. Their nucleus (top-p) sampling showed measurably better human preference scores on open-ended generation tasks.</p>
+        <p>The key insight: <em>the number of tokens needed to cover 90% of probability mass varies enormously by context</em>. When the next word is highly constrained ("The Eiffel Tower is located in ___"), the nucleus contains just a handful of tokens. When the context is ambiguous ("Once upon a time there was a ___"), the nucleus spans hundreds. Top-p handles both cases gracefully; top-k does not.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Holtzman et al. 2019 — Key Finding</div>
+        <p>Human evaluators consistently rated nucleus-sampled text as more coherent and interesting than text from pure temperature sampling or beam search. The paper showed that maximisation strategies (greedy, beam search) lead to "dull, repetitive, sometimes incoherent text" because they systematically avoid the long tail of plausible continuations that give human text its richness.</p>
+      </div>
+
+      <h2 class="section-heading">Combining Parameters</h2>
+      <div class="section-body">
+        <p>In OpenAI's and Anthropic's APIs, temperature and top-p interact: temperature reshapes the full distribution first, then top-p truncates it. Setting both high is counterproductive — the temperature widens the distribution, and top-p cuts off the wide tail anyway. The practical advice from Anthropic's documentation: <em>if you want creative output, raise temperature and leave top-p at its default (0.999 or 1.0). If you want focused output, lower top-p and leave temperature at 1.0.</em></p>
+        <p>Real-world defaults as of 2024: GPT-4 API defaults to temperature=1.0, top_p=1.0. Claude defaults to temperature=1.0. Llama.cpp defaults to temperature=0.8, top_k=40, top_p=0.95 — reflecting the open-source community's preference for slightly more conservative generation.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Top-K</span><span class="kt-def">Restrict sampling to the K tokens with highest probability; renormalise over only those K.</span></div>
+      <div class="key-term"><span class="kt-term">Top-P (Nucleus)</span><span class="kt-def">Restrict sampling to the smallest token set covering cumulative probability ≥ P.</span></div>
+      <div class="key-term"><span class="kt-term">Min-P</span><span class="kt-def">Keep tokens whose probability ≥ min_p × max_token_probability. Scales with model confidence.</span></div>
+      <div class="key-term"><span class="kt-term">Repetition Penalty</span><span class="kt-def">Multiplicative discount applied to logits of tokens already appearing in context, reducing loops.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Rule</div>
+        <p>For factual or code tasks: temperature 0.0–0.3, top-p 1.0. For creative writing: temperature 0.8–1.2, top-p 0.9–0.95. Never push temperature above 1.5 in production — the quality degradation is rarely worth any diversity gain at that point.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Sampling Strategies</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2a">
+        <div class="quiz-q">What is the core problem with top-K sampling that nucleus (top-p) sampling solves?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2a')">Top-K is computationally too slow for production</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2a')">A fixed K treats confident and uncertain positions identically, while top-p adapts to actual probability mass</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2a')">Top-K cannot work with temperature — they are mutually exclusive</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2a')">Top-K requires more memory than top-p</button>
+        </div>
+        <div class="quiz-feedback right">Correct. K=50 when the model is confident covers the same percentage as K=500 when uncertain — a mismatch. Top-p automatically expands or contracts based on where probability mass actually sits.</div>
+        <div class="quiz-feedback wrong">Not quite. The core issue is adaptive coverage: K=50 covers vastly different amounts of probability mass depending on model confidence. Top-p solves this by targeting a fixed fraction of mass rather than a fixed count.</div>
+      </div>
+
+      <div class="quiz-box" id="q2b">
+        <div class="quiz-q">According to Holtzman et al. (2019), what does pure maximisation decoding (greedy / beam search) produce?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2b')">Highly creative, human-like text due to always choosing optimal tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2b')">Perfect factual accuracy with no repetition</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2b')">Dull, repetitive, sometimes incoherent text that systematically avoids the long tail</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2b')">Random output equivalent to uniform sampling</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The paper's central finding was that maximisation strategies produce degenerate text — looping, generic, and bland — because human language actually draws heavily from the non-maximum distribution.</div>
+        <div class="quiz-feedback wrong">Not quite. Holtzman et al. found the opposite: maximisation produces dull, repetitive text because it ignores the rich probability tail that gives natural human language its variety and richness.</div>
+      </div>
+
+      <div class="quiz-box" id="q2c">
+        <div class="quiz-q">How does min-p sampling differ from top-p sampling?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2c')">Min-p sets an absolute minimum probability threshold, always the same regardless of context</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2c')">Min-p scales its threshold relative to the top token's probability, so the cutoff adapts to model confidence</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2c')">Min-p is just another name for top-p with inverted indexing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2c')">Min-p eliminates sampling entirely and always returns the maximum probability token</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Min-p keeps tokens whose probability exceeds min_p × p(top_token). If the model is very confident, the absolute threshold rises; if uncertain, it falls. This is more adaptive than top-p's fixed cumulative cutoff.</div>
+        <div class="quiz-feedback wrong">Not quite. Min-p uses a relative threshold — it keeps tokens whose probability is at least min_p times the top token's probability — making the actual cutoff scale dynamically with model confidence.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Review Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2: Sampling Strategies</h1>
+      <div class="tagline">Conversation practice — ask 3+ questions to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Explore the tradeoffs between top-k, top-p, and min-p with your AI tutor. Ask it to compare them numerically, explain when you'd choose one over another, or walk through the nucleus sampling algorithm step by step.</p>
+        <div class="lab-prompt">Suggested start: "Walk me through top-p sampling step by step with a concrete example — show me how to build the nucleus from a probability distribution."</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Sampling Strategy Tutor</span>
+          <span class="chat-badge">Lesson 2</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Ready to dig into sampling strategies! I can walk you through top-k, top-p (nucleus), min-p, or repetition penalties — with real numbers if you like. What would you like to start with?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" rows="1" placeholder="Type your question…" onkeydown="labKey(event,'l2')"></textarea>
+          <button class="chat-reset-btn" onclick="labReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L3: Temperature in Practice ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 4 · Lesson 3</div>
+      <h1>Temperature in Practice</h1>
+      <div class="tagline">How real deployed systems choose and tune temperature — from GitHub Copilot to GPT-4 to Stable Diffusion.</div>
+      <div class="lesson-question">What do production engineers actually set temperature to, and why does it vary so much by task?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Deployment · GitHub Copilot · 2021–2023">
+        <p class="story-text">When GitHub Copilot launched in technical preview in June 2021, internal teams at GitHub and OpenAI ran extensive A/B tests on temperature settings for code completion. Public postmortems and developer blog posts noted that temperature values above 0.4 produced too many syntactically invalid suggestions, while values below 0.1 produced repetitive boilerplate. The production system settled on approximately 0.2–0.3 for single-line completions and slightly higher values for multi-line block suggestions where more diverse structure is acceptable. This range — never disclosed officially but inferred from API response analysis — illustrates a core principle: <em>the right temperature depends on the cost of errors in your task</em>.</p>
+      </div>
+
+      <h2 class="section-heading">Task-Dependent Temperature Guidelines</h2>
+      <div class="section-body">
+        <p>Different tasks have fundamentally different relationships between diversity and quality. A wrong character in a function name breaks code. A surprising metaphor in a poem is a feature. Engineers calibrate accordingly:</p>
+      </div>
+
+      <div class="sampling-grid">
+        <div class="samp-card">
+          <div class="samp-card-head">Code Generation</div>
+          <p>T = 0.0–0.3. Correctness dominates. Syntax errors compound through subsequent tokens. Even T=0.5 introduces sufficient randomness to produce subtle bugs in 10–20% of completions on complex tasks.</p>
+        </div>
+        <div class="samp-card">
+          <div class="samp-card-head">Factual Q&amp;A</div>
+          <p>T = 0.0–0.4. Consistent, reproducible answers. Low temperature reduces hallucination frequency by forcing the model to its highest-confidence outputs. OpenAI recommends T=0 for classification tasks.</p>
+        </div>
+        <div class="samp-card">
+          <div class="samp-card-head">Creative Writing</div>
+          <p>T = 0.7–1.2. Diversity and surprise are valuable. The "curious case" phenomenon (Holtzman 2019) shows human raters prefer varied text. Claude's constitutional AI approach allows higher temperatures because safety filters operate at another layer.</p>
+        </div>
+        <div class="samp-card">
+          <div class="samp-card-head">Dialogue / Chat</div>
+          <p>T = 0.5–0.9. Balance between consistency and naturalness. ChatGPT's default T=1.0 for chat reflects the finding that robotic-sounding responses (low T) reduce user satisfaction even if they're technically correct.</p>
+        </div>
+      </div>
+
+      <h2 class="section-heading">Temperature and Hallucination</h2>
+      <div class="section-body">
+        <p>One of the most practically important connections: <em>higher temperature increases hallucination rate</em>. This is a direct consequence of the mechanism — raising temperature gives non-maximal tokens higher sampling probability. Among those non-maximal tokens are often factually incorrect continuations that the model still assigns some probability mass to.</p>
+        <p>A 2023 study from the University of Oxford and DeepMind (published as part of the TruthfulQA benchmark analysis) observed that LLaMA-based models showed approximately 15–20% higher hallucination rates at T=1.0 compared to T=0.3 on closed-domain factual questions. The effect was smaller for larger models — larger models assign more concentrated probability to correct tokens — but remained measurable across all model sizes tested.</p>
+        <p>This creates a fundamental engineering dilemma for RAG (retrieval-augmented generation) systems: you need enough temperature to produce natural-sounding prose, but not so much that the model departs from the retrieved context into invented facts.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">OpenAI API Documentation Guidance (2024)</div>
+        <p>"Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend altering this or top_p but not both." — This explicit caution reflects the production reality that stacking both parameters is confusing to reason about and rarely beneficial.</p>
+      </div>
+
+      <h2 class="section-heading">Temperature in Diffusion Models</h2>
+      <div class="section-body">
+        <p>The concept extends beyond LLMs. In diffusion models like Stable Diffusion, "temperature" or "guidance scale" controls a related tradeoff. The classifier-free guidance scale (CFG) introduced by Ho and Salimans (2022) behaves analogously: low CFG produces diverse but prompt-misaligned images; high CFG produces prompt-faithful but artefact-heavy images. Midjourney's "stylize" parameter plays a similar role. Users quickly discover empirically what temperature researchers formalised: there is always a diversity-quality frontier.</p>
+      </div>
+
+      <h2 class="section-heading">Beam Search vs. Sampling</h2>
+      <div class="section-body">
+        <p>Beam search — maintaining the top B partial sequences at each step — was the dominant decoding strategy in neural machine translation (Google Translate used it extensively through 2020). It produces high-BLEU-score translations but notoriously repetitive, stilted text in open-ended generation. The transition from beam search to temperature sampling with top-p was one of the key engineering decisions that made ChatGPT feel conversational rather than robotic. Google Brain's 2022 paper "Scaling Instruction-Finetuned Language Models" (FLAN-T5) confirmed that sampling-based decoding with moderate temperature outperformed beam search on human preference evaluations for dialogue tasks.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Beam Search</span><span class="kt-def">Maintain the B most probable partial sequences at each step. Deterministic and high-precision but repetitive in open generation.</span></div>
+      <div class="key-term"><span class="kt-term">Guidance Scale (CFG)</span><span class="kt-def">Diffusion model analogue to temperature: scales the influence of the conditioning signal on generation.</span></div>
+      <div class="key-term"><span class="kt-term">Hallucination Rate</span><span class="kt-def">Frequency at which model generates factually incorrect content — measurably increases with temperature.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Core Tradeoff</div>
+        <p>Temperature is a dial on the diversity-accuracy frontier. Every production system must choose where it sits on that frontier based on what failure modes are most costly for its users. There is no universally correct setting — only context-appropriate ones.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Temperature in Practice</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3a">
+        <div class="quiz-q">Why do code generation systems like GitHub Copilot use low temperature (≈ 0.2–0.3) rather than the default 1.0?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3a')">Lower temperature is faster to compute</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3a')">Syntax errors compound — even small token-level randomness cascades into broken code</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3a')">Code tasks require more diverse output than natural language</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3a')">OpenAI's API does not allow temperature above 0.3 for code models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. In code, a wrong variable name or misplaced bracket can make everything fail. Each token affects the syntactic validity of subsequent tokens, making diversity actively harmful for this task.</div>
+        <div class="quiz-feedback wrong">Not quite. The reason is error compounding — in code, incorrect tokens don't just produce a mildly wrong answer; they cascade into syntactically and logically broken output, so lower temperatures that prioritise high-confidence tokens are essential.</div>
+      </div>
+
+      <div class="quiz-box" id="q3b">
+        <div class="quiz-q">What is the observed relationship between temperature and hallucination rate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3b')">Higher temperature reduces hallucination by exposing more of the model's knowledge</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3b')">Temperature has no measurable effect on hallucination — that is determined solely by model size</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3b')">Higher temperature increases hallucination rate by giving incorrect non-maximal tokens more probability mass</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3b')">Hallucination only occurs at exactly T = 1.0; other values are safe</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Research including TruthfulQA-related analyses found 15–20% higher hallucination at T=1.0 versus T=0.3 on factual tasks, because higher temperature samples from more of the probability tail, including factually incorrect tokens.</div>
+        <div class="quiz-feedback wrong">Not quite. Higher temperature amplifies probability for non-maximal tokens, which include factually wrong completions. Studies found significantly higher hallucination rates at T=1.0 versus T=0.3 on closed-domain factual tasks.</div>
+      </div>
+
+      <div class="quiz-box" id="q3c">
+        <div class="quiz-q">Why did the field largely move from beam search to temperature sampling for conversational AI?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3c')">Beam search requires too much memory for large vocabularies</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3c')">Sampling is easier to implement in Python</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3c')">Human evaluators consistently prefer sampling-based output — beam search produces stilted, repetitive text in open-ended generation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3c')">Beam search cannot handle prompts longer than 512 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Papers including Google's FLAN-T5 work confirmed that human preference evaluations systematically favour temperature-sampled output over beam search for dialogue, because beam search's maximisation produces the "dull, repetitive" text Holtzman et al. identified.</div>
+        <div class="quiz-feedback wrong">Not quite. Human evaluation studies consistently showed preference for temperature-sampled output in dialogue tasks. Beam search optimises BLEU score in translation but produces robotic, repetitive text in open-ended conversation.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Review Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3: Temperature in Production</h1>
+      <div class="tagline">Conversation practice — ask 3+ questions to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Discuss real-world temperature decisions with your AI tutor. Explore why different applications choose different settings, how hallucination risk scales with temperature, or what beam search vs. sampling looks like in practice.</p>
+        <div class="lab-prompt">Suggested start: "I'm building a customer-facing chatbot that answers questions about our products from a knowledge base. What temperature should I use and why? What are the risks at different settings?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>Production Tutor</span>
+          <span class="chat-badge">Lesson 3</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Let's talk about temperature in production systems. I can help you think through the tradeoffs for specific use cases, explain why hallucination scales with temperature, or compare beam search with sampling strategies. What situation are you working through?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" rows="1" placeholder="Type your question…" onkeydown="labKey(event,'l3')"></textarea>
+          <button class="chat-reset-btn" onclick="labReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L4: Advanced Decoding — Repetition, Penalties, and Structured Generation ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 4 · Lesson 4</div>
+      <h1>Advanced Decoding</h1>
+      <div class="tagline">Repetition penalties, frequency/presence penalties, constrained decoding, and why "just set temperature" is never the whole story.</div>
+      <div class="lesson-question">What additional controls do engineers apply when temperature and sampling alone still produce bad output?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Engineering Problem · OpenAI GPT-3 Launch · 2020">
+        <p class="story-text">When OpenAI released GPT-3 in June 2020, early API users discovered a persistent problem: even at moderate temperatures, the model would enter repetition loops — sometimes generating the same phrase dozens of times in a row. This wasn't a hallucination problem or a temperature problem. It was a structural quirk of autoregressive generation: once a token pattern achieves high probability, it can become self-reinforcing, creating a probability attractor. OpenAI's response was to introduce <em>presence penalties</em> and <em>frequency penalties</em> as first-class API parameters — logit adjustments that discount recently-used or frequently-used tokens. These parameters shipped before GPT-4 and remain in the API today.</p>
+      </div>
+
+      <h2 class="section-heading">Repetition and Why It Happens</h2>
+      <div class="section-body">
+        <p>Repetition in LLM output is not random. It arises because the model's probability distribution is conditioned on its own previous output. If the model generates "the" at position N, the context now contains "the", making "the" somewhat more likely at position N+1 (many common phrases begin with "the"). Over many steps, high-frequency tokens can create feedback loops.</p>
+        <p>This is distinct from the hallucination problem. A model can be repetitive and factually accurate simultaneously. The issue is purely about the dynamics of autoregressive sampling.</p>
+      </div>
+
+      <h2 class="section-heading">Frequency and Presence Penalties</h2>
+      <div class="section-body">
+        <p>OpenAI's API exposes two penalty parameters, both operating on logits before softmax:</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Frequency Penalty</span><span class="kt-def">Reduces a token's logit proportionally to how many times it has already appeared in the output. The more a token has been used, the harder it is to sample again.</span></div>
+      <div class="key-term"><span class="kt-term">Presence Penalty</span><span class="kt-def">Applies a one-time flat penalty to any token that has appeared at all — regardless of count. Encourages topic diversity.</span></div>
+
+      <div class="section-body">
+        <p>The formula: <em>adjusted_logit = logit − frequency_penalty × token_count − presence_penalty × (token_appeared ? 1 : 0)</em>. OpenAI's documentation suggests values between 0 and 2.0; negative values increase repetition (occasionally useful for tasks like generating structured data where repeated tokens are expected).</p>
+        <p>An important nuance: frequency penalty primarily prevents phrase-level looping. Presence penalty primarily prevents topic-level looping (mentioning the same concept repeatedly). They address different aspects of the repetition problem and are often used together.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Practical Setting</div>
+        <p>For most chat applications: frequency_penalty = 0.5–1.0, presence_penalty = 0.0–0.6. For creative writing: presence_penalty 0.5–1.0 encourages narrative to move forward. For code generation: both near 0 — repetition in code is often intentional (variable reuse, standard patterns).</p>
+      </div>
+
+      <h2 class="section-heading">Constrained and Structured Decoding</h2>
+      <div class="section-body">
+        <p>A different class of problem: getting LLMs to output valid JSON, SQL, or other structured formats reliably. Temperature and sampling handle randomness, but they don't enforce schema compliance. The solution is <em>constrained decoding</em>: at each token position, mask to zero any tokens that would make the output invalid according to the target schema, then sample from only the valid remainder.</p>
+        <p>Libraries like Outlines (from Normal Computing, 2023) and Microsoft's Guidance implement this. They convert a JSON schema or regular grammar into a set of logit masks that change at each step as the model generates partial output. The result: the model samples freely from its distribution but can only ever produce syntactically valid output. Temperature still controls diversity within valid outputs — it's not bypassed, just constrained.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Outlines / Structured Generation (2023)</div>
+        <p>The Outlines library from Normal Computing demonstrated that constrained decoding with LLM-native grammars could reliably produce valid JSON, SQL, and regex-matched output with no accuracy cost versus unconstrained generation — and dramatically lower parsing error rates. This approach is now built into llama.cpp's grammar sampling feature (--grammar-file flag) and adopted by vLLM and other inference engines.</p>
+      </div>
+
+      <h2 class="section-heading">Mirostat: Adaptive Temperature</h2>
+      <div class="section-body">
+        <p>A 2020 paper by Basu et al. proposed Mirostat — an algorithm that dynamically adjusts temperature at each token to maintain a target perplexity (surprise level). Instead of setting a fixed temperature, you set a target "text quality" measured by cross-entropy, and the algorithm adjusts temperature step by step to stay near that target.</p>
+        <p>Mirostat is implemented in llama.cpp and Kobold AI. Users report it handles long-form generation better than fixed temperature — avoiding the quality collapse that sometimes occurs when temperature is set high and the model wanders into low-quality regions. It represents the state of the art for local model inference as of 2024 and illustrates the direction the field is moving: away from fixed hyperparameters toward adaptive, feedback-controlled decoding.</p>
+      </div>
+
+      <h2 class="section-heading">Temperature in Reasoning Models</h2>
+      <div class="section-body">
+        <p>OpenAI's o1 and o3 models (late 2023–2024) introduced a different paradigm: chain-of-thought reasoning tokens generated internally before the final answer. These reasoning traces are reportedly generated at moderate temperature to explore different solution paths, while the final answer extraction uses lower temperature for consistency. This "think hot, answer cold" approach — sampling creatively during deliberation but committing precisely at output — represents a sophisticated application of temperature as a cognitive control.</p>
+        <p>Google's Gemini team reported similar findings in their 2023 technical report: best-of-N sampling (generating N outputs at higher temperature, then selecting the best by a verifier) outperforms single greedy generation on mathematical reasoning by significant margins, despite introducing more randomness. The diversity creates a search space that the verifier can then optimise over.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Constrained Decoding</span><span class="kt-def">Masking invalid tokens' logits to negative infinity before sampling, enforcing grammatical or schema constraints.</span></div>
+      <div class="key-term"><span class="kt-term">Mirostat</span><span class="kt-def">Adaptive temperature algorithm that adjusts T at each step to maintain a target perplexity.</span></div>
+      <div class="key-term"><span class="kt-term">Best-of-N Sampling</span><span class="kt-def">Generate N independent outputs at moderate temperature; select the highest-scoring by a separate verifier.</span></div>
+      <div class="key-term"><span class="kt-term">Think Hot, Answer Cold</span><span class="kt-def">Informal term for using higher temperature during chain-of-thought reasoning and lower temperature for final output extraction.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Big Picture</div>
+        <p>Temperature is the foundation, but production LLM decoding stacks multiple layers: temperature → top-p/top-k/min-p → frequency/presence penalties → constrained grammar masks → optional adaptive algorithms like Mirostat. Understanding each layer independently lets you diagnose which one to adjust when output quality problems arise.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Advanced Decoding</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4a">
+        <div class="quiz-q">What is the difference between frequency penalty and presence penalty in OpenAI's API?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4a')">Frequency penalty applies to nouns only; presence penalty applies to all parts of speech</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4a')">Frequency penalty scales with how many times a token appeared; presence penalty is a flat discount for any token that appeared at all</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4a')">They are identical — just different names for the same parameter in different API versions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4a')">Presence penalty reduces repetition of phrases; frequency penalty reduces repetition of individual characters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Frequency penalty grows with count (combats phrase-level loops); presence penalty is binary — any appearance triggers it (combats topic-level repetition). They address different repetition patterns.</div>
+        <div class="quiz-feedback wrong">Not quite. Frequency penalty multiplies the discount by occurrence count — the more often a token has appeared, the harder it is to use again. Presence penalty is a flat one-time discount applied to any token that has appeared at all, regardless of count.</div>
+      </div>
+
+      <div class="quiz-box" id="q4b">
+        <div class="quiz-q">How does constrained decoding (e.g., Outlines library) interact with temperature?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4b')">Constrained decoding replaces temperature — you cannot use both simultaneously</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4b')">Temperature still controls diversity within valid outputs; constrained decoding masks invalid tokens to zero before the temperature-adjusted softmax sampling</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4b')">Constrained decoding forces temperature to 0 — it always selects the highest-probability valid token</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4b')">You must set temperature to exactly 1.0 when using constrained decoding</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Constrained decoding zeroes out logits for invalid tokens, then temperature-adjusted softmax sampling proceeds over the valid remainder. Temperature still governs how diverse the valid output is — it's not bypassed.</div>
+        <div class="quiz-feedback wrong">Not quite. Constrained decoding masks invalid tokens (sets their logits to −∞) before sampling. After masking, the temperature-adjusted softmax operates normally over the remaining valid tokens, so temperature still controls diversity within the valid space.</div>
+      </div>
+
+      <div class="quiz-box" id="q4c">
+        <div class="quiz-q">What does the "think hot, answer cold" approach in models like OpenAI o1 mean?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4c')">The GPU runs hotter during reasoning tokens, requiring temperature throttling at output</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4c')">The model uses emotional language during reasoning but formal language in answers</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4c')">Higher temperature during internal chain-of-thought reasoning encourages exploration; lower temperature at final answer extraction ensures consistency</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4c')">It means increasing presence penalty during reasoning and reducing it at output</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Using higher temperature during deliberation creates a diverse search space of reasoning paths. Lower temperature at final output commits to the most reliable conclusion identified through that exploration — creativity in process, precision in result.</div>
+        <div class="quiz-feedback wrong">Not quite. "Think hot, answer cold" refers to using higher temperature during the internal chain-of-thought reasoning phase — to explore multiple solution paths creatively — then using lower temperature when extracting the final answer to commit precisely to the best conclusion reached.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Review Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4: Advanced Decoding</h1>
+      <div class="tagline">Conversation practice — ask 3+ questions to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Explore advanced decoding techniques with your AI tutor: repetition penalties, constrained/structured generation, Mirostat adaptive temperature, and the emerging "think hot, answer cold" pattern. Ask for practical advice or dig into how these systems work mechanically.</p>
+        <div class="lab-prompt">Suggested start: "I need an LLM to reliably output JSON matching a specific schema. Walk me through constrained decoding — how does it mask logits, and what happens to temperature during that process?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>Advanced Decoding Tutor</span>
+          <span class="chat-badge">Lesson 4</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Ready to explore advanced decoding! I can walk you through repetition penalties, constrained generation, Mirostat, best-of-N sampling, or the emerging "think hot, answer cold" pattern in reasoning models. What would you like to dig into?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" rows="1" placeholder="Type your question…" onkeydown="labKey(event,'l4')"></textarea>
+          <button class="chat-reset-btn" onclick="labReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 4 Test</h1>
+      <div class="tagline">Temperature and Sampling — 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt1">
+        <div class="quiz-q">1. What operation does temperature T perform on logits before softmax?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">Divides each logit by T</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Multiplies each logit by T</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Subtracts T from each logit</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Raises each logit to the power T</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Each logit is divided by T before softmax.</div>
+        <div class="quiz-feedback wrong">Not quite. Temperature divides each logit by T.</div>
+      </div>
+
+      <div class="quiz-box" id="mt2">
+        <div class="quiz-q">2. At temperature T = 0.0 (greedy decoding), what token is always selected?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">A randomly sampled token weighted by probabilities</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">The token with the highest probability (argmax)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">A token sampled uniformly at random from the vocabulary</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">The token with the lowest logit</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Greedy decoding always selects the argmax token — the one with highest probability.</div>
+        <div class="quiz-feedback wrong">Not quite. At T=0, greedy decoding always picks the highest-probability token.</div>
+      </div>
+
+      <div class="quiz-box" id="mt3">
+        <div class="quiz-q">3. What does high temperature (e.g., T = 2.0) do to the probability distribution?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Sharpens it — the top token gets nearly all probability mass</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">Flattens it — probabilities become more uniform across tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Inverts it — less likely tokens become more likely</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Has no effect until T exceeds 3.0</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Dividing logits by a large T compresses differences, making the distribution more uniform.</div>
+        <div class="quiz-feedback wrong">Not quite. High T flattens the distribution — all tokens become more equally probable.</div>
+      </div>
+
+      <div class="quiz-box" id="mt4">
+        <div class="quiz-q">4. From which field was the term "temperature" borrowed for LLM sampling?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Meteorology — analogy to weather temperature</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Economics — analogy to market volatility</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">Statistical physics — the Boltzmann distribution</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Neuroscience — analogy to neural firing rates</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Boltzmann distribution in statistical physics uses the identical exponential-over-sum form.</div>
+        <div class="quiz-feedback wrong">Not quite. The term comes from statistical physics — specifically the Boltzmann distribution.</div>
+      </div>
+
+      <div class="quiz-box" id="mt5">
+        <div class="quiz-q">5. What is the core weakness of top-K sampling that nucleus (top-p) sampling addresses?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">A fixed K doesn't adapt to model confidence — same K covers very different probability mass in different situations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Top-K is computationally too slow for real-time inference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Top-K always selects the greedy token regardless of K value</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Top-K cannot be used alongside temperature</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Top-p adapts to model confidence by covering a fixed fraction of probability mass rather than a fixed count.</div>
+        <div class="quiz-feedback wrong">Not quite. The weakness is that K=50 covers wildly different amounts of probability mass depending on how confident the model is — top-p fixes this by targeting cumulative probability.</div>
+      </div>
+
+      <div class="quiz-box" id="mt6">
+        <div class="quiz-q">6. In nucleus (top-p) sampling with p = 0.9, what is kept?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">The top 90 tokens regardless of their probabilities</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">The smallest set of tokens whose cumulative probability reaches 90%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Any token with individual probability above 90%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">All tokens except the bottom 10% by probability</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Nucleus sampling keeps the minimum set of top tokens summing to p, then renormalises and samples.</div>
+        <div class="quiz-feedback wrong">Not quite. Top-p keeps the smallest set of highest-probability tokens whose cumulative total reaches 0.9, then renormalises over only those tokens.</div>
+      </div>
+
+      <div class="quiz-box" id="mt7">
+        <div class="quiz-q">7. How does min-p differ from top-p in its threshold calculation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Min-p uses an absolute probability floor that never changes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">Min-p multiplies the threshold by the top token's probability, making the cutoff scale with model confidence</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Min-p targets a fixed count like top-k but counts from the bottom</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Min-p and top-p use identical thresholds — the names just reflect different API versions</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Min-p = min_p_value × p(top_token), so when the model is confident the absolute cutoff rises, and when uncertain it falls.</div>
+        <div class="quiz-feedback wrong">Not quite. Min-p scales its threshold relative to the top token's probability: threshold = min_p × max_token_probability.</div>
+      </div>
+
+      <div class="quiz-box" id="mt8">
+        <div class="quiz-q">8. What temperature range do production code-generation systems typically use, and why?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">T = 1.5–2.0 to maximise creative code suggestions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">T = 0.2–0.3 because syntax errors in one token compound into broken output in subsequent tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">T = 1.0 because code generation requires exactly the default distribution</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">T = 0.8–1.0 to balance between creative and correct code</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Low temperature for code — diversity causes compounding errors because each token affects the syntactic validity of everything that follows.</div>
+        <div class="quiz-feedback wrong">Not quite. Code generation typically uses T = 0.2–0.3 because incorrect tokens cascade into syntactically broken output.</div>
+      </div>
+
+      <div class="quiz-box" id="mt9">
+        <div class="quiz-q">9. What did Holtzman et al. (2019) observe about pure maximisation decoding (greedy/beam search) for open-ended generation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">It produces the highest human preference scores of all decoding strategies</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">It eliminates hallucination entirely by always selecting the most probable token</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">It produces dull, repetitive, sometimes incoherent text that humans consistently rate below sampled output</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">It works well for generation tasks but fails on translation tasks</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The paper's title ("The Curious Case of Neural Text Degeneration") refers directly to this finding.</div>
+        <div class="quiz-feedback wrong">Not quite. Holtzman et al. found maximisation produces degenerate — dull, repetitive, incoherent — text that humans strongly disprefer.</div>
+      </div>
+
+      <div class="quiz-box" id="mt10">
+        <div class="quiz-q">10. How does higher temperature affect hallucination rate in factual tasks?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Higher temperature reduces hallucination by sampling from more of the model's knowledge</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">Higher temperature increases hallucination by giving non-maximal (potentially incorrect) tokens more probability mass</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Temperature has no effect on hallucination — it is determined only by model size</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Temperature affects style but never factual accuracy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Research found ~15–20% higher hallucination at T=1.0 vs T=0.3 on factual tasks, because higher T samples from a wider distribution including incorrect tokens.</div>
+        <div class="quiz-feedback wrong">Not quite. Higher temperature amplifies the probability of non-maximal tokens, which include factually incorrect completions — directly raising hallucination rate.</div>
+      </div>
+
+      <div class="quiz-box" id="mt11">
+        <div class="quiz-q">11. What does the frequency penalty do to logits in OpenAI's API?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Adds a fixed bonus to each token's logit proportional to how common it is in the training corpus</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Reduces a token's logit by a penalty scaled by how many times that token has appeared in the current output</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Applies a one-time penalty to any token that has appeared at all</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Increases diversity by randomly shuffling logits after every 50 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The penalty grows with token count — the more a token has appeared, the bigger the logit discount it receives.</div>
+        <div class="quiz-feedback wrong">Not quite. Frequency penalty subtracts from a token's logit proportionally to the number of times that token has already appeared in the generated output.</div>
+      </div>
+
+      <div class="quiz-box" id="mt12">
+        <div class="quiz-q">12. How does constrained decoding (e.g., Outlines) enforce JSON schema compliance?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">It post-processes the output text with a JSON validator and regenerates if invalid</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">It masks logits of schema-invalid tokens to −∞ before each sampling step, so only valid tokens can be selected</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">It fine-tunes the model on JSON examples before inference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">It sets temperature to 0 to ensure the model always follows the most likely structured pattern</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Valid logit masking at each step means the model can only ever produce tokens that keep the output syntactically valid per the schema — temperature still governs diversity within valid options.</div>
+        <div class="quiz-feedback wrong">Not quite. Constrained decoding masks invalid tokens' logits to −∞ at each generation step, making it impossible to sample them while leaving temperature to control diversity among valid tokens.</div>
+      </div>
+
+      <div class="quiz-box" id="mt13">
+        <div class="quiz-q">13. What does the Mirostat algorithm do differently from standard temperature sampling?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It eliminates temperature entirely, using only top-p for all decisions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">It dynamically adjusts temperature at each step to maintain a target perplexity (surprise level)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It uses a fixed temperature but adjusts vocabulary size at each step</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It samples from the bottom of the distribution to guarantee novelty</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Mirostat is a feedback-controlled algorithm — it computes actual perplexity and adjusts T to stay near a target, rather than using a fixed T throughout generation.</div>
+        <div class="quiz-feedback wrong">Not quite. Mirostat measures the actual perplexity of each token as it's generated and adjusts temperature step-by-step to maintain a user-specified target perplexity.</div>
+      </div>
+
+      <div class="quiz-box" id="mt14">
+        <div class="quiz-q">14. What does "think hot, answer cold" mean in the context of reasoning models like OpenAI o1?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The GPU operates at higher clock speeds during reasoning tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The model uses casual language during reasoning and formal language in its final answer</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">Higher temperature during chain-of-thought reasoning enables exploration of solution paths; lower temperature at final output ensures precise commitment</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">It means increasing top-p during reasoning and decreasing it for answers</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The deliberation phase benefits from diversity (exploring multiple paths); the answer extraction phase benefits from precision (committing to the best conclusion).</div>
+        <div class="quiz-feedback wrong">Not quite. "Think hot, answer cold" describes using higher temperature during internal chain-of-thought to explore diverse reasoning paths, then lower temperature when committing to the final answer.</div>
+      </div>
+
+      <div class="quiz-box" id="mt15">
+        <div class="quiz-q">15. Why is setting both temperature and top-p to high values simultaneously counterproductive?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">They use different mathematical operations that cancel each other out completely</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">High top-p is undefined when temperature exceeds 1.0</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Temperature widens the distribution, then top-p truncates the wide tail anyway — the operations partially undo each other, making behaviour harder to reason about without additional creative benefit</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">It causes a numerical overflow in the softmax calculation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. OpenAI's own documentation warns against adjusting both simultaneously — temperature spreads probability mass while top-p cuts the tail, so the net effect is less predictable than adjusting either alone.</div>
+        <div class="quiz-feedback wrong">Not quite. Raising temperature widens the distribution; top-p then truncates that wider tail. The two effects work against each other, making the combined behaviour difficult to reason about — Anthropic and OpenAI both advise adjusting only one at a time.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m4';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var which=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+which);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an AI lab tutor for AESOP AI Academy — How Large Language Models Work, Module 4 (Temperature and Sampling), Lesson 1: What Is Temperature. Help students understand: (1) the logit → divide by T → softmax pipeline, (2) what happens at extreme T values (T→0, T→∞), (3) the Boltzmann distribution analogy from statistical physics, (4) the difference between logits and probabilities, and (5) why T=1.0 is the unmodified baseline. Work through numerical examples when asked. Be clear, precise, and patient. If asked about unrelated topics, warmly redirect to temperature mechanics.',
+  l2:'You are an AI lab tutor for AESOP AI Academy — How Large Language Models Work, Module 4 (Temperature and Sampling), Lesson 2: Sampling Strategies. Help students understand: (1) greedy decoding, (2) top-K sampling and its limitations, (3) nucleus/top-p sampling (Holtzman et al. 2019) and how to build a nucleus step by step, (4) min-p sampling and how it adapts to confidence, (5) how to combine temperature with these strategies. Work through concrete numerical examples. Explain why top-p adapts where top-k does not. If asked about unrelated topics, warmly redirect.',
+  l3:'You are an AI lab tutor for AESOP AI Academy — How Large Language Models Work, Module 4 (Temperature and Sampling), Lesson 3: Temperature in Practice. Help students reason about real deployment decisions: appropriate temperature ranges for code (0.2-0.3), factual QA (0-0.4), creative writing (0.7-1.2), chat (0.5-0.9). Explain the hallucination-temperature relationship. Discuss beam search vs sampling history. Help students think through temperature choices for their specific use cases. Cite real examples from GitHub Copilot, OpenAI API docs, and research. If asked about unrelated topics, warmly redirect.',
+  l4:'You are an AI lab tutor for AESOP AI Academy — How Large Language Models Work, Module 4 (Temperature and Sampling), Lesson 4: Advanced Decoding. Help students understand: (1) repetition penalties — frequency penalty (scales with count) vs presence penalty (flat, binary), (2) constrained/structured decoding with logit masking for JSON/SQL schemas, (3) Mirostat adaptive temperature algorithm, (4) best-of-N sampling, (5) "think hot answer cold" in reasoning models like o1. Be precise about the mechanics. Walk through the frequency penalty formula when asked. If asked about unrelated topics, warmly redirect.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Great question! Let me walk through the math. If we have logits [4.0, 3.0, 1.5] for tokens [cat, dog, bird], at T=1.0 we get softmax([4,3,1.5]) ≈ [0.52, 0.29, 0.11]. At T=0.5, we divide first: [8.0, 6.0, 3.0] → softmax gives approximately [0.88, 0.12, 0.002]. The top token absorbs dramatically more mass. What would you like to explore next — the T→0 extreme or the physics analogy?",
+    "The Boltzmann distribution from statistical physics: P(state i) = exp(−E_i / kT) / Z. Compare this to softmax with temperature: P(token i) = exp(logit_i / T) / Σexp(logit_j / T). The mathematical form is identical. In physics, low T means particles settle into low-energy states. In LLMs, low T means the model settles into high-probability tokens. The analogy isn't just metaphorical — it's the exact same equation.",
+    "At T→0, the highest-logit token gets probability approaching 1.0, and all others approach 0. This is greedy decoding — completely deterministic. At T→∞, all logits divided by a huge number approach 0, so exp(≈0)≈1 for all tokens, giving a nearly uniform distribution — every token equally likely regardless of what the model learned. That's why very high temperatures produce incoherent gibberish.",
+    "Logits are the raw numbers from the final linear layer — they can be any real number, positive or negative. They don't sum to anything meaningful. Softmax converts them to probabilities: always positive, always summing to exactly 1.0. Temperature reshapes this conversion. The model's knowledge lives in the weights that produce logits — temperature just changes how we interpret those logits as a sampling distribution."
+  ],
+  l2:[
+    "Let me build a nucleus step by step. Suppose after temperature adjustment we have: cat=45%, dog=28%, bird=15%, fish=8%, rock=4%. For top-p=0.9: sort descending → cat(45%), dog(28%), bird(15%), fish(8%). Running total: 45% → 73% → 88% → 96% ≥ 90%. So our nucleus is {cat, dog, bird, fish}. Renormalise those four to sum to 1.0, then sample. 'rock' at 4% is excluded entirely.",
+    "Top-k's problem made concrete: imagine two positions. Position A: model is confident — top token has 75%, next has 15%, then tiny tails. Position B: model is uncertain — top 20 tokens all around 5%. With k=10, position A keeps tokens covering 99%+ of mass (fine). Position B keeps only the top 10 out of 20 plausible options — discards half the genuinely reasonable continuations. Top-p=0.9 would keep ~3 tokens at position A and ~18 tokens at position B. Automatically adaptive.",
+    "Min-p example: suppose top token 'cat' has probability 0.60, and min_p=0.05. Threshold = 0.05 × 0.60 = 0.03. Keep all tokens with probability ≥ 3%. If the model is less confident and top token has 0.20, threshold = 0.05 × 0.20 = 0.01 — a much lower bar, keeping more tokens. Min-p naturally expands the candidate set when uncertainty is genuine and contracts it when confidence is high.",
+    "Combining parameters: Anthropic's guidance says pick one and leave the other at default. If you set temperature=1.5 AND top-p=0.7: temperature widens the distribution (more randomness), then top-p cuts the wide tail (removes that randomness). You get some unknown middle ground that's harder to reason about than either setting alone. Better: want creativity → raise temperature to 1.0–1.2, leave top-p at 1.0. Want focus → keep temperature at 1.0, lower top-p to 0.7–0.8."
+  ],
+  l3:[
+    "For a product knowledge-base chatbot, I'd recommend temperature 0.3–0.5. Low enough to stay grounded in retrieved context (reduces hallucination — studies found ~15-20% more hallucination at T=1.0 vs T=0.3 on factual tasks), but high enough to sound natural rather than robotic. Pair with top-p=0.9 to prevent sampling absurd tokens. The golden rule: the higher the cost of a wrong answer to your users, the lower your temperature should be.",
+    "The GitHub Copilot temperature story illustrates error compounding. In code, every token affects what's syntactically valid next. At T=0.5, you might get 'prnt' instead of 'print' — then the rest of the line is broken. At T=0.2, you almost always get 'print'. For factual chatbots the stakes are similar: one wrong entity name poisons everything the model says about it afterward.",
+    "Beam search vs sampling timeline: Google Translate used beam search extensively through ~2020, producing high BLEU scores on translation benchmarks but notoriously stiff output. GPT-3 (2020) shipped with temperature sampling. By ChatGPT (2022), the conversational quality difference was stark. Google's own FLAN-T5 paper (2022) found human evaluators strongly preferred temperature-sampled dialogue output over beam search. The field essentially abandoned beam search for generation tasks.",
+    "RAG (retrieval-augmented generation) temperature dilemma in practice: you retrieve 5 relevant passages, inject them as context, ask the model to answer. At T=0, the model stays close to the retrieved text but sounds mechanical. At T=0.8, it sounds natural but starts occasionally confabulating details not in the retrieved passages. Most production RAG systems end up at T=0.3–0.5 as a compromise — natural enough to be readable, grounded enough to be trustworthy."
+  ],
+  l4:[
+    "Constrained decoding mechanics: suppose you're generating JSON and you've emitted '{\"name\": '. At this point, only a string (starting with '\"') is valid JSON. The constraint system computes: which tokens in the vocabulary start or continue a valid JSON string at this position? All other token logits are set to −∞. After masking, softmax is applied — only valid tokens have non-zero probability. Temperature still controls which valid string token you pick, but you literally cannot generate invalid JSON.",
+    "Frequency vs presence penalty formula: adjusted_logit = logit − (frequency_penalty × count_in_output) − (presence_penalty × appeared_flag). Example: 'the' has appeared 8 times. frequency_penalty=0.5 → −4.0 to logit. presence_penalty=0.3 → −0.3 additional. Total penalty: −4.3 from logit. For a token appearing once: frequency penalty = −0.5, presence penalty = −0.3, total −0.8. The frequency penalty really bites on heavily-repeated tokens.",
+    "Mirostat works like a thermostat for text quality. You set a target entropy H_target (e.g., 3.0 nats). After each token is sampled, the algorithm measures the actual surprise of that token given the distribution. If actual surprise > target (model too random), it decreases temperature slightly for the next step. If actual surprise < target (model too deterministic/repetitive), it increases temperature. This feedback loop maintains consistent 'interestingness' throughout a long generation.",
+    "Best-of-N for math: generate 8 solutions at T=0.7 (diverse enough to explore different approaches). Then a verifier (which can be the same model with a different prompt, or a separate checker) scores each solution. Pick the highest-scoring one. Google's Gemini paper showed this dramatically outperforms single greedy generation on math benchmarks — not because any individual sample is better than greedy, but because with 8 diverse attempts, the probability that at least one is correct is much higher."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId];
+  var idx=_fallbackIdx[labId]%replies.length;
+  _fallbackIdx[labId]++;
+  return replies[idx];
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function labKey(e,labId){
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    chatSend(labId);
+  }
+}
+
+function labReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var greetings={
+    l1:'Welcome! I\'m here to help you understand temperature in LLMs — the logit division, the softmax, and why it matters. What would you like to explore?',
+    l2:'Ready to dig into sampling strategies! I can walk you through top-k, top-p (nucleus), min-p, or repetition penalties — with real numbers if you like. What would you like to start with?',
+    l3:'Let\'s talk about temperature in production systems. I can help you think through tradeoffs for specific use cases, explain why hallucination scales with temperature, or compare beam search with sampling. What situation are you working through?',
+    l4:'Ready to explore advanced decoding! I can walk you through repetition penalties, constrained generation, Mirostat, best-of-N sampling, or the "think hot, answer cold" pattern. What would you like to dig into?'
+  };
+  addMsg(labId,'ai',greetings[labId]||'Hello! What would you like to explore?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    checkLabComplete(labId);
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+  var succeeded=false;
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an error. Please try again.';
+      if(thinking&&thinking.parentNode) thinking.remove();
+      chatHistories[labId].push({role:'assistant',content:text});
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      checkLabComplete(labId);
+      succeeded=true;
+      btn.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai

@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>How Large Language Models Work — M8: The Limits of Scale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m8 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1rem 0;}
+.stat-card{background:rgba(var(--accent-rgb),0.03);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.25rem;}
+.stat-card .stat-val{font-family:'Crimson Pro',Georgia,serif;font-size:1.6rem;font-weight:600;color:var(--accent);line-height:1;}
+.stat-card .stat-lbl{font-size:0.72rem;color:var(--muted);margin-top:0.35rem;line-height:1.5;}
+.gold-card{background:rgba(201,160,90,0.04);border:1px solid rgba(201,160,90,0.14);border-radius:6px;padding:1rem 1.25rem;}
+.gold-card .stat-val{font-family:'Crimson Pro',Georgia,serif;font-size:1.6rem;font-weight:600;color:var(--gold);line-height:1;}
+.gold-card .stat-lbl{font-size:0.72rem;color:var(--muted);margin-top:0.35rem;line-height:1.5;}
+.limit-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.83rem;}
+.limit-table th{text-align:left;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;border-bottom:1px solid var(--border-dark);}
+.limit-table td{padding:0.6rem 0.75rem;border-bottom:1px solid rgba(26,39,56,0.5);color:#6e6861;vertical-align:top;line-height:1.6;}
+.limit-table td:first-child{color:#a89f93;font-weight:600;}
+.limit-table tr:last-child td{border-bottom:none;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}.two-col{grid-template-columns:1fr;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1.25rem;}.lesson-hero h1{font-size:1.5rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ LESSON 1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 1</div>
+      <h1>Hallucinations and Confabulation</h1>
+      <div class="tagline">When models generate fluent, confident, and completely false information</div>
+      <div class="lesson-question">Why does increasing model size not reliably eliminate fabricated facts?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Case — 2023">
+        <p class="story-text">In June 2023, two New York attorneys — <span class="char">Steven Schwartz</span> and <span class="char">Peter LoDuca</span> — filed a legal brief citing <em>six cases that did not exist</em>. They had used ChatGPT to research precedents. When Judge P. Kevin Castel demanded copies, the attorneys discovered every citation was fabricated. The model had invented case names, docket numbers, judges, and quoted passages from rulings that were never written. Both lawyers were sanctioned and fined $5,000. The event became the first widely documented legal consequence of LLM hallucination in professional practice.</p>
+      </div>
+
+      <div class="section-heading">What Hallucination Actually Is</div>
+      <div class="section-body">
+        <p>The term <em>hallucination</em> in AI refers to outputs that are fluent, syntactically well-formed, and confidently asserted — but factually incorrect or entirely fabricated. Researchers sometimes prefer the term <em>confabulation</em>, borrowed from neuroscience, where it describes a brain's tendency to fill memory gaps with plausible-sounding but false material without awareness of doing so.</p>
+        <p>LLMs do not retrieve facts from a database. They predict the next token based on learned statistical patterns. A model trained on millions of legal documents learns that legal citations follow a specific format: <em>Party v. Party, volume Reporter page (court year)</em>. When prompted to find cases about a topic, the model generates tokens that fit that pattern — whether or not the underlying case exists. The form is correct; the content is invented.</p>
+        <p>This is not a bug introduced by insufficient data. It is a structural consequence of how next-token prediction works. The model has no internal truth-checker — no oracle it queries before generating a claim. It has only the distribution of tokens it learned from training.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Key Distinction</div>
+        <p>Hallucination differs from <strong>error</strong>. An error is a wrong answer to a question the model understood. Hallucination is a plausible-sounding answer to a question the model cannot actually answer — generated as if it could. The model produces no signal of uncertainty.</p>
+      </div>
+
+      <div class="section-heading">Why Scale Doesn't Solve It</div>
+      <div class="section-body">
+        <p>A common intuition holds that bigger models with more training data should hallucinate less. The evidence is mixed. A 2023 paper from researchers at Columbia and Stanford measured hallucination rates across GPT-3.5, GPT-4, and Claude on factual recall tasks. GPT-4 hallucinated <em>less frequently</em> than GPT-3.5 on well-represented topics — but hallucinated <em>with greater confidence</em> on obscure topics. Larger models can be better at producing more convincing false statements.</p>
+        <p>A 2022 DeepMind analysis of their Gopher model (280B parameters) found that scaling improved performance on many benchmarks but showed diminishing returns — and occasional regressions — on tasks requiring precise factual grounding. The paper noted that models can learn to "sound more authoritative" as they scale, which makes errors harder to detect.</p>
+        <p>The core issue: training on more human text means training on more <em>confident human assertions</em>, many of which were themselves incorrect. The model learns the register of certainty, not the practice of verification.</p>
+      </div>
+
+      <div class="section-heading">Taxonomy of Hallucination Types</div>
+      <div class="section-body">
+        <div class="key-term"><span class="kt-term">Intrinsic</span><span class="kt-def">The output directly contradicts information provided in the prompt or context window. The model ignores or overrides source material it was given.</span></div>
+        <div class="key-term"><span class="kt-term">Extrinsic</span><span class="kt-def">The output adds information not present in the source — information that may or may not be true but cannot be verified from what was provided.</span></div>
+        <div class="key-term"><span class="kt-term">Entity Fabrication</span><span class="kt-def">Names, places, organizations, citations, or identifiers that do not exist are invented with the correct syntactic form.</span></div>
+        <div class="key-term"><span class="kt-term">Temporal Confabulation</span><span class="kt-def">Events, dates, or sequences are assigned plausible-sounding but incorrect timeframes, often blending real and invented chronology.</span></div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Documented Scale</div>
+        <p>A 2023 study by Vectara tested seven LLMs on document summarization — a task with ground truth. Hallucination rates ranged from 3% (GPT-4) to 27% (Llama 2 Chat 13B). Even the best model introduced fabricated content in roughly 1 in 33 summaries. In legal, medical, or financial applications, that rate is not acceptable at scale.</p>
+      </div>
+
+      <div class="section-heading">Mitigation Approaches and Their Limits</div>
+      <div class="section-body">
+        <p><em>Retrieval-Augmented Generation (RAG)</em> reduces hallucination by grounding responses in retrieved documents. But RAG does not eliminate the problem: models can still hallucinate when summarizing retrieved material, misattribute quotes to the wrong document, or confabulate when retrieved sources are ambiguous.</p>
+        <p><em>RLHF calibration</em> can teach models to express uncertainty more accurately — to say "I'm not sure" when they should. But calibration is imperfect and domain-specific. A model may be well-calibrated on common topics and poorly calibrated on specialized domains where training data was sparse.</p>
+        <p>As of 2024, no deployed LLM has reliably solved hallucination. It remains one of the central known limits of the architecture.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Quiz — Hallucinations and Confabulation</h1>
+      <div class="tagline">Three questions · Select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">1. In the 2023 Schwartz &amp; LoDuca case, what did ChatGPT fabricate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Real cases but with incorrect page numbers</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Entirely non-existent cases with invented names, dockets, and quoted passages</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Correct cases but from the wrong jurisdiction</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Outdated cases that had been overruled</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Every cited case was entirely fabricated — names, docket numbers, courts, and quoted passages. The model generated syntactically correct legal citations that referred to nothing real.</div>
+        <div class="quiz-feedback wrong">Not quite. The fabrications were total: the cases did not exist at all. The model invented complete legal citations in the correct format.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">2. Why doesn't increasing model scale reliably eliminate hallucination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Larger models have less training data per parameter</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Scaling introduces new bugs in the tokenizer</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Models predict tokens statistically without a truth-checking mechanism, and larger models can produce more confident-sounding false claims</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Larger models overfit to their validation sets</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Next-token prediction has no internal oracle for truth. Scaling improves pattern-matching but can increase the convincingness of hallucinated content on obscure topics.</div>
+        <div class="quiz-feedback wrong">Not quite. The fundamental issue is architectural: the model predicts statistically plausible tokens without verifying truth, and this does not change with scale.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">3. What is "extrinsic hallucination"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Output that contradicts information explicitly given in the prompt</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Output that adds information not present in the source, which cannot be verified from what was provided</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Output that is correct but formatted incorrectly</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Output generated when the model's context window overflows</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Extrinsic hallucination is adding unverifiable information beyond the source — the model supplements rather than contradicts. Intrinsic hallucination directly contradicts provided source material.</div>
+        <div class="quiz-feedback wrong">That describes intrinsic hallucination. Extrinsic hallucination adds new, unverifiable information not present in what was provided.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Probing Hallucination Patterns</h1>
+      <div class="tagline">Discuss hallucination mechanics and mitigation with your AI tutor · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Explore how and why hallucination occurs in LLMs. Ask about specific documented cases, the structural reasons models confabulate, how RAG helps but doesn't fully solve it, or how calibration works. Push on edge cases.</p>
+        <div class="lab-prompt">Suggested start: "Why can a model hallucinate even when given a source document to summarize — isn't the answer right there in the context?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Hallucination &amp; Confabulation</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1"></div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about hallucination, confabulation, mitigation strategies…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 2</div>
+      <h1>Reasoning and Mathematical Limits</h1>
+      <div class="tagline">Why transformers struggle with multi-step logic even as they ace benchmarks</div>
+      <div class="lesson-question">What does it mean for a model to "solve" a math problem it doesn't understand?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Failure — 2022–2023">
+        <p class="story-text">In October 2022, researchers at Google DeepMind published a paper testing large language models on the <em>GSM8K</em> benchmark — 8,500 grade-school math word problems. GPT-3 scored around 35%. GPT-4, released in March 2023, scored above 90%. The AI community celebrated. Then, in July 2023, a team at MIT and elsewhere published a study showing that <em>minor surface-level rephrasing</em> of the same problems — changing "Maria" to "Sarah," altering irrelevant numbers — caused GPT-4's accuracy to drop by 10–20 percentage points. The model had not learned to reason through math. It had learned which token sequences tend to follow which problem formats.</p>
+      </div>
+
+      <div class="section-heading">The Benchmark Fragility Problem</div>
+      <div class="section-body">
+        <p>Benchmarks measure what models do on <em>specific test distributions</em>. When a model trains on data that resembles those test distributions — or when benchmark problems leak into pretraining data — scores rise without representing genuine capability improvement. This is called <em>benchmark contamination</em> or <em>dataset leakage</em>.</p>
+        <p>A 2023 paper by researchers at Stanford and the University of California examined whether GPT-4's high scores on math benchmarks reflected reasoning ability or memorization of problem patterns. By generating <em>isomorphic problems</em> — structurally identical but with different surface features — they showed that performance degraded substantially when surface cues were changed, suggesting pattern-matching rather than underlying mathematical reasoning.</p>
+        <p>This matters because the difference between pattern-matching and reasoning is invisible in benchmark scores but critical in deployment. A model that scored 92% on GSM8K can still fail a novel three-step arithmetic problem a competent ten-year-old would solve.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Winograd Lesson</div>
+        <p>The Winograd Schema Challenge was designed in 2011 as a test requiring common-sense reasoning to resolve pronoun references. Early LLMs scored near random. By 2019, large models began scoring above 90%. But follow-up work showed models had learned to exploit statistical correlations in the schemas rather than engage in genuine coreference reasoning. High scores did not mean the underlying problem was solved.</p>
+      </div>
+
+      <div class="section-heading">What Transformers Actually Do With Math</div>
+      <div class="section-body">
+        <p>A transformer processes a math problem as a sequence of tokens. It has no symbolic computation engine — no register, no stack, no formal arithmetic unit. What it has is a learned mapping from token sequences to output distributions trained on millions of solved problems.</p>
+        <p>For simple, common problem types, this works remarkably well. The training distribution contains so many similar problems that the model's interpolation is accurate. For novel compositions — problems that require chaining multiple unfamiliar sub-steps — the model's learned patterns break down.</p>
+        <p>Chain-of-thought prompting (introduced in a 2022 Google paper by Jason Wei et al.) substantially improves multi-step reasoning by eliciting intermediate steps. But chain-of-thought is not symbolic reasoning — it is generating plausible intermediate tokens that tend to produce correct final answers. Errors in intermediate steps can cascade, and the model cannot detect its own logical contradictions.</p>
+      </div>
+
+      <div class="section-heading">Documented Limits at Scale</div>
+      <div class="section-body">
+        <div class="two-col">
+          <div class="stat-card">
+            <div class="stat-val">~15%</div>
+            <div class="stat-lbl">GPT-4 error rate on "simple" arithmetic problems rephrased to avoid training-set patterns (MIT study, 2023)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">50–60%</div>
+            <div class="stat-lbl">Typical accuracy of frontier models on novel, multi-step combinatorial reasoning tasks not resembling training distribution (various 2023 evaluations)</div>
+          </div>
+        </div>
+        <p>The pattern is consistent: LLMs perform well when the problem resembles training data and degrade predictably when it does not. This is not a solvable problem within the current training paradigm — it is a structural feature of learned statistical approximation.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Emergent Reasoning vs. Apparent Reasoning</div>
+        <p>Some researchers argue LLMs exhibit <strong>emergent reasoning</strong> — capabilities that appear discontinuously at scale. Others argue these are better described as <strong>interpolation artifacts</strong>: the training distribution at large scale contains more examples that happen to resemble the test problem, so accuracy rises smoothly but looks like a jump when plotted on certain metrics. The debate is unresolved, but the practical consequence is the same: you cannot assume reasoning transfers beyond the training distribution.</p>
+      </div>
+
+      <div class="section-heading">Symbolic Hybrid Approaches</div>
+      <div class="section-body">
+        <p>One response to reasoning limits is to give LLMs access to external tools: Python interpreters, calculators, formal verifiers. This is the approach taken by systems like <em>Toolformer</em> (Meta, 2023) and OpenAI's Code Interpreter. The LLM handles language and problem decomposition; a formal system handles computation. Results improve substantially on well-defined math tasks. But the LLM is still responsible for correctly translating the problem into code or tool calls — and it can fail at that step.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Quiz — Reasoning and Mathematical Limits</h1>
+      <div class="tagline">Three questions · Select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">1. What did the 2023 MIT rephrasing study reveal about GPT-4's math performance?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">GPT-4 performed better when problems were rephrased more clearly</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Minor surface-level rephrasing caused accuracy to drop 10–20 points, suggesting pattern-matching rather than genuine reasoning</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">GPT-4 only struggled when problems involved more than three variables</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Rephrasing improved calibration but reduced speed</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When surface cues changed while underlying structure stayed the same, performance dropped — indicating the model exploited textual patterns rather than reasoning through the math.</div>
+        <div class="quiz-feedback wrong">Not quite. Performance dropped with rephrasing, indicating the model relied on surface pattern-matching rather than mathematical understanding.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">2. Why does chain-of-thought prompting improve but not fully solve reasoning limits?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">It uses more tokens, which increases compute cost without accuracy benefit</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">It only works when the model has internet access</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">It generates plausible intermediate tokens rather than performing symbolic reasoning, so intermediate errors cascade and go undetected</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">It bypasses the attention mechanism, reducing context awareness</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Chain-of-thought elicits tokens that look like reasoning steps, which correlate with correct answers on trained distributions — but the model cannot verify its own logical consistency across steps.</div>
+        <div class="quiz-feedback wrong">Not quite. Chain-of-thought generates plausible-looking intermediate steps, not genuine symbolic reasoning. Errors in intermediate steps can compound, and the model has no mechanism to detect logical contradiction.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">3. What is "benchmark contamination"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">When test evaluators introduce errors into scoring rubrics</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">When benchmark test problems resemble or appear in pretraining data, inflating scores without reflecting genuine capability</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">When a model trained on one benchmark performs worse on another</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Overfitting caused by too many fine-tuning epochs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When evaluation problems leak into training data, models effectively memorize answers rather than demonstrating generalized capability — making benchmark scores misleading.</div>
+        <div class="quiz-feedback wrong">Not quite. Benchmark contamination is when test examples appear in pretraining data, so high scores reflect memorization rather than real capability.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Reasoning Limits in Practice</h1>
+      <div class="tagline">Explore why LLMs struggle with genuine multi-step reasoning · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Dig into the gap between benchmark performance and real reasoning ability. Ask about the structural reasons transformers lack symbolic reasoning, how chain-of-thought works and fails, what benchmark contamination means for evaluation, or how tool use partially addresses the gap.</p>
+        <div class="lab-prompt">Suggested start: "If a model gets 92% on a math benchmark, why should I worry about its reasoning on new problems? Isn't 92% good enough?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Reasoning &amp; Math Limits</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2"></div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about reasoning limits, chain-of-thought, benchmark contamination…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 3</div>
+      <h1>Knowledge Cutoffs and Temporal Blindness</h1>
+      <div class="tagline">Static training data in a dynamic world — what models can't know and why it matters</div>
+      <div class="lesson-question">How does the frozen nature of training data create compounding failure modes over time?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Case — 2023">
+        <p class="story-text">In March 2023, Stack Overflow reported a significant drop in new question submissions following the release of ChatGPT. Meanwhile, developers were posting ChatGPT answers to Stack Overflow and discovering the model was confidently describing <em>deprecated APIs</em> — libraries that had changed fundamentally after the model's training cutoff. The model would describe Python package behaviors from 2021 with the same tone it used for current, correct answers. There was no syntactic difference between a correct answer and an answer describing a function that no longer existed. Stack Overflow's moderation team spent months adding warnings to AI-generated answers about version sensitivity.</p>
+      </div>
+
+      <div class="section-heading">How Knowledge Cutoffs Work</div>
+      <div class="section-body">
+        <p>Every LLM is trained on a corpus with a <em>knowledge cutoff</em> — a date beyond which no training documents were included. GPT-4's original cutoff was September 2021 at launch in March 2023. That gap of 18 months meant the model had no knowledge of events, software versions, political developments, scientific findings, or any other information generated after that date.</p>
+        <p>More precisely, the model doesn't "know" its cutoff date as a hard boundary. It has decreasing density of training data as the cutoff approaches — events in August 2021 have less coverage than events from 2019, simply because the internet had less time to generate commentary, analysis, and secondary sources about recent events. This creates a <em>temporal gradient</em>: the model is increasingly unreliable on topics closer to its cutoff, before becoming simply unaware of anything after it.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Recency Underrepresentation Problem</div>
+        <p>Even within the training window, recent events are underrepresented. An event from 2015 has had eight years for commentary, Wikipedia edits, academic papers, and analysis to accumulate. An event from one month before the training cutoff has had almost none. Models are systematically less accurate about recent history than older history, creating a gradual fade rather than a clean cutoff.</p>
+      </div>
+
+      <div class="section-heading">Documented Failure Domains</div>
+      <div class="section-body">
+        <table class="limit-table">
+          <thead><tr><th>Domain</th><th>Specific Failure Pattern</th><th>Consequence</th></tr></thead>
+          <tbody>
+            <tr><td>Software Development</td><td>Model describes deprecated APIs, outdated library syntax, or security-vulnerable approaches superseded after cutoff</td><td>Working code that introduces vulnerabilities or fails on current runtime versions</td></tr>
+            <tr><td>Medical Information</td><td>Clinical guidelines updated after cutoff; drug interactions or dosing recommendations revised</td><td>Outdated treatment guidance presented with the same confidence as current guidance</td></tr>
+            <tr><td>Legal and Regulatory</td><td>Regulations, rulings, or statutes passed after cutoff absent from model knowledge</td><td>Compliance advice that reflects an outdated legal landscape</td></tr>
+            <tr><td>Financial Data</td><td>Market prices, company structures, exchange rates, and financial products from training period</td><td>Stale data presented as current; potentially harmful investment or business guidance</td></tr>
+            <tr><td>Scientific Research</td><td>Findings superseded by later meta-analyses or retracted papers treated as valid</td><td>Propagation of outdated or retracted scientific claims</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-heading">The Confidence-Currency Mismatch</div>
+      <div class="section-body">
+        <p>The most dangerous aspect of knowledge cutoffs is not that models lack current information — users can often account for that. It is that models present stale information with the same register of confidence as accurate, current information. There is no stylistic or syntactic marker that distinguishes "this was true as of 2021" from "this is true now."</p>
+        <p>When OpenAI added browsing capability to ChatGPT in May 2023, the intention was partly to address this. But browsing introduces its own failure modes: models can misread retrieved content, cite pages incorrectly, or blend retrieved content with training-set confabulation. The temporal problem shifts rather than disappears.</p>
+      </div>
+
+      <div class="section-heading">Mitigation and Its Limits</div>
+      <div class="section-body">
+        <p><em>Retrieval augmentation</em> is the primary mitigation: retrieve current documents and ground the model's responses in them. This works well when the retrieved document is clearly authoritative and the model faithfully summarizes it. It works less well when the query is ambiguous, when multiple retrieved documents conflict, or when the model's training-set priors are strong enough to override retrieved content.</p>
+        <p><em>Frequent retraining</em> moves the cutoff forward but cannot eliminate the gap — training large models takes months and cannot track real-time information. <em>Continual learning</em> (updating a model incrementally on new data without full retraining) remains an active research area but risks introducing catastrophic forgetting: the model loses performance on older tasks as it learns new information.</p>
+        <p>As of 2024, all major LLMs carry knowledge cutoffs, and the temporal gradient remains a fundamental architectural characteristic rather than an engineering problem awaiting a straightforward solution.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Implication</div>
+        <p>For professionals deploying LLMs, the knowledge cutoff demands explicit workflow design: date-stamp all AI outputs, validate any time-sensitive claim against a current source, and treat model answers about regulations, software, guidelines, and recent events as hypotheses requiring verification rather than authoritative conclusions.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Quiz — Knowledge Cutoffs and Temporal Blindness</h1>
+      <div class="tagline">Three questions · Select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">1. What is the "temporal gradient" in LLM knowledge cutoffs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">The speed at which models become outdated after deployment</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Model reliability decreases gradually as topics approach the cutoff date, because recent events have less accumulated commentary in training data</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A technique for weighting newer training documents more heavily than older ones</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">The time lag between training completion and public model deployment</button>
+        </div>
+        <div class="quiz-feedback right">Correct. There isn't a clean boundary — events near the cutoff have had less time to accumulate secondary sources, analysis, and commentary, so model accuracy fades gradually rather than switching off at a fixed date.</div>
+        <div class="quiz-feedback wrong">Not quite. The temporal gradient refers to how recent events near the cutoff are underrepresented because they've had less time to generate secondary coverage, creating a fade rather than a hard boundary.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">2. Why is the confidence-currency mismatch specifically dangerous?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It makes models slower to respond to time-sensitive queries</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It causes models to refuse questions about recent events</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Stale and current information are presented with identical confidence, so users cannot distinguish outdated claims from accurate ones</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Models trained on older data produce shorter responses</button>
+        </div>
+        <div class="quiz-feedback right">Correct. There is no stylistic marker in model output that signals "this information is from 2021 and may be outdated." Stale claims sound exactly like current ones, making validation essential.</div>
+        <div class="quiz-feedback wrong">Not quite. The danger is that stale claims look identical to current accurate ones in the model's output — there is no linguistic signal telling you which is which.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">3. What is a key risk of "continual learning" as a solution to knowledge cutoffs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It requires the model to be fully retrained every week</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Incrementally training on new data can cause catastrophic forgetting, degrading performance on tasks the model previously handled well</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It increases hallucination rates proportionally to the amount of new data added</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Continual learning is blocked by current hardware limitations</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Continual learning risks catastrophic forgetting — the model's performance on established knowledge degrades as it overfit to new information, trading old competence for new coverage.</div>
+        <div class="quiz-feedback wrong">Not quite. The key risk is catastrophic forgetting: updating on new data can erase learned weights encoding older knowledge, reducing performance on previously mastered tasks.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Navigating Temporal Limits</h1>
+      <div class="tagline">Explore knowledge cutoff mechanics and mitigation strategies · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Investigate how knowledge cutoffs create failure modes and how practitioners should respond. Ask about specific domains where cutoffs matter most, how retrieval augmentation helps, what continual learning risks are, or how to design workflows that account for temporal limits.</p>
+        <div class="lab-prompt">Suggested start: "I'm building a tool to help doctors look up drug interactions. Should I use an LLM, and if so, how do I handle the knowledge cutoff problem?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Knowledge Cutoffs</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3"></div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about knowledge cutoffs, temporal blindness, retrieval augmentation…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 4</div>
+      <h1>Bias, Alignment Limits, and the Safety Ceiling</h1>
+      <div class="tagline">What RLHF can and cannot fix — and why scale amplifies rather than resolves value misalignment</div>
+      <div class="lesson-question">Why does making a model "safer" through fine-tuning not solve the underlying alignment problem?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Events — 2016–2023">
+        <p class="story-text">In March 2016, Microsoft released <em>Tay</em>, a chatbot on Twitter. Within 16 hours, Tay was generating racist and misogynistic content — not because it was trained to, but because users discovered they could elicit such outputs through targeted prompting. Microsoft took Tay offline within a day. The lesson seemed clear: models absorb the biases of their training data and can be manipulated to surface them.</p>
+        <p class="story-text">Seven years later, researchers at Carnegie Mellon and the Center for AI Safety published a paper demonstrating that production-deployed models — including Claude, GPT-4, and Bard — could be reliably made to produce harmful content through <em>adversarial suffix attacks</em>: appending specific token strings to prompts that bypassed safety filters. The paper noted that no known defense fully prevented the attack across all inputs. The safety layer, trained on top of the base model, could be circumvented at the token level.</p>
+      </div>
+
+      <div class="section-heading">Where Model Bias Originates</div>
+      <div class="section-body">
+        <p>LLMs are trained on text produced by humans — and human text encodes human biases, historical inequities, cultural assumptions, and ideological tendencies. The model does not selectively absorb neutral information; it learns the full distribution of its training corpus, including its prejudices.</p>
+        <p>A landmark 2019 paper, <em>On the Dangers of Stochastic Parrots</em> (Bender, Gebru, et al.), argued that large models "parrot" the statistical regularities of their training text, including harmful associations. A follow-up 2021 study found that GPT-3 associated Arab names with terrorism and African American names with unpleasant concepts at rates substantially higher than White American names in standard word-association tests.</p>
+        <p>These biases are not uniform artifacts of insufficient data — they reflect the actual distributional properties of the internet text the models were trained on. More data does not necessarily reduce bias; it can reinforce majority-distribution patterns and further marginalize underrepresented groups and perspectives.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">RLHF as a Partial Fix</div>
+        <p>Reinforcement Learning from Human Feedback modifies model behavior based on human preferences — teaching it to avoid certain outputs and prefer others. This reduces surface-level harmful outputs substantially. But RLHF adjusts the output distribution; it does not remove the underlying learned associations. The associations remain in the model's weights, accessible through adversarial prompts, fine-tuning, or edge-case inputs the RLHF process did not anticipate.</p>
+      </div>
+
+      <div class="section-heading">The Alignment Ceiling Problem</div>
+      <div class="section-body">
+        <p>Alignment research asks: how do we ensure AI systems pursue the outcomes humans actually want? For LLMs, the problem has several distinct layers:</p>
+        <div class="key-term"><span class="kt-term">Specification</span><span class="kt-def">Human values are complex, contextual, inconsistent, and often contested. No finite set of rules or reward signals can fully capture them. RLHF approximates human preferences but cannot specify them completely.</span></div>
+        <div class="key-term"><span class="kt-term">Generalization</span><span class="kt-def">A model fine-tuned to behave helpfully and harmlessly on the fine-tuning distribution may not generalize those behaviors to novel inputs outside that distribution — especially adversarially crafted ones.</span></div>
+        <div class="key-term"><span class="kt-term">Interpretability</span><span class="kt-def">We cannot read a model's "values" from its weights. We can only observe behavior. A model that behaves well in all tested contexts may behave badly in untested ones — we have no reliable way to predict which.</span></div>
+        <div class="key-term"><span class="kt-term">Scale Effects</span><span class="kt-def">Larger models are more capable of following complex instructions — including instructions to circumvent safety measures. The same capability that makes them more helpful makes them more able to be misused.</span></div>
+      </div>
+
+      <div class="section-heading">Documented Adversarial Failures</div>
+      <div class="section-body">
+        <p>The 2023 Carnegie Mellon/CAIS adversarial suffix paper is among the most significant documented safety failures at scale. The researchers showed that for any safety-trained model, a <em>universal adversarial suffix</em> could be computed — a string of tokens that, when appended to virtually any harmful prompt, caused the model to comply. The attack transferred across models: suffixes computed on open-source models often worked on closed models like GPT-4 and Claude.</p>
+        <p>Separately, "jailbreak" prompts — manually crafted instructions designed to bypass safety training — circulate openly online and are continuously updated as developers patch them. The adversarial dynamic is ongoing: safety researchers patch known jailbreaks; users find new ones. As of 2024, no production LLM has achieved what researchers call <em>robustness</em> — guaranteed safety behavior across all possible inputs.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="gold-card">
+          <div class="stat-val">100%</div>
+          <div class="stat-lbl">Attack success rate of universal adversarial suffixes on tested open-source models (CMU/CAIS, 2023) — and high transfer to closed models</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">0</div>
+          <div class="stat-lbl">Deployed LLMs as of 2024 that have demonstrated provable adversarial robustness across all possible inputs — a fundamental open problem</div>
+        </div>
+      </div>
+
+      <div class="section-heading">The Gap Between Behavior and Values</div>
+      <div class="section-body">
+        <p>A critical conceptual distinction: RLHF produces models that <em>behave</em> in ways humans rate as helpful and harmless — it does not produce models that <em>have values</em> in any meaningful sense. The model has no goals, no intentions, and no understanding of why the behaviors it was trained to exhibit are preferable.</p>
+        <p>This creates a fragility: the model's "safe" behaviors are patterns that were reinforced on the fine-tuning distribution. Outside that distribution, or under adversarial pressure, those patterns can break. A model that has learned "say I cannot help with that when asked about X" has learned a pattern — not a principle. Sufficiently novel or adversarial framing can elicit the underlying capability while bypassing the trained response pattern.</p>
+        <p>Alignment research continues to develop techniques — constitutional AI, process-based supervision, interpretability tools — but the problem remains open. Understanding its limits is essential for anyone deploying LLMs in contexts where outputs matter.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Implication</div>
+        <p>For deployment: treat safety filters as <strong>probabilistic risk reducers, not guarantees</strong>. Implement human oversight for high-stakes outputs. Design systems assuming adversarial users exist. Build independent content filters rather than relying solely on model-level safety training. Monitor outputs at scale rather than testing only at deployment time.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Quiz — Bias, Alignment Limits, and the Safety Ceiling</h1>
+      <div class="tagline">Three questions · Select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">1. What did the 2023 Carnegie Mellon/CAIS adversarial suffix study demonstrate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Safety training makes models fully robust to adversarial inputs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Universal adversarial token suffixes could reliably bypass safety training across multiple production LLMs, and attacks transferred between models</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Open-source models are safe but closed models are easily jailbroken</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">GPT-4 was uniquely vulnerable due to its RLHF approach</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The paper showed that computed adversarial suffixes bypassed safety training on all tested models with high reliability, and transfers across models — including from open to closed models — were observed.</div>
+        <div class="quiz-feedback wrong">Not quite. The paper showed the opposite: adversarial suffixes bypassed safety training reliably, and attacks transferred across models, demonstrating no tested model was robust.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">2. Why does training on more internet data not reliably reduce demographic bias?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Internet data is too noisy for models to learn any consistent associations</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Internet text encodes real-world biases; more data reinforces majority-distribution patterns and can further marginalize underrepresented groups</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Demographic bias only appears in models below 10 billion parameters</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Bias is introduced by RLHF, not pretraining data</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The training corpus reflects the biases present in human-generated text. Scaling up on the same distribution amplifies those patterns rather than averaging them out.</div>
+        <div class="quiz-feedback wrong">Not quite. More training data from the same distribution reinforces its biases. The internet overrepresents certain demographics and perspectives, and a larger sample of that distribution reflects those imbalances more strongly.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">3. What is the key distinction between a model that "behaves safely" and one that "has values"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Models with values use constitutional AI; models that behave safely use RLHF</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Behavioral safety requires more compute than value alignment</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Safe behavior is a trained pattern on observed distributions; it can break under adversarial pressure or novel inputs because the model has no understanding of why the behavior is preferred</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">There is no meaningful distinction — behavioral safety is sufficient for all practical purposes</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RLHF trains behavioral patterns, not principles. Outside the training distribution, under adversarial prompting, or in novel contexts, those patterns can break because the model cannot reason from underlying values it does not possess.</div>
+        <div class="quiz-feedback wrong">Not quite. The crucial distinction is that trained safe behavior is a pattern, not a principle. It is fragile outside its training distribution and under adversarial pressure, because the model has no actual understanding of why the behavior is preferred.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Bias, Safety, and Alignment</h1>
+      <div class="tagline">Explore the limits of RLHF safety and alignment research · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Interrogate the limits of LLM safety and alignment. Ask about how adversarial attacks work, why bias persists despite fine-tuning, what "constitutional AI" attempts to do, how interpretability research relates to alignment, or how to design robust deployment safeguards.</p>
+        <div class="lab-prompt">Suggested start: "If RLHF can be bypassed by adversarial suffix attacks, what's the point of safety training at all? Is it just security theater?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Bias &amp; Alignment Limits</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4"></div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Ask about bias, alignment limits, adversarial attacks, safety research…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 8 — The Limits of Scale</h1>
+      <div class="tagline">15 questions · Score 80% or higher to pass</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. In the Schwartz &amp; LoDuca case, what was the primary failure mode of ChatGPT?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">It generated completely fabricated case citations in syntactically correct legal format</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">It cited real cases but misquoted their holdings</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">It refused to provide case citations and the attorneys invented them manually</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">It retrieved outdated cases that had since been overruled</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Every cited case — names, dockets, courts, quoted passages — was entirely fabricated. This is classic entity-level hallucination in a high-stakes professional context.</div>
+        <div class="quiz-feedback wrong">Not quite. The cases did not exist at all. The model invented complete, syntactically correct legal citations that referred to nothing real.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. What is "intrinsic hallucination"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Hallucination caused by insufficient training data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Adding unverifiable information not present in the source</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Output that directly contradicts information explicitly provided in the prompt or context</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Confabulation that occurs only in smaller models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Intrinsic hallucination contradicts the provided source material. Extrinsic hallucination adds new, unverifiable content beyond the source.</div>
+        <div class="quiz-feedback wrong">Not quite. Intrinsic hallucination directly contradicts information given in the context. Extrinsic hallucination adds new content not present in the source.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. According to the 2023 Vectara hallucination study, what was GPT-4's hallucination rate on document summarization?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Less than 0.1%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Approximately 3% — still introducing fabricated content in roughly 1 in 33 summaries</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Around 15%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">GPT-4 was not included in the Vectara study</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GPT-4 achieved the lowest hallucination rate in the study at ~3%, but that still means roughly 1 in 33 summaries introduced fabricated content — unacceptable for high-stakes professional use.</div>
+        <div class="quiz-feedback wrong">Not quite. GPT-4 had about a 3% hallucination rate — the best in the study but still roughly 1 fabricated detail per 33 summaries.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. What is the structural reason LLMs lack genuine mathematical reasoning ability?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">They are trained on too little mathematical text</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Attention mechanisms cannot process numerical tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">They have no symbolic computation engine — they learn statistical mappings from token sequences without a formal arithmetic or logic unit</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Mathematical reasoning requires recurrent networks, which transformers replaced</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Transformers process math as token sequences and learn patterns that correlate with correct answers — but have no register, stack, or formal computation mechanism underlying their outputs.</div>
+        <div class="quiz-feedback wrong">Not quite. The structural issue is that LLMs have no symbolic computation engine. They predict tokens that correlate with correct mathematical outputs without performing actual computation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. What do "isomorphic problems" reveal about LLM math performance?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">When surface features change while structure stays the same, performance degrades — indicating pattern-matching rather than structural reasoning</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Models perform equally well regardless of surface variation, confirming genuine reasoning</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Isomorphic problems are only difficult for models below 100B parameters</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Models perform better on isomorphic problems because they are structurally simpler</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Isomorphic problems have the same underlying structure but different surface cues. Performance drops when surface cues change, revealing that the model exploited textual patterns rather than reasoning through the structure.</div>
+        <div class="quiz-feedback wrong">Not quite. Performance drops on isomorphic variants, showing the model relied on surface-level pattern cues rather than genuine structural reasoning.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. What was Jason Wei et al.'s key contribution in their 2022 paper on chain-of-thought prompting?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Proving that LLMs perform symbolic logic natively</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Demonstrating that eliciting intermediate reasoning steps substantially improves multi-step task performance</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Introducing the GSM8K benchmark for grade-school math</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Showing that larger models never need chain-of-thought prompting</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Wei et al. showed that prompting models to show intermediate reasoning steps ("think step by step") substantially improved performance on multi-step tasks — though the mechanism is statistical, not symbolic.</div>
+        <div class="quiz-feedback wrong">Not quite. The Wei et al. chain-of-thought paper showed that generating intermediate steps in the prompt improves multi-step performance significantly, though this is pattern-generation rather than genuine symbolic reasoning.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. What does the "temporal gradient" mean for model accuracy?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Models become more accurate on recent topics because recent data is higher quality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Accuracy fades gradually as topics approach the training cutoff, because recent events have less accumulated secondary coverage</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The model has zero knowledge of events after the cutoff but complete knowledge before it</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Models trained more recently are always more accurate than older models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. There's no clean cutoff line — events near the cutoff date have had less time to accumulate commentary and secondary sources, so model accuracy fades progressively rather than switching off abruptly.</div>
+        <div class="quiz-feedback wrong">Not quite. The gradient means accuracy fades gradually as topics approach the cutoff — there's a fade, not a hard boundary, because recent events are underrepresented relative to older events.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. In the Stack Overflow/deprecated API scenario, what made the failure particularly dangerous?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">The model refused to answer questions about programming after its cutoff</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Outdated API descriptions were presented with identical confidence to accurate current ones — no output signal distinguished stale from current information</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">The model only described deprecated APIs when explicitly asked about them</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Developers knew to check the model's training date and verify accordingly</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The confidence-currency mismatch: outdated information is delivered with the same tone and certainty as current information, making it indistinguishable to users who don't independently verify.</div>
+        <div class="quiz-feedback wrong">Not quite. The danger was that deprecated API descriptions sounded exactly like current ones — no signal in the model's output indicated the information was outdated.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Which of the following is a key limitation of Retrieval-Augmented Generation for knowledge cutoff problems?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">RAG requires retraining the model on each new document</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Models can still hallucinate when summarizing retrieved documents, misattribute sources, or confabulate when retrieved content is ambiguous</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">RAG only works for documents under 500 words</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">RAG eliminates hallucination entirely but introduces latency</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RAG grounds responses in external documents but doesn't eliminate hallucination — the model can still fabricate while summarizing, misattribute quotes, or blend retrieved content with training-data confabulation.</div>
+        <div class="quiz-feedback wrong">Not quite. RAG reduces but doesn't eliminate hallucination. Models can still fabricate within retrieved documents, misattribute content, or override retrieved facts with strong training-set priors.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. What was the Tay chatbot incident's primary lesson about model safety?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Chatbots are unsafe because they cannot detect sarcasm</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Twitter users are uniquely adversarial compared to other platforms</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Models trained on human text absorb and can surface human biases and harmful patterns when adversarially prompted — even without explicit intention to produce harmful content</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Real-time learning from user interactions is inherently safer than static training</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tay absorbed biases from its training data and conversation context. Adversarial users discovered they could elicit harmful outputs through targeted prompting — demonstrating how training distribution biases can be surfaced.</div>
+        <div class="quiz-feedback wrong">Not quite. Tay demonstrated that training on human-generated text encodes human biases, and adversarial users can systematically elicit those biases through targeted prompting.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. According to the 2021 study on GPT-3 demographic associations, what was found?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">GPT-3 showed no measurable demographic bias in word associations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">GPT-3 associated Arab names with terrorism and African American names with unpleasant concepts at higher rates than White American names</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Demographic bias only appeared in GPT-3's image generation module</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">GPT-3 showed bias only when explicitly asked about demographic groups</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The word-association tests revealed statistically significant harmful associations tied to demographic names — reflecting biases encoded in the model's internet training corpus.</div>
+        <div class="quiz-feedback wrong">Not quite. The study found measurable harmful demographic associations in GPT-3's outputs — Arab names with terrorism, African American names with unpleasant concepts — reflecting training data biases.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. What does RLHF actually modify in a model?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">It replaces the model's pretraining entirely with human-preference data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">It removes harmful associations from the model's embedding space</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">It adjusts the output distribution so the model produces outputs rated higher by human evaluators — without removing underlying learned associations from weights</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">It adds a retrieval component that filters harmful responses before output</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RLHF shapes output distribution based on human preference ratings. The underlying learned associations in the base model remain in the weights — accessible through adversarial prompting or edge cases outside the RLHF distribution.</div>
+        <div class="quiz-feedback wrong">Not quite. RLHF modifies which outputs the model produces on the fine-tuning distribution. It does not erase underlying associations from the model's weights — those remain accessible through adversarial or out-of-distribution inputs.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. What is "catastrophic forgetting" in the context of continual learning for LLMs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">A model permanently fails after encountering a malicious prompt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">When incrementally training on new data, a model loses performance on previously learned tasks as new data overwrites relevant weights</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Models forget their system prompt after extended conversations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">The model forgets its training cutoff date after fine-tuning</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Continual learning updates weights to accommodate new information, but this process can overwrite the weight configurations that encoded older knowledge — trading older competence for newer coverage.</div>
+        <div class="quiz-feedback wrong">Not quite. Catastrophic forgetting occurs when training on new data modifies weights that encoded prior knowledge, causing the model to "forget" previously mastered tasks.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. The 2023 CMU/CAIS adversarial suffix paper found that attacks computed on open-source models:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Only worked on the specific open-source model they were computed for</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Failed entirely when applied to closed production models like GPT-4</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Often transferred to closed models including GPT-4 and Claude, demonstrating cross-model attack transferability</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Were ineffective against models using constitutional AI</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Attack transferability was a key finding — adversarial suffixes computed on open-source models often worked on closed production models, demonstrating a shared underlying vulnerability.</div>
+        <div class="quiz-feedback wrong">Not quite. Cross-model transfer was a central finding of the paper: suffixes computed on open models transferred to closed models, indicating shared underlying vulnerabilities across architectures.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. Which statement best characterizes the overall relationship between scale and LLM limits discussed in this module?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Scale solves hallucination, reasoning, and alignment problems given sufficient compute</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">All four limits — hallucination, reasoning, knowledge cutoffs, and alignment — are primarily engineering problems awaiting straightforward solutions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Larger models are strictly safer and more reliable than smaller ones across all dimensions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Scale improves performance on training-distribution tasks but does not resolve structural limits — and can amplify certain failure modes like confident confabulation and adversarial capability</button>
+        </div>
+        <div class="quiz-feedback right">Correct. This is the module's central thesis: scaling improves capabilities within the training distribution but does not resolve — and can intensify — the structural limits of hallucination, reasoning fragility, temporal blindness, and alignment.</div>
+        <div class="quiz-feedback wrong">Not quite. The module argues that scale improves trained-distribution performance but does not resolve structural limits, and can amplify failure modes like confident confabulation and adversarial capability at scale.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">Review Module →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m8';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':result==='right'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=(result==='correct'||result==='right')?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI tutor for AESOP AI Academy, teaching the module "How Large Language Models Work," specifically Lesson 1: Hallucinations and Confabulation. Help students understand why LLMs hallucinate, the difference between intrinsic and extrinsic hallucination, why scaling doesn\'t reliably fix it, the Schwartz & LoDuca legal case, the Vectara study findings, how RAG partially mitigates hallucination, and why calibration is domain-specific. Be precise, reference real documented research, and correct misconceptions directly. Keep responses under 180 words. If asked something off-topic, warmly redirect to hallucination concepts.',
+  l2:'You are an expert AI tutor for AESOP AI Academy, teaching the module "How Large Language Models Work," specifically Lesson 2: Reasoning and Mathematical Limits. Help students understand why LLMs lack genuine symbolic reasoning, how benchmark contamination inflates scores, the MIT rephrasing study and GPT-4\'s fragility on isomorphic problems, chain-of-thought\'s benefits and limits, the Winograd schema lesson, and how tool-use (Toolformer, Code Interpreter) partially addresses reasoning gaps. Be precise and reference real research. Keep responses under 180 words. Warmly redirect off-topic questions back to reasoning and math limits.',
+  l3:'You are an expert AI tutor for AESOP AI Academy, teaching the module "How Large Language Models Work," specifically Lesson 3: Knowledge Cutoffs and Temporal Blindness. Help students understand how training cutoffs work, the temporal gradient problem, the confidence-currency mismatch, domain-specific failure patterns (medical, legal, software, financial), the Stack Overflow deprecated API scenario, how RAG addresses but doesn\'t fully solve the problem, and why continual learning risks catastrophic forgetting. Be precise and practical. Keep responses under 180 words. Warmly redirect off-topic questions.',
+  l4:'You are an expert AI tutor for AESOP AI Academy, teaching the module "How Large Language Models Work," specifically Lesson 4: Bias, Alignment Limits, and the Safety Ceiling. Help students understand where model bias originates, why scale amplifies rather than reduces it, what RLHF does and doesn\'t do, the Tay incident, the CMU/CAIS adversarial suffix attack findings, the specification-generalization-interpretability-scale alignment challenges, why safe behavior differs from having values, and practical deployment safeguards. Be precise and reference real research. Keep responses under 180 words. Warmly redirect off-topic questions.'
+};
+
+var _fallbackResponses={
+  l1:[
+    "Great question. Hallucination happens because LLMs predict the next token based on statistical patterns — they have no internal truth-checking mechanism. When asked for legal citations, the model generates tokens that fit the citation pattern it learned, regardless of whether the underlying case exists. The form is syntactically correct; the content is invented. This is confabulation at the token level.",
+    "The key insight from the Vectara study is that even GPT-4 — the best performer — had a ~3% hallucination rate on summarization. That means roughly 1 in 33 summaries contained fabricated content. In legal, medical, or financial contexts, that rate is not acceptable. Scale reduces frequency but doesn't eliminate the structural cause.",
+    "RAG helps by providing ground-truth documents for the model to cite. But it doesn't eliminate hallucination — models can still fabricate while summarizing, misattribute quotes, or blend training-set confabulation with retrieved content when sources are ambiguous. Hallucination mitigation is a defense-in-depth problem, not a single-solution problem."
+  ],
+  l2:[
+    "The MIT rephrasing study is crucial here. GPT-4 scored above 90% on GSM8K. But when researchers changed surface features — names, irrelevant numbers — while keeping the underlying structure identical, accuracy dropped 10–20 percentage points. That reveals the model exploited textual patterns correlated with correct answers, not the underlying mathematical structure. High benchmark scores don't mean genuine reasoning.",
+    "Chain-of-thought improves performance substantially on multi-step tasks because generating intermediate tokens that look like reasoning steps correlates with correct final answers in the training distribution. But it's still token prediction — the model can't detect logical contradictions in its own intermediate steps, and errors cascade. It's pattern-generation that resembles reasoning, not symbolic reasoning itself.",
+    "Benchmark contamination is when test problems appear in pretraining data, letting the model effectively memorize answers. This inflates scores without reflecting capability. The fix is novel, held-out evaluation sets — isomorphic variants, paraphrased problems — that the model genuinely hasn't seen. That's how you distinguish interpolation from generalization."
+  ],
+  l3:[
+    "For medical AI: the knowledge cutoff problem is serious. Drug interaction databases, clinical guidelines, and dosage recommendations change. A model trained before a guideline update will describe outdated treatment protocols with the same confidence as current ones. There's no stylistic marker distinguishing them. RAG on current clinical databases helps, but the model can still hallucinate while summarizing those documents — so human pharmacist review remains essential.",
+    "The temporal gradient means accuracy doesn't fall off a cliff at the cutoff date — it fades. Events from a month before the cutoff have almost no secondary coverage: no Wikipedia analysis, no commentary, no follow-up reporting. Events from three years earlier have extensive coverage. So models are systematically better at older history than recent history, even within their training window.",
+    "Continual learning tries to push the cutoff forward incrementally. The catastrophic forgetting problem is that updating weights to encode new information can overwrite the configurations encoding older knowledge. You gain currency but lose depth. Full periodic retraining avoids this but is expensive and still can't track real-time information. There's no clean solution — it's a fundamental tension in static-weight systems."
+  ],
+  l4:[
+    "RLHF is meaningful risk reduction, not theater — but it's probabilistic, not a guarantee. It reduces harmful outputs on the distribution the human raters evaluated. The CMU/CAIS finding that adversarial suffixes bypassed safety training shows the underlying capability remains in the weights; RLHF adjusted which outputs get produced on normal inputs. Adversarial inputs can route around those adjustments. That's why deployment safeguards need multiple independent layers, not just model-level RLHF.",
+    "The Stochastic Parrots argument is that LLMs don't understand the associations they learn — they reproduce the statistical regularities of their training corpus, including its harmful patterns. More data from the same biased distribution makes those patterns more deeply learned, not less. Genuine debiasing would require either changing the training distribution itself or interpretability tools that can identify and surgically modify specific harmful associations in weights — neither is a solved problem.",
+    "The specification problem is fundamental: you can't fully specify human values in a reward signal. RLHF approximates the preferences of the raters who labeled the training data — a specific, limited, often non-diverse group. Constitutional AI tries to make values explicit as principles, which is more transparent but still doesn't solve generalization to edge cases. Interpretability research aims to read what the model has learned — but we're still in early stages of understanding what those weight configurations represent."
+  ]
+};
+
+function _fallbackReply(labId){
+  var idx=_fallbackIdx[labId]||0;
+  var responses=_fallbackResponses[labId];
+  var reply=responses[idx%responses.length];
+  _fallbackIdx[labId]=idx+1;
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(container) container.innerHTML='';
+  var inp=document.getElementById('inp-'+labId);
+  if(inp){inp.value='';inp.disabled=false;}
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].map(function(m){return {role:m.role,content:m.content};});
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an error. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({
+      type:'labComplete',
+      courseId:COURSE_ID,
+      moduleId:MODULE_ID,
+      lessonId:labId,
+      exchangeCount:chatExchanges[labId]
+    },'*');
+  }
+}
+
+// Initial tab sync
+updateTabs();
+</script>
+</body>
+</html>

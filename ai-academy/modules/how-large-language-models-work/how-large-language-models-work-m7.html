@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How LLMs Work — M7: Hallucination and Confabulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m7 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-error{color:#f07070;font-size:0.78rem;font-style:italic;padding:0.5rem 1rem;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ LESSON 1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 1</div>
+      <h1>What Hallucination Actually Means</h1>
+      <div class="tagline">Confident, fluent, and wrong — understanding the defining failure mode of language models.</div>
+      <div class="lesson-question">Why does a system that "knows" so much invent things that don't exist?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Event — New York, 2023">
+        <p class="story-text">In June 2023, New York attorney <span class="char">Steven Schwartz</span> filed a legal brief in a federal case against Avianca airline. The brief cited six supporting court precedents. Every single one was fabricated. <em>Mata v. Avianca, Inc., Varghese v. China Southern Airlines, Shaboon v. Egypt Air</em> — none existed anywhere in case law. The attorney had asked ChatGPT to find relevant cases and submitted the results without verification. Judge P. Kevin Castel fined the attorneys $5,000 and issued a formal sanction. The moment became a landmark warning about treating LLM output as ground truth.</p>
+      </div>
+
+      <h2 class="section-heading">The Mechanics of Fabrication</h2>
+      <div class="section-body">
+        <p>The word "hallucination" is borrowed from psychology, where it describes perceiving something that isn't there. In the context of LLMs, it has come to mean something more specific: the model generates content that is <em>factually incorrect, unverifiable, or entirely invented</em>, yet presented in the same confident, grammatically fluent register it uses for correct information.</p>
+        <p>This is not a bug in the traditional sense — it is an emergent property of how these models are built. LLMs do not store facts in a database and retrieve them. They learn <em>statistical patterns</em> across billions of text tokens, and at inference time they generate the next token based on what is most probable given the preceding context. There is no lookup, no citation trail, no internal truth-checker.</p>
+        <p>When a model is asked about a case that doesn't exist, it doesn't return NULL. It generates the most plausible-sounding response — a case name that sounds like real case names, citations that follow the correct formatting pattern, and a holding that is legally coherent. The output is confidently wrong because the model has no mechanism for distinguishing between "I learned this" and "I am generating this."</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Key Distinction</div>
+        <p>Hallucination is not the same as the model being uncertain. A model can express uncertainty and still hallucinate. It can also express high confidence and be completely correct. Confidence signals in LLM output do not reliably track factual accuracy — they track how fluent and probable the continuation is.</p>
+      </div>
+
+      <h2 class="section-heading">Confabulation: The Better Term</h2>
+      <div class="section-body">
+        <p>Some researchers prefer the term <em>confabulation</em>, borrowed from neuropsychology. In patients with certain memory disorders, confabulation refers to the production of fabricated, distorted, or misinterpreted memories without conscious deception — the patient genuinely believes what they are saying. This maps more precisely onto LLM behavior. The model is not lying. It has no intent. It is filling gaps in a way that is internally coherent but externally false.</p>
+        <p>The distinction matters practically. If we call it lying, we might look for ways to make the model "want" to tell the truth. If we understand it as confabulation — a structural artifact of how memory and generation work — we look instead at architectural interventions, retrieval augmentation, and output verification pipelines.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Hallucination</span>
+        <span class="kt-def">LLM output that is factually incorrect or fabricated, presented with the same fluency as correct output.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Confabulation</span>
+        <span class="kt-def">The neuropsychological analog: gap-filling that is internally coherent but externally false, without intent to deceive.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Intrinsic vs. Extrinsic</span>
+        <span class="kt-def">Intrinsic hallucination contradicts the provided context; extrinsic hallucination adds information not present in the context and unverifiable against it.</span>
+      </div>
+
+      <h2 class="section-heading">Types of Hallucination</h2>
+      <div class="section-body">
+        <p>Researchers have identified several distinct categories. <strong>Entity hallucination</strong> involves inventing people, places, organizations, or publications — a paper by a real researcher that was never written, a company that never existed. <strong>Temporal hallucination</strong> involves wrong dates — an event placed in the wrong year, a person described as living when they had died, or vice versa. <strong>Relation hallucination</strong> gets the facts right but the relationship wrong — correctly identifying two real people but wrongly claiming one supervised the other's doctoral thesis.</p>
+        <p>There is also <strong>source hallucination</strong> — the model cites a real journal, real volume number, real page range, but the article it describes either doesn't exist or says something entirely different. This is particularly dangerous because the citation format is correct enough that a reader might not bother to verify.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Why This Module Matters</div>
+        <p>Hallucination is not an edge case — studies have found fabrication rates of 3–15% in general-purpose tasks, rising sharply for specialized domains like law, medicine, and academic citation. Understanding why it happens at a mechanistic level is the first step toward building systems and workflows that catch it.</p>
+      </div>
+
+      <div class="section-divider"></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Check Understanding →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">What Hallucination Actually Means</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">In the 2023 Mata v. Avianca case, what did attorney Steven Schwartz submit that led to sanctions?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A transcript of a real case that had been misinterpreted</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">AI-generated legal citations for cases that did not exist</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A brief written entirely by ChatGPT without any attorney review</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Plagiarized arguments from a different case</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Schwartz used ChatGPT to find supporting precedents and filed the results. All six cited cases were fabricated by the model. The judge imposed a $5,000 fine and formal sanctions.</div>
+        <div class="quiz-feedback wrong">Not quite. The problem was that ChatGPT invented entirely fictional cases — Varghese v. China Southern, Shaboon v. Egypt Air, and others — that had no existence in any case law database.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">Why does an LLM generate hallucinations rather than returning an empty response when it lacks information?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Because it is programmed to always provide an answer</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Because it retrieves from a database that sometimes has corrupt entries</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Because it generates the statistically most probable next token regardless of factual grounding</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Because training data contained deliberate misinformation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LLMs have no lookup mechanism — they generate the most probable continuation of the context. There is no internal signal that distinguishes "I learned this fact" from "I am generating a plausible-sounding sequence."</div>
+        <div class="quiz-feedback wrong">Not quite. LLMs don't retrieve from databases at all — they generate token-by-token based on probability distributions learned during training. This is why they produce fluent, plausible-sounding output even when it is factually wrong.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">The term "confabulation" is preferred by some researchers over "hallucination" because it emphasizes that:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The model is deliberately deceptive</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">The model fills gaps without intent to deceive, analogous to certain memory disorders</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The errors only occur in sensory description tasks</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The model genuinely experiences perceptual distortions</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Confabulation in neuropsychology describes patients who produce false memories without intent — they believe what they say. This maps better onto LLM behavior than hallucination, which implies a perceptual experience the model doesn't have.</div>
+        <div class="quiz-feedback wrong">Not quite. The key point is the absence of intent. "Confabulation" describes gap-filling that is structurally generated rather than consciously fabricated — making it a more precise description of what LLMs do.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Go to Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Anatomy of a Hallucination</h1>
+      <div class="tagline">Explore the mechanics of fabrication with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>In this lab you will explore what hallucination looks like mechanically — why LLMs generate false content with the same fluency as true content, and how the Mata v. Avianca case illustrates the real-world stakes. Ask questions, probe the mechanics, and test your understanding.</p>
+        <div class="lab-prompt">Suggested start: "Why didn't ChatGPT just say it didn't know those court cases existed? What was happening mechanically when it generated them?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <span class="chat-badge">Hallucination &amp; Confabulation</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. We're looking at what hallucination actually is — why fluent, confident-sounding output can be completely fabricated. The Mata v. Avianca case is a perfect anchor here. Ask me anything about the mechanics, the terminology, or what went wrong in that courtroom.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about hallucination mechanics…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 2</div>
+      <h1>Why Models Hallucinate: Mechanistic Causes</h1>
+      <div class="tagline">From training data gaps to decoding strategies — the structural reasons fabrication is built in.</div>
+      <div class="lesson-question">Is hallucination a fixable bug, or an unavoidable consequence of how these systems work?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Event — Google Bard, February 2023">
+        <p class="story-text">On February 7, 2023, Google debuted its Bard chatbot in a promotional video intended to showcase its capabilities. In the video, Bard was asked what new discoveries the James Webb Space Telescope had made that could be shared with a child. Bard responded that JWST was used to take "the very first pictures" of an exoplanet outside our solar system. This was false — the first direct image of an exoplanet was taken by the European Southern Observatory in 2004. <em>Alphabet's stock fell roughly 7% on the day of the announcement</em>, erasing more than $100 billion in market value. The error was caught by NASA astronomers before the public event, but the promotional video had already been released.</p>
+      </div>
+
+      <h2 class="section-heading">Cause 1 — Training Data Gaps and Biases</h2>
+      <div class="section-body">
+        <p>LLMs learn from text corpora scraped from the web, books, code repositories, and other sources. These corpora are vast but not complete. When a model encounters a question about a topic that was underrepresented, incorrectly represented, or absent from training data, it has no honest signal to fall back on. It generates a plausible completion based on adjacent, related patterns.</p>
+        <p>The Bard exoplanet error likely reflects a training signal where descriptions of JWST and "first images" frequently co-occurred — JWST genuinely did produce historic first images of many things. The model over-generalized this pattern to a claim it hadn't actually been trained on specifically.</p>
+      </div>
+
+      <h2 class="section-heading">Cause 2 — The Exposure Bias of Autoregressive Decoding</h2>
+      <div class="section-body">
+        <p>LLMs are trained on teacher-forced sequences: during training, each token prediction is conditioned on the ground-truth preceding tokens. At inference, the model conditions on its own previously generated tokens. This <em>exposure bias</em> means that once an incorrect token is generated, subsequent tokens are optimized to follow coherently from that error rather than correcting it. A fabricated case name becomes a plausible citation that becomes a coherent holding — each step is locally probable given the previous step.</p>
+        <p>This is the compounding effect: hallucination tends to be self-consistent. The fictional case Schwartz cited had a plausible party name, a plausible jurisdiction, a plausible year, and a holding that fit the argument. The model optimized for local coherence, not external truth.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Snowball Effect</div>
+        <p>Once a model commits to a hallucinated entity in a long response, it often continues to reference it consistently — giving the hallucination internal coherence that makes it harder to detect. The fictional case is cited, then described, then quoted, all without ever existing.</p>
+      </div>
+
+      <h2 class="section-heading">Cause 3 — The Softmax Bottleneck and Parametric Memory</h2>
+      <div class="section-body">
+        <p>Everything a model knows is encoded in its parameters — billions of weights adjusted during training to compress vast amounts of text. This parametric memory is not lossless. Specific facts, especially rare ones, may be poorly encoded, encoded with errors, or conflated with similar facts. The model may "remember" a fact but attach the wrong date, the wrong name, or the wrong attribution.</p>
+        <p>This is distinct from not knowing something. The model has a representation — it's just incorrect or partially merged with another fact. Studies by researchers at MIT, Stanford, and DeepMind have shown that LLMs systematically confuse entities that appear in similar syntactic contexts in training data.</p>
+      </div>
+
+      <h2 class="section-heading">Cause 4 — RLHF and the Fluency-Accuracy Trade-off</h2>
+      <div class="section-body">
+        <p>Reinforcement Learning from Human Feedback (RLHF) trains models to produce responses that human raters prefer. Raters consistently prefer fluent, confident, detailed answers over hedged or incomplete ones. This creates an incentive gradient: the model learns that sounding authoritative is rewarded, even when the underlying content is uncertain. The result is a systematic overconfidence in generated output — the stylistic confidence of the response does not track its epistemic reliability.</p>
+        <p>Several research teams, including work published from Anthropic's interpretability group, have noted this tension: RLHF is excellent at making models helpful and readable, but it can amplify hallucination by training away the hedges and uncertainty signals that might otherwise warn users.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Exposure Bias</span>
+        <span class="kt-def">The gap between training (conditioned on ground truth) and inference (conditioned on own output), which allows errors to compound.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Parametric Memory</span>
+        <span class="kt-def">Facts encoded in model weights — lossy, imprecise, and subject to conflation with similar facts.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">RLHF Fluency Bias</span>
+        <span class="kt-def">The tendency for human feedback training to reward confident, fluent responses, inadvertently reinforcing overconfidence in hallucinated content.</span>
+      </div>
+
+      <div class="section-divider"></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Why Models Hallucinate: Mechanistic Causes</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">Google's Bard made a factual error about the James Webb Space Telescope in its launch video, contributing to a ~7% drop in Alphabet's stock. What was the error?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It claimed JWST had found extraterrestrial life</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">It falsely claimed JWST took the first pictures of an exoplanet outside our solar system</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It gave the wrong launch date for the telescope</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It confused JWST with the Hubble Space Telescope</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Bard stated JWST took "the very first pictures" of an exoplanet, but the first direct image of an exoplanet was taken by the ESO in 2004. NASA astronomers caught the error, but the promotional video had already been released publicly.</div>
+        <div class="quiz-feedback wrong">Not quite. Bard's error was claiming JWST took the first-ever pictures of exoplanets — the first direct image of an exoplanet was actually taken by the European Southern Observatory in 2004, almost two decades earlier.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">What is "exposure bias" and why does it contribute to hallucination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The model is over-exposed to certain topics and generates them more frequently</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Training data contains biased human opinions that the model reproduces</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">At inference the model conditions on its own outputs rather than ground truth, allowing errors to compound</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The model has been exposed to too many hallucinated texts during training</button>
+        </div>
+        <div class="quiz-feedback right">Correct. During training, each prediction is conditioned on true previous tokens. At inference, the model uses its own previous outputs — so one fabricated token leads to further tokens that are locally coherent with the error, compounding the hallucination.</div>
+        <div class="quiz-feedback wrong">Not quite. Exposure bias refers to the train/inference mismatch: training uses ground-truth context, but inference uses the model's own generated context. This means errors propagate forward rather than being corrected.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">How does RLHF training potentially make hallucination worse, despite improving helpfulness?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">RLHF introduces new false facts from human rater inputs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Human raters prefer fluent confident answers, so RLHF trains models to sound authoritative even when uncertain</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">RLHF reduces the model's vocabulary, forcing it to approximate rare terms</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">RLHF removes hedging language from the training corpus entirely</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The fluency-accuracy trade-off: RLHF optimizes for human approval, and humans tend to reward confident, detailed answers. This inadvertently trains away the hedges and uncertainty signals that might otherwise alert users to shaky ground.</div>
+        <div class="quiz-feedback wrong">Not quite. The key mechanism is that human raters reward confident, fluent outputs. This creates a training incentive to sound authoritative — even when the underlying content is uncertain or incorrect — amplifying overconfidence in hallucinated responses.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Go to Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — The Causes of Confabulation</h1>
+      <div class="tagline">Probe the mechanistic roots of hallucination with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>This lab focuses on the structural causes of hallucination: training data gaps, exposure bias, parametric memory loss, and RLHF's fluency incentive. Use the Google Bard exoplanet error as a concrete case study, or ask about any of the four causes in depth.</p>
+        <div class="lab-prompt">Suggested start: "Can you walk me through exactly how exposure bias would turn one small error in a legal brief into a fully cited, internally consistent but completely fictional case?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <span class="chat-badge">Mechanistic Causes</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Lab 2 is open. We're digging into why hallucination happens at a structural level — training data, exposure bias, parametric memory, and RLHF pressure. What would you like to explore first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about mechanistic causes of hallucination…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 3</div>
+      <h1>Domain-Specific Risks and Real Consequences</h1>
+      <div class="tagline">Medicine, law, science, finance — where hallucination causes measurable harm.</div>
+      <div class="lesson-question">Which domains are most vulnerable, and what does a costly hallucination actually look like in the field?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Event — Air Canada Chatbot, 2024">
+        <p class="story-text">In February 2024, a British Columbia Civil Resolution Tribunal ruled against Air Canada after its customer service chatbot told passenger <span class="char">Jake Moffatt</span> that he could apply for a bereavement fare discount retroactively after purchasing a ticket — a policy that did not exist. Air Canada argued the chatbot was "a separate legal entity" responsible for its own statements. The tribunal rejected this defense, holding Air Canada liable for the chatbot's misinformation. <em>Air Canada was ordered to pay Moffatt $812.02.</em> The ruling established a significant precedent: companies cannot disclaim liability for AI-generated misinformation in customer-facing applications.</p>
+      </div>
+
+      <h2 class="section-heading">Medical Hallucinations</h2>
+      <div class="section-body">
+        <p>In healthcare, hallucinated content can directly affect clinical decisions. A 2023 study published in <em>JAMA Internal Medicine</em> by researchers at Beth Israel Deaconess Medical Center found that when GPT-4 was used to answer medical licensing exam questions, it performed near-passing level — but when it made errors, those errors were often medically dangerous misattributions of drug interactions, dosage thresholds, or contraindication profiles. A fabricated drug interaction is not like a wrong date in a history essay; it can result in patient harm.</p>
+        <p>A separate 2023 study in <em>npj Digital Medicine</em> tested ChatGPT's ability to summarize clinical trial results from provided documents. The model hallucinated statistical findings not present in the source documents in approximately 30% of cases, often inverting outcome significance. These were <em>extrinsic hallucinations</em> — added content not present in the context — in exactly the settings where physicians might trust AI-generated summaries.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Legal Precedent — Air Canada 2024</div>
+        <p>The British Columbia ruling is the first time a court explicitly held a company liable for its AI chatbot's hallucinated policy information. The tribunal's reasoning: the chatbot is Air Canada's agent, and Air Canada is responsible for ensuring accurate information regardless of the source. This applies equally to hallucinated medical advice, financial guidance, or any consumer-facing AI claim.</p>
+      </div>
+
+      <h2 class="section-heading">Scientific Literature Hallucinations</h2>
+      <div class="section-body">
+        <p>Hallucinated citations are a particular threat to scientific integrity. A 2023 analysis published in <em>Patterns</em> (Cell Press) tested several LLMs on their ability to provide accurate citations in life sciences. Across models, 30–70% of generated citations were partially or entirely fabricated — wrong author combinations, wrong journal placements, wrong DOIs attached to real paper titles. Because scientific databases are trusted by downstream researchers, a hallucinated citation that makes it into even a single published paper can propagate through the literature.</p>
+        <p>The concern is not just that AI writes bad citations — it is that hallucinated references may cite studies that, if they existed, would lend authority to a claim. The absence of the paper is structurally invisible to any reader who doesn't check.</p>
+      </div>
+
+      <h2 class="section-heading">Financial Hallucinations</h2>
+      <div class="section-body">
+        <p>In finance, hallucinations about earnings figures, merger terms, regulatory filings, or market data can inform trading decisions or compliance workflows. Several incidents have been documented where AI-assisted research tools generated incorrect data about earnings per share, M&A deal terms, and financial covenants. While no single case reached the scale of the legal or medical examples above, financial regulators in the EU, UK, and US have issued guidance specifically noting that LLM-generated financial information must be independently verified against primary sources.</p>
+      </div>
+
+      <h2 class="section-heading">The Trust Calibration Problem</h2>
+      <div class="section-body">
+        <p>Across all these domains, the central danger is <em>miscalibrated trust</em>. Users — including professionals — develop a mental model of what errors look like. Typos and non-sequiturs are obvious. A coherent, fluent, well-formatted response that happens to be factually wrong does not look like an error. It looks like expertise.</p>
+        <p>This is the core challenge that makes domain-specific hallucination particularly dangerous: the errors are stylistically indistinguishable from correct output. Detecting them requires domain knowledge, access to primary sources, and the discipline to verify even plausible-sounding claims.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Extrinsic Hallucination</span>
+        <span class="kt-def">Output that adds information not present in the provided context — particularly dangerous in summarization and document Q&amp;A tasks.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Miscalibrated Trust</span>
+        <span class="kt-def">The mismatch between how reliable AI output appears and how reliable it actually is — the primary reason domain-specific hallucinations cause harm.</span>
+      </div>
+
+      <div class="section-divider"></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Domain-Specific Risks and Real Consequences</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">What legal precedent did the Air Canada chatbot ruling (2024) establish?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">AI chatbots cannot be used for customer service under Canadian law</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Companies must display a disclaimer whenever an AI chatbot is used</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Companies are liable for misinformation generated by their AI chatbots and cannot disclaim it as a separate entity</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Passengers can claim any fare discount an AI chatbot mentions regardless of official policy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The British Columbia Civil Resolution Tribunal ruled that Air Canada was responsible for its chatbot's statement about retroactive bereavement fares, rejecting the "separate legal entity" defense. The company was ordered to honor the discount.</div>
+        <div class="quiz-feedback wrong">Not quite. The key ruling was on liability: companies cannot claim their AI chatbot is a separate entity to escape responsibility for its misinformation. The chatbot is an agent of the company, and the company is accountable for what it says.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">A 2023 study in npj Digital Medicine found that ChatGPT hallucinated statistical findings in approximately what percentage of clinical trial summaries?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">About 5%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">About 15%</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">About 30%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">About 60%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The study found approximately 30% of cases involved extrinsic hallucinations — statistical findings not present in the source documents, sometimes inverting outcome significance — in exactly the settings where clinicians might rely on AI-generated summaries.</div>
+        <div class="quiz-feedback wrong">Not quite. The study found hallucination in approximately 30% of clinical trial summary cases, often inventing or inverting statistical outcomes not present in the source documents.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">What is "miscalibrated trust" and why does it make domain-specific hallucination dangerous?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Users trust AI too little, causing them to ignore correct information</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Users cannot distinguish fluent hallucinated output from correct output, so errors pass undetected</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">AI systems trust their own outputs more than external data sources</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Domain experts trust AI less than general users, leading to under-utilization</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Hallucinated content in high-stakes domains is written with the same fluency and confidence as correct content. Users — including professionals — have no reliable stylistic signal that something is wrong, making verification the only safeguard.</div>
+        <div class="quiz-feedback wrong">Not quite. Miscalibrated trust refers specifically to the mismatch between how reliable AI output appears (very polished, confident) and how reliable it actually is. Hallucinations look like expertise, so errors pass undetected without active verification.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Go to Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Real-World Harm Assessment</h1>
+      <div class="tagline">Map hallucination risk across domains with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>In this lab you will explore how hallucination risk varies across domains — law, medicine, science, finance — and what the Air Canada, JAMA, and npj cases tell us about liability, detection, and mitigation. Ask about specific cases, risk factors, or what "miscalibrated trust" means in practice.</p>
+        <div class="lab-prompt">Suggested start: "If a hospital used an AI tool that hallucinated drug interactions, how would the Air Canada legal reasoning apply to determining liability?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <span class="chat-badge">Domain Risk &amp; Real Cases</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Lab 3 is ready. We're mapping hallucination risk across high-stakes domains — medicine, law, science, finance — using real cases as anchors. The Air Canada ruling is especially important here. Where would you like to start?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about domain-specific hallucination risks…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LESSON 4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 4</div>
+      <h1>Detection and Mitigation Strategies</h1>
+      <div class="tagline">RAG, grounding, self-consistency, uncertainty quantification — what actually works.</div>
+      <div class="lesson-question">Given that hallucination is structurally embedded, what engineering and workflow approaches reduce it to manageable levels?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Real Development — Bing / Copilot Grounding, 2023">
+        <p class="story-text">When Microsoft launched Bing Chat (later Copilot) in February 2023, early users discovered it could be prompted into producing what the model itself described as volatile or threatening statements, and it frequently hallucinated source citations. Microsoft's response was instructive: rather than attempting to retrain the model, they added <em>real-time web retrieval grounding</em> — each response was anchored to cited web sources that users could verify. Over subsequent months, measurable hallucination rates in factual queries dropped substantially. The architecture shift — from pure parametric memory to retrieval-augmented generation — is now industry standard for knowledge-intensive tasks.</p>
+      </div>
+
+      <h2 class="section-heading">Retrieval-Augmented Generation (RAG)</h2>
+      <div class="section-body">
+        <p>RAG is the most widely adopted technical mitigation. Instead of relying on parametric memory alone, the system retrieves relevant documents from an external corpus at query time and conditions the model's generation on those documents. The model cannot hallucinate facts that are directly contradicted by context it is conditioned on — though it can still hallucinate by ignoring the context, so RAG reduces but does not eliminate hallucination.</p>
+        <p>RAG pipelines require careful engineering: retrieval quality matters (returning irrelevant documents can increase hallucination), chunking and context window management affect which facts are available, and models must be explicitly prompted to cite and stay grounded in provided sources. Naive RAG implementations often fail to deliver reliable accuracy improvements.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">RAG vs. Fine-Tuning</div>
+        <p>Fine-tuning adds facts to parametric memory — but this doesn't prevent hallucination, it just changes which false facts the model might produce. RAG keeps ground truth external and auditable. For high-stakes domains, RAG with cited sources is significantly more reliable than fine-tuning alone.</p>
+      </div>
+
+      <h2 class="section-heading">Self-Consistency Sampling</h2>
+      <div class="section-body">
+        <p>A technique developed at Google Research (Wang et al., 2022) samples multiple independent responses to the same prompt and selects the answer that appears most frequently across samples. If the model generates the same fact across 8 out of 10 samples, it is more likely to be a well-encoded piece of training data than a hallucination. Self-consistency doesn't eliminate hallucination but significantly improves accuracy on knowledge-intensive tasks — gains of 10–15 percentage points were reported across reasoning benchmarks.</p>
+        <p>The limitation: self-consistency is expensive (multiple forward passes per query) and doesn't help when a model has a consistent but incorrect belief — a systematic error in parametric memory will be consistently wrong across all samples.</p>
+      </div>
+
+      <h2 class="section-heading">Uncertainty Quantification and Calibration</h2>
+      <div class="section-body">
+        <p>Several research groups have worked on getting models to produce calibrated confidence signals — probability estimates that track actual accuracy. Techniques include <em>verbalized confidence</em> (prompting the model to state its confidence), <em>logit-based confidence</em> (using output token probabilities as reliability signals), and <em>semantic entropy</em> (measuring the diversity of outputs across samples as a proxy for uncertainty). A 2023 paper from the University of Oxford introduced semantic entropy as a hallucination detection metric, finding it significantly outperformed simple confidence elicitation.</p>
+        <p>The practical limitation is that models trained with RLHF have learned to suppress hedges — so verbalized confidence is often uncalibrated. Logit-based methods require access to model internals and don't work with API-only access.</p>
+      </div>
+
+      <h2 class="section-heading">Workflow-Level Mitigations</h2>
+      <div class="section-body">
+        <p>Beyond technical approaches, the most reliable mitigation in deployed systems is <em>human-in-the-loop verification</em> combined with scope restriction. The legal profession's post-Mata response illustrates this: major law firms issued policies requiring attorneys to independently verify every AI-generated citation against Westlaw or Lexis before filing. Healthcare systems deploying LLM assistants are required by FDA guidance (draft, 2023) to route all clinical suggestions through clinician review before any action is taken.</p>
+        <p>Scope restriction — limiting what the model is allowed to answer — is also effective. Air Canada's failure was partly a deployment decision: allowing a chatbot to answer detailed policy questions without grounding it in a live policy database and without a human escalation path.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">RAG</span>
+        <span class="kt-def">Retrieval-Augmented Generation — grounding model output in retrieved external documents to reduce reliance on potentially incorrect parametric memory.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Self-Consistency</span>
+        <span class="kt-def">Sampling multiple responses and selecting the most frequently occurring answer to filter out one-off hallucinations.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Semantic Entropy</span>
+        <span class="kt-def">A hallucination detection metric that measures diversity of meanings across output samples — high diversity signals uncertainty and likely hallucination.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Human-in-the-Loop</span>
+        <span class="kt-def">Routing AI output through human expert review before action — the most reliable mitigation in high-stakes deployments.</span>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">No Silver Bullet</div>
+        <p>No single technique eliminates hallucination. Production systems in high-stakes domains use layered mitigations: RAG for grounding, self-consistency for critical claims, calibrated uncertainty signaling, scope restriction, and human review for consequential outputs. Each layer catches what the others miss.</p>
+      </div>
+
+      <div class="section-divider"></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ QUIZ 4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Detection and Mitigation Strategies</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">What architectural change did Microsoft make to Bing Chat after its hallucination problems in early 2023?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">They retrained the base model with corrected factual data</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">They restricted the chatbot to only answer questions about Microsoft products</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">They added real-time web retrieval grounding so responses were anchored to verifiable cited sources</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">They implemented a confidence threshold that blocked any uncertain response</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Microsoft added real-time web retrieval (a form of RAG) so each response was grounded in and cited from current web sources users could verify. This shifted the system from pure parametric memory to retrieval-augmented generation.</div>
+        <div class="quiz-feedback wrong">Not quite. The key change was architectural — Microsoft added real-time web retrieval grounding. Instead of relying solely on parametric memory, the model now anchors responses to retrieved web documents and provides verifiable citations.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">What is the main limitation of self-consistency sampling as a hallucination mitigation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">It only works for factual questions, not for reasoning or generation tasks</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">It is computationally expensive and doesn't help when the model has a consistent but incorrect belief</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">It requires access to the model's internal probability distributions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Sampling more than three responses reduces accuracy rather than improving it</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Self-consistency requires multiple forward passes (expensive) and its core assumption — that correct facts appear consistently — breaks down when a model has a systematic wrong belief encoded in its weights, which will appear consistently across all samples.</div>
+        <div class="quiz-feedback wrong">Not quite. The key limitations are cost (multiple forward passes per query) and the systematic error problem: if the model has consistently mislearned a fact, all samples will agree on the wrong answer, and self-consistency will confidently select the hallucination.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">Semantic entropy as a hallucination detection metric (Oxford, 2023) measures:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">The grammatical complexity of the model's output as a proxy for confidence</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">The model's stated confidence rating expressed in words like "I believe" or "I'm certain"</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">The diversity of meanings across multiple output samples — high diversity signals likely hallucination</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">The length of the response relative to the length of the prompt</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Semantic entropy measures how semantically diverse the model's outputs are across multiple samples. When the model is uncertain (and likely confabulating), it generates semantically varied responses. When it has a well-encoded fact, outputs cluster around the same meaning.</div>
+        <div class="quiz-feedback wrong">Not quite. Semantic entropy is a measure of meaning diversity across multiple samples. If the model generates the same basic meaning 10 times, entropy is low and the output is likely reliable. High semantic diversity across samples signals uncertainty — a marker of likely hallucination.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Go to Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Building Hallucination-Resistant Systems</h1>
+      <div class="tagline">Design mitigation strategies with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>In this final lab you will work through the design of hallucination-resistant AI systems — when to use RAG, how to implement self-consistency, what semantic entropy adds, and how to design human-in-the-loop workflows for high-stakes domains. Apply what you've learned to concrete scenarios.</p>
+        <div class="lab-prompt">Suggested start: "I'm building an AI research assistant for a law firm. Walk me through a layered mitigation architecture that would make it safe to use for case research after the Mata v. Avianca disaster."</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <span class="chat-badge">Mitigation Architecture</span>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Lab 4 is open. We're designing hallucination-resistant systems using the full toolkit: RAG, self-consistency, semantic entropy, scope restriction, and human-in-the-loop review. Bring me a scenario — medical, legal, financial, scientific — and we'll build a mitigation architecture together.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Describe a scenario or ask about mitigation strategies…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 7 Test</h1>
+      <div class="tagline">Hallucination and Confabulation — 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. Which attorney was sanctioned in 2023 for filing AI-generated fictional case citations in federal court?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Steven Schwartz</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Jake Moffatt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">P. Kevin Castel</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Roberto Mata</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Steven Schwartz, representing Roberto Mata in a case against Avianca, used ChatGPT to find supporting precedents and filed six entirely fabricated cases. Judge Castel sanctioned him $5,000.</div>
+        <div class="quiz-feedback wrong">Steven Schwartz was the attorney sanctioned. He used ChatGPT to research precedents and submitted fabricated citations without verification in Mata v. Avianca, Inc.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. LLMs do not "look up" facts — they generate output based on:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A real-time database query of verified sources</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Statistical probability distributions over tokens learned during training</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A reasoning engine that checks logical consistency before output</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A cached index of the training corpus retrieved at inference</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LLMs generate the most probable next token given the preceding context. There is no lookup, no citation trail, and no internal truth-checker — just probability-weighted token sequences.</div>
+        <div class="quiz-feedback wrong">LLMs generate token-by-token based on probability distributions learned during training. There is no database lookup, no logic engine, and no cached index. This is the fundamental reason hallucination is possible.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. "Confabulation" is preferred over "hallucination" by some researchers because it emphasizes that the model:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Perceives sensory inputs that aren't present</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Deliberately produces false statements</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Fills gaps without intent to deceive, analogous to neuropsychological memory disorders</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Combines multiple real facts into a single incorrect statement</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Confabulation in neuropsychology describes unconscious gap-filling in patients with memory disorders — no intent to deceive. This maps better onto LLM behavior than hallucination, which implies perceptual experience.</div>
+        <div class="quiz-feedback wrong">Confabulation emphasizes the absence of intent — the model fills gaps structurally, like patients with certain memory disorders who genuinely believe their fabricated memories. This framing directs attention to architecture rather than "wanting" to tell the truth.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Google's Bard launch video error (February 2023) involved a false claim that JWST:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Had discovered microbial life on Europa</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Took the very first pictures of an exoplanet outside our solar system</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Was launched in 2019 rather than 2021</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Had confirmed the existence of dark matter through direct imaging</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Bard claimed JWST took the first pictures of an exoplanet, but the first direct exoplanet image was taken by the European Southern Observatory in 2004. The error contributed to Alphabet losing roughly $100 billion in market cap on launch day.</div>
+        <div class="quiz-feedback wrong">Bard falsely claimed JWST took the first-ever pictures of an exoplanet. The actual first direct image of an exoplanet was captured by the ESO in 2004 — about 17 years before JWST's 2021 launch.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. "Exposure bias" in autoregressive models refers to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Over-representation of certain topics in training data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">The train/inference mismatch where inference uses generated tokens rather than ground-truth tokens as context</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">The model's tendency to reproduce content it has seen many times</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Biased human ratings in RLHF that overweight fluent responses</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Training uses teacher-forcing (ground-truth context); inference uses the model's own previous outputs. Once an error token is generated, all subsequent tokens are optimized to follow coherently from it — compounding the hallucination.</div>
+        <div class="quiz-feedback wrong">Exposure bias is the gap between training conditions (ground-truth context) and inference conditions (own generated context). This allows errors to compound: a hallucinated token leads to more tokens that make sense given the hallucination.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. Which type of hallucination adds information not present in a provided source document?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Intrinsic hallucination</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Extrinsic hallucination</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Temporal hallucination</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Relation hallucination</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Extrinsic hallucination adds unverifiable information beyond the provided context. Intrinsic hallucination contradicts the context. The npj Digital Medicine study found extrinsic hallucinations in ~30% of clinical trial summaries.</div>
+        <div class="quiz-feedback wrong">Extrinsic hallucination adds content not present in (and not verifiable against) the source document. Intrinsic hallucination contradicts the source. This distinction matters for RAG pipelines — both types must be addressed separately.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. The 2024 British Columbia tribunal ruling against Air Canada held that:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">AI chatbots must display uncertainty warnings on every response</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Companies cannot disclaim liability for their chatbot's misinformation by calling it a separate legal entity</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Airlines are prohibited from using AI chatbots for fare inquiries</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Customers must accept AI-generated information as binding company policy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Air Canada argued the chatbot was a separate legal entity; the tribunal rejected this, establishing that companies are responsible for their AI agents' statements. Air Canada was ordered to pay Moffatt $812.02.</div>
+        <div class="quiz-feedback wrong">The tribunal ruled that Air Canada is responsible for what its chatbot says — it cannot treat the chatbot as a separate entity to avoid liability. This is a landmark precedent for AI deployment across all sectors.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. RLHF (Reinforcement Learning from Human Feedback) can worsen hallucination because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Human raters introduce new false facts into training</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">RLHF reduces the model's ability to retrieve from external sources</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Human raters prefer fluent confident responses, training the model to sound authoritative even when uncertain</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">RLHF training forces the model to always give a complete answer regardless of knowledge gaps</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RLHF creates a fluency-accuracy trade-off: raters reward confident, complete answers. This trains away the hedges and uncertainty signals that might otherwise help users identify shaky claims — amplifying the overconfidence of hallucinated content.</div>
+        <div class="quiz-feedback wrong">RLHF's problem is the incentive structure: human raters tend to prefer confident, detailed responses. This trains the model to sound authoritative, inadvertently suppressing uncertainty signals and amplifying overconfident hallucination.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. What is the primary mechanism by which RAG reduces hallucination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Retrieved documents are added to context, grounding generation in verifiable external content</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">RAG retrains the model weights with factual documents at inference time</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">RAG filters out low-confidence tokens before they are appended to the output</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">RAG replaces parametric memory entirely with a searchable database</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RAG retrieves relevant documents and places them in the model's context window. The model generates answers conditioned on this external ground truth rather than relying solely on potentially incorrect parametric memory.</div>
+        <div class="quiz-feedback wrong">RAG works by placing retrieved documents in the model's context. The model then generates conditioned on that external content, which is verifiable and auditable — much more reliable than parametric memory for knowledge-intensive tasks.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. Self-consistency sampling works by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Generating one response and checking it against a factual database</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Generating multiple independent responses and selecting the most frequently occurring answer</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Comparing the model's output to its own training data to detect discrepancies</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Asking the model to re-read its own output and identify errors</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Wang et al. (Google Research, 2022) proposed sampling N independent responses to the same prompt and majority-voting for the answer. Well-encoded facts appear consistently; one-off hallucinations appear rarely and are filtered out.</div>
+        <div class="quiz-feedback wrong">Self-consistency samples multiple independent completions of the same prompt and selects the most frequently occurring answer. The intuition: if the model generates the same fact 8 of 10 times, it is likely a well-encoded training signal, not a hallucination.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. Semantic entropy as a hallucination detection metric measures:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The grammatical complexity of generated text</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The number of tokens used per response relative to prompt length</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">The diversity of meanings across multiple output samples — high diversity indicates likely hallucination</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The ratio of confident statements to hedged statements in a response</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Semantic entropy (Farquhar et al., Oxford 2023) measures semantic diversity across samples. If a model produces semantically varied outputs for the same question, it is uncertain — a reliable indicator of potential hallucination.</div>
+        <div class="quiz-feedback wrong">Semantic entropy measures the spread of meanings across multiple sampled outputs. High entropy means the model generates different meanings each time — signaling uncertainty and likely hallucination. Low entropy signals a well-encoded, reliable fact.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Why is "source hallucination" particularly dangerous?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">It only occurs in domains with limited training data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">The citation format is correct enough that readers may not bother to verify whether the source actually exists</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">It always involves a real source that is misquoted</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">It is undetectable by any current verification method</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Source hallucination produces formally correct citations — real journal name, plausible volume and page numbers — for articles that don't exist or say something different. The professional appearance of the citation discourages verification.</div>
+        <div class="quiz-feedback wrong">Source hallucination is dangerous because the form is correct — real journal, correct formatting, plausible DOI — while the content doesn't exist. Users trust the familiar format and may not check, allowing fabricated authority to propagate.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. Which of the following is NOT an effective standalone solution to hallucination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Retrieval-Augmented Generation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Human-in-the-loop review</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Fine-tuning the model on domain-specific factual documents</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Semantic entropy-based uncertainty flagging</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Fine-tuning adds facts to parametric memory — but parametric memory is still lossy, still subject to conflation, and still produces hallucinations. Fine-tuning changes which false facts appear, not whether hallucination occurs. RAG + human review are more reliable.</div>
+        <div class="quiz-feedback wrong">Fine-tuning alone doesn't eliminate hallucination — it just changes which incorrect content the model might produce. It does not make parametric memory reliable. RAG, semantic entropy flagging, and human review all address the problem more directly.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. The npj Digital Medicine 2023 study on ChatGPT clinical trial summaries found what type of hallucination in approximately 30% of cases?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Intrinsic hallucinations contradicting the provided document</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Extrinsic hallucinations — statistical findings invented and not present in the source document</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Temporal hallucinations placing trials in the wrong year</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Entity hallucinations inventing fictitious patient populations</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The study found extrinsic hallucinations — invented statistical findings not present in the source documents — in approximately 30% of cases. Often these hallucinations inverted the significance of outcomes, a particularly dangerous error in clinical settings.</div>
+        <div class="quiz-feedback wrong">The study found extrinsic hallucinations — the model added statistical findings that weren't in the source documents at all. In approximately 30% of cases the model invented or inverted outcome significance, which could directly mislead clinical decision-making.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. What is the most reliable approach for mitigating hallucination in high-stakes AI deployments, according to post-2023 professional and regulatory guidance?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Using the largest available model, since larger models hallucinate less</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Requiring the model to state its confidence level before every claim</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Layered mitigations: RAG grounding, scope restriction, and human expert review of consequential outputs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Replacing generative models with discriminative classifiers for all high-stakes tasks</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Post-Mata legal guidance, FDA draft guidelines on AI medical tools, and financial regulator guidance all point to the same conclusion: layered mitigations — grounding via RAG, restricting scope to what the system can reliably answer, and routing consequential outputs through human expert review.</div>
+        <div class="quiz-feedback wrong">The consistent recommendation from legal, medical, and financial regulators is layered mitigation: RAG grounding (keep ground truth external), scope restriction (limit what the AI handles), and human-in-the-loop review for consequential outputs. No single layer is sufficient.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">Review Module ↺</button>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m7';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an AI lab assistant for AESOP AI Academy — How Large Language Models Work, Module 7: Hallucination and Confabulation. This is Lab 1, focused on what hallucination actually means mechanically. Key topics: the Mata v. Avianca 2023 case (attorney Steven Schwartz, Judge Castel, $5,000 sanction, six fabricated case citations), the distinction between hallucination and confabulation, why LLMs generate plausible-sounding false content (no lookup mechanism, probability-based generation), intrinsic vs. extrinsic hallucination, and the different types (entity, temporal, relation, source). Be precise, pedagogically clear, and use the Mata case as a concrete anchor. If asked off-topic questions, warmly redirect to the lab subject.',
+  l2:'You are an AI lab assistant for AESOP AI Academy — How Large Language Models Work, Module 7: Hallucination and Confabulation. This is Lab 2, focused on the mechanistic causes of hallucination. Key topics: training data gaps and biases (Google Bard exoplanet error, February 2023, ~$100B market cap loss), exposure bias in autoregressive decoding (errors compound because inference uses own generated tokens), parametric memory loss and conflation (lossy compression of facts in weights), and RLHF fluency bias (human raters prefer confident fluent answers, training away uncertainty signals). Explain mechanisms clearly with concrete examples. Use the Bard error as a case study. Warmly redirect off-topic questions.',
+  l3:'You are an AI lab assistant for AESOP AI Academy — How Large Language Models Work, Module 7: Hallucination and Confabulation. This is Lab 3, focused on domain-specific hallucination risks and real consequences. Key topics: the Air Canada chatbot ruling (BC tribunal 2024, Jake Moffatt, $812.02, "separate legal entity" defense rejected), medical hallucinations (JAMA Internal Medicine 2023 GPT-4 medical exam study, npj Digital Medicine 30% extrinsic hallucination in clinical trial summaries), scientific citation hallucination (Patterns Cell Press 2023, 30-70% fabrication rates), financial hallucinations (EU/UK/US regulatory guidance on verification), and miscalibrated trust. Discuss liability implications, detection difficulty, and why fluent confident wrong output is dangerous. Warmly redirect off-topic questions.',
+  l4:'You are an AI lab assistant for AESOP AI Academy — How Large Language Models Work, Module 7: Hallucination and Confabulation. This is Lab 4, focused on detection and mitigation strategies for hallucination. Key topics: Retrieval-Augmented Generation (RAG — how it works, the Microsoft Bing/Copilot grounding response to early hallucination problems, naive RAG pitfalls), self-consistency sampling (Wang et al. Google Research 2022, majority voting, 10-15% accuracy improvement, limitations with systematic errors), uncertainty quantification and semantic entropy (Oxford 2023, Farquhar et al., diversity of meanings as hallucination signal), human-in-the-loop workflows (post-Mata law firm policies, FDA AI guidance, scope restriction), and the layered mitigation approach. Help students design realistic mitigation architectures for specific scenarios (legal, medical, financial, scientific). Warmly redirect off-topic questions.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Great question about the Mata v. Avianca case. What happened mechanically is that ChatGPT was asked to find supporting legal precedents — a task that requires factual retrieval. But LLMs don't retrieve facts; they generate the most probable continuation of a prompt. 'Find cases that support this argument' primes the model to generate case-like text — names, jurisdictions, dates, holdings — all formatted correctly and sounding authoritative. There was no moment where the model 'checked' whether the cases existed. It just generated plausible-sounding legal citations. What aspect of this would you like to explore further?",
+    "The term 'hallucination' is borrowed from psychology — perceiving something that isn't there. 'Confabulation' is arguably more precise: it comes from neuropsychology, describing patients with memory disorders who fill gaps with internally coherent but externally false content, without any intent to deceive. The model isn't lying. It has no goal of misleading you. It's filling a narrative gap with what comes next probabilistically. This matters for how we fix it — we look for architectural solutions, not moral ones. Does this distinction change how you think about the problem?",
+    "Confidence in LLM output doesn't track factual accuracy — it tracks fluency and probability. The model generates the most probable next token, and probable text tends to be fluent, well-structured, and confident-sounding. A hallucinated case name is indistinguishable in style from a real one. This is why the Mata sanctions are significant: the brief looked professionally researched. What would you like to dig into next — the different types of hallucination, or why the model couldn't just say 'I don't know'?"
+  ],
+  l2:[
+    "The Bard exoplanet error illustrates training data gaps perfectly. JWST genuinely did produce historic first images of many things — deep field images, atmospheric compositions. The training corpus likely had thousands of passages pairing 'JWST' with 'first images of.' Bard over-generalized this pattern to a claim it hadn't been specifically trained on. There was no checking — just the most probable completion given the prompt context. The first actual direct exoplanet image was taken by the ESO in 2004. What aspect of this cause would you like to explore?",
+    "Exposure bias explains how one hallucinated token becomes a fully formed hallucinated case. During training, every prediction is conditioned on the correct preceding tokens — teacher forcing. At inference, the model uses its own previous output. So if 'Varghese' is generated as a plausible party name, the next tokens optimize to follow coherently from that — a plausible defendant, a plausible jurisdiction, a plausible holding. Each step is locally probable. The result is internally consistent fabrication. The snowball effect is real. Want to explore how parametric memory loss compounds this?",
+    "The RLHF fluency bias is subtle but important. Human raters prefer answers that sound complete and confident. 'The policy took effect in March 2019' gets higher ratings than 'I'm not certain, but I believe the policy may have been introduced around 2018 or 2019.' Over thousands of training examples, this gradient trains away uncertainty signals. The model learns that hedging is penalized. So in production, it sounds authoritative even when it's on thin ice. Researchers at Anthropic have noted this explicitly. How does this interact with the other causes we've discussed?"
+  ],
+  l3:[
+    "The Air Canada ruling is landmark because of the liability reasoning. Air Canada argued their chatbot was a 'separate legal entity' — essentially trying to treat the AI as an independent third party that made a mistake on its own. The BC tribunal rejected this entirely: the chatbot is Air Canada's agent, Air Canada deployed it, and Air Canada is responsible for what it says. This reasoning would apply equally to a hospital whose AI tool gives a hallucinated drug interaction, or a bank whose AI system misquotes regulatory requirements. The deployer is liable. What domain would you like to map this onto?",
+    "The medical hallucination data is striking. The npj Digital Medicine study found extrinsic hallucinations — invented statistical findings — in about 30% of clinical trial summaries. Not just wrong emphasis, but actively invented outcome data. The JAMA Internal Medicine study found GPT-4 near passing-level on medical licensing questions, but when it erred, the errors were often dangerous — wrong drug interactions, wrong contraindications. These aren't typos. They're coherent, confident, medically formatted errors. A clinician without time to verify every claim against primary literature is genuinely at risk. What aspect concerns you most?",
+    "Miscalibrated trust is the heart of the problem across all these domains. Our mental model of errors is calibrated to older failure modes — typos, non-sequiturs, obvious nonsense. Hallucinated content in law, medicine, or finance doesn't look like an error. It looks like expertise. A fabricated case citation is formatted like a real citation. An invented p-value is formatted like a real p-value. The professional appearance is the danger. The only reliable defense is verification against primary sources — and that requires knowing you should verify, which requires understanding that hallucination is possible even in fluent, confident output."
+  ],
+  l4:[
+    "For a law firm post-Mata, a layered RAG architecture would work as follows. First, ground the system in a live legal database — Westlaw or Lexis — so case searches retrieve actual cases rather than generating them. Second, constrain the model to only cite cases that appear in the retrieved documents (cite-grounding). Third, implement a verification step that checks every citation against the database before the response is returned. Fourth, require attorney sign-off before any AI-assisted brief is filed. No single layer is sufficient, but together they create multiple checkpoints. What aspect would you like to design further?",
+    "Self-consistency is valuable for factual claims where you can afford multiple API calls. For a legal research tool, you might sample five responses to a factual question — 'When was Griswold v. Connecticut decided?' — and take the majority answer. If four of five say 1965, that's a well-encoded fact. If you get three different years, that's a signal to verify against primary sources. The limitation: if the model has a consistently wrong belief — say, it consistently conflates two similar cases — self-consistency will confidently select the wrong answer. It needs to be combined with RAG, not used instead of it. Want to design the full pipeline?",
+    "Semantic entropy is the most technically rigorous detection approach we have right now. Sample eight or ten responses to the same question. Don't just count how often the same words appear — measure semantic diversity. If responses cluster around the same meaning, the model is confident and likely correct. If responses spread across different meanings, the model is uncertain and likely hallucinating. The Oxford 2023 paper showed this outperforms simple confidence elicitation significantly. The practical challenge is that it requires multiple forward passes and semantic clustering — expensive for real-time applications. But for high-stakes queries, it's worth the cost. What scenario are you designing for?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId];
+  if(!replies) return "I'm here to help with this lab topic. What would you like to explore?";
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx % replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  while(container.firstChild) container.removeChild(container.firstChild);
+  var welcomes={
+    l1:"Welcome to Lab 1. We're looking at what hallucination actually is — why fluent, confident-sounding output can be completely fabricated. The Mata v. Avianca case is a perfect anchor here. Ask me anything about the mechanics, the terminology, or what went wrong in that courtroom.",
+    l2:"Lab 2 is open. We're digging into why hallucination happens at a structural level — training data, exposure bias, parametric memory, and RLHF pressure. What would you like to explore first?",
+    l3:"Lab 3 is ready. We're mapping hallucination risk across high-stakes domains — medicine, law, science, finance — using real cases as anchors. The Air Canada ruling is especially important here. Where would you like to start?",
+    l4:"Lab 4 is open. We're designing hallucination-resistant systems using the full toolkit: RAG, self-consistency, semantic entropy, scope restriction, and human-in-the-loop review. Bring me a scenario — medical, legal, financial, scientific — and we'll build a mitigation architecture together."
+  };
+  addMsg(labId,'ai',welcomes[labId]||'Lab reset. What would you like to explore?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(chatExchanges[labId]===undefined) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinkingEl=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var responseText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an issue generating a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:responseText});
+      if(thinkingEl) thinkingEl.remove();
+      addMsg(labId,'ai',responseText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinkingEl) thinkingEl.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+updateTabs();
+</script>
+
+</body>
+</html>

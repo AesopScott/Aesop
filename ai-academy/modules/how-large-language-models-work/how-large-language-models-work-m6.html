@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>How LLMs Work — M6: Fine-Tuning vs. Prompting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m6 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.comparison-table{width:100%;border-collapse:collapse;margin:1.25rem 0;font-size:0.83rem;}
+.comparison-table th{background:rgba(var(--accent-rgb),0.06);border:1px solid var(--border-dark);padding:0.65rem 0.85rem;text-align:left;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.comparison-table td{border:1px solid var(--border-dark);padding:0.65rem 0.85rem;color:#a89f93;vertical-align:top;line-height:1.65;}
+.comparison-table tr:nth-child(even) td{background:rgba(255,255,255,0.01);}
+.comparison-table td:first-child{color:#c0b8af;font-weight:600;}
+.tag{display:inline-block;font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.15rem 0.45rem;border-radius:3px;margin-right:0.3rem;}
+.tag-prompt{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);}
+.tag-fine{background:rgba(201,160,90,0.1);border:1px solid rgba(201,160,90,0.2);color:var(--gold);}
+.tag-rlhf{background:rgba(79,207,138,0.08);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:1.25rem 0;}
+.decision-card{background:rgba(255,255,255,0.01);border:1px solid var(--border-dark);border-radius:5px;padding:0.85rem 1rem;}
+.decision-card h5{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.5rem;}
+.decision-card.prompt h5{color:var(--accent);}
+.decision-card.fine h5{color:var(--gold);}
+.decision-card ul{list-style:none;padding:0;}
+.decision-card ul li{font-size:0.82rem;color:#6e6861;line-height:1.7;padding-left:1rem;position:relative;}
+.decision-card ul li::before{content:'›';position:absolute;left:0;color:var(--muted);}
+@media(max-width:600px){.decision-grid{grid-template-columns:1fr;}.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════ L1 ═══════════════════════════════════ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 1</div>
+      <h1>What Fine-Tuning Actually Does to a Model</h1>
+      <div class="tagline">Pre-training gives a model the world. Fine-tuning narrows its gaze.</div>
+      <div class="lesson-question">When OpenAI turned GPT-3 into InstructGPT, what exactly changed — and what stayed the same?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context — March 2022">
+        <p class="story-text">When OpenAI published its paper on <em>InstructGPT</em> in early 2022, it revealed something counterintuitive: a model with 1.3 billion parameters that had been fine-tuned on human feedback <em>outperformed</em> the raw 175-billion-parameter GPT-3 on human preference ratings. The difference wasn't intelligence — it was alignment. The fine-tuning process hadn't added knowledge. It had reshaped how the model used the knowledge it already had.</p>
+      </div>
+
+      <div class="section-heading">The Two Phases of a Model's Life</div>
+      <div class="section-body">
+        <p>Every modern LLM passes through at least two distinct training phases. The first is <em>pre-training</em>: the model ingests hundreds of billions of tokens from the web, books, and code, learning statistical patterns in language at an enormous scale. After pre-training, the model is extraordinarily capable — it can complete sentences, write poetry, solve math problems — but it has no consistent persona, no reliable instruction-following, and no particular preference for being helpful over harmful. It simply predicts what text comes next.</p>
+        <p>The second phase is <em>fine-tuning</em>: a targeted, comparatively tiny training run on a curated dataset designed to shift the model's behavior toward a specific goal. Where pre-training might consume 300 billion tokens over weeks on thousands of GPUs, fine-tuning might use 100,000 examples over a few hours. The weight updates are smaller, more surgical, aimed at particular behavioral traits rather than broad language competence.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Pre-training</span>
+        <span class="kt-def">The large-scale, self-supervised training phase where the model learns to predict tokens from massive text corpora. Produces broad world knowledge and language fluency.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Fine-tuning</span>
+        <span class="kt-def">A secondary, supervised training phase on a smaller curated dataset, adjusting the model's weights to produce outputs aligned with a specific style, domain, or behavior.</span>
+      </div>
+
+      <div class="section-heading">What Fine-Tuning Changes</div>
+      <div class="section-body">
+        <p>Fine-tuning modifies the model's weights — the billions of floating-point numbers that encode everything the model knows. However, the changes are not uniformly distributed. Research into fine-tuning dynamics shows that the updates concentrate in layers responsible for task-specific behavior, particularly the later transformer layers and the attention heads that control output style and format. The deep factual knowledge encoded in early and middle layers is largely preserved.</p>
+        <p>Think of it this way: pre-training fills the model's "memory" with the entire contents of a vast library. Fine-tuning doesn't replace those books — it trains the librarian to respond to requests in a particular style, to prioritize certain sections, and to refuse to discuss certain topics. The books remain unchanged.</p>
+        <p>This is why fine-tuned models can sometimes be "jail-broken" by sufficiently crafty prompts: the underlying knowledge from pre-training is still there. Fine-tuning adds a behavioral layer on top of the base representation, but it doesn't surgically remove dangerous knowledge — it trains the model to decline to deploy it.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — InstructGPT (OpenAI, 2022)</div>
+        <p>OpenAI's InstructGPT paper showed that fine-tuning GPT-3 on approximately 13,000 human-labeled instruction-response pairs, followed by reinforcement learning from human feedback (RLHF), produced a model that human raters preferred 85% of the time over the raw 175B parameter GPT-3. The fine-tuned model had identical pre-training weights as its starting point — only the behavioral layer changed.</p>
+      </div>
+
+      <div class="section-heading">Supervised Fine-Tuning (SFT): The First Step</div>
+      <div class="section-body">
+        <p>The most common form of fine-tuning used in production is <em>supervised fine-tuning (SFT)</em>. A dataset of (prompt, ideal response) pairs is assembled — typically through human labelers writing or rating responses. The model is then trained to maximize the probability of producing those ideal responses given those prompts. It is standard supervised learning, applied to a pre-trained base.</p>
+        <p>The size of the SFT dataset matters less than its quality. Meta's LLaMA 2 paper, published in 2023, noted that their instruction-tuned models were trained on fewer than 30,000 SFT examples — but each example was carefully reviewed. Quality control, they found, mattered more than scale: one well-chosen example could be worth thousands of mediocre ones.</p>
+        <p>SFT alone, however, does not guarantee the model will follow nuanced human preferences. It teaches the model to imitate the labeled outputs, but those outputs may not capture the full range of what a human would find helpful, harmless, and honest. This is where RLHF enters — but that's Lesson 3. First, we need to understand what prompting can accomplish before we reach for fine-tuning at all.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Insight</div>
+        <p>Fine-tuning changes behavior without replacing knowledge. A fine-tuned model and its base model share the same foundational representations — the difference is in how those representations are accessed and expressed. This distinction is essential for understanding when fine-tuning is necessary and when a well-designed prompt is sufficient.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ Q1 ═══════════════════════════════════ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">What Fine-Tuning Actually Does to a Model</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">What does fine-tuning modify in a language model?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">It replaces the pre-training data with new domain-specific data</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">It adjusts the model's weights to shift behavior toward a specific goal</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">It adds new neurons to the neural network architecture</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">It compresses the model's knowledge into a smaller parameter space</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Fine-tuning performs additional gradient descent steps on the existing weights, nudging them toward behaviors represented in the fine-tuning dataset. The architecture and pre-trained knowledge base remain intact.</div>
+        <div class="quiz-feedback wrong">Not quite. Fine-tuning does not alter the pre-training data itself — that training is complete. It adjusts the weights derived from pre-training through a new, smaller training run.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">In the InstructGPT experiment, why did a 1.3B fine-tuned model outperform the raw 175B GPT-3?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">The fine-tuned model had more recent training data</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Smaller models are inherently better at instruction-following tasks</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Fine-tuning aligned the model's outputs with human preferences, which raw GPT-3 lacked</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">The 1.3B model was evaluated on a different, easier benchmark</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The 1.3B InstructGPT model was evaluated on human preference ratings, not raw capability benchmarks. Fine-tuning reshaped how the model responded — making it more helpful and consistent — even though it had far fewer parameters.</div>
+        <div class="quiz-feedback wrong">Not quite. The key was behavioral alignment, not dataset recency or model size advantage. Human raters preferred the fine-tuned model's responses because fine-tuning made the model follow instructions reliably and helpfully.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">Which of the following best describes Supervised Fine-Tuning (SFT)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Training a model from scratch on labeled domain data</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Training a pre-trained model on (prompt, ideal response) pairs to imitate desired outputs</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Using a reward model to score outputs and update weights via policy gradients</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Reducing a model's parameter count while preserving its capabilities</button>
+        </div>
+        <div class="quiz-feedback right">Correct. SFT is standard supervised learning applied to a pre-trained base. Human labelers create or curate (prompt, response) pairs, and the model is trained to maximize the probability of those ideal responses.</div>
+        <div class="quiz-feedback wrong">Not quite. The option describing reward models and policy gradients describes RLHF, which is a subsequent step. SFT is the simpler first phase: show the model good examples and have it imitate them.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ LAB1 ═══════════════════════════════════ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — The Fine-Tuning Mechanics Explorer</h1>
+      <div class="tagline">Conversation lab · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>What you're doing</h4>
+        <p>You're talking with an AI assistant that specializes in fine-tuning mechanics. Use this lab to deepen your understanding of what actually happens when a model is fine-tuned. Ask about weight updates, SFT datasets, the difference between pre-training and fine-tuning, or why fine-tuned models can still be "jailbroken."</p>
+        <div class="lab-prompt">Suggested starter: "If fine-tuning only changes some weights, how does the model know which weights to change?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Fine-Tuning Mechanics</span>
+          <div class="chat-badge">LLM Course · M6 L1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to the fine-tuning mechanics lab. I can help you explore what actually changes in a model's weights during fine-tuning, how supervised fine-tuning datasets are constructed, and why the distinction between pre-training knowledge and fine-tuned behavior matters. What would you like to explore?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about fine-tuning mechanics…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ L2 ═══════════════════════════════════ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 2</div>
+      <h1>The Power and Limits of Prompting</h1>
+      <div class="tagline">A well-engineered prompt can unlock remarkable behavior — but it cannot rewrite the model's soul.</div>
+      <div class="lesson-question">GPT-4 and Claude were prompted to perform tasks their creators never explicitly trained — how far does that reach extend?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Chain-of-Thought Discovery — 2022">
+        <p class="story-text">In early 2022, researchers at Google Brain published a paper that stunned the NLP community: by simply adding the phrase <em>"Let's think step by step"</em> to the end of a prompt, they could dramatically improve a model's performance on multi-step reasoning tasks — without any fine-tuning whatsoever. The phenomenon, called <em>chain-of-thought prompting</em>, revealed that enormous capability was already latent in large models, waiting to be unlocked by the right sequence of tokens.</p>
+      </div>
+
+      <div class="section-heading">What Prompting Can Do</div>
+      <div class="section-body">
+        <p>Prompting is the process of crafting the input context given to a model to steer its output without changing any weights. Because transformer models are conditioned on their entire context window, the prompt functions as an implicit specification of task, style, format, persona, and constraints. A skilled prompt engineer can achieve results that look — and often are — equivalent to fine-tuning for many tasks.</p>
+        <p>The key mechanisms through which prompting influences behavior are <em>in-context learning</em> (the model generalizes from examples within the prompt), <em>instruction following</em> (the model has learned to interpret imperative statements as directives), and <em>role conditioning</em> (prefacing a prompt with "You are an expert in X" genuinely shifts the probability distribution over outputs). None of these require weight updates.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">In-Context Learning</span>
+        <span class="kt-def">The model's ability to adapt its behavior based on examples or instructions provided within the prompt, without any gradient updates to its weights.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Few-Shot Prompting</span>
+        <span class="kt-def">Providing 2–10 input/output examples in the prompt to demonstrate the desired format or behavior before presenting the actual query.</span>
+      </div>
+
+      <div class="section-heading">Documented Prompt Engineering Wins</div>
+      <div class="section-body">
+        <p><strong>Chain-of-Thought (Wei et al., Google Brain, 2022):</strong> Adding intermediate reasoning steps to prompts improved GPT-3's performance on the GSM8K math benchmark from roughly 17% to 58% — without any fine-tuning. The same technique applied to PaLM 540B achieved near-human performance on several reasoning benchmarks.</p>
+        <p><strong>Automatic Prompt Engineer (Zhou et al., 2022):</strong> Researchers at Toronto and Google showed that using an LLM to generate and score its own prompts — essentially automating prompt engineering — could discover prompts that outperformed human-written ones on several benchmarks, suggesting the prompt space is far richer than manual exploration reveals.</p>
+        <p><strong>System-Prompt Persona Conditioning:</strong> Anthropic's public documentation on Claude describes how the system prompt is used to condition the model's persona, constraints, and knowledge domain. A single paragraph of system-prompt text can transform Claude into a specialized legal assistant, a creative writing collaborator, or a terse data analyst — behaviors that would previously have required fine-tuned variants.</p>
+      </div>
+
+      <div class="section-heading">The Hard Limits of Prompting</div>
+      <div class="section-body">
+        <p>Prompting's power, however, is bounded by what the model has already learned. If the base model has never encountered a domain — say, a highly specialized medical coding system introduced after its training cutoff — no prompt can conjure accurate knowledge from nothing. Similarly, if the base model has strong priors toward a certain output format or reasoning style, prompting can shift but not fully override those priors.</p>
+        <p>There are also consistency limits. A prompted persona is re-initialized every context window. A fine-tuned model carries its behavioral changes into every interaction by default; a prompted model requires the system prompt to be resent each time. For production systems handling millions of requests, a 500-token system prompt has a real compute cost. Fine-tuning that cost into the weights can be economically significant at scale.</p>
+        <p>Finally, prompting is inherently fragile against adversarial inputs. A user who knows the system prompt structure can craft messages designed to override or ignore it. Fine-tuning behavioral constraints into the weights provides a deeper, more robust layer of alignment — though not an impenetrable one, as jailbreaking research consistently demonstrates.</p>
+      </div>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th><span class="tag tag-prompt">Prompting</span></th>
+            <th><span class="tag tag-fine">Fine-Tuning</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Speed to deploy</td><td>Minutes</td><td>Hours to days</td></tr>
+          <tr><td>Cost</td><td>Inference tokens only</td><td>Training compute + storage</td></tr>
+          <tr><td>Knowledge injection</td><td>Limited to context window</td><td>Can add domain knowledge to weights</td></tr>
+          <tr><td>Behavioral consistency</td><td>Per-request (requires system prompt)</td><td>Persistent across all interactions</td></tr>
+          <tr><td>Adversarial robustness</td><td>Fragile</td><td>More robust (but not impenetrable)</td></tr>
+          <tr><td>Reversibility</td><td>Instant — just change the prompt</td><td>Requires retraining to undo</td></tr>
+          <tr><td>Interpretability</td><td>High — human-readable instructions</td><td>Low — encoded in weight deltas</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <div class="callout-label">The Prompt-First Principle</div>
+        <p>Google's internal guidance, referenced in their 2023 paper on prompt engineering best practices, articulates a "prompt-first" principle: before investing in fine-tuning, exhaust what prompting can accomplish. Fine-tuning should be reserved for cases where prompting demonstrably fails or where the economics of inference tokens at scale make weight-encoded behavior cheaper.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn" onclick="goPage('p-q2')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ Q2 ═══════════════════════════════════ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">The Power and Limits of Prompting</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">What did Wei et al.'s 2022 chain-of-thought study demonstrate about prompting?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Adding reasoning steps to prompts dramatically improved performance on math benchmarks without any fine-tuning</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Chain-of-thought prompting required a specially fine-tuned model to work</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Longer prompts consistently outperform shorter ones on all task types</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">GPT-3 could not benefit from reasoning steps due to its architecture</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The chain-of-thought paper showed that simply including intermediate reasoning steps in the prompt — with no weight changes — could raise GPT-3's GSM8K math score from ~17% to ~58%. Capability was already latent; the prompt unlocked it.</div>
+        <div class="quiz-feedback wrong">Not quite. This is actually the opposite of the finding. Chain-of-thought prompting worked on standard pre-trained models — no fine-tuning required — revealing that behavioral improvements can sometimes come entirely from prompt design.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">Which scenario represents a hard limit of prompting that fine-tuning can address?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Getting the model to adopt a particular writing style</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Asking the model to reason step-by-step through a logic puzzle</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Injecting accurate knowledge about a proprietary internal system the model has never seen</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Conditioning the model to respond as a specific persona</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Prompting can only activate knowledge already in the model's weights. If the model has never been exposed to a piece of information — a proprietary codebase, a post-training-cutoff product — no prompt can manufacture accurate knowledge. Fine-tuning can encode it.</div>
+        <div class="quiz-feedback wrong">Not quite. Writing style, step-by-step reasoning, and persona conditioning are all achievable through prompting alone. The genuine limit of prompting is knowledge injection — you cannot prompt a model into knowing facts it was never trained on.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">At production scale, what is one economic argument for fine-tuning over long system prompts?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Fine-tuned models require fewer parameters and thus cost less to run</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Encoding behavior in weights eliminates the inference cost of resending a large system prompt with every request</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Fine-tuning prevents users from seeing the model's behavioral instructions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">System prompts are limited to 100 tokens and cannot capture complex behavior</button>
+        </div>
+        <div class="quiz-feedback right">Correct. At millions of requests per day, a 500-token system prompt adds significant token processing cost. If that behavioral context can instead be baked into the weights via fine-tuning, each inference call is cheaper — potentially by a substantial margin at scale.</div>
+        <div class="quiz-feedback wrong">Not quite. Fine-tuned models don't necessarily have fewer parameters. The economic argument is about inference token cost: resending a large system prompt millions of times is expensive, while weight-encoded behavior has no per-request overhead.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ LAB2 ═══════════════════════════════════ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Prompt Engineering Workshop</h1>
+      <div class="tagline">Conversation lab · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>What you're doing</h4>
+        <p>This lab is a prompt engineering sandbox. The AI assistant will help you explore what prompting can and cannot accomplish — including chain-of-thought techniques, few-shot examples, role conditioning, and the boundaries where prompting fails. Try pushing the limits.</p>
+        <div class="lab-prompt">Suggested starter: "Show me how few-shot prompting works by helping me design a prompt that teaches a model to classify customer feedback as positive, negative, or neutral."</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Prompt Engineering Workshop</span>
+          <div class="chat-badge">LLM Course · M6 L2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to the prompt engineering workshop. We can explore chain-of-thought prompting, few-shot examples, role conditioning, instruction design, and the genuine limits of what prompting can accomplish without fine-tuning. What aspect would you like to dig into?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about prompt engineering techniques…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ L3 ═══════════════════════════════════ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 3</div>
+      <h1>RLHF: Teaching Models What Humans Actually Want</h1>
+      <div class="tagline">Supervised fine-tuning teaches imitation. RLHF teaches preference.</div>
+      <div class="lesson-question">Why did OpenAI, Anthropic, and DeepMind all converge on reinforcement learning from human feedback as the path to aligned AI assistants?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Alignment Gap — 2021">
+        <p class="story-text">By mid-2021, it was clear to researchers at OpenAI that GPT-3, despite its raw capability, exhibited a fundamental problem: it was optimized to <em>predict human text</em>, not to be <em>helpful to humans</em>. When asked to write an essay arguing for a dangerous position, it would comply — because such essays exist in its training data. The model had learned to imitate humanity's writing; it had not learned to care about being useful, truthful, or safe. Supervised fine-tuning on good examples helped, but it couldn't capture the full richness of what humans actually preferred — because preference is comparative, contextual, and difficult to express as a single "ideal" output.</p>
+      </div>
+
+      <div class="section-heading">Why Supervised Fine-Tuning Isn't Enough</div>
+      <div class="section-body">
+        <p>The core limitation of SFT is that it requires labelers to produce the ideal output — but for many tasks, it's far easier for a human to <em>judge</em> which of two outputs is better than to <em>write</em> the ideal output from scratch. A medical professional can reliably say "Response A is more accurate and cautious than Response B" without being able to dictate the perfect response themselves. SFT squanders this comparative judgment signal.</p>
+        <p>There is also a distribution problem. SFT trains the model on a fixed set of examples, but the distribution of prompts it will actually receive in deployment may differ substantially from the training distribution. RLHF, by using a reward model that generalizes human preferences, can guide the model toward good behavior on unseen prompts as well.</p>
+      </div>
+
+      <div class="section-heading">How RLHF Works: The Three Phases</div>
+      <div class="section-body">
+        <p><strong>Phase 1 — Supervised Fine-Tuning:</strong> As described in Lesson 1, an SFT model is trained on a set of human-written (prompt, response) pairs. This gives the model a reasonable starting behavioral baseline.</p>
+        <p><strong>Phase 2 — Reward Model Training:</strong> Human labelers are shown multiple model responses to the same prompt and asked to rank them by quality. These preference rankings are used to train a separate model — the <em>reward model</em> — that learns to predict how much a human would prefer any given response. The reward model is essentially a compressed representation of human judgment.</p>
+        <p><strong>Phase 3 — Reinforcement Learning Optimization:</strong> The SFT model is then treated as a policy and updated using PPO (Proximal Policy Optimization), a reinforcement learning algorithm. For each prompt, the model generates a response; the reward model scores it; the RL algorithm updates the model's weights to increase the probability of responses the reward model predicts humans will prefer. A KL divergence penalty is added to prevent the model from drifting too far from the original SFT model (which would cause "reward hacking" — finding responses that fool the reward model without being genuinely good).</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Reward Model</span>
+        <span class="kt-def">A separate neural network trained on human preference rankings to predict how desirable a given model response is. Used as a proxy for human judgment during RL training.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">KL Penalty</span>
+        <span class="kt-def">A regularization term added to the RL objective that penalizes the policy model for diverging too far from the SFT reference policy, preventing reward hacking and preserving general language capability.</span>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — Anthropic's Constitutional AI (2022)</div>
+        <p>Anthropic proposed a variant called Constitutional AI (CAI), published in December 2022. Rather than relying solely on human labelers for preference rankings, CAI uses the model itself to critique its own responses according to a written "constitution" of principles (e.g., "Be helpful, harmless, and honest"). The model generates responses, critiques them, revises them, and these revised responses become training data — a process called RLAIF (Reinforcement Learning from AI Feedback). This approach reduced the need for human labeling at scale while improving safety behavior, and was used in training Claude.</p>
+      </div>
+
+      <div class="section-heading">The Alignment Tax and Its Cost</div>
+      <div class="section-body">
+        <p>RLHF is not free. Research from OpenAI's InstructGPT paper and subsequent work has documented an <em>alignment tax</em>: RLHF-trained models sometimes perform slightly worse on certain raw capability benchmarks compared to the base SFT model, even while performing better on human preference ratings. The model is optimized to produce responses humans like — and humans don't always prefer the most technically accurate answer; they often prefer fluent, confident-sounding responses.</p>
+        <p>This tension — between optimizing for what humans prefer and optimizing for what is actually correct — is one of the central unsolved problems in AI alignment. It surfaces in documented cases: GPT-4 and Claude sometimes produce confidently stated incorrect information that "sounds right" to human raters, a failure mode amplified by the very RLHF process designed to make them better. The Goodhart's Law problem — when the proxy measure becomes the target, it ceases to be a good proxy — applies directly.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The RLHF Insight</div>
+        <p>RLHF works because human preferences are easier to elicit as comparisons than as specifications. It's harder to write a perfect answer than to recognize one. The reward model learns to encode that recognition ability, and RL uses it to steer the policy. The result is a model that acts as if it understands what humans want — whether or not it actually does.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn" onclick="goPage('p-q3')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ Q3 ═══════════════════════════════════ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">RLHF: Teaching Models What Humans Actually Want</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">What is the primary purpose of the reward model in RLHF?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">To generate training responses that the policy model imitates</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">To serve as a proxy for human judgment, predicting how preferable a given response is</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">To filter harmful content from the pre-training dataset</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">To compress the policy model's parameters while preserving capability</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The reward model is trained on human preference rankings and then used as a differentiable proxy for human judgment. During RL training, it scores the policy model's outputs, providing the signal needed to update the policy without asking a human to evaluate every single response.</div>
+        <div class="quiz-feedback wrong">Not quite. That description is closer to SFT. The reward model's role is to learn to predict human preferences from comparative rankings, then act as an automated judge during RL optimization — replacing the need for humans to evaluate every generated response.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">Why is a KL divergence penalty used during the RL phase of RLHF?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">To increase the diversity of responses the model generates</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">To make the model prefer shorter, more concise answers</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">To prevent the model from drifting too far from the SFT policy and reward-hacking</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">To slow down the learning rate and prevent overfitting to the reward model</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Without a KL penalty, RL optimization can exploit weaknesses in the reward model — finding outputs that score high on the reward model's metrics without being genuinely good. The KL penalty constrains the policy to stay near the SFT reference, preventing this degenerate optimization.</div>
+        <div class="quiz-feedback wrong">Not quite. The KL penalty is specifically about preventing reward hacking — the policy exploiting gaps in the reward model to score high without genuinely improving. By penalizing large deviations from the SFT policy, it keeps the model grounded in real language capability.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">What distinguishes Anthropic's Constitutional AI (CAI) from standard RLHF?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">CAI uses a larger human labeling team to generate more preference rankings</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">CAI skips the reinforcement learning phase entirely</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">CAI uses the model itself to critique and revise responses based on written principles, reducing dependence on human labelers</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">CAI trains the reward model using mathematical proofs rather than human preferences</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Constitutional AI (RLAIF) has the model critique its own outputs against a written constitution of principles, then revise them. These self-critiqued revisions become training data. This substantially reduces the human labeling burden while still producing alignment-relevant training signal.</div>
+        <div class="quiz-feedback wrong">Not quite. The key innovation in CAI is using the model's own judgments (guided by a constitution) in place of extensive human labeling. This is called RLAIF — Reinforcement Learning from AI Feedback — and it's distinct from standard RLHF's reliance on human rankers at every step.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ LAB3 ═══════════════════════════════════ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — RLHF Deep Dive</h1>
+      <div class="tagline">Conversation lab · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>What you're doing</h4>
+        <p>Explore RLHF mechanics in depth: the reward model training process, how human preference rankings become a training signal, the alignment tax, reward hacking, and how Constitutional AI differs from standard RLHF. Challenge the AI with hard questions about the tradeoffs.</p>
+        <div class="lab-prompt">Suggested starter: "Explain what reward hacking actually looks like in practice — what kinds of responses would a model learn to generate if it figured out how to fool the reward model?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>RLHF Deep Dive</span>
+          <div class="chat-badge">LLM Course · M6 L3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to the RLHF deep dive. I can walk you through reward model training, preference ranking collection, the PPO optimization loop, reward hacking, the alignment tax, and the CAI approach. What would you like to explore?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about RLHF mechanics…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ L4 ═══════════════════════════════════ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 4</div>
+      <h1>When to Fine-Tune vs. When to Prompt: The Decision Framework</h1>
+      <div class="tagline">The most expensive tool is not always the best one. The right choice depends on what you're actually trying to change.</div>
+      <div class="lesson-question">How did Google, OpenAI, and enterprise teams learn — sometimes expensively — when fine-tuning is overkill?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Wasted GPU Hours">
+        <p class="story-text">In 2023, as fine-tuning APIs became widely available, a pattern emerged among AI practitioners: teams would spend weeks and thousands of dollars fine-tuning a model on domain-specific data, only to discover that a carefully engineered prompt on the base model performed equivalently or better. The reverse also happened — teams would burn through token budgets constructing elaborate system prompts, not realizing their problem was a knowledge gap that only fine-tuning could close. The industry needed a decision framework. Several emerged; they largely converged.</p>
+      </div>
+
+      <div class="section-heading">The Four-Question Decision Tree</div>
+      <div class="section-body">
+        <p>Practitioners at Google, Anthropic, and OpenAI have articulated variants of the same core decision logic. The questions to ask, in order:</p>
+        <p><strong>1. Is the required behavior achievable through prompting alone?</strong> Before any fine-tuning consideration, attempt the task with best-effort prompt engineering — few-shot examples, chain-of-thought, role conditioning, explicit format instructions. If prompting achieves acceptable performance, stop here.</p>
+        <p><strong>2. Is the gap a style/format problem or a knowledge problem?</strong> Style problems (tone, verbosity, format conventions, persona consistency) are almost always better solved with fine-tuning than prompting, because they require persistent behavioral modification. Knowledge problems (facts the model doesn't know) require fine-tuning or retrieval-augmented generation (RAG) — prompting cannot inject knowledge the model was never trained on.</p>
+        <p><strong>3. What is the inference volume, and what are the economics?</strong> At low volume (thousands of requests/day), a long system prompt is economically fine. At high volume (millions of requests/day), token overhead from system prompts becomes significant. Fine-tuning that behavior into the weights can be cheaper over the model's lifetime.</p>
+        <p><strong>4. How frequently will the required behavior change?</strong> Prompting is instantly reversible — update the text and the behavior changes. Fine-tuning requires retraining, quality evaluation, and deployment. If the task definition changes weekly, fine-tuning is expensive to maintain. If the behavior is stable, fine-tuning amortizes well.</p>
+      </div>
+
+      <div class="decision-grid">
+        <div class="decision-card prompt">
+          <h5>Use Prompting When…</h5>
+          <ul>
+            <li>The behavior is achievable with good prompt design</li>
+            <li>You need rapid iteration and reversibility</li>
+            <li>The task definition changes frequently</li>
+            <li>Inference volume is low to moderate</li>
+            <li>You need transparent, auditable instructions</li>
+            <li>Prototype or early-stage product</li>
+          </ul>
+        </div>
+        <div class="decision-card fine">
+          <h5>Use Fine-Tuning When…</h5>
+          <ul>
+            <li>The model needs knowledge it doesn't have</li>
+            <li>Consistent style/format at scale is required</li>
+            <li>Inference token cost is prohibitive</li>
+            <li>Adversarial robustness matters</li>
+            <li>Behavior is stable and well-defined</li>
+            <li>Prompting consistently underperforms</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section-heading">Parameter-Efficient Fine-Tuning: LoRA</div>
+      <div class="section-body">
+        <p>A practical objection to fine-tuning has always been cost: updating all of a 70-billion-parameter model's weights is computationally expensive and requires storing a full separate copy of the model for each task. <em>LoRA (Low-Rank Adaptation)</em>, introduced by Hu et al. at Microsoft in 2021, elegantly sidesteps this. Instead of updating all weights, LoRA adds small low-rank matrices alongside the original weight matrices and trains only those — representing the fine-tuning "delta" as the product of two small matrices.</p>
+        <p>The result: a 70B model can be fine-tuned for a specific task by training only tens of millions of parameters instead of 70 billion, reducing compute and storage requirements by orders of magnitude. The LoRA adapter (a few hundred megabytes) can be swapped in at inference time, while the base model weights remain frozen on GPU. Multiple LoRA adapters can be maintained for different tasks, each loadable on demand.</p>
+        <p>LoRA has become the dominant fine-tuning method for open-source models. Meta's LLaMA fine-tuning ecosystem, Hugging Face's PEFT library, and essentially every practical fine-tuning tutorial released since 2022 uses LoRA or a variant. It lowered the cost of fine-tuning from "requires a cloud GPU cluster" to "achievable on a single consumer GPU for smaller models."</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">LoRA</span>
+        <span class="kt-def">Low-Rank Adaptation — a parameter-efficient fine-tuning method that adds small trainable low-rank matrices to frozen model weights, representing behavioral changes with a fraction of the parameters of full fine-tuning.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">RAG (Retrieval-Augmented Generation)</span>
+        <span class="kt-def">A technique that retrieves relevant documents from an external knowledge base at inference time and includes them in the prompt, injecting knowledge without any fine-tuning. An alternative to fine-tuning for knowledge problems.</span>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — OpenAI Fine-Tuning API Findings (2023)</div>
+        <p>When OpenAI opened fine-tuning access for GPT-3.5-turbo in August 2023, they published guidance noting that most customers who attempted fine-tuning discovered they could achieve equivalent results with improved prompt engineering. They recommended the workflow: try prompt engineering first, then few-shot examples, then fine-tuning only when those fail. Their internal benchmark showed fine-tuning improved performance meaningfully only when the task required either style consistency or domain knowledge not in the base model.</p>
+      </div>
+
+      <div class="section-heading">The Emerging Hybrid: Prompted Fine-Tuned Models</div>
+      <div class="section-body">
+        <p>In practice, the most capable production deployments combine both approaches. A model is fine-tuned for broad behavioral alignment (via RLHF) and domain specialization (via SFT or LoRA), then further conditioned at inference time with a system prompt that specifies task-specific behavior, user context, and constraints. The fine-tuning provides the stable behavioral foundation; the prompt provides the dynamic, per-deployment specialization. Neither approach alone captures everything the combination achieves.</p>
+        <p>Understanding where fine-tuning ends and prompting begins — and why both exist — gives practitioners the conceptual vocabulary to make better architectural decisions, evaluate vendor claims more critically, and understand why the same underlying model can behave so differently across deployments.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Module Summary</div>
+        <p>Fine-tuning reshapes a model's behavioral layer without replacing its knowledge base. Prompting activates latent capabilities without touching weights. RLHF encodes human preferences through a learned reward signal. LoRA makes fine-tuning economically tractable. RAG solves knowledge gaps without retraining. The practitioner's art is knowing which tool the problem actually calls for — and having the evidence to defend that choice.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn" onclick="goPage('p-q4')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ Q4 ═══════════════════════════════════ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">When to Fine-Tune vs. When to Prompt</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">A startup needs their AI assistant to match a very specific brand voice across millions of customer interactions daily. Which approach is most justified?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Prompting only — brand voice can always be captured in a system prompt</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Fine-tuning — high volume makes token overhead costly, and consistent style benefits from weight-encoded behavior</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">RAG — retrieve brand voice guidelines at inference time</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Train a new model from scratch on brand-specific data</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Two factors justify fine-tuning here: (1) at millions of requests/day, a large system-prompt token overhead is expensive, and (2) style/format consistency is a behavioral problem that fine-tuning handles well. LoRA makes this economically tractable without a full retraining run.</div>
+        <div class="quiz-feedback wrong">Not quite. Consider both the economic argument (millions of daily requests × system prompt tokens = significant cost) and the nature of the problem. Style consistency is exactly the kind of stable, high-volume behavioral requirement that justifies fine-tuning over prompting.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">What key advantage does LoRA offer over full fine-tuning?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">LoRA produces better-aligned models because it uses reinforcement learning</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">LoRA eliminates the need for any training data by using zero-shot adaptation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">LoRA trains only small low-rank matrices rather than all model weights, dramatically reducing compute and storage requirements</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">LoRA allows fine-tuning without any GPU hardware</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LoRA decomposes weight updates into the product of two small matrices, meaning only tens of millions of parameters need to be trained and stored instead of the full model. The base model weights stay frozen, and the adapter can be swapped in at inference time.</div>
+        <div class="quiz-feedback wrong">Not quite. LoRA still requires training data and GPU hardware — it just requires far less of both. The innovation is representing fine-tuning deltas as low-rank matrix products, making the trainable parameter count a tiny fraction of the full model size.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">A team needs their model to answer questions about a constantly-updated internal knowledge base that changes daily. What is the most appropriate solution?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Fine-tune the model daily on the latest knowledge base contents</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Use Retrieval-Augmented Generation (RAG) — retrieve relevant documents at inference time</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Use a very long system prompt containing the entire knowledge base</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Accept that no AI system can handle dynamic knowledge bases</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When knowledge changes frequently, fine-tuning is impractical — it cannot be retrained daily at reasonable cost or latency. RAG retrieves the current version of relevant documents at inference time, injecting up-to-date knowledge into the prompt without any retraining.</div>
+        <div class="quiz-feedback wrong">Not quite. Daily fine-tuning is prohibitively expensive and slow. When knowledge is dynamic and changes frequently, RAG is the correct architectural choice — it retrieves current documents at inference time rather than baking knowledge into weights that immediately become stale.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ LAB4 ═══════════════════════════════════ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Fine-Tune vs. Prompt Decision Advisor</h1>
+      <div class="tagline">Conversation lab · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>What you're doing</h4>
+        <p>Bring your own use cases to this lab. Describe a task or product scenario, and the AI will help you work through the decision framework: should you fine-tune, prompt engineer, use RAG, or combine approaches? The advisor will ask clarifying questions and explain the reasoning behind each recommendation.</p>
+        <div class="lab-prompt">Suggested starter: "I'm building a customer service bot for a software company. It needs to know our specific product documentation and respond in our brand's casual-but-professional tone. Should I fine-tune or prompt?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>Fine-Tune vs. Prompt Advisor</span>
+          <div class="chat-badge">LLM Course · M6 L4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to the decision advisor lab. Describe your use case — what the model needs to do, at what scale, with what kind of knowledge requirements — and I'll help you work through whether prompting, fine-tuning, LoRA, RAG, or some combination is the right architectural choice. What are you building?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Describe your use case…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ MODULE TEST ═══════════════════════════════════ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 6 Test</h1>
+      <div class="tagline">Fine-Tuning vs. Prompting · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. Fine-tuning a language model modifies which component?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">The model's weights</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The model's tokenizer vocabulary</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The model's context window length</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The model's pre-training corpus</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Fine-tuning performs additional gradient descent on the existing weights, adjusting them toward behaviors demonstrated in the fine-tuning dataset.</div>
+        <div class="quiz-feedback wrong">Incorrect. Fine-tuning adjusts the model's weights — the learned parameters — through additional training steps on a curated dataset.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. What was the central finding of OpenAI's InstructGPT paper regarding model size and alignment?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Larger models are always preferred by human raters regardless of fine-tuning</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">A small fine-tuned model (1.3B) was preferred by humans over the raw 175B GPT-3</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Fine-tuning always reduces a model's performance on standard benchmarks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Human raters cannot reliably distinguish between fine-tuned and base models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Human raters preferred the 1.3B InstructGPT model 85% of the time over raw GPT-3, demonstrating that behavioral alignment via fine-tuning could outweigh raw parameter count.</div>
+        <div class="quiz-feedback wrong">Incorrect. The key finding was that fine-tuned behavioral alignment trumped raw size: the 1.3B model was preferred over the 175B base model in human evaluations.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. In Supervised Fine-Tuning, what form does the training data take?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Unlabeled text for self-supervised next-token prediction</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Pairs of model outputs ranked by human preference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Pairs of (prompt, ideal response) demonstrating desired behavior</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Reward scores assigned to individual model outputs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. SFT trains on (prompt, ideal response) pairs — the model learns to maximize the probability of producing those demonstrated responses given the prompts.</div>
+        <div class="quiz-feedback wrong">Incorrect. SFT uses demonstration data: (prompt, ideal response) pairs where a human has written or curated the desired output. Ranking pairs are used for reward model training in RLHF.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Chain-of-thought prompting primarily works by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Fine-tuning the model on reasoning examples</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Including intermediate reasoning steps in the prompt to unlock latent reasoning capabilities</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Increasing the model's temperature to encourage exploratory thinking</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Retrieving relevant reasoning examples from a knowledge base</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Wei et al.'s 2022 paper showed that adding "Let's think step by step" or explicit reasoning chains to prompts dramatically improved performance — without any weight changes — by conditioning the model to produce intermediate reasoning before the final answer.</div>
+        <div class="quiz-feedback wrong">Incorrect. Chain-of-thought prompting requires no fine-tuning. It works by including reasoning steps in the prompt context, which conditions the model to generate its own intermediate steps before answering.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. Which of the following is a genuine hard limit of prompting that fine-tuning can address?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Getting the model to adopt a specific tone of voice</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Asking the model to format outputs as JSON</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Injecting accurate knowledge about a proprietary system never seen during pre-training</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Making the model respond in a specific language</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tone, format, and language are achievable through prompting. But if the model was never trained on a piece of knowledge, no prompt can manufacture it. Fine-tuning (or RAG) is required to address this knowledge gap.</div>
+        <div class="quiz-feedback wrong">Incorrect. The true knowledge gap — information the model was never trained on — is the genuine limit of prompting. Style and format problems are well within prompting's reach.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. In RLHF, what is the reward model trained to do?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Generate ideal responses to serve as SFT training data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Predict how preferable a given model response is, based on human preference rankings</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Score responses for factual accuracy against a verified knowledge base</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Compress the policy model's weights to reduce inference latency</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The reward model learns from human preference rankings (which of two responses is better) and then serves as an automated proxy for human judgment during RL training.</div>
+        <div class="quiz-feedback wrong">Incorrect. The reward model is trained on human preference rankings and learns to predict human preference scores — not factual accuracy scores or generation quality from some absolute standard.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. What is "reward hacking" in the context of RLHF?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Human labelers giving inflated preference scores to manipulate the reward model</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">The policy model finding outputs that score highly on the reward model without being genuinely better</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Unauthorized access to the reward model's weights by external researchers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The reward model overriding the KL penalty during training</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Reward hacking is Goodhart's Law in action: the policy model optimizes for the reward model's score rather than genuine quality, finding responses that satisfy the proxy metric without actually being better. This is why the KL penalty is needed.</div>
+        <div class="quiz-feedback wrong">Incorrect. Reward hacking refers to the policy model exploiting weaknesses in the reward model — finding responses that score high on the learned proxy without being genuinely better responses.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. Anthropic's Constitutional AI (CAI) reduces dependence on human labelers by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Using mathematical proofs to verify response quality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Having the model critique and revise its own outputs according to a written constitution of principles</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Crowdsourcing preference rankings from a public annotation platform</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Skipping reinforcement learning and using only supervised fine-tuning</button>
+        </div>
+        <div class="quiz-feedback right">Correct. CAI uses RLAIF — the model evaluates its own outputs against a written constitution, revises them, and those revisions become training data. This generates alignment signal without requiring humans to rank every response pair.</div>
+        <div class="quiz-feedback wrong">Incorrect. CAI's innovation is self-critique: the model assesses its own outputs against a written constitution and revises them. These AI-generated preference labels replace much of the human labeling burden.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. What is the "alignment tax" in RLHF-trained models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The financial cost of hiring human preference labelers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The increased latency caused by running the reward model at inference time</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">A slight decrease in raw capability benchmark performance that accompanies improved human preference ratings</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The computational overhead of the KL divergence penalty during training</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RLHF optimizes for human preference, not raw capability. Since humans sometimes prefer confident-sounding answers over technically optimal ones, RLHF models can score lower on capability benchmarks even as human raters prefer them.</div>
+        <div class="quiz-feedback wrong">Incorrect. The alignment tax describes the performance tradeoff: RLHF improves human preference ratings but can slightly reduce scores on raw capability benchmarks, because optimizing for human preference is not identical to optimizing for technical correctness.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. LoRA (Low-Rank Adaptation) achieves parameter efficiency by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Pruning unimportant weights from the base model before training</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Adding small trainable low-rank matrices alongside frozen base model weights to represent behavioral changes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Quantizing model weights to lower precision during fine-tuning</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Sharing parameters across multiple task-specific fine-tuned models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LoRA keeps the base model weights frozen and adds small low-rank matrices (A and B, where the update is AB) to selected weight matrices. Only A and B are trained, representing the fine-tuning delta with far fewer parameters.</div>
+        <div class="quiz-feedback wrong">Incorrect. LoRA doesn't prune or quantize — it adds small low-rank matrices alongside the frozen base weights and trains only those. The result is a compact adapter that can be swapped in at inference time.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. When should Retrieval-Augmented Generation (RAG) be preferred over fine-tuning for knowledge-intensive tasks?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">When the knowledge base is small and stable</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">When the knowledge base is large, dynamic, or changes frequently</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">When inference latency must be minimized</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">When the model needs to demonstrate a specific writing style</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RAG is ideal for dynamic knowledge bases because it retrieves current documents at inference time — no retraining required. Fine-tuning knowledge into weights makes it stale the moment the knowledge base updates.</div>
+        <div class="quiz-feedback wrong">Incorrect. RAG shines when knowledge is dynamic and changes frequently — daily, weekly — because it avoids the need to retrain. Fine-tuning is better suited to stable knowledge that won't change.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Which factor most justifies using a long system prompt (prompting) over fine-tuning for a new AI product?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">The product is in early development and the required behavior changes frequently</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The product will handle 50 million requests per day</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The task requires specialized knowledge not in the base model</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The behavior must be robust against adversarial prompt injection</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Rapid iteration during early development is one of prompting's strongest advantages — change the text and the behavior changes instantly, with no retraining cycle. Fine-tuning is harder to justify when requirements are unstable.</div>
+        <div class="quiz-feedback wrong">Incorrect. High volume, specialized knowledge, and adversarial robustness all favor fine-tuning. Prompting's strongest advantage is speed of iteration — ideal for early-stage products where requirements are still evolving.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. Meta's LLaMA 2 paper found that for SFT quality vs. quantity, which mattered more?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Quantity — more examples always led to better fine-tuning outcomes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Quality — carefully reviewed examples outperformed far larger quantities of mediocre data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Neither — SFT dataset size had no measurable effect on aligned model quality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Balance — equal parts quality and quantity were required for optimal results</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LLaMA 2's instruction-tuned models used fewer than 30,000 carefully vetted SFT examples. The team found that one high-quality, rigorously reviewed example could be worth thousands of mediocre ones.</div>
+        <div class="quiz-feedback wrong">Incorrect. Meta's LLaMA 2 paper specifically highlighted that quality controlled, carefully reviewed SFT examples produced better results than larger quantities of lower-quality data — a finding consistent across multiple fine-tuning research programs.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. The KL divergence penalty in RLHF training serves to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Increase the entropy of the model's output distribution for more diverse responses</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Prevent the RL-optimized policy from drifting too far from the SFT reference model</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Ensure the reward model generalizes to unseen prompt distributions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Reduce the computational cost of the PPO update step</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The KL penalty measures how much the current policy has diverged from the SFT starting point and adds a cost for large divergence. This keeps the model grounded in real language capability and prevents it from gaming the reward model with degenerate outputs.</div>
+        <div class="quiz-feedback wrong">Incorrect. The KL penalty's purpose is to constrain the policy from diverging too far from the SFT reference — preventing reward hacking while allowing genuine improvement in human-preferred behaviors.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. In a hybrid deployment architecture, what role does prompting typically play when the base model has already been fine-tuned?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Prompting is no longer needed once a model is fine-tuned</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Prompting overrides the fine-tuned behavioral changes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Prompting provides per-deployment, dynamic task specialization on top of the stable fine-tuned behavioral foundation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Prompting is used only for safety filtering after fine-tuned model outputs are generated</button>
+        </div>
+        <div class="quiz-feedback right">Correct. In practice, the best systems layer both: fine-tuning provides stable, efficient behavioral alignment baked into the weights, while system prompts provide deployment-specific context, persona, and constraints that vary per application.</div>
+        <div class="quiz-feedback wrong">Incorrect. Fine-tuning and prompting are complementary. Fine-tuning provides the stable behavioral foundation; system prompts provide the flexible, per-deployment specialization that changes across use cases — neither replaces the other.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">↺ Review Module</button>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m6';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed. Well done.':' — Review the lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — How Large Language Models Work, Module 6: Fine-Tuning vs. Prompting. Stay strictly on course topics. Warmly redirect off-topic questions.\n\n';
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are an expert AI teaching assistant specializing in fine-tuning mechanics for large language models. Help students understand: how fine-tuning differs from pre-training, what weight updates look like and which layers are most affected, why fine-tuned models still retain pre-training knowledge, the structure of supervised fine-tuning (SFT) datasets, why quality matters more than quantity in SFT data (as shown in LLaMA 2), and why fine-tuned models can still be jailbroken. Reference real examples like InstructGPT. Be precise and technically grounded. Keep responses focused and under 200 words.',
+
+  l2: 'You are an expert prompt engineering instructor. Help students understand: chain-of-thought prompting (Wei et al. 2022), few-shot and zero-shot prompting, role conditioning, in-context learning, the Automatic Prompt Engineer paper, and the genuine hard limits of prompting. Be practical — give concrete examples of prompts when useful. Explain when prompting is sufficient versus when fine-tuning is needed. Keep responses focused and under 200 words. Reference real techniques and documented cases.',
+
+  l3: 'You are an expert in RLHF (Reinforcement Learning from Human Feedback) and AI alignment. Help students understand: why SFT alone is insufficient for capturing human preferences, the three phases of RLHF (SFT, reward model training, RL optimization), how human preference rankings become training signal, what reward hacking looks like in practice, why the KL penalty is necessary, the alignment tax, and Constitutional AI (RLAIF) as used by Anthropic for Claude. Be technically precise. Keep responses under 200 words.',
+
+  l4: 'You are an AI architecture advisor who helps teams decide between prompting, fine-tuning, LoRA, and RAG. When a student describes a use case, ask clarifying questions about: scale (requests per day), knowledge requirements (stable vs. dynamic), whether the behavior is style/format or knowledge-based, how frequently requirements change, and budget constraints. Then make a reasoned recommendation. Reference real examples like the OpenAI fine-tuning API guidance. Keep responses practical, focused, and under 200 words.'
+};
+
+var _fallbacks={
+  l1:[
+    "Great question about fine-tuning mechanics. When gradient descent runs during fine-tuning, it updates weights across the model, but research shows later transformer layers — particularly attention heads controlling output style — change more than early layers encoding factual knowledge. The pre-training knowledge remains largely intact; you're adjusting how it's accessed and expressed.",
+    "On SFT dataset quality: Meta's LLaMA 2 team found that fewer than 30,000 carefully reviewed examples produced better instruction-following than much larger noisy datasets. The key is that each example must clearly demonstrate the desired behavior — ambiguous or contradictory examples actively hurt training.",
+    "Regarding why fine-tuned models can still be jailbroken: fine-tuning adds a behavioral layer on top of the pre-training representations, but it doesn't surgically remove knowledge. It trains the model to decline to use certain knowledge. Adversarial prompts that bypass the behavioral layer can still access the underlying representations — which is why jailbreaking research remains an active field."
+  ],
+  l2:[
+    "Chain-of-thought prompting works by conditioning the model to produce intermediate reasoning steps before the final answer. Because the model is trained on human text that includes step-by-step reasoning, including such steps in the prompt shifts the output distribution toward more reasoned responses. Wei et al. found this raised GPT-3's math performance from ~17% to ~58% on GSM8K — with no weight changes.",
+    "For few-shot prompting, the structure matters: lead with 2-5 diverse, high-quality input/output examples that clearly demonstrate the format and reasoning you want. The examples should cover edge cases if possible. The model generalizes from the pattern you demonstrate rather than memorizing the specific examples.",
+    "The genuine limits of prompting: you cannot prompt a model into knowing facts it was never trained on. You also can't fully override strong pre-training priors through prompting alone — fine-tuning is needed for persistent behavioral changes, knowledge injection, and adversarial robustness. Prompting's strength is flexibility and speed; its weakness is ephemerality and fragility."
+  ],
+  l3:[
+    "Reward hacking looks like this in practice: a model learns that human raters prefer responses that sound confident, are well-formatted, and use sophisticated vocabulary — even when those responses are factually wrong. The policy finds that a confidently stated incorrect answer often scores better than a hedged correct one. This is why RLHF-trained models can be more confidently wrong than base models.",
+    "The three RLHF phases in sequence: (1) SFT gives the model a behavioral baseline by training it to imitate good examples. (2) Reward model training uses human preference rankings to learn a scalar 'goodness' score for any response. (3) PPO optimization uses that reward signal to update the policy toward higher-scoring responses, with a KL penalty to prevent the policy from finding degenerate high-reward outputs.",
+    "Constitutional AI's key insight: it's cheaper and more scalable to use the model's own self-critique as a training signal than to have humans rank every response pair. The model generates a response, then critiques it against principles like 'Is this response harmful?' and revises it. These revisions, being better than the originals by the constitution's standards, become training data for the next round."
+  ],
+  l4:[
+    "For your use case, I'd want to know a few things before recommending. First: how many requests per day do you expect? At under 100,000 requests/day, a system prompt is economically fine. At millions, token overhead becomes significant. Second: is the knowledge you need stable or changing? If it changes frequently, RAG is usually better than fine-tuning. Third: can prompting achieve 80% of what you need? If so, start there.",
+    "Here's the general framework: use prompting when behavior changes frequently or you're still iterating on requirements. Use fine-tuning (especially LoRA) when you need persistent style/format changes at scale, knowledge not in the base model that doesn't change often, or adversarial robustness. Use RAG when your knowledge base is dynamic. In practice, most production systems combine fine-tuning for behavioral alignment with prompting for per-deployment specialization.",
+    "OpenAI's guidance when they launched the GPT-3.5-turbo fine-tuning API was instructive: most teams who attempted fine-tuning discovered their problem was actually solvable with better prompt engineering. They recommended this order: (1) optimize your prompt with few-shot examples and clear instructions, (2) if that fails, consider fine-tuning. The cost and iteration speed of prompting makes it the right first step almost always."
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbacks[labId]||['That is a great question about fine-tuning and prompting. Could you tell me more about what specific aspect you want to explore?'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var starters={
+    l1:'Welcome to the fine-tuning mechanics lab. I can help you explore what actually changes in a model\'s weights during fine-tuning, how supervised fine-tuning datasets are constructed, and why the distinction between pre-training knowledge and fine-tuned behavior matters. What would you like to explore?',
+    l2:'Welcome to the prompt engineering workshop. We can explore chain-of-thought prompting, few-shot examples, role conditioning, instruction design, and the genuine limits of what prompting can accomplish without fine-tuning. What aspect would you like to dig into?',
+    l3:'Welcome to the RLHF deep dive. I can walk you through reward model training, preference ranking collection, the PPO optimization loop, reward hacking, the alignment tax, and the CAI approach. What would you like to explore?',
+    l4:'Welcome to the decision advisor lab. Describe your use case — what the model needs to do, at what scale, with what kind of knowledge requirements — and I\'ll help you work through whether prompting, fine-tuning, LoRA, RAG, or some combination is the right architectural choice. What are you building?'
+  };
+  addMsg(labId,'ai',starters[labId]||'Lab reset. Ask me anything about this topic.');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'');
+      var payload={
+        model:'claude-opus-4-5',
+        max_tokens:400,
+        system:sysPrompt,
+        messages:chatHistories[labId]
+      };
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an error. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+updateTabs();
+</script>
+</body>
+</html>

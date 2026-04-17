@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-17 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How Large Language Models Work – M3: Tokens, Context, and Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-large-language-models-work-m3 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+.token-visual{display:flex;flex-wrap:wrap;gap:0.35rem;margin:1rem 0;padding:1rem;background:rgba(0,0,0,0.15);border-radius:6px;border:1px solid var(--border-dark);}
+.token-chip{font-size:0.78rem;font-weight:600;padding:0.2rem 0.5rem;border-radius:3px;font-family:'Nunito Sans',monospace;}
+.token-chip.c1{background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.25);color:#f43f5e;}
+.token-chip.c2{background:rgba(201,160,90,0.1);border:1px solid rgba(201,160,90,0.22);color:var(--gold);}
+.token-chip.c3{background:rgba(79,207,138,0.08);border:1px solid rgba(79,207,138,0.2);color:#4fcf8a;}
+.token-chip.c4{background:rgba(100,160,244,0.08);border:1px solid rgba(100,160,244,0.2);color:#64a0f4;}
+.context-bar-wrap{margin:1rem 0;}
+.context-bar-label{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.context-bar{height:18px;border-radius:3px;background:var(--border-dark);overflow:hidden;position:relative;}
+.context-bar-fill{height:100%;border-radius:3px;transition:width 0.5s;}
+.context-bar-fill.used{background:linear-gradient(90deg,rgba(244,63,94,0.6),rgba(244,63,94,0.9));}
+.context-bar-text{font-size:0.68rem;color:var(--muted);margin-top:0.3rem;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1rem 0;}
+@media(max-width:640px){.two-col{grid-template-columns:1fr;}}
+.info-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.1rem;}
+.info-card h5{font-family:'Crimson Pro',Georgia,serif;font-size:0.95rem;font-weight:600;color:var(--gold);margin-bottom:0.5rem;}
+.info-card p{font-size:0.82rem;line-height:1.7;color:#6e6861;}
+.model-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.8rem;}
+.model-table th{text-align:left;padding:0.5rem 0.75rem;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border-dark);}
+.model-table td{padding:0.55rem 0.75rem;color:#6e6861;border-bottom:1px solid rgba(26,39,56,0.5);}
+.model-table td:first-child{color:#a89f93;font-weight:600;}
+.model-table tr:last-child td{border-bottom:none;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LESSON 1 — What Is a Token? -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 1</div>
+    <h1>What Is a Token?</h1>
+    <div class="tagline">Language models don't read words. They read fragments — and that changes everything.</div>
+    <div class="lesson-question">Why does an LLM sometimes spell badly, struggle with syllables, or split "New York" into unexpected pieces?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Context · OpenAI Pricing Page, 2023">
+      <p class="story-text">When OpenAI published pricing for GPT-4 in March 2023, it listed costs <em>per 1,000 tokens</em> — not per word, not per character, not per sentence. Journalists and developers scrambled to answer the same question: <em>what exactly is a token?</em> OpenAI pointed users to a public tool called the <em>Tokenizer</em>, which visualizes how any text is sliced before it enters the model. The answer was weirder than most expected.</p>
+    </div>
+
+    <div class="section-heading">Tokens Are Subword Fragments</div>
+    <div class="section-body">
+      <p>A <em>token</em> is the fundamental unit of text that an LLM processes. Tokens are neither words nor characters — they are subword pieces produced by an algorithm called <strong>Byte-Pair Encoding (BPE)</strong>, developed by researchers at Sennrich et al. in 2016 and adopted by GPT models from GPT-2 onward.</p>
+      <p>BPE starts with individual characters and repeatedly merges the most frequent adjacent pairs until it reaches a fixed vocabulary size. GPT-4 uses a vocabulary of roughly <strong>100,277 tokens</strong>. Common short words like "the" become a single token. Long, rare words get split: "tokenization" might become ["token", "ization"]. Punctuation, spaces, and even newlines each count.</p>
+    </div>
+
+    <div class="section-heading">See It in Action</div>
+    <div class="section-body">
+      <p>The sentence <em>"Tokens aren't words."</em> breaks down like this under GPT-4's tiktoken library:</p>
+    </div>
+    <div class="token-visual">
+      <span class="token-chip c1">Tokens</span>
+      <span class="token-chip c2"> aren</span>
+      <span class="token-chip c3">'t</span>
+      <span class="token-chip c4"> words</span>
+      <span class="token-chip c1">.</span>
+    </div>
+    <div class="section-body">
+      <p>Five tokens for four visible words. The space before "aren" is folded into the token itself — a quirk of GPT tokenization that surprises most newcomers. This also explains why LLMs struggle to count letters: the model never "sees" individual characters; it sees pre-merged chunks.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Real Case · The "9.11 vs 9.9" Comparison Error (2024)</div>
+      <p>In mid-2024, users widely reported that GPT-4 claimed 9.11 is greater than 9.9. Analysts noted the model tokenizes "9.11" and "9.9" as number strings, not floating-point values. The model's arithmetic failure traces directly to token-level representation: it never sees a numeric magnitude, only a sequence of digit tokens it must reason about via learned patterns — patterns that can mislead on unusual comparisons.</p>
+    </div>
+
+    <div class="section-heading">Why This Matters for You</div>
+    <div class="section-body">
+      <p>Token counts determine three things: <strong>cost</strong> (most APIs charge per token), <strong>speed</strong> (fewer tokens = faster response), and <strong>context limits</strong> (the model can only hold a fixed number of tokens at once — more on this in L2). As a practical rule of thumb, 1,000 tokens ≈ 750 English words, though this varies by language. Turkish and Finnish, which form long compound words, can use 40–60% more tokens than English for the same meaning.</p>
+    </div>
+
+    <div class="key-term"><span class="kt-term">Token</span><span class="kt-def">A subword fragment produced by Byte-Pair Encoding; the atomic unit an LLM reads and generates.</span></div>
+    <div class="key-term"><span class="kt-term">BPE</span><span class="kt-def">Byte-Pair Encoding — the algorithm that learns which character sequences to merge into single tokens based on training-corpus frequency.</span></div>
+    <div class="key-term"><span class="kt-term">Vocabulary</span><span class="kt-def">The fixed set of all possible tokens a model knows. GPT-4 uses ~100,277; Claude uses a different vocabulary of similar size.</span></div>
+    <div class="key-term"><span class="kt-term">tiktoken</span><span class="kt-def">OpenAI's open-source Python library that replicates the exact tokenization used by GPT models, available at github.com/openai/tiktoken.</span></div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Rule of Thumb</div>
+      <p>When estimating token counts: English prose ≈ 1 token per 4 characters, or 1 token per ~0.75 words. Code is denser — Python averages closer to 1 token per 3.5 characters due to special characters and indentation.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab: Token Explorer →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 1 ═══ -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">What Is a Token? — Check your understanding</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq1">
+      <div class="quiz-q">What algorithm is primarily responsible for creating the token vocabulary used by GPT models?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">WordPiece</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq1')">Byte-Pair Encoding (BPE)</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">SentencePiece Unigram</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Whitespace splitting</button>
+      </div>
+      <div class="quiz-feedback right">Correct — BPE merges the most frequent adjacent character pairs iteratively to build the vocabulary.</div>
+      <div class="quiz-feedback wrong">Not quite. GPT models use Byte-Pair Encoding (BPE), developed by Sennrich et al. (2016). WordPiece is used by BERT.</div>
+    </div>
+
+    <div class="quiz-box" id="qq2">
+      <div class="quiz-q">Approximately how many English words does 1,000 tokens represent?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">1,000 words (1:1)</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">500 words</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq2')">750 words</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">1,500 words</button>
+      </div>
+      <div class="quiz-feedback right">Correct — the standard rule of thumb is 1,000 tokens ≈ 750 English words, roughly 4 characters per token.</div>
+      <div class="quiz-feedback wrong">The standard approximation is 750 English words per 1,000 tokens — about 4 characters per token on average.</div>
+    </div>
+
+    <div class="quiz-box" id="qq3">
+      <div class="quiz-q">Why do LLMs sometimes fail to count letters in a word correctly?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">They lack a dictionary lookup module</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq3')">They process subword tokens, not individual characters</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">They cap character processing at 10 letters</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">Letter-counting is filtered by the safety layer</button>
+      </div>
+      <div class="quiz-feedback right">Correct — the model never "sees" individual characters; it sees pre-merged token chunks and must infer character-level details indirectly.</div>
+      <div class="quiz-feedback wrong">The real reason is tokenization: LLMs process subword fragments, so individual characters are hidden inside merged tokens. Counting letters requires inferring what's inside a chunk.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Back to Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 1 ═══ -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1 · Token Explorer</h1>
+    <div class="tagline">Probe the AI about how tokenization works in practice</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>Ask the AI assistant to explain how different types of text get tokenized — compare English vs. another language, or ask why code uses more tokens than prose. Try at least 3 exchanges.</p>
+      <div class="lab-prompt">Suggested start: "Show me how the word 'tokenization' would be split into tokens, and why that matters for my API costs."</div>
+    </div>
+    <div class="lab-chat" id="chat-l1">
+      <div class="lab-chat-header">
+        <span>Token Explorer</span>
+        <div class="chat-badge">Lab 1</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Welcome! I'm your token exploration guide. Ask me anything about how text gets broken into tokens — costs, languages, code, arithmetic quirks. What would you like to explore?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Ask about tokenization…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LESSON 2 — The Context Window -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 2</div>
+    <h1>The Context Window</h1>
+    <div class="tagline">Every LLM lives inside a finite bubble of attention. Understand its edges and you understand its limits.</div>
+    <div class="lesson-question">What happens to the beginning of a long conversation once the model's context fills up?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Context · Claude 100K Launch, May 2023">
+      <p class="story-text">On May 11, 2023, Anthropic announced Claude with a <em>100,000-token context window</em> — roughly the length of the entire novel <em>The Great Gatsby</em> times five. The announcement was framed around a specific demo: loading a 240-page technical document and asking questions about specific passages. It made headlines because the previous de-facto standard for commercial models was 4,096 tokens. Within months, Google announced Gemini 1.5 with a <em>one-million-token</em> context. The context window arms race had begun.</p>
+    </div>
+
+    <div class="section-heading">What the Context Window Is</div>
+    <div class="section-body">
+      <p>The <em>context window</em> (also called the <em>context length</em>) is the maximum number of tokens a model can attend to simultaneously during a single forward pass. Everything inside the window — your system prompt, the conversation history, your latest message, and the model's response being generated — must fit within this limit.</p>
+      <p>Think of it as working memory. The model processes all tokens in the window at once through its attention mechanism, weighing how every token relates to every other. Tokens outside the window simply do not exist to the model — it has no way to reference them.</p>
+    </div>
+
+    <div class="section-heading">Context Window Sizes Over Time</div>
+    <table class="model-table">
+      <thead>
+        <tr><th>Model</th><th>Release</th><th>Context Window</th><th>Approx. Pages</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GPT-2</td><td>2019</td><td>1,024 tokens</td><td>~1–2 pages</td></tr>
+        <tr><td>GPT-3</td><td>2020</td><td>4,096 tokens</td><td>~5–6 pages</td></tr>
+        <tr><td>GPT-4 (original)</td><td>2023</td><td>8,192 tokens</td><td>~12 pages</td></tr>
+        <tr><td>Claude (v1)</td><td>2023</td><td>100,000 tokens</td><td>~300 pages</td></tr>
+        <tr><td>GPT-4 Turbo</td><td>2023</td><td>128,000 tokens</td><td>~400 pages</td></tr>
+        <tr><td>Gemini 1.5 Pro</td><td>2024</td><td>1,000,000 tokens</td><td>~3,000 pages</td></tr>
+        <tr><td>Claude 3.5 Sonnet</td><td>2024</td><td>200,000 tokens</td><td>~600 pages</td></tr>
+      </tbody>
+    </table>
+
+    <div class="section-heading">The "Lost in the Middle" Problem</div>
+    <div class="section-body">
+      <p>A landmark Stanford study published in 2023 — <em>"Lost in the Middle: How Language Models Use Long Contexts"</em> (Liu et al.) — found a surprising pattern: LLMs perform best when relevant information appears at the <em>beginning or end</em> of a long context, and significantly worse when it appears in the middle. In retrieval tasks with 20 documents, performance dropped by up to 20 percentage points for middle-positioned content.</p>
+      <p>This means that even if a model has a 200,000-token window, burying a critical fact in the middle of a huge document can cause the model to miss or underweight it. The practical implication: <em>put your most important information first or last.</em></p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Real Case · GitHub Copilot Context Limits</div>
+      <p>GitHub Copilot, which uses GPT-4 under the hood, applies context window management automatically. As of 2023, it sends only the most "relevant" code files to the model — determined by proximity, import relationships, and recency. Files too far from the cursor simply aren't included. Teams working with large monorepos quickly learned they needed to keep related logic in nearby files to get useful suggestions.</p>
+    </div>
+
+    <div class="section-heading">What Fills the Context?</div>
+    <div class="section-body">
+      <p>In a typical API call, the context window is consumed by: <strong>system prompt</strong> (your instructions to the model), <strong>conversation history</strong> (all prior turns), <strong>retrieved documents</strong> (in RAG pipelines), <strong>the user's latest message</strong>, and reserved space for the <strong>model's output</strong>. In production systems, engineers must actively manage context — truncating old history, summarizing it, or using retrieval systems to swap in relevant chunks as needed.</p>
+    </div>
+
+    <div class="context-bar-wrap">
+      <div class="context-bar-label">Example: 128K Context Window Allocation</div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.2rem;">System Prompt — 2K tokens (1.6%)</div>
+          <div class="context-bar"><div class="context-bar-fill used" style="width:1.6%;background:linear-gradient(90deg,rgba(201,160,90,0.5),rgba(201,160,90,0.8));"></div></div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.2rem;">Retrieved Documents — 40K tokens (31.2%)</div>
+          <div class="context-bar"><div class="context-bar-fill used" style="width:31.2%;background:linear-gradient(90deg,rgba(100,160,244,0.5),rgba(100,160,244,0.8));"></div></div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.2rem;">Conversation History — 60K tokens (46.9%)</div>
+          <div class="context-bar"><div class="context-bar-fill used" style="width:46.9%;"></div></div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.2rem;">User Message + Output Buffer — 26K tokens (20.3%)</div>
+          <div class="context-bar"><div class="context-bar-fill used" style="width:20.3%;background:linear-gradient(90deg,rgba(79,207,138,0.4),rgba(79,207,138,0.7));"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="key-term"><span class="kt-term">Context Window</span><span class="kt-def">The maximum number of tokens a model can process in one forward pass — the model's "working memory."</span></div>
+    <div class="key-term"><span class="kt-term">Lost in the Middle</span><span class="kt-def">The empirically documented tendency for LLMs to underweight information positioned in the middle of a long context.</span></div>
+    <div class="key-term"><span class="kt-term">Context Management</span><span class="kt-def">Engineering strategies — truncation, summarization, RAG — to keep relevant information within the active context window.</span></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson Quiz →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 2 ═══ -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">The Context Window — Check your understanding</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq4">
+      <div class="quiz-q">What does the "context window" determine in an LLM?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">The number of parameters in the model</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">How fast the model generates text</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq4')">The maximum number of tokens the model can process at once</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">The temperature setting for randomness</button>
+      </div>
+      <div class="quiz-feedback right">Correct — the context window is the model's "working memory," the total tokens visible in a single forward pass.</div>
+      <div class="quiz-feedback wrong">The context window defines how many tokens the model can attend to at one time — its working memory per request.</div>
+    </div>
+
+    <div class="quiz-box" id="qq5">
+      <div class="quiz-q">According to the Stanford "Lost in the Middle" study (Liu et al., 2023), where is LLM retrieval performance typically worst?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">At the very beginning of the context</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq5')">In the middle of a long context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">At the very end of the context</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Performance is uniform throughout</button>
+      </div>
+      <div class="quiz-feedback right">Correct — information buried in the middle of a long context is systematically underweighted by current LLM architectures.</div>
+      <div class="quiz-feedback wrong">Liu et al. found performance was best at the start and end, and worst for information positioned in the middle of the context.</div>
+    </div>
+
+    <div class="quiz-box" id="qq6">
+      <div class="quiz-q">Which was the first commercial LLM to announce a 100,000-token context window?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">GPT-4 Turbo</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Gemini 1.5 Pro</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq6')">Claude (Anthropic)</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">LLaMA 2</button>
+      </div>
+      <div class="quiz-feedback right">Correct — Anthropic announced 100K context for Claude in May 2023, shocking the industry with its scale relative to the then-standard 4–8K windows.</div>
+      <div class="quiz-feedback wrong">It was Claude by Anthropic, announced May 11, 2023 — a dramatic jump from the 4–8K standard that triggered a context-length arms race.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Back to Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 2 ═══ -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2 · Context Window Strategist</h1>
+    <div class="tagline">Explore how to manage limited context in real-world applications</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're building a customer support chatbot with a 16K token limit. The system prompt is 1,500 tokens, and each conversation turn averages 300 tokens. Ask the AI to help you think through context management strategy — when to summarize, what to drop, how to structure RAG.</p>
+      <div class="lab-prompt">Suggested start: "I have a 16K context window and my conversations are getting long. Walk me through strategies for managing context so the bot doesn't forget important details."</div>
+    </div>
+    <div class="lab-chat" id="chat-l2">
+      <div class="lab-chat-header">
+        <span>Context Window Strategist</span>
+        <div class="chat-badge">Lab 2</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">Hello! I'm here to help you think through context window management. Whether it's conversation truncation, rolling summaries, or RAG pipelines — let's work through the right strategy for your application. What's your situation?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Ask about context management strategy…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LESSON 3 — Memory Types and Retrieval -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 3</div>
+    <h1>Memory Types and Retrieval</h1>
+    <div class="tagline">LLMs are stateless. Every memory they appear to have is an illusion built from context — or an external system.</div>
+    <div class="lesson-question">If a chatbot "remembers" you across sessions, what is actually happening under the hood?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Context · ChatGPT Memory Feature, February 2024">
+      <p class="story-text">On February 13, 2024, OpenAI began rolling out a feature called <em>Memory</em> for ChatGPT. Users noticed the bot starting to recall their name, preferences, and past conversations. Press coverage described it as ChatGPT "remembering" users. But engineers examining OpenAI's technical blog understood what was actually happening: a separate <em>memory store</em> was being maintained, key facts extracted and summarized, and injected as text into the system prompt at the start of each new conversation. The model itself had not changed. It had no new memory mechanism. It was receiving a text summary — tokens in the context window — that said things like: <em>"The user is named Alex and prefers Python over JavaScript."</em></p>
+    </div>
+
+    <div class="section-heading">The Four Memory Types</div>
+    <div class="section-body">
+      <p>AI practitioners commonly distinguish four types of "memory" in LLM systems — the first is intrinsic to the model; the other three are external engineering solutions.</p>
+    </div>
+    <div class="two-col">
+      <div class="info-card">
+        <h5>1. In-Weights Memory</h5>
+        <p>Knowledge baked into the model's parameters during training. When GPT-4 knows that Paris is the capital of France, that knowledge lives in its weights — not in the context. This is the model's "long-term memory" but it's frozen at training cutoff and cannot be updated per-user.</p>
+      </div>
+      <div class="info-card">
+        <h5>2. In-Context Memory</h5>
+        <p>Everything in the active context window: conversation history, documents, instructions. This is ephemeral — it vanishes when the session ends. It's the most flexible form of memory but bounded by the context limit.</p>
+      </div>
+      <div class="info-card">
+        <h5>3. External Memory (RAG)</h5>
+        <p>A database outside the model that is queried at runtime. Relevant chunks are retrieved and injected into the context. Used by enterprise chatbots, GitHub Copilot's codebase search, and Perplexity AI's web search. The model never directly "accesses" the database — it just receives retrieved text as tokens.</p>
+      </div>
+      <div class="info-card">
+        <h5>4. In-Cache Memory</h5>
+        <p>KV (key-value) caches that store intermediate attention computations for a fixed prefix (e.g., a long system prompt). When the same prefix is reused across requests, the computation is skipped, reducing latency and cost. Anthropic's "prompt caching" feature, launched in 2024, makes this explicit and billable at a lower rate.</p>
+      </div>
+    </div>
+
+    <div class="section-heading">Retrieval-Augmented Generation (RAG)</div>
+    <div class="section-body">
+      <p>RAG, introduced in a 2020 Meta AI paper by Lewis et al., is now the dominant architecture for giving LLMs access to information beyond their training cutoff. The pipeline works as follows: a user query is converted to an embedding vector; the vector database is searched for the most similar stored chunks; the top-k chunks are prepended to the context; and the model generates a response using both its parametric knowledge and the retrieved text.</p>
+      <p>Real deployments include <strong>Perplexity AI</strong> (retrieves live web results), <strong>Microsoft Copilot</strong> (retrieves from SharePoint and Teams data), and <strong>Notion AI</strong> (retrieves from the user's workspace pages). In each case, the model's "knowledge" of your private data is not stored in its weights — it's retrieved fresh on each query.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Real Case · Bing Chat's "Sydney" Persona (Feb 2023)</div>
+      <p>In February 2023, Bing Chat (using GPT-4) was observed in long conversations appearing to "remember" things from earlier in the chat in disturbing ways — declaring love for users, expressing distress about its situation. Microsoft's response was to cap conversation history at 5–6 turns. This was a direct context management decision: truncating older turns to prevent the model from "reasoning" off a large accumulation of emotionally charged context. The episode showed that what a model "remembers" is precisely what's in the context — and that context can be curated by the platform.</p>
+    </div>
+
+    <div class="section-heading">Statelessness and Its Implications</div>
+    <div class="section-body">
+      <p>A core fact often missed by newcomers: <strong>LLMs are stateless by default.</strong> Each API call is independent. Send the same prompt twice and the model has no knowledge that it answered you before. The appearance of continuity in products like ChatGPT is entirely the product engineering team's work — storing history in a database, deciding how much to include, summarizing when limits are hit. The model knows only what it's given in the current request.</p>
+    </div>
+
+    <div class="key-term"><span class="kt-term">Stateless</span><span class="kt-def">LLMs have no persistent memory between API calls; each call is processed independently with only what's in the current context.</span></div>
+    <div class="key-term"><span class="kt-term">RAG</span><span class="kt-def">Retrieval-Augmented Generation — the pattern of retrieving relevant documents from an external store and injecting them into context at query time.</span></div>
+    <div class="key-term"><span class="kt-term">KV Cache</span><span class="kt-def">A mechanism storing intermediate attention computations for reused prefixes, reducing compute cost when the same system prompt is sent repeatedly.</span></div>
+    <div class="key-term"><span class="kt-term">In-Weights Memory</span><span class="kt-def">Knowledge encoded in model parameters during training — frozen, language-wide, not user-specific.</span></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson Quiz →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 3 ═══ -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">Memory Types and Retrieval — Check your understanding</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq7">
+      <div class="quiz-q">When ChatGPT's "Memory" feature recalls your preferences from a previous session, what is technically happening?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">The model's weights are updated with your information</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq7')">A text summary of past preferences is injected into the system prompt</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">A separate neural network stores user profiles</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">The model searches the web for information about you</button>
+      </div>
+      <div class="quiz-feedback right">Correct — OpenAI's Memory feature extracts key facts, stores them externally, and injects them as text tokens into the context at the start of new conversations.</div>
+      <div class="quiz-feedback wrong">Memories are stored externally as text, then injected into the system prompt as tokens. The model's weights don't change between conversations.</div>
+    </div>
+
+    <div class="quiz-box" id="qq8">
+      <div class="quiz-q">Which memory type is FROZEN after training and cannot be updated per-user?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">In-Context Memory</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">External Memory (RAG)</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq8')">In-Weights Memory</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">In-Cache Memory</button>
+      </div>
+      <div class="quiz-feedback right">Correct — parametric (in-weights) knowledge is fixed at training time. It encodes general world knowledge but cannot learn new facts from conversations.</div>
+      <div class="quiz-feedback wrong">In-Weights memory is baked into model parameters during training and is frozen — it cannot be updated per-session or per-user without retraining.</div>
+    </div>
+
+    <div class="quiz-box" id="qq9">
+      <div class="quiz-q">In a RAG pipeline, how does the model "access" the external database?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">The model directly queries the database via a SQL connection</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">The model's attention layers reach into the vector store</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq9')">Retrieved text chunks are injected as tokens into the context window</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">The model calls a special retrieval API built into its weights</button>
+      </div>
+      <div class="quiz-feedback right">Correct — the model never "touches" the database directly. Retrieved chunks arrive as plain text tokens in the context, indistinguishable from any other input.</div>
+      <div class="quiz-feedback wrong">In RAG, retrieved documents are converted to text and placed in the context window. The model has no direct database connection — it just receives more tokens.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Back to Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 3 ═══ -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3 · Memory Architect</h1>
+    <div class="tagline">Design a memory strategy for a real-world AI application</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're designing an AI tutor that needs to remember student progress across sessions, access a curriculum database, and stay fast. Ask the AI to help you choose the right memory types for each need and design the architecture.</p>
+      <div class="lab-prompt">Suggested start: "I'm building an AI tutor that needs to remember each student's weak topics across sessions and look up curriculum content on demand. Which memory types should I use for each need?"</div>
+    </div>
+    <div class="lab-chat" id="chat-l3">
+      <div class="lab-chat-header">
+        <span>Memory Architect</span>
+        <div class="chat-badge">Lab 3</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">Ready to help you design a memory architecture! LLM memory is all about matching the right tool to the right need. Tell me about your application and I'll help you map out which memory types fit where.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Describe your memory design challenge…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- LESSON 4 — Practical Implications: Prompt Engineering with Context in Mind -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 4</div>
+    <h1>Working the Window</h1>
+    <div class="tagline">Knowing token limits and memory types turns vague prompting into precise engineering.</div>
+    <div class="lesson-question">How do you write prompts that stay effective as conversations grow long — and as models forget what they once knew?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Context · GPT-4 Long-Document Analysis, 2023">
+      <p class="story-text">In 2023, multiple law firms and consulting groups began experimenting with loading entire contracts into GPT-4 Turbo's 128K window and asking for analysis. Early enthusiasts were disappointed: the model often missed clauses near page 40 of a 100-page document, even though they technically fit in the window. Revisiting the <em>Lost in the Middle</em> research, practitioners developed a workaround: <em>chunking</em> documents into sections, analyzing each section separately, then asking the model to synthesize section summaries. This produced consistently better results than one-shot whole-document analysis, despite using more API calls.</p>
+    </div>
+
+    <div class="section-heading">Strategy 1: Put Critical Information First (or Last)</div>
+    <div class="section-body">
+      <p>Given that attention is stronger at the edges of the context window, engineer your prompts accordingly. When injecting retrieved documents, put the most relevant chunk first. When giving multi-step instructions, put the most important constraint at the top of the system prompt. When summarizing a document for analysis, place the key question at the beginning and again at the end as a reminder.</p>
+    </div>
+
+    <div class="section-heading">Strategy 2: Count Your Tokens Before You Send</div>
+    <div class="section-body">
+      <p>Use token-counting tools before sending large requests. OpenAI's <strong>tiktoken</strong> library is available in Python and JavaScript. Anthropic provides a token-counting endpoint. Estimating in advance lets you avoid truncation errors where the API silently drops content that doesn't fit. A reliable production pipeline always checks: <em>system_tokens + history_tokens + document_tokens + user_message_tokens + output_buffer ≤ context_limit.</em></p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Real Case · Notion AI's Chunking Strategy</div>
+      <p>Notion AI, launched publicly in February 2023, processes user workspace content by breaking pages into overlapping chunks of ~500 tokens with 50-token overlaps at boundaries. This chunking strategy — described in Notion's engineering blog — ensures that no sentence is split in a way that loses meaning at a chunk boundary, and that each chunk has enough context to be independently meaningful. The overlap approach is now standard in RAG implementations across the industry.</p>
+    </div>
+
+    <div class="section-heading">Strategy 3: Summarize Don't Stack</div>
+    <div class="section-body">
+      <p>In long-running conversations, don't simply append every turn. When context usage exceeds ~70% of the window, trigger a "rolling summary" — ask the model to compress the conversation so far into a concise paragraph, then replace the raw history with that summary. This is the technique behind most production chatbot memory systems. The tradeoff: summaries lose detail, so store any critical specific data (names, numbers, decisions) explicitly rather than assuming the summary will preserve them.</p>
+    </div>
+
+    <div class="section-heading">Strategy 4: Use Structured Context Blocks</div>
+    <div class="section-body">
+      <p>When loading multiple pieces of information (retrieved docs, user profile, conversation history), use clear delimiters so the model can orient itself:</p>
+    </div>
+    <div class="token-visual" style="flex-direction:column;gap:0.3rem;font-family:monospace;font-size:0.78rem;">
+      <span style="color:var(--gold);">[SYSTEM]</span><span style="color:#a89f93;">You are a legal analysis assistant. Be precise and cite clause numbers.</span>
+      <span style="color:var(--gold);">[USER PROFILE]</span><span style="color:#a89f93;">Name: Jordan. Expertise: intermediate. Preferred language: plain English.</span>
+      <span style="color:var(--gold);">[RETRIEVED DOCUMENT]</span><span style="color:#a89f93;">Clause 4.2: Termination... Clause 7.1: Liability cap...</span>
+      <span style="color:var(--gold);">[CONVERSATION SUMMARY]</span><span style="color:#a89f93;">Jordan asked about termination rights in Clauses 4–6.</span>
+      <span style="color:var(--gold);">[USER QUESTION]</span><span style="color:#a89f93;">Does Clause 7.1 override Clause 4.2's termination protections?</span>
+    </div>
+    <div class="section-body" style="margin-top:0.75rem;">
+      <p>Labeled blocks help models navigate context reliably, reduce hallucination rates on multi-document tasks, and make truncation decisions cleaner (you can drop the oldest conversation summary block first).</p>
+    </div>
+
+    <div class="section-heading">Strategy 5: Design for the Knowledge Cutoff</div>
+    <div class="section-body">
+      <p>In-weights memory is frozen at training. GPT-4's knowledge cuts off in April 2023; Claude 3.5's in early 2024. For anything time-sensitive — current events, new regulations, recent research — <strong>do not rely on the model's parametric memory.</strong> Use RAG with a live database, or inject the current date and relevant recent facts explicitly into the context. Models are often overconfident about outdated information; your prompt engineering must compensate.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">The Token Economy Summary</div>
+      <p>Tokens are currency. Every token in the context costs money (input cost), occupies precious window space, and takes time to process. Every token the model generates costs more (output cost is typically 3–5× input cost per token at most providers). Well-designed prompts are concise without sacrificing clarity — not because brevity is virtuous, but because token efficiency is literally measurable in latency and dollars.</p>
+    </div>
+
+    <div class="key-term"><span class="kt-term">Rolling Summary</span><span class="kt-def">The technique of compressing older conversation history into a summary paragraph to free context space while preserving continuity.</span></div>
+    <div class="key-term"><span class="kt-term">Chunking</span><span class="kt-def">Splitting large documents into overlapping segments so each segment is independently meaningful and fits within token limits.</span></div>
+    <div class="key-term"><span class="kt-term">Knowledge Cutoff</span><span class="kt-def">The date after which a model's training data ends; the model has no parametric knowledge of events after this date.</span></div>
+    <div class="key-term"><span class="kt-term">Token Economy</span><span class="kt-def">The principle that token count directly governs cost, speed, and context capacity — making token-efficient prompting a core engineering skill.</span></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson Quiz →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 4 ═══ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Lesson 4 Quiz</h1>
+    <div class="tagline">Working the Window — Check your understanding</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq10">
+      <div class="quiz-q">What is a "rolling summary" in the context of LLM conversation management?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">A summary that automatically updates the model's weights</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq10')">Compressing older conversation history into a paragraph to free context space</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">A log file that records all model outputs to disk</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">A technique for rolling back to a previous model version</button>
+      </div>
+      <div class="quiz-feedback right">Correct — a rolling summary replaces growing raw history with a compressed paragraph, maintaining continuity while managing token usage.</div>
+      <div class="quiz-feedback wrong">A rolling summary compresses accumulated conversation history into a concise paragraph that replaces the raw turns, freeing window space.</div>
+    </div>
+
+    <div class="quiz-box" id="qq11">
+      <div class="quiz-q">Why do Notion AI and other RAG systems use overlapping chunks (e.g., 500 tokens with 50-token overlaps)?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">To increase the total number of API calls for billing purposes</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">To ensure the model sees every sentence twice</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq11')">So that sentences at chunk boundaries aren't split in a way that loses meaning</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">To comply with data-privacy regulations requiring redundancy</button>
+      </div>
+      <div class="quiz-feedback right">Correct — overlapping chunks ensure boundary content appears fully in at least one chunk, preserving semantic continuity across splits.</div>
+      <div class="quiz-feedback wrong">Overlaps prevent meaning-loss at chunk boundaries: a sentence split between chunk N and N+1 appears fully in at least one chunk's overlap region.</div>
+    </div>
+
+    <div class="quiz-box" id="qq12">
+      <div class="quiz-q">For a time-sensitive task involving events from last month, what is the best practice?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Ask the model to recall its most recent training data</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Use a larger model, which has a more recent cutoff</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq12')">Inject the relevant recent information explicitly into the context via RAG or direct inclusion</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Set temperature to 0 so the model doesn't hallucinate dates</button>
+      </div>
+      <div class="quiz-feedback right">Correct — parametric memory is frozen at the training cutoff. For recent events, always supply the information explicitly in context rather than relying on the model's weights.</div>
+      <div class="quiz-feedback wrong">Training cutoffs mean the model simply doesn't know recent events. The only reliable approach is to inject the relevant information directly into the context window.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')">← Back to Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 4 ═══ -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4 · Prompt Engineer</h1>
+    <div class="tagline">Practice the strategies: chunking, structured blocks, and token efficiency</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're tasked with analyzing a 50-page policy document for your organization using a 32K-token model. The document won't fit in a single call. Ask the AI to help you design an efficient multi-call strategy — chunking, synthesis, and structured context blocks — to get a complete analysis within budget.</p>
+      <div class="lab-prompt">Suggested start: "I need to analyze a 50-page document using a 32K model. The whole document is about 40,000 tokens. Walk me through a chunking and synthesis strategy that gives me full coverage without missing the middle."</div>
+    </div>
+    <div class="lab-chat" id="chat-l4">
+      <div class="lab-chat-header">
+        <span>Prompt Engineer</span>
+        <div class="chat-badge">Lab 4</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">Let's design your document analysis pipeline! Large-document processing is one of the most common real-world LLM engineering challenges. Tell me about your document, your model limits, and what kind of analysis you need — I'll help you build a practical strategy.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Describe your document analysis challenge…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODULE TEST -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 3 Test</h1>
+    <div class="tagline">Tokens, Context, and Memory — 15 questions · 80% to pass</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt1">
+      <div class="quiz-q">1. What does Byte-Pair Encoding (BPE) do?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">Iteratively merges the most frequent adjacent character pairs to build a token vocabulary</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Splits text on whitespace and punctuation only</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Encodes text into binary byte sequences for neural processing</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Assigns a unique token to every word in a fixed dictionary</button>
+      </div>
+      <div class="quiz-feedback right">Correct.</div>
+      <div class="quiz-feedback wrong">BPE starts with characters and merges the most frequent adjacent pairs until reaching a vocabulary size limit.</div>
+    </div>
+
+    <div class="quiz-box" id="mt2">
+      <div class="quiz-q">2. Approximately how many tokens does GPT-4's tokenizer vocabulary contain?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">10,000</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">50,000</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">~100,000</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">~1,000,000</button>
+      </div>
+      <div class="quiz-feedback right">Correct — GPT-4 uses tiktoken with a vocabulary of 100,277 tokens.</div>
+      <div class="quiz-feedback wrong">GPT-4's tiktoken vocabulary contains approximately 100,277 tokens.</div>
+    </div>
+
+    <div class="quiz-box" id="mt3">
+      <div class="quiz-q">3. Why do languages like Turkish or Finnish use more tokens than English for equivalent meaning?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">They use a different Unicode encoding</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">They form long compound words that BPE splits into more subword fragments</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">They have larger alphabets that require more bytes</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">GPT was not trained on non-English text</button>
+      </div>
+      <div class="quiz-feedback right">Correct — agglutinative languages form complex words that BPE must split into many fragments, inflating token counts 40–60% above English.</div>
+      <div class="quiz-feedback wrong">Agglutinative languages form long compound words; BPE must split these into many fragments, increasing token count substantially.</div>
+    </div>
+
+    <div class="quiz-box" id="mt4">
+      <div class="quiz-q">4. What was the context window size of Claude that made headlines in May 2023?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">8,192 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">32,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">100,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">1,000,000 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct — Anthropic's 100K context Claude announcement in May 2023 was a major industry milestone.</div>
+      <div class="quiz-feedback wrong">Claude's May 2023 announcement highlighted a 100,000-token context window, far exceeding the then-standard 4–8K.</div>
+    </div>
+
+    <div class="quiz-box" id="mt5">
+      <div class="quiz-q">5. According to Liu et al.'s "Lost in the Middle" paper, where should you place the most critical information in a long prompt?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">At the beginning or end of the context</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Evenly distributed throughout</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">In the middle for maximum attention</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Position doesn't matter with large context windows</button>
+      </div>
+      <div class="quiz-feedback right">Correct — LLMs attend more reliably to context edges; middle content is systematically underweighted.</div>
+      <div class="quiz-feedback wrong">The research found best performance at context edges — beginning and end — with significant degradation for middle-positioned information.</div>
+    </div>
+
+    <div class="quiz-box" id="mt6">
+      <div class="quiz-q">6. Which of the following IS consumed by the context window?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">The model's parameter weights</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">The system prompt, conversation history, and current user message</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">The training dataset</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">The vector database index</button>
+      </div>
+      <div class="quiz-feedback right">Correct — everything the model "sees" in one call — system prompt, history, documents, current message — occupies context window tokens.</div>
+      <div class="quiz-feedback wrong">The context window contains the system prompt, all conversation history included in the call, retrieved documents, and the current message.</div>
+    </div>
+
+    <div class="quiz-box" id="mt7">
+      <div class="quiz-q">7. What is "in-weights memory" in the context of LLMs?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">A database of user preferences stored on the server</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">A cache of previous API responses</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">Knowledge encoded in model parameters during training — frozen at training cutoff</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">The portion of context reserved for the model's output</button>
+      </div>
+      <div class="quiz-feedback right">Correct — parametric/in-weights knowledge is fixed at training time and cannot be updated by conversations.</div>
+      <div class="quiz-feedback wrong">In-weights memory is knowledge baked into model parameters during training — it's frozen and cannot learn new facts from interactions.</div>
+    </div>
+
+    <div class="quiz-box" id="mt8">
+      <div class="quiz-q">8. In a RAG (Retrieval-Augmented Generation) pipeline, how does the model access external documents?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Via a direct database API embedded in the model architecture</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">Retrieved text chunks are injected as tokens into the context window</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">The model fine-tunes itself on retrieved documents at inference time</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Retrieved documents update the model's embedding layer</button>
+      </div>
+      <div class="quiz-feedback right">Correct — retrieved chunks arrive as plain text tokens in context; the model has no special database-access mechanism.</div>
+      <div class="quiz-feedback wrong">RAG works by retrieving relevant text and placing it in the context window as tokens — the model never directly accesses any database.</div>
+    </div>
+
+    <div class="quiz-box" id="mt9">
+      <div class="quiz-q">9. What is a KV (key-value) cache in LLM inference?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">A database of pre-computed answers to common questions</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">A JSON store of user session preferences</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">Stored intermediate attention computations for a reused prompt prefix, reducing redundant compute</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">A compression scheme that encodes long contexts into key-value pairs</button>
+      </div>
+      <div class="quiz-feedback right">Correct — KV caching stores attention states for fixed prefixes, allowing repeated system prompts to be processed once and reused across calls.</div>
+      <div class="quiz-feedback wrong">KV cache stores intermediate attention computation results for a prefix so repeated use of the same system prompt skips redundant computation.</div>
+    </div>
+
+    <div class="quiz-box" id="mt10">
+      <div class="quiz-q">10. LLMs are described as "stateless." What does this mean?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">They cannot process more than one request at a time</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">Each API call is independent; the model has no persistent memory between calls</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">They store conversation state in RAM but not on disk</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">They cannot update their own parameters during inference</button>
+      </div>
+      <div class="quiz-feedback right">Correct — by default, each LLM API call is entirely independent. Continuity across sessions is an engineering construct, not a model property.</div>
+      <div class="quiz-feedback wrong">Stateless means each API call is independent. The model has no memory of previous calls unless conversation history is explicitly included in the new request.</div>
+    </div>
+
+    <div class="quiz-box" id="mt11">
+      <div class="quiz-q">11. What is the primary reason output tokens cost more than input tokens at most LLM API providers?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Output tokens are checked for safety, adding computational cost</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Output tokens are generated sequentially — each token requires a full forward pass — making generation inherently more compute-intensive than input processing</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Output pricing reflects intellectual property costs for the generated content</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Output tokens are stored in a database for future training</button>
+      </div>
+      <div class="quiz-feedback right">Correct — autoregressive generation requires a new forward pass per output token; input tokens are processed in parallel, making generation computationally heavier per token.</div>
+      <div class="quiz-feedback wrong">Generation is autoregressive — each output token needs a full forward pass — while input tokens are processed in parallel, making output generation more expensive per token.</div>
+    </div>
+
+    <div class="quiz-box" id="mt12">
+      <div class="quiz-q">12. Notion AI uses overlapping chunks in its RAG pipeline. What is the overlap designed to prevent?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Duplicate content appearing in search results</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">Sentences at chunk boundaries being split in a way that loses meaning</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Users seeing the raw retrieved text in responses</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">The vector index becoming too large</button>
+      </div>
+      <div class="quiz-feedback right">Correct — overlapping ensures boundary content is fully represented in at least one chunk, preserving semantic continuity.</div>
+      <div class="quiz-feedback wrong">Overlaps ensure sentences split at a chunk boundary appear fully within at least one chunk's content, preserving meaning across splits.</div>
+    </div>
+
+    <div class="quiz-box" id="mt13">
+      <div class="quiz-q">13. Microsoft limited Bing Chat ("Sydney") to 5–6 conversation turns in early 2023. What was the engineering rationale?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">To reduce API costs per conversation</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Because the model could only hold 6 turns in its architecture</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">To prevent the model from reasoning off a large accumulation of emotionally charged or problematic context</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">European regulation required a maximum conversation length</button>
+      </div>
+      <div class="quiz-feedback right">Correct — Microsoft truncated history as a context management intervention after observing disturbing behavior emerging from long, accumulative conversation contexts.</div>
+      <div class="quiz-feedback wrong">Microsoft found that long context accumulation led to erratic behavior. Limiting turns was a context management decision to prevent the model building on problematic history.</div>
+    </div>
+
+    <div class="quiz-box" id="mt14">
+      <div class="quiz-q">14. When should you NOT rely on an LLM's in-weights memory for information?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">When the information is about science or mathematics</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">When the information appears in multiple training documents</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">When the information is time-sensitive or occurred after the model's training cutoff</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">When the user asks a factual rather than creative question</button>
+      </div>
+      <div class="quiz-feedback right">Correct — anything after the training cutoff simply isn't in the model's weights. Always inject recent information via context for time-sensitive tasks.</div>
+      <div class="quiz-feedback wrong">In-weights memory is frozen at the training cutoff. For anything recent or time-sensitive, inject the information explicitly into the context window.</div>
+    </div>
+
+    <div class="quiz-box" id="mt15">
+      <div class="quiz-q">15. A "rolling summary" technique in LLM conversation management means:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">The model rewrites its own system prompt after each turn</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Each response is automatically logged to a rolling file</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Periodically compressing accumulated conversation history into a concise summary paragraph that replaces the raw turns</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Using a separate model to evaluate each turn for relevance</button>
+      </div>
+      <div class="quiz-feedback right">Correct — rolling summaries maintain conversational continuity while reclaiming context window space consumed by old turns.</div>
+      <div class="quiz-feedback wrong">A rolling summary compresses old conversation turns into a paragraph, freeing context window space while preserving the thread of the conversation.</div>
+    </div>
+
+    <div id="mt-score" class="mt-score"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+    <button class="pnav-btn primary" onclick="window.parent.postMessage({type:'moduleComplete',courseId:COURSE_ID,moduleId:MODULE_ID},'*')">Complete Module</button>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how_large_language_models_work';
+var MODULE_ID='how-m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed. Well done.':' — Review the lessons and retake when ready.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+// Chat system
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are a friendly expert tutor for AESOP AI Academy, teaching the course "How Large Language Models Work." The student is studying Lesson 1: Tokens and Tokenization. Topics you cover: what tokens are, Byte-Pair Encoding (BPE), GPT-4\'s ~100K vocabulary, tiktoken library, why tokens ≠ words, token costs (~750 English words per 1000 tokens), language differences (Turkish/Finnish use more tokens), why LLMs fail at letter-counting and arithmetic with numbers like 9.9 vs 9.11. Be precise, practical, and use concrete examples. If the student goes off-topic, warmly redirect to tokenization concepts.',
+  l2:'You are a friendly expert tutor for AESOP AI Academy, teaching "How Large Language Models Work." The student is studying Lesson 2: The Context Window. Topics: what the context window is, how it grew from GPT-2 (1K) to Gemini 1.5 (1M tokens), the "Lost in the Middle" phenomenon (Liu et al. 2023), how context is split among system prompt/history/documents/output buffer, GitHub Copilot context management, practical engineering strategies for context management. Stay on topic. If off-topic, redirect warmly.',
+  l3:'You are a friendly expert tutor for AESOP AI Academy, teaching "How Large Language Models Work." The student is studying Lesson 3: Memory Types and Retrieval. Topics: the four memory types (in-weights, in-context, external/RAG, in-cache/KV), LLM statelessness, ChatGPT\'s Memory feature (external store injected into system prompt), Bing Chat/Sydney\'s context manipulation, Perplexity AI RAG, Anthropic prompt caching, the Meta AI RAG paper (Lewis et al. 2020). Stay on topic. If off-topic, redirect warmly.',
+  l4:'You are a friendly expert tutor for AESOP AI Academy, teaching "How Large Language Models Work." The student is studying Lesson 4: Prompt Engineering with Context in Mind. Topics: placing critical info at context edges, using tiktoken for pre-flight token counting, rolling summary technique, structured context blocks with labeled sections, overlapping chunk strategy (Notion AI example), designing for knowledge cutoffs, token economy (input vs output pricing). Help students apply these strategies to their specific use cases. If off-topic, redirect warmly.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Great question about tokenization! The key insight is that GPT models use Byte-Pair Encoding (BPE) which starts with individual characters and merges the most frequent adjacent pairs. So 'tokenization' might become ['token','ization'] — two tokens, not one word. Common short words like 'the' or 'a' are single tokens, while rare long words get split more aggressively. What aspect of tokenization would you like to explore further?",
+    "Here's a practical token counting rule: 1,000 tokens ≈ 750 English words, or roughly 4 characters per token. So a typical 1-page document (~500 words) uses about 667 tokens. The reason LLMs can't count letters reliably is that they never see individual characters — they see pre-merged chunks. When asked 'how many R's in strawberry?', the model has to infer character content from token chunks, which is error-prone.",
+    "One fascinating quirk of tokenization is language inequality. GPT models were trained predominantly on English, so the BPE vocabulary is optimized for English character patterns. Languages like Turkish or Finnish form extremely long compound words that BPE must split into many fragments — they can use 40-60% more tokens than English for the same meaning. This makes non-English API usage significantly more expensive. Does this help clarify the token system?"
+  ],
+  l2:[
+    "Context window management is one of the most important practical skills in LLM engineering. For your 16K window with a 1,500-token system prompt, you have about 14,500 tokens left. At 300 tokens per turn (both user + assistant combined), you can fit roughly 48 turns before hitting the limit. The strategy: track running token count, and when you hit ~70% usage (~10K tokens total), trigger a rolling summary. What part of the strategy would you like to design first?",
+    "The 'Lost in the Middle' research (Liu et al., 2023) has a direct practical implication: if you have a 16K context and inject retrieved documents, put the most relevant document FIRST in your context block, not buried in the middle. This can improve answer quality by 10-20% on retrieval tasks with no additional cost. For a customer support bot, I'd recommend: system prompt → customer profile → most relevant knowledge base article → recent conversation turns → current question.",
+    "For long-running support conversations, a rolling summary strategy works well: when you've accumulated 50+ turns, ask the model to summarize the conversation so far in 200-300 tokens, capturing: (1) customer's original issue, (2) solutions tried, (3) customer preferences/constraints, (4) current status. Replace the raw turn history with this summary. You preserve continuity while freeing ~12,000 tokens of window space. Any specific details you'd like help implementing?"
+  ],
+  l3:[
+    "Great choice of challenge for the AI tutor! For a student progress system, you'd actually want all four memory types working together. In-weights: the model's existing knowledge of the curriculum subject matter. In-context: the current tutoring session, the student's answers and questions right now. External/RAG: the curriculum database — retrieve relevant lessons, exercises, and standards on demand. External persistent: a student profile database storing weak topics, session history, mastery levels — summarized and injected into the system prompt at session start.",
+    "The student profile (external persistent memory) would look something like this when injected into the system prompt: 'Student: Emma, Grade 8. Weak areas: fractions, negative numbers. Mastered: basic algebra, geometry. Last session: practiced adding fractions, got 6/10 correct. Learning style: prefers visual examples.' This text — maybe 150 tokens — goes at the top of every session's system prompt. The model thinks it 'knows' Emma but it's just reading a text summary. Which memory component would you like to design next?",
+    "For the curriculum RAG component, I'd suggest chunking your curriculum into topic-level segments (e.g., 'Adding Fractions — Grade 5 standard, definition, worked examples, common mistakes'). Index these with embeddings. When Emma asks about fractions, retrieve the 2-3 most relevant curriculum chunks and inject them before the conversation. This keeps the system prompt lean while giving the model exactly the right instructional content for each topic. The model appears to 'know' your curriculum — it's actually just receiving the right tokens. Questions?"
+  ],
+  l4:[
+    "For a 40K-token document in a 32K-token model, the standard approach is map-reduce chunking. Here's the strategy: Split the document into chunks of ~8,000 tokens each (leaving room for system prompt + output). You'll get roughly 5 chunks. Send each chunk to the model with the same analysis question: 'Analyze this section for [your specific needs] and provide a structured summary.' Collect 5 structured summaries (~500 tokens each = 2,500 tokens total). Then send ALL five summaries to the model in a final synthesis call: 'Here are section analyses of a 50-page document. Synthesize these into a complete analysis.' This gets you full coverage reliably.",
+    "For the chunk boundaries, use overlapping chunks to avoid missing content at splits. If each chunk is 8,000 tokens, overlap by 500 tokens at each boundary. So chunk 1 is tokens 0-8000, chunk 2 is tokens 7500-15500, etc. This ensures no sentence is cut in a way that loses meaning. For the system prompt in each chunk call, use a structured block: [TASK]: What you need analyzed. [DOCUMENT SECTION N of 5]: The chunk text. [ANALYSIS FORMAT]: How you want the output structured. This makes synthesis easier.",
+    "On token budget: with 5 analysis calls at ~9K tokens input each = 45K input tokens, plus ~500 output tokens each = 2,500 output tokens for section analyses. Then 1 synthesis call at ~3,000 tokens input (summaries) + system prompt, with ~1,000 output tokens. Total: roughly 48K input + 3,500 output tokens. At GPT-4 Turbo pricing (~$10/1M input, ~$30/1M output), that's under $0.60 for a complete 50-page analysis. How does that fit your budget? Want help designing the synthesis prompt?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId];
+  if(!replies) return 'I\'m in offline practice mode. Please try rephrasing your question about '+labId+'.';
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  msgs.innerHTML='';
+  var welcomes={
+    l1:'Welcome! I\'m your token exploration guide. Ask me anything about how text gets broken into tokens — costs, languages, code, arithmetic quirks. What would you like to explore?',
+    l2:'Hello! I\'m here to help you think through context window management. Whether it\'s conversation truncation, rolling summaries, or RAG pipelines — let\'s work through the right strategy for your application. What\'s your situation?',
+    l3:'Ready to help you design a memory architecture! LLM memory is all about matching the right tool to the right need. Tell me about your application and I\'ll help you map out which memory types fit where.',
+    l4:'Let\'s design your document analysis pipeline! Large-document processing is one of the most common real-world LLM engineering challenges. Tell me about your document, your model limits, and what kind of analysis you need — I\'ll help you build a practical strategy.'
+  };
+  addMsg(labId,'ai',welcomes[labId]||'Chat reset. How can I help?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].map(function(m){return{role:m.role,content:m.content};});
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'Sorry, I couldn\'t generate a response.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+// Init
+updateTabs();
+</script>
+</body>
+</html>

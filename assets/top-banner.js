@@ -20,13 +20,6 @@
   // Avoid double-mount if the script gets included twice.
   if (document.getElementById('topBanner')) return;
 
-  // Apply persisted dark-mode BEFORE paint to avoid a flash of light UI.
-  try {
-    if (localStorage.getItem('aesop-theme') === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    }
-  } catch (_) {}
-
   /* ─── CSS ─────────────────────────────────────────────── */
   var CSS = '' +
     'body { padding-top: 118px; overflow-x: hidden; }' +
@@ -230,28 +223,6 @@
           setStat('languages', stats.languages);
         })
         .catch(function () { /* keep fallback numbers */ });
-    } catch (_) {}
-
-    // Dark-mode toggle: persist choice in localStorage under 'aesop-theme'.
-    try {
-      var root = document.documentElement;
-      var THEME_KEY = 'aesop-theme';
-      if (localStorage.getItem(THEME_KEY) === 'dark') {
-        root.setAttribute('data-theme', 'dark');
-      }
-      var darkBtn = document.getElementById('darkToggle');
-      if (darkBtn) {
-        darkBtn.addEventListener('click', function () {
-          var isDark = root.getAttribute('data-theme') === 'dark';
-          if (isDark) {
-            root.removeAttribute('data-theme');
-            localStorage.setItem(THEME_KEY, 'light');
-          } else {
-            root.setAttribute('data-theme', 'dark');
-            localStorage.setItem(THEME_KEY, 'dark');
-          }
-        });
-      }
     } catch (_) {}
 
     // Language selector: clicking a pill navigates to the locale root.

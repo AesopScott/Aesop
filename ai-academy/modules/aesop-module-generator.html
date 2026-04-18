@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+<!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
 <!-- v1.0.0 | 2026-04-14 -->
 <!-- v1.0.0 | 2026-04-14 -->
 <html lang="en">
 <head>
-<!-- aesop-module-generator-v1.1.0 | AESOP AI Academy Module Builder | April 2026 -->
+<!-- aesop-module-generator-v1.1.1 | AESOP AI Academy Module Builder | April 2026 -->
 <meta charset="UTF-8">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
@@ -70,7 +71,7 @@ textarea{resize:vertical;min-height:80px;}
 <div class="header">
   <div>
     <div class="header-brand">AESOP AI Academy</div>
-    <div class="header-sub">Module Generator v1.1.0</div>
+    <div class="header-sub">Module Generator v1.1.1</div>
   </div>
 </div>
 
@@ -173,6 +174,7 @@ textarea{resize:vertical;min-height:80px;}
   <div style="display:flex;gap:0.75rem;align-items:stretch;">
     <button class="btn-generate" id="generateBtn" onclick="generate()" style="flex:1;">Generate Module</button>
     <button class="btn-generate" id="chainBtn" onclick="buildFullCourse()" style="flex:1;background:var(--teal);color:#fff;" title="Generate and save all modules automatically">Build Full Course</button>
+    <button class="btn-generate" id="stopBtn" onclick="stopChain()" style="flex:0 0 auto;background:var(--red);color:#fff;display:none;" title="Stop the current build and abort the in-flight API request">Stop</button>
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:60px;">
       <label for="resumeFrom" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted,#8892b0);line-height:1;">Resume</label>
       <input type="number" id="resumeFrom" min="1" value="1" style="width:48px;text-align:center;padding:4px;border:1px solid var(--border,#1e3a5f);border-radius:4px;background:var(--surface,#112240);color:var(--text,#ccd6f6);font-size:0.85rem;" title="Start building from this module number (skips earlier modules)">
@@ -203,14 +205,35 @@ textarea{resize:vertical;min-height:80px;}
 
 <script>
 /* ── fetchWithRetry: retries transient network / 529 / 5xx errors ── */
-/* 3rd arg: number OR options object { retries, baseDelay, logFn } */
+/* 3rd arg: number OR options object { retries, baseDelay, logFn, timeoutMs }
+   - timeoutMs: per-attempt hard ceiling; aborts the fetch via AbortController.
+   - options.signal: optional external signal — used as a user-stop channel.
+     If it fires, we throw immediately WITHOUT retrying. */
 async function fetchWithRetry(url, options, retryOpts = 3) {
   const maxRetries = (typeof retryOpts === 'object') ? (retryOpts.retries ?? 3) : retryOpts;
   const baseDelay  = (typeof retryOpts === 'object') ? (retryOpts.baseDelay ?? 1000) : 1000;
   const logFn      = (typeof retryOpts === 'object') ? retryOpts.logFn : null;
+  const timeoutMs  = (typeof retryOpts === 'object') ? (retryOpts.timeoutMs ?? 0) : 0;
+  const externalSignal = options && options.signal ? options.signal : null;
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (externalSignal && externalSignal.aborted) {
+      const e = new Error('Stopped by user'); e.name = 'AbortError'; throw e;
+    }
+    const ctrl = new AbortController();
+    let onExternalAbort = null;
+    if (externalSignal) {
+      onExternalAbort = () => { try { ctrl.abort('user-stop'); } catch(e){} };
+      externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    }
+    const timeoutId = timeoutMs > 0
+      ? setTimeout(() => { try { ctrl.abort('timeout'); } catch(e){} }, timeoutMs)
+      : null;
+    const fetchOpts = Object.assign({}, options, { signal: ctrl.signal });
     try {
-      const resp = await fetch(url, options);
+      const resp = await fetch(url, fetchOpts);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (onExternalAbort) externalSignal.removeEventListener('abort', onExternalAbort);
       if (resp.ok || resp.status < 500) return resp;   // success or client error — don't retry
       if (attempt === maxRetries) return resp;          // last attempt — return whatever we got
       const wait = Math.min(baseDelay * 2 ** (attempt - 1), 60000);
@@ -218,9 +241,23 @@ async function fetchWithRetry(url, options, retryOpts = 3) {
       logFn ? logFn(msg) : console.warn(msg);
       await new Promise(r => setTimeout(r, wait));
     } catch (err) {
-      if (attempt === maxRetries) throw err;
+      if (timeoutId) clearTimeout(timeoutId);
+      if (onExternalAbort) externalSignal.removeEventListener('abort', onExternalAbort);
+      // User stop — rethrow immediately, no retries.
+      if (externalSignal && externalSignal.aborted) {
+        const e = new Error('Stopped by user'); e.name = 'AbortError'; throw e;
+      }
+      const isTimeout = err && err.name === 'AbortError';
+      if (attempt === maxRetries) {
+        if (isTimeout && timeoutMs > 0) {
+          const e = new Error('Timed out after ' + Math.round(timeoutMs/1000) + 's (no response from API)');
+          e.name = 'TimeoutError';
+          throw e;
+        }
+        throw err;
+      }
       const wait = Math.min(baseDelay * 2 ** (attempt - 1), 60000);
-      const msg = `fetchWithRetry: network error, retrying in ${wait}ms (${attempt}/${maxRetries})`;
+      const msg = `fetchWithRetry: ${isTimeout ? 'attempt timed out after ' + Math.round(timeoutMs/1000) + 's' : 'network error'} — retrying in ${wait}ms (${attempt}/${maxRetries})`;
       logFn ? logFn(msg) : console.warn(msg);
       await new Promise(r => setTimeout(r, wait));
     }
@@ -1402,6 +1439,26 @@ function refreshModuleDropdown() {
 }
 
 let chainRunning = false;
+// AbortController for the in-flight API request. Set by buildFullCourse() per
+// module and aborted by stopChain() when the user hits Stop. `null` when idle.
+let currentAbortController = null;
+// Per-attempt hard timeout — if an API call doesn't return within this window,
+// AbortController aborts the fetch so fetchWithRetry can raise TimeoutError
+// instead of sitting forever on a stalled TCP connection (the v1.1.0 bug).
+const MODULE_ATTEMPT_TIMEOUT_MS = 800000; // 800 seconds
+
+function stopChain() {
+  chainRunning = false;
+  if (currentAbortController) {
+    try { currentAbortController.abort('user-stop'); } catch(e) {}
+  }
+  const stopBtn = document.getElementById('stopBtn');
+  if (stopBtn) {
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Stopping...';
+  }
+  try { log('[STOP] User requested stop — aborting in-flight request.'); } catch(e) {}
+}
 
 // ── Obsidian Structured Checkpoint ─────────────────────────────────
 // Posts a markdown checkpoint block to GEN MOD/working queue.md
@@ -1484,9 +1541,15 @@ async function buildFullCourse() {
 
   const generateBtn = document.getElementById('generateBtn');
   const chainBtn = document.getElementById('chainBtn');
+  const stopBtn = document.getElementById('stopBtn');
   generateBtn.disabled = true;
   chainBtn.disabled = true;
   chainRunning = true;
+  if (stopBtn) {
+    stopBtn.disabled = false;
+    stopBtn.textContent = 'Stop';
+    stopBtn.style.display = 'block';
+  }
 
   // Resume support — start from specified module (default 1)
   const resumeFrom = Math.max(1, Math.min(totalMods, parseInt(document.getElementById('resumeFrom').value) || 1));
@@ -1526,6 +1589,7 @@ async function buildFullCourse() {
     if (notes) userMsg += ' Notes: ' + notes;
     userMsg += ' Output complete HTML only starting with <!DOCTYPE html>.';
 
+    currentAbortController = new AbortController();
     try {
       const resp = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -1543,8 +1607,9 @@ async function buildFullCourse() {
             : buildSystemPrompt(course, mod, selectedTier, tc, selectedLang, selectedLangName)
           ).join('\n'),
           messages: [{ role: 'user', content: userMsg }]
-        })
-      }, { retries: 2, baseDelay: 15000, logFn: log });
+        }),
+        signal: currentAbortController.signal
+      }, { retries: 2, baseDelay: 15000, timeoutMs: MODULE_ATTEMPT_TIMEOUT_MS, logFn: log });
 
       clearInterval(swInterval);
 

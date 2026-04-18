@@ -237,9 +237,4 @@
     // Falls back gracefully if the route doesn't exist.
     var sel = document.getElementById('langSelector');
     if (sel) {
-      var path = location.pathname;
-      // Active-highlight the language matching the current URL.
-      var current = 'en';
-      var m = path.match(/\/ai-academy\/modules\/([a-z]{2})\//);
-      if (m) current = m[1];
-      sel.querySelectorAll('.lang-btn').forEach(f
+      va

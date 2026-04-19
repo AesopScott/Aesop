@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-18 10:08 UTC
+**Generated:** 2026-04-19 10:10 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 441 · **Warnings:** 591
+**Errors:** 441 · **Warnings:** 592
 
 ---
 
@@ -824,8 +824,9 @@
 
 ## Module File Integrity
 
-### Warnings (245)
+### Warnings (246)
 
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-creativity-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-creativity-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-creativity-m3.html` has no COURSE_ID constant

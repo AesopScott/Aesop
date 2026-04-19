@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.0 | 2026-04-19 -->
+<!-- v1.0.2 | 2026-04-19 -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -300,11 +300,19 @@ function liveCids() {
 }
 function isLive(cid) {
   if (!cid) return false;
-  // Canonical registry keys use hyphens; courses-data.json historically used
-  // underscores for some courses. Look up both forms so the ⟡ marker appears
-  // regardless of which convention the courses-data entry uses.
-  const e = REGISTRY[cid] || REGISTRY[cid.replace(/_/g, '-')];
-  return !!(e && e.status === 'live');
+  // Hyphens are the canonical registry convention, but history is messy:
+  // some courses were activated before normalization and still live under
+  // an underscored key (e.g. "how_large_language_models_work"), and some
+  // courses-data entries use underscores while the registry uses hyphens.
+  // Renaming either side would clobber user progress keyed by the string,
+  // so check all three variants — original, hyphens, underscores — and
+  // trust whichever form the registry actually stored it under.
+  const variants = [cid, cid.replace(/_/g, '-'), cid.replace(/-/g, '_')];
+  for (const v of variants) {
+    const e = REGISTRY[v];
+    if (e && e.status === 'live') return true;
+  }
+  return false;
 }
 // Back-compat: any code that does `LIVE_COURSES.has(x)`, `LIVE_COURSES.size`,
 // or `for (const cid of LIVE_COURSES)` still works because it gets a fresh
@@ -1669,17 +1677,12 @@ async function buildFullCourse() {
     } catch(err) {
       clearInterval(swInterval);
       const errSecs = ((Date.now() - modStart) / 1000).toFixed(1);
-      const userStopped = err && err.name === 'AbortError';
-      const timedOut = err && err.name === 'TimeoutError';
-      const label = userStopped ? 'STOPPED by user' : (timedOut ? 'TIMED OUT' : 'ERROR');
-      log(label + ' on M' + mn + ' after ' + errSecs + 's: ' + err.message);
+      log('ERROR on M' + mn + ': ' + err.message);
       showStatus('error', 'Failed on M' + mn + ': ' + err.message + ' — Resume field set to M' + mn + ', click Build Full Course to retry.');
       document.getElementById('resumeFrom').value = mn;
       await obsidianCheckpoint('mod-error', { n: mn, title: mod.title, secs: errSecs, error: err.message });
       allSaved = false;
       break;
-    } finally {
-      currentAbortController = null;
     }
 
     // Brief pause between modules to avoid rate limits
@@ -1758,15 +1761,9 @@ async function buildFullCourse() {
   }
 
   chainRunning = false;
-  currentAbortController = null;
   generateBtn.disabled = false;
   chainBtn.disabled = false;
   chainBtn.textContent = 'Build Full Course';
-  if (stopBtn) {
-    stopBtn.style.display = 'none';
-    stopBtn.disabled = false;
-    stopBtn.textContent = 'Stop';
-  }
   if (allSaved) document.getElementById('resumeFrom').value = 1;
 }
 
@@ -2021,6 +2018,19 @@ async function manualActivate() {
 }
 
 // ── Write course-registry.json entry on activation ──────────────────
+//
+// Derive a 3-letter module-id prefix (e.g. "sec" for "AI Security and
+// Red-Teaming") from the course name by taking the first alpha chars of
+// the first non-stopword. Used only as a fallback when REGISTRY_META and
+// a matching placeholder slot both fail to supply one — prevents prefixes
+// like "ai-" that produce module ids like "ai--m1".
+function derivePrefixFromName(name) {
+  const stop = new Set(['ai','and','the','a','an','in','of','for','to','with','on','from','vs']);
+  const words = (name || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w && !stop.has(w));
+  const first = words[0] || 'crs';
+  return first.substring(0, 3);
+}
+
 async function writeRegistryEntry(cid) {
   const course = COURSES.find(c => c.id === cid);
   if (!course) return;
@@ -2030,11 +2040,50 @@ async function writeRegistryEntry(cid) {
   // so the registry stays consistent and lookups via isLive() succeed.
   const regKey = cid.replace(/_/g, '-');
 
-  const meta = REGISTRY_META[cid] || REGISTRY_META[regKey] || {
+  // Read the existing registry up front so we can (a) inherit meta from a
+  // pre-existing placeholder slot (like "dv-13" for a course that later got
+  // a real id), (b) preserve per-entry fields like languages, and (c) know
+  // which placeholder to delete after we write the canonical entry.
+  let registry = {};
+  try {
+    const existingHandle = await repoFolderHandle.getFileHandle('course-registry.json');
+    const existingFile = await existingHandle.getFile();
+    registry = JSON.parse(await existingFile.text());
+  } catch(e) { /* file doesn't exist yet — that's fine */ }
+
+  // Find a placeholder slot whose title matches this course but whose key
+  // is a generic placeholder (not cid / regKey). These slots were seeded
+  // into course-registry.json before the course had a real id — activation
+  // should collapse them into the canonical slot. A placeholder has short
+  // meaningful content (icon, sub, desc) but modules[] with empty lessons,
+  // so we match by title equality alone.
+  let placeholderKey = null;
+  let placeholderEntry = null;
+  for (const [k, e] of Object.entries(registry)) {
+    if (k === regKey || k === cid) continue;
+    if (e && e.title && e.title === course.name) {
+      placeholderKey = k;
+      placeholderEntry = e;
+      break;
+    }
+  }
+
+  // Meta resolution order: explicit REGISTRY_META for this course → placeholder
+  // meta harvested from the registry → hardcoded default. The placeholder path
+  // preserves hand-curated icon/accent/desc/sub that would otherwise be lost.
+  const meta = REGISTRY_META[cid] || REGISTRY_META[regKey] || (placeholderEntry ? {
+    icon: placeholderEntry.icon || '📘',
+    accent: placeholderEntry.accent || '#64748b',
+    accentRgb: placeholderEntry.accentRgb || '100,116,139',
+    pts: placeholderEntry.pts || 1,
+    days: placeholderEntry.days || 1,
+    prefix: derivePrefixFromName(course.name),
+    desc: placeholderEntry.desc || (course.name + ' — AESOP AI Academy elective course.')
+  } : {
     icon:'📘', accent:'#64748b', accentRgb:'100,116,139',
-    pts:1, days:1, prefix: regKey.substring(0,3),
+    pts:1, days:1, prefix: derivePrefixFromName(course.name),
     desc: course.name + ' — AESOP AI Academy elective course.'
-  };
+  });
 
   // Read lesson titles from generated module HTML files. Path resolution is
   // delegated to resolveModulePath() so that foundations courses (which use
@@ -2109,17 +2158,28 @@ async function writeRegistryEntry(cid) {
     } catch(e) { /* best-effort — use defaults */ }
   }
 
+  // If courses.html lookup didn't yield a sub/category but we found a
+  // placeholder slot in the registry, fall back to whatever it carried.
+  // This is how activation preserves strings like "Development · Course
+  // 13 of 14" when the course was never wired into courses.html.
+  const effectiveSub = panelSub
+    || (placeholderEntry && placeholderEntry.sub)
+    || (panelCategory ? panelCategory + ' · Elective' : 'Elective');
+  const effectiveCategory = panelCategory
+    || (placeholderEntry && placeholderEntry.category)
+    || 'Elective';
+
   const entry = {
     id: regKey,
     title: course.name,
     icon: meta.icon,
-    sub: panelSub || (panelCategory ? panelCategory + ' · Elective' : 'Elective'),
+    sub: effectiveSub,
     accent: meta.accent,
     accentRgb: meta.accentRgb,
     pts: meta.pts,
     days: meta.days,
     desc: meta.desc,
-    category: panelCategory || 'Elective',
+    category: effectiveCategory,
     type: panelType,
     status: 'live',
     modCount: modules.length,
@@ -2127,27 +2187,26 @@ async function writeRegistryEntry(cid) {
     modules: modules
   };
 
-  // Read existing registry (or start fresh)
-  let registry = {};
-  try {
-    const existingHandle = await repoFolderHandle.getFileHandle('course-registry.json');
-    const existingFile = await existingHandle.getFile();
-    registry = JSON.parse(await existingFile.text());
-  } catch(e) { /* file doesn't exist yet — that's fine */ }
-
-  // Preserve existing languages array and add current language. Check both
-  // regKey and legacy underscored cid so we inherit languages from any older
-  // registry entry that may have been written before normalization.
+  // Preserve existing languages array and add current language. Check
+  // regKey, legacy underscored cid, AND the placeholder slot we may be
+  // about to delete, so no language state is dropped on activation.
   const existingLangs = registry[regKey]?.languages
     || registry[cid]?.languages
+    || (placeholderEntry && placeholderEntry.languages)
     || ['en'];
   if (!existingLangs.includes(selectedLang)) existingLangs.push(selectedLang);
   entry.languages = existingLangs;
 
-  // Add/update this course under the canonical hyphenated key, and remove
-  // any stale underscored duplicate from prior activations.
+  // Write the canonical entry, then clean up any stale keys that referred
+  // to the same course: the underscored cid form and any placeholder slot
+  // whose title matched. Both are redundant now that the canonical entry
+  // exists and would otherwise duplicate the course in the hub.
   registry[regKey] = entry;
   if (regKey !== cid) delete registry[cid];
+  if (placeholderKey && placeholderKey !== regKey && placeholderKey !== cid) {
+    delete registry[placeholderKey];
+    console.log('Collapsed placeholder slot "' + placeholderKey + '" into "' + regKey + '"');
+  }
 
   // Write back
   const writeHandle = await repoFolderHandle.getFileHandle('course-registry.json', { create: true });

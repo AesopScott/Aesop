@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.0 | 2026-04-19 -->
+<!-- v1.0.1 | 2026-04-19 -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -300,11 +300,19 @@ function liveCids() {
 }
 function isLive(cid) {
   if (!cid) return false;
-  // Canonical registry keys use hyphens; courses-data.json historically used
-  // underscores for some courses. Look up both forms so the ⟡ marker appears
-  // regardless of which convention the courses-data entry uses.
-  const e = REGISTRY[cid] || REGISTRY[cid.replace(/_/g, '-')];
-  return !!(e && e.status === 'live');
+  // Hyphens are the canonical registry convention, but history is messy:
+  // some courses were activated before normalization and still live under
+  // an underscored key (e.g. "how_large_language_models_work"), and some
+  // courses-data entries use underscores while the registry uses hyphens.
+  // Renaming either side would clobber user progress keyed by the string,
+  // so check all three variants — original, hyphens, underscores — and
+  // trust whichever form the registry actually stored it under.
+  const variants = [cid, cid.replace(/_/g, '-'), cid.replace(/-/g, '_')];
+  for (const v of variants) {
+    const e = REGISTRY[v];
+    if (e && e.status === 'live') return true;
+  }
+  return false;
 }
 // Back-compat: any code that does `LIVE_COURSES.has(x)`, `LIVE_COURSES.size`,
 // or `for (const cid of LIVE_COURSES)` still works because it gets a fresh

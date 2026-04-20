@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.16 | 2026-04-15 -->
+<!-- v1.0.17 | 2026-04-20 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1290,6 +1290,66 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
       if (!resp.ok) throw new Error('Failed to save report: ' + resp.status);
     }
 
+    // Fetch the current eval-index.json from GitHub via the Contents API,
+    // decode the base64 body, and parse it. Returns {} if missing.
+    async function fetchEvalIndexFromGitHub(pat) {
+      const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_BASE}/eval-index.json`;
+      const resp = await fetchWithRetry(url, {
+        headers: {
+          'Authorization': 'token ' + pat,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      if (resp.status === 404) return {};
+      if (!resp.ok) throw new Error('Failed to fetch eval-index.json: ' + resp.status);
+      const data = await resp.json();
+      if (!data.content) return {};
+      const text = atob(data.content.replace(/\n/g, ''));
+      try {
+        return JSON.parse(text);
+      } catch (_) {
+        return {};
+      }
+    }
+
+    // Merge one course's completed-review summary into eval-index.json on
+    // GitHub and write it back. Called after a full panel run so the public
+    // scoring dashboard picks up the new panelAverage/date/reviewers.
+    async function updateEvalIndexEntry(pat, courseId, folderName, fullReport) {
+      const index = await fetchEvalIndexFromGitHub(pat);
+      const prev = index[courseId] || {};
+
+      const modules = Array.isArray(fullReport && fullReport.modules) ? fullReport.modules : [];
+      const reviewerSet = new Set();
+      let modsWithReviews = 0;
+      for (const m of modules) {
+        const revs = m && m.reviews ? Object.values(m.reviews) : [];
+        const validRevs = revs.filter(r => r && !r.error);
+        if (validRevs.length > 0) modsWithReviews += 1;
+        for (const r of validRevs) {
+          if (r && r.reviewer) reviewerSet.add(r.reviewer);
+        }
+      }
+      const reviewers = Array.from(reviewerSet);
+
+      const summary = (fullReport && fullReport.summary) || {};
+      const panelAverage = typeof summary.panelAverage === 'number' ? summary.panelAverage : null;
+
+      const reportFile = prev.reportFile
+        || `${folderName}/${folderName}-eval-report.json`;
+
+      index[courseId] = {
+        course: (fullReport && fullReport.course) || prev.course || courseId,
+        date: new Date().toISOString(),
+        reviewers,
+        moduleCount: modsWithReviews,
+        panelAverage,
+        reportFile
+      };
+
+      await saveEvalIndexToGitHub(pat, index);
+    }
+
     async function saveEvalIndexToGitHub(pat, indexData) {
       const fileName = 'eval-index.json';
       const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_BASE}/${fileName}`;
@@ -1991,6 +2051,18 @@ Return ONLY valid JSON. No markdown fences, no preamble.`;
         const reportContent = JSON.stringify(fullReport, null, 2);
         await saveReportToGitHub(pat, folderName, reportFilename, reportContent);
         logLine('Report saved: ' + folderName + '/' + reportFilename, 'success');
+
+        // Update eval-index.json so the public scoring dashboard picks up
+        // the new panelAverage, reviewers, and date. Without this the
+        // dashboard reads a stale index and completed reviews appear missing.
+        try {
+          logLine('Updating eval-index.json...', 'info');
+          await updateEvalIndexEntry(pat, course.id, folderName, fullReport);
+          logLine('Index updated — new score will appear on the public dashboard.', 'success');
+        } catch (ie) {
+          logLine('⚠ Could not update eval-index.json: ' + ie.message, 'warn');
+          logLine('  Report saved, but dashboard may not reflect it until the index is refreshed.', 'warn');
+        }
 
         // Update local state and re-render
         course._evalReport = fullReport;

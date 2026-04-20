@@ -21,8 +21,11 @@ jobs:
           python-version: '3.11'
 
       - name: Run course audit
-        run: python .github/scripts/audit_courses.py || true
-        # || true so the commit step always runs — the report captures errors
+        id: audit
+        run: |
+          python .github/scripts/audit_courses.py
+          echo "exit_code=0" >> $GITHUB_OUTPUT
+        continue-on-error: true
 
       - name: Commit audit report
         run: |
@@ -31,3 +34,9 @@ jobs:
           git add aip/audit-report.md
           git diff --staged --quiet || git commit -m "Audit: $(date '+%Y-%m-%d') course audit report [skip ci]"
           git push
+
+      - name: Fail if audit found errors
+        if: steps.audit.outcome == 'failure'
+        run: |
+          echo "Audit script exited with errors — see aip/audit-report.md"
+          exit 1

@@ -42,14 +42,25 @@ EXCLUDE_FILES = {
     'ai-academy/modules/electives-hub.html',             # the hub (already excluded by dir)
 }
 
+# Paths under EXCLUDE_DIRS that we still want to include. The foreign-
+# language courses pages live under ai-academy/modules/<lang>/courses.html
+# and should get the shared banner even though their parent dir is excluded.
+INCLUDE_PATTERNS = [
+    'ai-academy/modules/*/courses.html',
+]
+
 
 def is_excluded(rel: Path) -> bool:
     parts = rel.as_posix()
+    if parts in EXCLUDE_FILES:
+        return True
+    # Include-patterns win over exclude-dirs.
+    for pat in INCLUDE_PATTERNS:
+        if rel.match(pat):
+            return False
     for d in EXCLUDE_DIRS:
         if parts.startswith(d + '/') or parts == d:
             return True
-    if parts in EXCLUDE_FILES:
-        return True
     return False
 
 
@@ -77,13 +88,17 @@ def patch_file(path: Path) -> str:
         return 'already'
 
     idx = text.lower().rfind('</body>')
-    if idx == -1:
-        return 'no-body'
+    if idx != -1:
+        new_text = text[:idx] + BANNER_TAG + '\n' + text[idx:]
+        path.write_bytes(new_text.encode('utf-8'))
+        return 'added'
 
-    new_text = text[:idx] + BANNER_TAG + '\n' + text[idx:]
-    # Preserve original line endings (don't translate).
-    path.write_bytes(new_text.encode('utf-8'))
-    return 'added'
+    # File is truncated (no </body>). Browsers are lenient about missing
+    # close tags — appending the script at EOF still loads and executes it,
+    # so the shared banner can show even on pages that need separate repair.
+    sep = '' if text.endswith('\n') else '\n'
+    path.write_bytes((text + sep + BANNER_TAG + '\n').encode('utf-8'))
+    return 'added-eof'
 
 
 def main():
@@ -95,7 +110,7 @@ def main():
         rel = t.relative_to(REPO_ROOT)
         status = patch_file(t)
         counts[status] = counts.get(status, 0) + 1
-        if status == 'no-body' or status.startswith('error'):
+        if status == 'added-eof' or status.startswith('error'):
             issues.append((status, rel))
 
     print(f'Scanned {len(targets)} files.')

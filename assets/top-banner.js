@@ -27,6 +27,14 @@
     'html { scroll-padding-top: 140px; }' +
     'body { padding-top: 118px; overflow-x: hidden; }' +
     'body.banner-dismissed { padding-top: 0; }' +
+    /* Hide any page-local <nav class="nav"> (the old per-page top nav)
+       since the shared top banner above already provides brand, lang
+       selector, dark-mode toggle, and forums/report pills. Selector is
+       scoped to direct-child nav so it never hits in-content navs. */
+    'body > nav.nav { display: none !important; }' +
+    /* Also hide the legacy floating #siteLangSwitch pill on pages where
+       the shared banner already provides a language selector. */
+    'body > #siteLangSwitch { display: none !important; }' +
     '.top-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999;' +
     '  background: var(--navy-mid, #16293d); color: #fff;' +
     '  box-shadow: 0 2px 16px rgba(13,27,42,0.45);' +

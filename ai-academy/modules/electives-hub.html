@@ -362,6 +362,9 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--cream);color:var(--in
 .mod-topbar-sizer{display:flex;align-items:center;gap:0.35rem;flex-shrink:0;}
 .mod-sizer-btn{background:transparent;border:1px solid #1a2738;color:#4a5a6a;border-radius:3px;padding:0.15rem 0.4rem;font-size:0.65rem;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:inherit;}
 .mod-sizer-btn:hover{border-color:var(--gold);color:var(--gold);}
+.mod-listen-btn{background:transparent;border:1px solid #1a2738;color:rgba(201,160,90,0.55);border-radius:3px;padding:0.15rem 0.5rem;font-size:0.65rem;font-weight:700;letter-spacing:0.04em;cursor:pointer;transition:all 0.15s;font-family:inherit;flex-shrink:0;}
+.mod-listen-btn:hover{border-color:var(--gold);color:var(--gold);}
+.mod-listen-btn.playing{border-color:#ff6b6b;color:#ff6b6b;}
 .mod-sizer-range{-webkit-appearance:none;appearance:none;width:70px;height:3px;background:#1a2738;border-radius:99px;outline:none;cursor:pointer;}
 .mod-sizer-range::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--gold);cursor:pointer;}
 .mod-color-range{-webkit-appearance:none;appearance:none;width:70px;height:3px;border-radius:99px;outline:none;cursor:pointer;background:linear-gradient(to right,#2a3a4a,#e8e3db);}
@@ -952,6 +955,8 @@ function injectModuleContent(html, cId, mId, m, c){
         <div class="mod-topbar-sep"></div>
         <span class="mod-sizer-label">Color</span>
         <input class="mod-color-range" id="hubColorRange" type="range" min="0" max="100" value="100" oninput="hubApplyColor(this.value)" title="Text brightness">
+        <div class="mod-topbar-sep"></div>
+        <button class="mod-listen-btn" id="hubListenBtn" onclick="hubToggleListen()" title="Read this lesson aloud using your browser's built-in voice">🔊 Listen</button>
       </div>
     </div>`;
 
@@ -1497,6 +1502,152 @@ function hubApplyColor(val){
   }
   localStorage.setItem('aesop-hub-textcolor', val);
 }
+
+// ── Read Aloud (Web Speech API) ─────────────────────────────────
+// Reads the currently-visible lesson page to the user. No external API,
+// no cost — uses the browser's built-in TTS voices. Works everywhere
+// speechSynthesis is supported (every modern browser since ~2014).
+let hubSpeechState = 'stopped'; // 'stopped' | 'playing' | 'paused'
+let hubSpeechChunks = [];
+let hubSpeechIndex = 0;
+
+function hubExtractReadableText() {
+  // Find the active lesson page in the hub's content area
+  const root = document.querySelector('.content-area') || document.body;
+  const active = root.querySelector('.page.active') || root.querySelector('.page') || root;
+  if (!active) return '';
+  // Clone so we don't mutate the DOM, then strip controls + noise
+  const clone = active.cloneNode(true);
+  clone.querySelectorAll(
+    'button, input, select, textarea, script, style, .tab-strip, ' +
+    '.quiz-feedback, .quiz-result, [aria-hidden="true"]'
+  ).forEach(n => n.remove());
+  // innerText respects visibility and block-level line breaks; fall back to textContent
+  const text = (clone.innerText || clone.textContent || '').replace(/\s+/g, ' ').trim();
+  return text;
+}
+
+function hubChunkText(text, maxChars) {
+  maxChars = maxChars || 220;
+  // Split on sentence boundaries, then coalesce to ≤maxChars per chunk
+  const parts = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [text];
+  const chunks = [];
+  let cur = '';
+  for (const p of parts) {
+    const s = p.trim();
+    if (!s) continue;
+    if ((cur + ' ' + s).length > maxChars && cur) {
+      chunks.push(cur.trim());
+      cur = s;
+    } else {
+      cur = cur ? cur + ' ' + s : s;
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks;
+}
+
+function hubPickVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  // Prefer high-quality English voices when available
+  const rank = v => {
+    const name = (v.name || '').toLowerCase();
+    let s = 0;
+    if ((v.lang || '').toLowerCase().startsWith('en')) s += 100;
+    if (/natural|neural|enhanced|premium|google|samantha|aria|jenny/.test(name)) s += 30;
+    if (v.default) s += 5;
+    return s;
+  };
+  return voices.slice().sort((a, b) => rank(b) - rank(a))[0];
+}
+
+function hubSetListenButtonState(state) {
+  const btn = document.getElementById('hubListenBtn');
+  if (!btn) return;
+  btn.classList.toggle('playing', state === 'playing' || state === 'paused');
+  if (state === 'playing')       btn.textContent = '⏸ Pause';
+  else if (state === 'paused')   btn.textContent = '▶ Resume';
+  else                           btn.textContent = '🔊 Listen';
+}
+
+function hubStopListen() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  hubSpeechState = 'stopped';
+  hubSpeechChunks = [];
+  hubSpeechIndex = 0;
+  hubSetListenButtonState('stopped');
+}
+
+function hubToggleListen() {
+  if (!('speechSynthesis' in window)) {
+    alert('Sorry — your browser doesn\'t support text-to-speech. Try Chrome, Edge, Safari, or Firefox.');
+    return;
+  }
+  if (hubSpeechState === 'playing') {
+    speechSynthesis.pause();
+    hubSpeechState = 'paused';
+    hubSetListenButtonState('paused');
+    return;
+  }
+  if (hubSpeechState === 'paused') {
+    speechSynthesis.resume();
+    hubSpeechState = 'playing';
+    hubSetListenButtonState('playing');
+    return;
+  }
+  // Start fresh
+  speechSynthesis.cancel();
+  const text = hubExtractReadableText();
+  if (!text) {
+    alert('No readable text found on this page.');
+    return;
+  }
+  hubSpeechChunks = hubChunkText(text);
+  hubSpeechIndex = 0;
+  const voice = hubPickVoice();
+  const rate = parseFloat(localStorage.getItem('aesop-hub-speech-rate') || '1.0');
+  hubSpeechChunks.forEach((chunk, i) => {
+    const u = new SpeechSynthesisUtterance(chunk);
+    if (voice) u.voice = voice;
+    u.rate = rate;
+    u.lang = (voice && voice.lang) || 'en-US';
+    u.onstart = () => { hubSpeechIndex = i; };
+    u.onend = () => {
+      if (i === hubSpeechChunks.length - 1) hubStopListen();
+    };
+    u.onerror = () => {
+      // 'interrupted' fires when we cancel — not a real error
+      if (i === hubSpeechChunks.length - 1) hubStopListen();
+    };
+    speechSynthesis.speak(u);
+  });
+  hubSpeechState = 'playing';
+  hubSetListenButtonState('playing');
+}
+
+// Some browsers load voices asynchronously; prime the list so hubPickVoice
+// has something to work with on the first click.
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = () => { /* getVoices() will now return voices */ };
+}
+
+// Stop speech when the user switches lessons or leaves the module view.
+// Uses capture-phase listener so it fires before goPage() handlers.
+document.addEventListener('click', (e) => {
+  if (hubSpeechState === 'stopped') return;
+  const t = e.target;
+  if (t.closest && (
+      t.closest('[onclick*="goPage"]') ||
+      t.closest('.tab-strip') ||
+      t.closest('.sb-btn') ||
+      t.closest('.hdr-back')
+  )) {
+    hubStopListen();
+  }
+}, true);
+window.addEventListener('beforeunload', hubStopListen);
 
 function hubRestoreControls(){
   const savedSize  = localStorage.getItem('aesop-hub-fontsize');

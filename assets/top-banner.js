@@ -160,7 +160,7 @@
     '    <div class="tb-stat-row" id="tbStatRow">' +
     '      <span class="tb-stat" data-stat="learners" hidden><span class="tb-stat-num" data-stat-num>\u2014</span><span class="tb-stat-lbl">Learners this week</span></span>' +
     '      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>25</span><span class="tb-stat-lbl">Courses live</span></span>' +
-    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>4</span><span class="tb-stat-lbl">Languages</span></span>' +
+    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>5</span><span class="tb-stat-lbl">Languages</span></span>' +
     '    </div>' +
     '    <div class="tb-utilities">' +
     '      <div class="tb-lang lang-selector" id="langSelector" aria-label="Select language">' +
@@ -171,6 +171,8 @@
     '        <button class="lang-btn" data-lang="hi" title="\u0939\u093F\u0928\u094D\u0926\u0940"><span class="fi fi-in lang-flag"></span> \u0939\u093F</button>' +
     '        <div class="lang-divider"></div>' +
     '        <button class="lang-btn" data-lang="ar" title="\u0627\u0644\u0639\u0631\u0628\u064A\u0629"><span class="fi fi-sa lang-flag"></span> AR</button>' +
+    '        <div class="lang-divider"></div>' +
+    '        <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587"><span class="fi fi-tw lang-flag"></span> TW</button>' +
     '      </div>' +
     '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
     '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +
@@ -235,7 +237,7 @@
       var path = location.pathname;
       // Active-highlight the language matching the current URL.
       var current = 'en';
-      var m = path.match(/\/ai-academy\/modules\/([a-z]{2})\//);
+      var m = path.match(/\/ai-academy\/modules\/([a-zA-Z-]+)\//);
       if (m) current = m[1];
       sel.querySelectorAll('.lang-btn').forEach(function (btn) {
         var code = btn.dataset.lang;

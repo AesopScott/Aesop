@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.8 | 2026-04-20 -->
+<!-- v1.0.9 | 2026-04-20 -->
 <!-- electives-hub-v1.1.0 | Registry-only: all course data from course-registry.json (no hardcoded courses) | April 2026 -->
 <html lang="en">
 <head>
@@ -511,7 +511,8 @@ const STATE = {
 // Kept as a fallback in case registry load fails or for older cached builds.
 const LANG_META = {
   en:{flag:'🇺🇸',label:'English',urlPrefix:'',dir:'ltr'},
-  es:{flag:'🇪🇸',label:'Español',urlPrefix:'/es',dir:'ltr'}
+  es:{flag:'🇪🇸',label:'Español',urlPrefix:'/es',dir:'ltr'},
+  'zh-TW':{flag:'🇹🇼',label:'繁體中文',urlPrefix:'/ai-academy/modules/zh-TW',dir:'ltr'}
 };
 // Detect language from the URL path first (e.g. /es/ai-academy/... defaults to 'es'),
 // then fall back to stored preference, then English.
@@ -879,15 +880,19 @@ function renderModuleFrame(cId, mId){
   if(!c||!m) return;
 
   const mNum=c.modules.indexOf(m)+1;
-  // Derive filename from the course URL (e.g. /ai-academy/modules/ai-governance/ -> ai-governance-m1.html)
-  const folder = c.url.replace(/\/+$/,'').split('/').pop();
-  // Language-aware URL (new convention): {urlPrefix}{c.url}{folder}-mN.html
-  // e.g. /es/ai-academy/modules/ai-governance/ai-governance-m1.html
   const courseLangs = getCourseLangs(c);
   const lang = courseLangs.includes(activeLang) ? activeLang : 'en';
-  const langMeta = LANG_META[lang] || {urlPrefix: lang === 'en' ? '' : '/' + lang};
-  const urlPrefix = (typeof langMeta.urlPrefix === 'string') ? langMeta.urlPrefix : '';
-  const url = `${urlPrefix}${c.url}${folder}-m${mNum}.html`;
+  // If registry entry has a langUrls template for this language, use it directly.
+  // Template syntax: /path/module-{n}/file-m{n}.html
+  let url;
+  if (c.langUrls && c.langUrls[lang]) {
+    url = c.langUrls[lang].replace(/\{n\}/g, mNum);
+  } else {
+    const folder = c.url.replace(/\/+$/,'').split('/').pop();
+    const langMeta = LANG_META[lang] || {urlPrefix: lang === 'en' ? '' : '/' + lang};
+    const urlPrefix = (typeof langMeta.urlPrefix === 'string') ? langMeta.urlPrefix : '';
+    url = `${urlPrefix}${c.url}${folder}-m${mNum}.html`;
+  }
 
   // Show loading state
   document.getElementById('contentArea').innerHTML=`

@@ -101,16 +101,12 @@
     '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important; }' +
     '.tb-lang .lang-flag { line-height: 1; font-size: 0.85rem; }' +
     '.tb-lang .lang-divider { width: 1px; background: rgba(255,255,255,0.12); }' +
-    '.tb-report { flex-shrink: 0; display: inline-flex; align-items: center;' +
-    '  gap: 0.3rem; background: rgba(239,68,68,0.12); color: #fca5a5 !important;' +
-    '  text-decoration: none; border: 1px solid rgba(239,68,68,0.3);' +
-    '  padding: 0.35rem 0.75rem; border-radius: 0.4rem;' +
-    '  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;' +
-    '  white-space: nowrap;' +
-    '  transition: background 0.15s, color 0.15s, border-color 0.15s; }' +
-    '.tb-report:hover, .tb-report:focus-visible {' +
+    /* Report pill uses .tb-pills specificity so it overrides generic pill styling. */
+    '.tb-pills a.tb-report { background: rgba(239,68,68,0.12);' +
+    '  color: #fca5a5 !important; border-color: rgba(239,68,68,0.3); }' +
+    '.tb-pills a.tb-report:hover, .tb-pills a.tb-report:focus-visible {' +
     '  background: var(--red, #dc2626); color: #fff !important;' +
-    '  border-color: var(--red, #dc2626); outline: none; }' +
+    '  border-color: var(--red, #dc2626); }' +
     '.tb-darktoggle { flex-shrink: 0; background: rgba(255,255,255,0.06);' +
     '  border: 1px solid rgba(255,255,255,0.12); color: #fff;' +
     '  border-radius: 2rem; padding: 0.25rem 0.5rem;' +
@@ -157,7 +153,7 @@
     '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83C\uDF4E</span>Teachers / Parents</a>' +
     '    <a class="tb-pill-right-start" href="/about/mission.html"><span class="ico" aria-hidden="true">\u2726</span>Our Mission</a>' +
     '    <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">\uD83D\uDCAC</span>Forums \u00B7 Discord</a>' +
-    '    <a href="/report.html"><span class="ico" aria-hidden="true">\u2691</span>Report</a>' +
+    '    <a href="/report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">\u2691</span>Report</a>' +
     '  </nav>' +
     '  <div class="tb-stats">' +
     '    <span class="tb-live"><span class="tb-live-dot" aria-hidden="true"></span>Live</span>' +
@@ -181,7 +177,6 @@
     '        <span class="dark-mode-toggle__track"><span class="dark-mode-toggle__thumb"></span></span>' +
     '        <span class="dark-mode-toggle__icon">\uD83C\uDF19</span>' +
     '      </button>' +
-    '      <a href="/report.html" class="tb-report" title="Report an issue">\u2691 Report</a>' +
     '    </div>' +
     '  </div>' +
     '</div>';
@@ -237,4 +232,25 @@
     // Falls back gracefully if the route doesn't exist.
     var sel = document.getElementById('langSelector');
     if (sel) {
-      va
+      var path = location.pathname;
+      // Active-highlight the language matching the current URL.
+      var current = 'en';
+      var m = path.match(/\/ai-academy\/modules\/([a-z]{2})\//);
+      if (m) current = m[1];
+      sel.querySelectorAll('.lang-btn').forEach(function (btn) {
+        var code = btn.dataset.lang;
+        btn.classList.toggle('lang-active', code === current);
+        btn.addEventListener('click', function () {
+          location.href = (code === 'en') ? '/' : '/ai-academy/modules/' + code + '/courses.html';
+        });
+      });
+    }
+  }
+
+  // Run now if DOM is already interactive, else after it parses.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  } else {
+    mount();
+  }
+})();

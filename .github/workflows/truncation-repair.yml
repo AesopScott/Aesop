@@ -1,0 +1,39 @@
+name: Truncation Repair
+
+on:
+  schedule:
+    # Twice per day: 06:00 and 18:00 UTC
+    - cron: '0 6 * * *'
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AIP_COMMIT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scan for truncation and repair
+        run: python .github/scripts/repair_truncation.py
+
+      - name: Commit repairs and report
+        run: |
+          git config user.name "AESOP Repair Bot"
+          git config user.email "repair@aesopacademy.org"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No truncation repairs needed."
+          else
+            git commit -m "Repair: $(date -u '+%Y-%m-%d %H:%MZ') truncation sweep"
+            git push
+          fi

@@ -27,6 +27,14 @@
     'html { scroll-padding-top: 140px; }' +
     'body { padding-top: 118px; overflow-x: hidden; }' +
     'body.banner-dismissed { padding-top: 0; }' +
+    /* Hide any page-local <nav class="nav"> (the old per-page top nav)
+       since the shared top banner above already provides brand, lang
+       selector, dark-mode toggle, and forums/report pills. Selector is
+       scoped to direct-child nav so it never hits in-content navs. */
+    'body > nav.nav { display: none !important; }' +
+    /* Also hide the legacy floating #siteLangSwitch pill on pages where
+       the shared banner already provides a language selector. */
+    'body > #siteLangSwitch { display: none !important; }' +
     '.top-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999;' +
     '  background: var(--navy-mid, #16293d); color: #fff;' +
     '  box-shadow: 0 2px 16px rgba(13,27,42,0.45);' +
@@ -160,7 +168,7 @@
     '    <div class="tb-stat-row" id="tbStatRow">' +
     '      <span class="tb-stat" data-stat="learners" hidden><span class="tb-stat-num" data-stat-num>\u2014</span><span class="tb-stat-lbl">Learners this week</span></span>' +
     '      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>25</span><span class="tb-stat-lbl">Courses live</span></span>' +
-    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>4</span><span class="tb-stat-lbl">Languages</span></span>' +
+    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>5</span><span class="tb-stat-lbl">Languages</span></span>' +
     '    </div>' +
     '    <div class="tb-utilities">' +
     '      <div class="tb-lang lang-selector" id="langSelector" aria-label="Select language">' +
@@ -171,6 +179,8 @@
     '        <button class="lang-btn" data-lang="hi" title="\u0939\u093F\u0928\u094D\u0926\u0940"><span class="fi fi-in lang-flag"></span> \u0939\u093F</button>' +
     '        <div class="lang-divider"></div>' +
     '        <button class="lang-btn" data-lang="ar" title="\u0627\u0644\u0639\u0631\u0628\u064A\u0629"><span class="fi fi-sa lang-flag"></span> AR</button>' +
+    '        <div class="lang-divider"></div>' +
+    '        <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587"><span class="fi fi-tw lang-flag"></span> TW</button>' +
     '      </div>' +
     '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
     '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +
@@ -235,7 +245,7 @@
       var path = location.pathname;
       // Active-highlight the language matching the current URL.
       var current = 'en';
-      var m = path.match(/\/ai-academy\/modules\/([a-z]{2})\//);
+      var m = path.match(/\/ai-academy\/modules\/([a-zA-Z-]+)\//);
       if (m) current = m[1];
       sel.querySelectorAll('.lang-btn').forEach(function (btn) {
         var cod

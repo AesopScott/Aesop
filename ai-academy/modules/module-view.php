@@ -192,6 +192,17 @@ body{
 .sv-listen{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(201,160,90,0.65);border-radius:3px;padding:0.2rem 0.55rem;font-size:0.7rem;font-weight:700;letter-spacing:0.04em;cursor:pointer;font-family:inherit;transition:all 0.15s;}
 .sv-listen:hover{border-color:var(--gold,#c9a05a);color:var(--gold,#c9a05a);}
 .sv-listen.playing{border-color:#ff6b6b;color:#ff6b6b;}
+.sv-gear{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);border-radius:3px;padding:0.2rem 0.45rem;font-size:0.72rem;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.sv-gear:hover{border-color:var(--gold,#c9a05a);color:var(--gold,#c9a05a);}
+.sv-sizer{position:relative;}
+.sv-listen-panel{position:absolute;top:36px;right:0;background:rgba(6,14,24,0.98);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:0.9rem 1rem;display:none;flex-direction:column;gap:0.65rem;z-index:300;min-width:260px;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.sv-listen-panel.open{display:flex;}
+.sv-listen-panel-row{display:flex;flex-direction:column;gap:0.25rem;}
+.sv-listen-panel-lbl{font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);display:flex;justify-content:space-between;align-items:center;}
+.sv-listen-panel-lbl span.val{color:var(--gold,#c9a05a);font-weight:600;letter-spacing:0.02em;text-transform:none;}
+.sv-listen-panel select{background:#0a141f;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.85);font-size:0.74rem;padding:0.3rem 0.4rem;border-radius:3px;cursor:pointer;max-width:100%;font-family:inherit;}
+.sv-listen-panel input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:rgba(255,255,255,0.12);border-radius:99px;outline:none;cursor:pointer;}
+.sv-listen-panel input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--gold,#c9a05a);cursor:pointer;}
 .sv-sizer button{
   background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
   color:#fff;border-radius:4px;padding:0.15rem 0.4rem;cursor:pointer;font-size:0.7rem;
@@ -230,6 +241,25 @@ body{
     <input type="range" min="12" max="22" value="16" oninput="applySize(this.value)">
     <button onclick="adjustSize(1)">A+</button>
     <button class="sv-listen" id="svListenBtn" onclick="svToggleListen()" title="Read this lesson aloud using your browser's built-in voice">🔊 Listen</button>
+    <button class="sv-gear" id="svListenGear" onclick="svToggleListenPanel()" title="Voice, pace, and volume settings">⚙</button>
+    <div class="sv-listen-panel" id="svListenPanel">
+      <div class="sv-listen-panel-row">
+        <label class="sv-listen-panel-lbl" for="svVoiceSel">Voice</label>
+        <select id="svVoiceSel" onchange="svSaveSpeech('voice', this.value)"></select>
+      </div>
+      <div class="sv-listen-panel-row">
+        <label class="sv-listen-panel-lbl" for="svRateRange">Pace <span class="val" id="svRateVal">1.0×</span></label>
+        <input type="range" id="svRateRange" min="0.5" max="2" step="0.1" value="1" oninput="svSaveSpeech('rate', this.value); document.getElementById('svRateVal').textContent = parseFloat(this.value).toFixed(1) + '×';">
+      </div>
+      <div class="sv-listen-panel-row">
+        <label class="sv-listen-panel-lbl" for="svVolRange">Volume <span class="val" id="svVolVal">100%</span></label>
+        <input type="range" id="svVolRange" min="0" max="1" step="0.05" value="1" oninput="svSaveSpeech('volume', this.value); document.getElementById('svVolVal').textContent = Math.round(parseFloat(this.value)*100) + '%';">
+      </div>
+      <div class="sv-listen-panel-row">
+        <label class="sv-listen-panel-lbl" for="svPitchRange">Pitch <span class="val" id="svPitchVal">1.0</span></label>
+        <input type="range" id="svPitchRange" min="0.5" max="2" step="0.1" value="1" oninput="svSaveSpeech('pitch', this.value); document.getElementById('svPitchVal').textContent = parseFloat(this.value).toFixed(1);">
+      </div>
+    </div>
   </div>
 </div>
 
@@ -438,6 +468,72 @@ document.addEventListener('DOMContentLoaded', function() {
 var svSpeechState = 'stopped'; // 'stopped' | 'playing' | 'paused'
 var svSpeechChunks = [];
 
+function svGetSpeech(key, def) {
+  var v = localStorage.getItem('aesop-sv-speech-' + key);
+  return v === null ? def : v;
+}
+function svSaveSpeech(key, val) {
+  localStorage.setItem('aesop-sv-speech-' + key, String(val));
+}
+
+function svToggleListenPanel() {
+  var panel = document.getElementById('svListenPanel');
+  if (!panel) return;
+  var opening = !panel.classList.contains('open');
+  panel.classList.toggle('open');
+  if (opening) {
+    svPopulateVoiceList();
+    var rate = parseFloat(svGetSpeech('rate',   '1.0'));
+    var vol  = parseFloat(svGetSpeech('volume', '1.0'));
+    var pit  = parseFloat(svGetSpeech('pitch',  '1.0'));
+    var rEl = document.getElementById('svRateRange');
+    var vEl = document.getElementById('svVolRange');
+    var pEl = document.getElementById('svPitchRange');
+    if (rEl) { rEl.value = rate; document.getElementById('svRateVal').textContent = rate.toFixed(1) + '×'; }
+    if (vEl) { vEl.value = vol;  document.getElementById('svVolVal').textContent  = Math.round(vol*100) + '%'; }
+    if (pEl) { pEl.value = pit;  document.getElementById('svPitchVal').textContent = pit.toFixed(1); }
+  }
+}
+
+function svPopulateVoiceList() {
+  var sel = document.getElementById('svVoiceSel');
+  if (!sel || !('speechSynthesis' in window)) return;
+  var voices = speechSynthesis.getVoices();
+  if (!voices.length) return;
+  sel.innerHTML = '';
+  var en = voices.filter(function(v){ return (v.lang||'').toLowerCase().indexOf('en') === 0; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  var other = voices.filter(function(v){ return (v.lang||'').toLowerCase().indexOf('en') !== 0; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
+  function addGroup(label, list) {
+    if (!list.length) return;
+    var g = document.createElement('optgroup');
+    g.label = label;
+    list.forEach(function(v){
+      var o = document.createElement('option');
+      o.value = v.name;
+      o.textContent = v.name + ' (' + v.lang + ')';
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  }
+  addGroup('English', en);
+  addGroup('Other languages', other);
+  var saved = svGetSpeech('voice', '');
+  if (saved && voices.find(function(v){ return v.name === saved; })) {
+    sel.value = saved;
+  } else {
+    var picked = svPickVoice();
+    if (picked) sel.value = picked.name;
+  }
+}
+
+document.addEventListener('click', function(e){
+  var panel = document.getElementById('svListenPanel');
+  var gear  = document.getElementById('svListenGear');
+  if (!panel || !panel.classList.contains('open')) return;
+  if (panel.contains(e.target) || (gear && gear.contains(e.target))) return;
+  panel.classList.remove('open');
+});
+
 function svExtractReadableText() {
   var root = document.getElementById('moduleContent') || document.body;
   var active = root.querySelector('.page.active') || root.querySelector('.page') || root;
@@ -466,6 +562,11 @@ function svPickVoice() {
   if (!('speechSynthesis' in window)) return null;
   var voices = speechSynthesis.getVoices();
   if (!voices.length) return null;
+  var saved = svGetSpeech('voice', '');
+  if (saved) {
+    var match = voices.find(function(v){ return v.name === saved; });
+    if (match) return match;
+  }
   function rank(v) {
     var n = (v.name||'').toLowerCase();
     var s = 0;
@@ -508,13 +609,17 @@ function svToggleListen() {
   var text = svExtractReadableText();
   if (!text) { alert('No readable text found on this page.'); return; }
   svSpeechChunks = svChunkText(text);
-  var voice = svPickVoice();
-  var rate = parseFloat(localStorage.getItem('aesop-sv-speech-rate') || '1.0');
+  var voice  = svPickVoice();
+  var rate   = parseFloat(svGetSpeech('rate',   '1.0'));
+  var volume = parseFloat(svGetSpeech('volume', '1.0'));
+  var pitch  = parseFloat(svGetSpeech('pitch',  '1.0'));
   svSpeechChunks.forEach(function(chunk, i){
     var u = new SpeechSynthesisUtterance(chunk);
     if (voice) u.voice = voice;
-    u.rate = rate;
-    u.lang = (voice && voice.lang) || 'en-US';
+    u.rate   = rate;
+    u.volume = volume;
+    u.pitch  = pitch;
+    u.lang   = (voice && voice.lang) || 'en-US';
     u.onend = function(){ if (i === svSpeechChunks.length - 1) svStopListen(); };
     u.onerror = function(){ if (i === svSpeechChunks.length - 1) svStopListen(); };
     speechSynthesis.speak(u);
@@ -524,7 +629,9 @@ function svToggleListen() {
 }
 
 if ('speechSynthesis' in window) {
-  speechSynthesis.onvoiceschanged = function(){};
+  speechSynthesis.onvoiceschanged = function(){
+    try { svPopulateVoiceList(); } catch(_) {}
+  };
 }
 
 // Stop speech when user switches lessons

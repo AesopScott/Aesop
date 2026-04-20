@@ -30,11 +30,11 @@ PINECONE_INDEX    = "aesop-academy"
 MODULES_DIR       = Path("ai-academy/modules")
 CHUNK_SIZE        = 500   # words per chunk
 CHUNK_OVERLAP     = 50    # word overlap between chunks
-EMBED_BATCH       = 20    # vectors per Voyage API call
+EMBED_BATCH       = 8     # vectors per Voyage API call (keeps us ~40 RPM, under free-tier 100 RPM limit)
 UPSERT_BATCH      = 50    # vectors per Pinecone upsert
-EMBED_DELAY       = 0.5   # seconds between embedding batches
-UPSERT_DELAY      = 1.0   # seconds between Pinecone upsert batches
-UPSERT_RETRIES    = 5     # max retries per upsert batch on 429/5xx
+EMBED_DELAY       = 1.5   # seconds between embedding batches
+UPSERT_DELAY      = 2.0   # seconds between Pinecone upsert batches
+UPSERT_RETRIES    = 6     # max retries per upsert batch on 429/5xx
 
 MODULE_PATTERN    = re.compile(r"-m\d+\.html$")
 
@@ -139,7 +139,7 @@ def embed_texts(texts, retries=5):
             )
         except requests.exceptions.RequestException as e:
             if attempt < retries - 1:
-                wait = min(5 * 2 ** attempt, 60)
+                wait = min(5 * 2 ** attempt, 120)
                 print(f"    Network error, retrying in {wait}s... ({e})")
                 time.sleep(wait)
                 continue
@@ -150,13 +150,13 @@ def embed_texts(texts, retries=5):
             return [item["embedding"] for item in data]
 
         if resp.status_code == 429 and attempt < retries - 1:
-            wait = min(5 * 2 ** attempt, 60)
+            wait = min(5 * 2 ** attempt, 120)
             print(f"    Rate limited, waiting {wait}s...")
             time.sleep(wait)
             continue
 
         if resp.status_code >= 500 and attempt < retries - 1:
-            wait = min(5 * 2 ** attempt, 60)
+            wait = min(5 * 2 ** attempt, 120)
             print(f"    Server error ({resp.status_code}), retrying in {wait}s...")
             time.sleep(wait)
             continue
@@ -187,7 +187,7 @@ def upsert_with_retry(index, vectors):
                 is_retryable = ("429" in err_str or "Too Many Requests" in err_str
                                 or "500" in err_str or "503" in err_str)
                 if is_retryable and attempt < UPSERT_RETRIES - 1:
-                    wait = min(3 * 2 ** attempt, 60)
+                    wait = min(3 * 2 ** attempt, 120)
                     print(f"    Pinecone rate limited, retrying in {wait}s... (attempt {attempt + 1})")
                     time.sleep(wait)
                     continue
@@ -282,15 +282,20 @@ def main():
         module_files = [f for f in html_files if MODULE_PATTERN.search(f.name)]
         print(f"Found {len(module_files)} module files.\n")
 
-        all_vectors = process_files(module_files)
-        print(f"\nTotal chunks to index: {len(all_vectors)}")
-
-        if not all_vectors:
-            print("No content to index.")
-            return
-
-        all_vectors = embed_vectors(all_vectors)
-        upsert_with_retry(index, all_vectors)
+        # Process and upsert in file-batches to avoid overwhelming rate limits
+        FILE_BATCH = 30  # files per round during full re-index
+        for i in range(0, len(module_files), FILE_BATCH):
+            batch_files = module_files[i:i + FILE_BATCH]
+            print(f"\n── File batch {i // FILE_BATCH + 1} / {-(-len(module_files) // FILE_BATCH)}"
+                  f" ({len(batch_files)} files) ──")
+            batch_vectors = process_files(batch_files)
+            if not batch_vectors:
+                continue
+            batch_vectors = embed_vectors(batch_vectors)
+            upsert_with_retry(index, batch_vectors)
+            if i + FILE_BATCH < len(module_files):
+                print("  Cooling down 10s before next file batch...")
+                time.sleep(10)
 
     else:
         # ── DELTA MODE ───────────────────────────────────────────────────

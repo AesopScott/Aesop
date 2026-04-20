@@ -189,6 +189,9 @@ body{
 .sv-topbar-title{color:rgba(255,255,255,0.7);font-weight:400;}
 .sv-topbar-sep{width:1px;height:1rem;background:rgba(255,255,255,0.15);}
 .sv-sizer{margin-left:auto;display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;}
+.sv-listen{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(201,160,90,0.65);border-radius:3px;padding:0.2rem 0.55rem;font-size:0.7rem;font-weight:700;letter-spacing:0.04em;cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.sv-listen:hover{border-color:var(--gold,#c9a05a);color:var(--gold,#c9a05a);}
+.sv-listen.playing{border-color:#ff6b6b;color:#ff6b6b;}
 .sv-sizer button{
   background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
   color:#fff;border-radius:4px;padding:0.15rem 0.4rem;cursor:pointer;font-size:0.7rem;
@@ -226,6 +229,7 @@ body{
     <button onclick="adjustSize(-1)">A−</button>
     <input type="range" min="12" max="22" value="16" oninput="applySize(this.value)">
     <button onclick="adjustSize(1)">A+</button>
+    <button class="sv-listen" id="svListenBtn" onclick="svToggleListen()" title="Read this lesson aloud using your browser's built-in voice">🔊 Listen</button>
   </div>
 </div>
 
@@ -427,6 +431,109 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   updateTabs();
 });
+
+// ── Read Aloud (Web Speech API) ─────────────────────────────────
+// Same accessibility feature as the hub — reads the visible lesson page
+// aloud using the browser's built-in TTS. No API keys, no cost.
+var svSpeechState = 'stopped'; // 'stopped' | 'playing' | 'paused'
+var svSpeechChunks = [];
+
+function svExtractReadableText() {
+  var root = document.getElementById('moduleContent') || document.body;
+  var active = root.querySelector('.page.active') || root.querySelector('.page') || root;
+  if (!active) return '';
+  var clone = active.cloneNode(true);
+  var drop = clone.querySelectorAll('button, input, select, textarea, script, style, .tab-strip, .quiz-feedback, .quiz-result, [aria-hidden="true"]');
+  drop.forEach(function(n){ n.remove(); });
+  return (clone.innerText || clone.textContent || '').replace(/\s+/g,' ').trim();
+}
+
+function svChunkText(text) {
+  var max = 220;
+  var parts = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [text];
+  var out = []; var cur = '';
+  for (var i=0; i<parts.length; i++) {
+    var s = parts[i].trim();
+    if (!s) continue;
+    if ((cur + ' ' + s).length > max && cur) { out.push(cur.trim()); cur = s; }
+    else { cur = cur ? cur + ' ' + s : s; }
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+function svPickVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  var voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  function rank(v) {
+    var n = (v.name||'').toLowerCase();
+    var s = 0;
+    if ((v.lang||'').toLowerCase().indexOf('en') === 0) s += 100;
+    if (/natural|neural|enhanced|premium|google|samantha|aria|jenny/.test(n)) s += 30;
+    if (v.default) s += 5;
+    return s;
+  }
+  return voices.slice().sort(function(a,b){ return rank(b)-rank(a); })[0];
+}
+
+function svSetListenBtn(state) {
+  var btn = document.getElementById('svListenBtn');
+  if (!btn) return;
+  btn.classList.toggle('playing', state === 'playing' || state === 'paused');
+  if (state === 'playing')      btn.textContent = '⏸ Pause';
+  else if (state === 'paused')  btn.textContent = '▶ Resume';
+  else                          btn.textContent = '🔊 Listen';
+}
+
+function svStopListen() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  svSpeechState = 'stopped';
+  svSpeechChunks = [];
+  svSetListenBtn('stopped');
+}
+
+function svToggleListen() {
+  if (!('speechSynthesis' in window)) {
+    alert('Sorry — your browser doesn\'t support text-to-speech.');
+    return;
+  }
+  if (svSpeechState === 'playing') {
+    speechSynthesis.pause(); svSpeechState = 'paused'; svSetListenBtn('paused'); return;
+  }
+  if (svSpeechState === 'paused') {
+    speechSynthesis.resume(); svSpeechState = 'playing'; svSetListenBtn('playing'); return;
+  }
+  speechSynthesis.cancel();
+  var text = svExtractReadableText();
+  if (!text) { alert('No readable text found on this page.'); return; }
+  svSpeechChunks = svChunkText(text);
+  var voice = svPickVoice();
+  var rate = parseFloat(localStorage.getItem('aesop-sv-speech-rate') || '1.0');
+  svSpeechChunks.forEach(function(chunk, i){
+    var u = new SpeechSynthesisUtterance(chunk);
+    if (voice) u.voice = voice;
+    u.rate = rate;
+    u.lang = (voice && voice.lang) || 'en-US';
+    u.onend = function(){ if (i === svSpeechChunks.length - 1) svStopListen(); };
+    u.onerror = function(){ if (i === svSpeechChunks.length - 1) svStopListen(); };
+    speechSynthesis.speak(u);
+  });
+  svSpeechState = 'playing';
+  svSetListenBtn('playing');
+}
+
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = function(){};
+}
+
+// Stop speech when user switches lessons
+document.addEventListener('click', function(e){
+  if (svSpeechState === 'stopped') return;
+  var t = e.target;
+  if (t.closest && (t.closest('[onclick*="goPage"]') || t.closest('.tab-strip'))) svStopListen();
+}, true);
+window.addEventListener('beforeunload', svStopListen);
 </script>
 
 <!-- Module-specific scripts -->

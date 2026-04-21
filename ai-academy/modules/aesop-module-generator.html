@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.15 | 2026-04-21 -->
+<!-- v1.0.16 | 2026-04-21 -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -373,19 +373,24 @@ function populateCourseDropdown() {
 }
 
 async function loadCoursesData() {
-  try {
-    const resp = await fetch('./courses-data.json', { cache: 'no-store' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    COURSES = data.courses || [];
-    REGISTRY_META = data.registryMeta || {};
-    COURSES_LOADED = true;
-    console.log('Loaded', COURSES.length, 'courses and', Object.keys(REGISTRY_META).length, 'registry meta entries from courses-data.json');
-  } catch (e) {
-    console.error('Failed to load courses-data.json:', e.message);
-    COURSES = [];
-    REGISTRY_META = {};
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const resp = await fetch('./courses-data.json', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      COURSES = data.courses || [];
+      REGISTRY_META = data.registryMeta || {};
+      COURSES_LOADED = true;
+      console.log('Loaded', COURSES.length, 'courses and', Object.keys(REGISTRY_META).length, 'registry meta entries from courses-data.json');
+      return;
+    } catch (e) {
+      console.error('Failed to load courses-data.json (attempt ' + attempt + '):', e.message);
+      if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+    }
   }
+  COURSES = [];
+  REGISTRY_META = {};
+  showStatus('error', 'Could not load course list (courses-data.json). Check your connection and reload the page.');
 }
 
 async function init() {
@@ -1640,15 +1645,16 @@ async function buildFullCourse() {
   // Resume support — start from specified module (default 1)
   const resumeFrom = Math.max(1, Math.min(totalMods, parseInt(document.getElementById('resumeFrom').value) || 1));
 
+  const chainStart = Date.now();
+  let allSaved = true;
+
+  try {
   showLog('');
   log('=== BUILD FULL COURSE: ' + course.name + ' ===');
   log('Tier: ' + tc.label + ' | Modules: ' + totalMods + ' | Language: ' + selectedLangName + (selectedLang !== 'en' ? ' (' + selectedLang + ')' : ''));
   if (resumeFrom > 1) log('Resuming from Module ' + resumeFrom + ' (skipping M1–M' + (resumeFrom - 1) + ')');
   log('');
   await obsidianCheckpoint('course-start', { course: course.name, tier: tc.label, totalMods, lang: selectedLangName, resumeFrom });
-
-  const chainStart = Date.now();
-  let allSaved = true;
 
   for (let mn = resumeFrom; mn <= totalMods; mn++) {
     if (!chainRunning) { log('Stopped.'); break; }
@@ -1837,11 +1843,17 @@ async function buildFullCourse() {
     await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
   }
 
-  chainRunning = false;
-  generateBtn.disabled = false;
-  chainBtn.disabled = false;
-  chainBtn.textContent = 'Build Full Course';
-  if (allSaved) document.getElementById('resumeFrom').value = 1;
+  } catch(unexpectedErr) {
+    log('Unexpected error: ' + unexpectedErr.message);
+    showStatus('error', 'Build stopped unexpectedly: ' + unexpectedErr.message);
+  } finally {
+    chainRunning = false;
+    generateBtn.disabled = false;
+    chainBtn.disabled = false;
+    chainBtn.textContent = 'Build Full Course';
+    if (stopBtn) { stopBtn.disabled = true; stopBtn.style.display = 'none'; }
+    if (allSaved) document.getElementById('resumeFrom').value = 1;
+  }
 }
 
 async function generate() {

@@ -1,47 +1,40 @@
 # Daily Usage Cost Report — Claude Routine
 
 ## What it does
-Runs every morning at 07:00 UTC. Pulls yesterday's token consumption
-from the Anthropic usage API, calculates estimated USD costs per model,
-carries a month-to-date running total, and commits `aip/usage-report.md`.
+Runs every morning at 07:00 UTC. Estimates yesterday's API costs from
+known routine cadence and typical token budgets — no API key required.
+Carries a month-to-date running total and commits `aip/usage-report.md`.
 
 ## Flow
-1. GET Anthropic usage API for yesterday's date — input tokens, output
-   tokens, request count, broken down by model.
-2. Calculate estimated cost using list prices (Haiku $0.80/$4.00,
-   Sonnet $3.00/$15.00, Opus $15.00/$75.00 per MTok in/out).
-3. Read previous report to carry forward the MTD running total table.
-4. Overwrite `aip/usage-report.md` with yesterday's breakdown + MTD
-   cumulative table.
+1. Determine yesterday's date and day of week.
+2. Calculate estimated cost per routine from schedule × token budget × price.
+3. Read previous report to carry forward the MTD running total.
+4. Overwrite `aip/usage-report.md` with yesterday's breakdown + MTD table.
 5. Commit `[skip ci]` + push to `main`.
 
 ## Inputs
-- **Connectors:** `github` (read + write), `web_fetch`.
-- **Secret:** `ANTHROPIC_API_KEY` — API key with usage-read access,
-  stored in the Routine's secret store (not in the repo).
+- **Connectors:** `github` (read + write).
 - **Schedule:** daily, 07:00 UTC.
-- **Model:** claude-haiku (latest) — reporting task, no heavy reasoning needed.
+- **Model:** claude-haiku (latest).
 
 ## Outputs
-- `aip/usage-report.md` — yesterday's per-model breakdown, estimated
-  cost by routine, and MTD running total table.
+- `aip/usage-report.md` — per-routine cost breakdown and MTD running total.
 - One `[skip ci]` commit on `main`, pushed.
 
-## Setting up the API key
-1. In the Anthropic Console → Settings → API Keys, create a key scoped
-   to usage-read (or use your existing key if it has that permission).
-2. Add it as `ANTHROPIC_API_KEY` in the Routine's secret configuration
-   (not in GitHub Secrets — this is an Anthropic Routine secret).
+## How costs are calculated
+No live API call is made. Instead, each routine's cost is estimated as:
+
+`runs_yesterday × ((input_tokens / 1M × input_rate) + (output_tokens / 1M × output_rate))`
+
+Token budgets and prices are hardcoded in the routine instructions.
+Weekly routines (Broken Link Crawler, Weekly Changelog) count 1 run
+only on their scheduled day, 0 runs on other days.
 
 ## Limitations
-- **Per-routine cost breakdown is estimated**, not exact. Anthropic's
-  usage API reports by model, not by which routine made the call. The
-  per-routine numbers are proportional estimates based on known cadence
-  and typical token counts.
-- **Prices may drift.** The routine uses hardcoded list prices — update
-  the ROUTINE.md pricing table if Anthropic changes rates.
-- **API availability.** If the usage API is unreachable, the report
-  records $0.00 with a note; it does not skip the commit.
-
-## Net-new capability
-No predecessor. First time AESOP has automated cost visibility.
+- **Estimates only.** Actual token counts vary run-to-run; these are
+  typical-case budgets. Actual billing may differ.
+- **No live data.** Switching to real Anthropic usage API data requires
+  secrets support in the Routines UI — update the ROUTINE.md when that
+  becomes available.
+- **Prices may drift.** Update the pricing table in ROUTINE.md if
+  Anthropic changes rates.

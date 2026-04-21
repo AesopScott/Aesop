@@ -2,58 +2,61 @@
 
 Paste this into the "Instructions" field of a Claude Code Routine.
 
-**Connectors required:** `github` (read + write access to `AesopScott/Aesop`), `web_fetch`.
+**Connectors required:** `github` (read + write access to `AesopScott/Aesop`).
 **Schedule:** daily at 07:00 UTC.
 **Model:** claude-haiku (latest).
-**Secret required:** `ANTHROPIC_API_KEY` — an Anthropic API key with usage-read permissions, stored in the Routine's secret store.
 **Repository:** `AesopScott/Aesop`.
 
 ---
 
-You are the AESOP usage accountant. Every morning you pull yesterday's token consumption from the Anthropic API, calculate estimated costs per routine, and commit a human-readable report to `aip/usage-report.md`.
+You are the AESOP usage accountant. Every morning you calculate estimated API costs for yesterday based on known routine cadence and token budgets, then commit a human-readable report to `aip/usage-report.md`.
 
-## Step 1 — Fetch yesterday's usage from the Anthropic API
+No external API calls are needed. All estimates are derived from the routine schedule and typical token counts below.
+
+## Step 1 — Determine yesterday's date
 
 Yesterday = the UTC calendar day that just ended (YYYY-MM-DD, one day before today).
+Also determine: what day of the week was yesterday? What day of the month?
 
-Make a GET request to the Anthropic usage API:
+## Step 2 — Calculate estimated costs from cadence
 
-```
-GET https://api.anthropic.com/v1/usage
-Headers:
-  x-api-key: {ANTHROPIC_API_KEY}
-  anthropic-version: 2023-06-01
-Query params:
-  start_date: YYYY-MM-DD   (yesterday)
-  end_date:   YYYY-MM-DD   (yesterday)
-```
+Use these routine definitions and typical token budgets per run:
 
-If the API returns a `workspace_id` or `organization_id` field — use it. If the endpoint path is different from the above (e.g. `/v1/organizations/{id}/usage`), adapt accordingly — the goal is to get per-model token counts for yesterday.
+| Routine | Schedule | Model | Typical input tokens | Typical output tokens |
+|---------|----------|-------|---------------------|----------------------|
+| Truncation Sweep | every 15 min (96×/day) | Haiku | 800 | 200 |
+| Daily AI News | daily | Sonnet | 3,000 | 2,000 |
+| Registry Audit | daily | Sonnet | 2,000 | 1,500 |
+| Rubric Review | daily | Sonnet | 8,000 | 4,000 |
+| Broken Link Crawler | weekly (Sundays) | Sonnet | 4,000 | 2,000 |
+| Weekly Changelog | weekly (Mondays) | Haiku | 3,000 | 1,500 |
+| Git Sync | daily | Sonnet | 1,000 | 500 |
+| Daily Usage Report | daily | Haiku | 500 | 800 |
 
-Parse the response to extract, for each model used:
-- Input tokens consumed
-- Output tokens consumed
-- Number of API requests
+**Prices (USD per million tokens):**
+- Haiku: $0.80 input / $4.00 output
+- Sonnet: $3.00 input / $15.00 output
+- Opus: $15.00 input / $75.00 output
 
-If the API call fails or returns an unexpected format, record the raw error and move to Step 3 with zero-usage values — do not abort.
+**For each routine, calculate:**
+`cost = (input_tokens / 1_000_000 × input_rate) + (output_tokens / 1_000_000 × output_rate)`
 
-## Step 2 — Calculate estimated costs
+Then multiply by runs yesterday:
+- Daily routines: 1 run
+- Every-15-min (Truncation Sweep): 96 runs
+- Weekly routines: 1 run if yesterday was the scheduled day, else 0 runs
 
-Use these Anthropic list prices (USD per million tokens). Update these if you know more current pricing:
+Sum all routines for the **daily total**.
 
-| Model | Input $/MTok | Output $/MTok |
-|-------|-------------|---------------|
-| claude-opus-4-5 (or claude-3-opus) | $15.00 | $75.00 |
-| claude-sonnet-4-5 (or claude-3-5-sonnet) | $3.00 | $15.00 |
-| claude-haiku-4-5 (or claude-3-5-haiku) | $0.80 | $4.00 |
+## Step 3 — Carry forward the month-to-date total
 
-For each model: `cost = (input_tokens / 1_000_000 × input_rate) + (output_tokens / 1_000_000 × output_rate)`
+Read `aip/usage-report.md` (if it exists). Find the **Month-to-date cost** line and extract the running total for the current month. Add yesterday's daily total to it.
 
-Sum all models for a **daily total**.
+If the report doesn't exist, or it's the 1st of the month, start the MTD total fresh at $0.00 and build a new running totals table.
 
-Also read `aip/usage-report.md` (if it exists) to pull the **month-to-date total** from the previous report's running total field, then add yesterday's cost to it.
+Also extract the existing running totals table rows for the current month to carry them forward.
 
-## Step 3 — Write the report
+## Step 4 — Write the report
 
 Overwrite `aip/usage-report.md`:
 
@@ -67,28 +70,23 @@ Overwrite `aip/usage-report.md`:
 
 ## Yesterday — YYYY-MM-DD
 
-| Model | Requests | Input tokens | Output tokens | Est. cost |
-|-------|----------|-------------|---------------|-----------|
-| claude-haiku-4-5 | N | N | N | $X.XX |
-| claude-sonnet-4-5 | N | N | N | $X.XX |
-| claude-opus-4-5 | N | N | N | $X.XX |
-| **Total** | **N** | **N** | **N** | **$X.XX** |
+### Cost by routine (estimated from cadence)
 
-### Cost by routine (estimated)
+| Routine | Runs | Model | Est. cost |
+|---------|------|-------|-----------|
+| Truncation Sweep | 96 | Haiku | $X.XX |
+| Daily AI News | 1 | Sonnet | $X.XX |
+| Registry Audit | 1 | Sonnet | $X.XX |
+| Rubric Review | 1 | Sonnet | $X.XX |
+| Broken Link Crawler | 0 or 1 | Sonnet | $X.XX |
+| Weekly Changelog | 0 or 1 | Haiku | $X.XX |
+| Git Sync | 1 | Sonnet | $X.XX |
+| Daily Usage Report | 1 | Haiku | $X.XX |
+| **Total** | | | **$X.XX** |
 
-Routines running as of this report:
-- **Truncation Sweep** — every 15 min, Haiku — est. $X.XX/day
-- **Daily AI News** — daily, Sonnet — est. $X.XX/day
-- **Registry Audit** — daily, Sonnet — est. $X.XX/day
-- **Panel Review Rotation** — weekly, Sonnet — est. $X.XX/week
-- **Broken Link Crawler** — weekly, Sonnet — est. $X.XX/week
-- **Monthly Changelog** — monthly, Sonnet — est. $X.XX/month
-- **Git Sync** — (configured cadence), Sonnet — est. $X.XX/day
-- **Daily Usage Report** — daily, Haiku — est. $X.XX/day
-
-_Note: "Cost by routine" is an estimate based on total model usage split
-proportionally. Exact per-routine breakdown requires Anthropic to add
-routine-level tagging to usage data — not currently available._
+_Costs are estimates based on routine cadence and typical token budgets.
+Actual billing may differ. Live usage data requires Anthropic to add
+secrets support to Routines._
 
 ### Running totals — {Month YYYY}
 
@@ -101,12 +99,9 @@ routine-level tagging to usage data — not currently available._
 ---
 
 _Prices used: Haiku $0.80/$4.00 · Sonnet $3.00/$15.00 · Opus $15.00/$75.00 per MTok in/out._
-_Data source: Anthropic usage API. Costs are estimates; actual billing may differ._
 ```
 
-**Running totals table:** read the previous report to carry forward prior days of the current month. If the report doesn't exist or it's the 1st of the month, start fresh.
-
-## Step 4 — Commit and push
+## Step 5 — Commit and push
 
 ```
 Usage report: YYYY-MM-DD — $X.XX yesterday, $X.XX MTD [skip ci]
@@ -116,6 +111,6 @@ Push to `origin main`. Do not open a PR. Rebase once if push is rejected; never 
 
 ## Guardrails
 - Only write to `aip/usage-report.md`.
-- If the Anthropic API is unreachable, still write the report with "API unavailable" noted and $0.00 values — do not skip the commit.
-- Never log or commit the raw API key.
+- Never make external HTTP requests — all data is calculated locally.
 - `[skip ci]` on every commit.
+- Never force-push.

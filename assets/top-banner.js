@@ -108,6 +108,7 @@
     '.tb-lang .lang-btn.lang-active {' +
     '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important; }' +
     '.tb-lang .lang-flag { line-height: 1; font-size: 0.85rem; }' +
+    '.tb-lang .lang-btn .fi { display: inline-block; width: 1.1rem; height: 0.8rem; vertical-align: -1px; margin-right: 0.25rem; border-radius: 1px; background-size: cover; background-position: center; box-shadow: 0 0 0 1px rgba(255,255,255,0.12); }' +
     '.tb-lang .lang-divider { width: 1px; background: rgba(255,255,255,0.12); }' +
     /* Report pill uses .tb-pills specificity so it overrides generic pill styling. */
     '.tb-pills a.tb-report { background: rgba(239,68,68,0.12);' +
@@ -173,19 +174,19 @@
     '    </div>' +
     '    <div class="tb-utilities">' +
     '      <div class="tb-lang lang-selector" id="langSelector" aria-label="Select language">' +
-    '        <button class="lang-btn" data-lang="en" title="English">\uD83C\uDDFA\uD83C\uDDF8 EN</button>' +
+    '        <button class="lang-btn" data-lang="en" title="English"><span class="fi fi-us"></span> EN</button>' +
     '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="es" title="Espa\u00F1ol">\uD83C\uDDF2\uD83C\uDDFD ES</button>' +
+    '        <button class="lang-btn" data-lang="es" title="Espa\u00F1ol"><span class="fi fi-mx"></span> ES</button>' +
     '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="hi" title="\u0939\u093F\u0928\u094D\u0926\u0940">\uD83C\uDDEE\uD83C\uDDF3 \u0939\u093F</button>' +
+    '        <button class="lang-btn" data-lang="hi" title="\u0939\u093F\u0928\u094D\u0926\u0940"><span class="fi fi-in"></span> \u0939\u093F</button>' +
     '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="ar" title="\u0627\u0644\u0639\u0631\u0628\u064A\u0629">\uD83C\uDDF8\uD83C\uDDE6 AR</button>' +
+    '        <button class="lang-btn" data-lang="ar" title="\u0627\u0644\u0639\u0631\u0628\u064A\u0629"><span class="fi fi-sa"></span> AR</button>' +
     '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587">\uD83C\uDDF9\uD83C\uDDFC TW</button>' +
+    '        <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587"><span class="fi fi-tw"></span> TW</button>' +
     '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="ko" title="\ud55c\uad6d\uc5b4">\uD83C\uDDF0\uD83C\uDDF7 KO</button>' +
+    '        <button class="lang-btn" data-lang="ko" title="\ud55c\uad6d\uc5b4"><span class="fi fi-kr"></span> KO</button>' +
     '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="ur" title="\u0627\u0631\u062f\u0648">\uD83C\uDDF5\uD83C\uDDF0 UR</button>' +
+    '        <button class="lang-btn" data-lang="ur" title="\u0627\u0631\u062f\u0648"><span class="fi fi-pk"></span> UR</button>' +
     '      </div>' +
     '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
     '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +
@@ -195,6 +196,14 @@
     '    </div>' +
     '  </div>' +
     '</div>';
+
+  /* ─── INJECT flag-icons CSS (for .fi fi-xx language flags) ─── */
+  if (!document.querySelector('link[href*="flag-icons"]')) {
+    var flagLink = document.createElement('link');
+    flagLink.rel  = 'stylesheet';
+    flagLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.6/css/flag-icons.min.css';
+    (document.head || document.documentElement).appendChild(flagLink);
+  }
 
   /* ─── INJECT CSS ─────────────────────────────────────── */
   var styleEl = document.createElement('style');

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-20 -->
+<!-- v1.0.7 | 2026-04-21 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1130,4 +1130,64 @@ async function chatSend(labId){
       chatSetLoading(labId,false);
       return;
     }catch(err){
-      if(_attempt<1){await new Promise(function(
+      if(_attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      _offlineMode[labId]=true;_fallbackIdx[labId]=0;
+      chatAppend(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode \u2014 you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      chatAppend(labId,'ai',fb);
+      chatExchanges[labId]=(chatExchanges[labId]||0)+1;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  chatSetLoading(labId,false);
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  labSignaled[labId]=false;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs) msgs.innerHTML='';
+  var inp=document.getElementById('inp-'+labId);
+  if(inp){ inp.value=''; inp.disabled=false; }
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+function chatKeydown(e,labId){
+  if(e.key==='Enter' && !e.shiftKey){
+    e.preventDefault();
+    chatSend(labId);
+  }
+}
+
+function applySize(val){
+  var els=document.querySelectorAll('.lesson-body,.quiz-area,.lab-area,.mt-area,.section-body,.story-text,.quiz-q,.quiz-opt,.chat-msg,.lab-intro p,.callout p,.gold-callout p');
+  els.forEach(function(el){ el.style.fontSize=val+'px'; });
+  try{ localStorage.setItem('aesop-font-size',val); } catch(e){}
+}
+
+function adjustSize(delta){
+  var range=document.getElementById('sizerRange');
+  var current=range?parseInt(range.value,10):16;
+  var next=Math.min(22,Math.max(12,current+delta));
+  if(range) range.value=next;
+  applySize(next);
+}
+
+// Init
+(function(){
+  try{
+    var saved=localStorage.getItem('aesop-font-size');
+    if(saved) applySize(parseInt(saved,10));
+  } catch(e){}
+  goPage('p-l1');
+})();
+</script>
+
+</body>
+</html>

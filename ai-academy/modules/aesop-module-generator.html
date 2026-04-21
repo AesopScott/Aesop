@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-20 -->
+<!-- v1.0.10 | 2026-04-21 -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -176,7 +176,7 @@ textarea{resize:vertical;min-height:80px;}
   <div style="display:flex;gap:0.75rem;align-items:stretch;">
     <button class="btn-generate" id="generateBtn" onclick="generate()" style="flex:1;">Generate Module</button>
     <button class="btn-generate" id="chainBtn" onclick="buildFullCourse()" style="flex:1;background:var(--teal);color:#fff;" title="Generate and save all modules automatically">Build Full Course</button>
-    <button class="btn-generate" id="stopBtn" onclick="stopChain()" style="flex:0 0 auto;background:var(--red);color:#fff;display:none;" title="Stop the current build and abort the in-flight API request">Stop</button>
+    <button class="btn-generate" id="stopBtn" onclick="stopChain()" style="flex:0 0 auto;width:auto;padding:1rem 1.5rem;background:var(--red);color:#fff;display:none;" title="Stop the current build and abort the in-flight API request">Stop</button>
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:60px;">
       <label for="resumeFrom" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted,#8892b0);line-height:1;">Resume</label>
       <input type="number" id="resumeFrom" min="1" value="1" style="width:48px;text-align:center;padding:4px;border:1px solid var(--border,#1e3a5f);border-radius:4px;background:var(--surface,#112240);color:var(--text,#ccd6f6);font-size:0.85rem;" title="Start building from this module number (skips earlier modules)">
@@ -329,7 +329,9 @@ async function loadLiveCoursesFromRegistry() {
     REGISTRY = await resp.json();
     if (REGISTRY._meta && Array.isArray(REGISTRY._meta.languages)) {
       REGISTRY_LANGUAGES = REGISTRY._meta.languages;
-      renderLanguageChipsFromRegistry();
+      // Do NOT call renderLanguageChipsFromRegistry() here — the mod gen
+      // uses a hardcoded chip list covering all generatable languages, which
+      // is broader than _meta.languages (deployed course pages only).
     }
     console.log('Registry loaded:', liveCids().length, 'live courses;', REGISTRY_LANGUAGES.length, 'languages');
   } catch (e) {
@@ -761,6 +763,11 @@ function buildSystemPrompt(course, mod, tier, tc, lang, langName) {
   const folderName = getFolderName(cid);
   const filePrefix = getFilePrefix(cid);
 
+  // ── Module-1 only: the course-level Introduction page. This is a
+  // learner's first encounter with the course, not a lesson, so it needs
+  // its own tab + page + distinct narrative voice. Non-m1 modules skip it. ──
+  const isM1 = (mod && mod.n === 1);
+
   // Module prefix from hub COURSES data (gov, soc, eth, bld, etc.)
   const MODULE_PREFIX_MAP = {
     'governance':'gov','society':'soc','creativity':'cre','ethics':'eth',
@@ -916,9 +923,12 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     '<style>[ALL CSS]</style>',
     '',
     '<div class="tab-strip">',
-    '  <!-- One tab-group per lesson, then tab-test at end -->',
+    '  <!-- One tab-group per lesson, then tab-test at end.',
+    isM1
+      ? '       NOTE: For Module 1, prepend an additional tab-group with an "Intro" tab-lesson — see the "COURSE INTRODUCTION PAGE" section below for exact structure and active-state rules. The p-l1 tab-lesson below must NOT have the active class in m1. -->'
+      : '  -->',
     '  <div class="tab-group">',
-    '    <div class="tab-lesson active" data-page="p-l1" onclick="goPage(\'p-l1\')">L1</div>',
+    '    <div class="tab-lesson' + (isM1 ? '' : ' active') + '" data-page="p-l1" onclick="goPage(\'p-l1\')">L1</div>',
     '    <div class="tab-subs">',
     '      <span class="tab-sep">·</span>',
     '      <div class="tab-sub" data-page="p-q1" onclick="goPage(\'p-q1\')">Quiz</div>',
@@ -936,12 +946,62 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     '',
     '<script>[ALL JS]<\/script>',
     '',
+    // ═══ Course-level INTRO page (Module 1 only) ═══
+    // Injected only when mod.n === 1 — later modules skip this whole block.
+    ...(isM1 ? [
+      '═══ COURSE INTRODUCTION PAGE — MANDATORY (this is Module 1) ═══',
+      'Because this module is the learner\'s first encounter with the course,',
+      'you MUST include a course-level Introduction page BEFORE Lesson 1.',
+      '',
+      '── Where it lives ──',
+      '1. Add a new <div class="tab-group"> as the FIRST child of <div class="tab-strip">,',
+      '   containing ONLY a tab-lesson with data-page="p-intro", label "Intro", and the active class.',
+      '2. The existing p-l1 tab-lesson must NOT have the active class.',
+      '3. Insert a <div class="page active" id="p-intro"> at the TOP of <div class="content-area">.',
+      '4. The p-l1 page div must NOT have the active class.',
+      '',
+      '── Tab-strip intro entry (drop in as the first tab-group): ──',
+      '<div class="tab-group">',
+      '  <div class="tab-lesson active" data-page="p-intro" onclick="goPage(\'p-intro\')">Intro</div>',
+      '</div>',
+      '',
+      '── Intro page template (fill the three [BRACKETED] slots with your own content): ──',
+      '<!-- ═════════════════════════════ INTRO ═════════════════════════════ -->',
+      '<div class="page active" id="p-intro">',
+      '  <div class="lesson-hero">',
+      '    <div class="lesson-kicker">' + course.name + ' · Introduction</div>',
+      '    <h1>[SHORT PROVOCATIVE TITLE — one sentence, civilizational framing]</h1>',
+      '    <div class="tagline">[ONE-LINE TAGLINE — why this course exists]</div>',
+      '  </div>',
+      '  <div class="lesson-body">',
+      '    <div class="story-scene" data-label="Before We Begin">',
+      '      <p class="story-text">[PARAGRAPH 1 — zoom out. A historical parallel: what prior technology arrived under similar conditions? Electricity, photography, the telegraph, printing press, recorded music, etc. Specific years, specific events, specific names.]</p>',
+      '      <p class="story-text">[PARAGRAPH 2 — the pattern repeating NOW. Concretely, what is happening in this domain today that echoes that history? Again, specifics.]</p>',
+      '      <p class="story-text">[PARAGRAPH 3 — what this course is and what the learner will take from it. Honest about limits.]</p>',
+      '    </div>',
+      '  </div>',
+      '</div>',
+      '',
+      '── Voice requirements for the intro story ──',
+      '1. Civilization-framing. Start with a historical parallel that mirrors the current AI situation in this course\'s domain.',
+      '2. Stakes-setting but not doom. Neither "AI is magic" nor "AI is terrifying."',
+      '3. Concrete specifics over abstractions — years, events, named people, named products.',
+      '4. MUST be distinct from the L1 Opening Scene story-scene. The Intro zooms OUT (whole domain, why this course exists). The L1 Opening Scene zooms IN (a specific illustrative case).',
+      '5. Three paragraphs, 150–220 words total.',
+      '6. Flowing prose, no bullet lists.',
+      '7. Trust the reader as a capable adult. No condescension, no hype.',
+      '',
+      ''
+    ] : []),
     '═══ PAGE IDS (MANDATORY) ═══',
-    'Lessons: p-l1, p-l2, p-l3, p-l4',
-    'Quizzes: p-q1, p-q2, p-q3, p-q4',
-    'Labs: p-lab1, p-lab2, p-lab3, p-lab4',
+    isM1 ? 'Intro:    p-intro   (course-level introduction — ONLY in Module 1)' : '',
+    'Lessons:  p-l1, p-l2, p-l3, p-l4',
+    'Quizzes:  p-q1, p-q2, p-q3, p-q4',
+    'Labs:     p-lab1, p-lab2, p-lab3, p-lab4',
     'Module Test: p-mt',
-    'First page MUST have class="page active". All others: class="page".',
+    isM1
+      ? 'The p-intro page MUST have class="page active". p-l1 must NOT be active — it becomes active only after the learner navigates to it.'
+      : 'First page (p-l1) MUST have class="page active". All others: class="page".',
     '',
     '═══ REQUIRED CSS ═══',
     'Use this exact CSS in the <style> block. It matches the real deployed modules:',
@@ -951,8 +1011,10 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     'var COURSE_ID=\'' + cid + '\';',
     'var MODULE_ID=\'' + moduleId + '\';',
     'var PROXY_URL=\'/aesop-api/proxy.php\';',
-    'var currentPageId=\'p-l1\';',
+    'var currentPageId=\'' + (isM1 ? 'p-intro' : 'p-l1') + '\';',
     'var lessonSignaled={},quizSignaled={},labSignaled={};',
+    // Note: p-intro is NOT mapped to a lesson — it's a course introduction,
+    // not a completion-eligible lesson. Only p-l1..p-l4 fire lessonComplete.
     'var PAGE_TO_LESSON={\'p-l1\':\'l1\',\'p-l2\':\'l2\',\'p-l3\':\'l3\',\'p-l4\':\'l4\'};',
     '',
     '═══ REQUIRED JS FUNCTIONS ═══',
@@ -2903,4 +2965,45 @@ function log(line) {
 // via the Obsidian Local REST API (same key as the audit poster).
 const obsidianLogQueue = [];
 let obsidianFlushTimer = null;
-let obsidianFlushRunning = fals
+let obsidianFlushRunning = false;
+
+function flushObsidianLog() {
+  if (obsidianFlushTimer) return;                 // already scheduled
+  obsidianFlushTimer = setTimeout(async () => {
+    obsidianFlushTimer = null;
+    if (obsidianFlushRunning || obsidianLogQueue.length === 0) return;
+    obsidianFlushRunning = true;
+    const obsKey = (document.getElementById('obsidianKey')?.value || '').trim();
+    if (!obsKey) { obsidianFlushRunning = false; return; }
+    const batch = obsidianLogQueue.splice(0);      // grab everything queued
+    const text = batch.join('\n') + '\n';
+    try {
+      await fetch('http://127.0.0.1:27123/vault/' + encodeURIComponent('GEN MOD/working queue.md'), {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + obsKey,
+          'Content-Type': 'text/markdown',
+          'Content-Insertion-Position': 'end'
+        },
+        body: text
+      });
+    } catch(e) { /* silently drop — don't interrupt generation */ }
+    obsidianFlushRunning = false;
+    if (obsidianLogQueue.length) flushObsidianLog();  // more arrived while flushing
+  }, 500);   // debounce 500ms so rapid log() calls batch together
+}
+
+// Panel evaluation has been moved to the dedicated Panel Review Dashboard
+// (ai-academy/admin/panel-review.html)
+
+init();
+
+
+// ── SYNC CHECK ────────────────────────────────────────────────────────────
+// Embedded commit hash — updated on each push. On page load, compares to
+// Sync check removed — the LOCAL_COMMIT hash goes stale on every push,
+// causing a permanent false-positive OUTDATED banner. The file is served
+// from GitHub Pages (always latest main), so the check adds no value.
+</script>
+</body>
+</html>

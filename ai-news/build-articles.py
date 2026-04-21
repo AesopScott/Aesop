@@ -80,6 +80,7 @@ TEMPLATE = """<!DOCTYPE html>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
 
 <style>
+body {{ padding-top: 118px; overflow-x: hidden; }}
 .article-page {{
   max-width: 740px;
   margin: 0 auto;
@@ -264,26 +265,6 @@ TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 
-<nav class="nav" role="navigation">
-  <div class="nav-inner">
-    <div class="nav-brand-group">
-      <a href="https://aesopacademy.org" class="nav-brand-primary">AESOP AI Academy</a>
-      <div class="nav-divider"></div>
-      <a href="/ai-news/" class="nav-brand-secondary">AI News</a>
-    </div>
-    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">&#9776;</button>
-    <div class="nav-links" id="navLinks">
-      <a href="/ai-academy/courses.html" class="nav-link">Courses</a>
-      <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener" class="nav-btn nav-btn--forums">Forums</a>
-      <button class="dark-mode-toggle" id="darkToggle" aria-label="Toggle dark mode">
-        <span class="dark-mode-toggle__icon">&#9728;&#65039;</span>
-        <span class="dark-mode-toggle__track"><span class="dark-mode-toggle__thumb"></span></span>
-        <span class="dark-mode-toggle__icon">&#127769;</span>
-      </button>
-    </div>
-  </div>
-</nav>
-
 <main class="article-page">
   <a href="/ai-news/" class="article-back">&larr; All Articles</a>
 
@@ -355,6 +336,7 @@ function copyLink(btn) {{
   }});
 }}
 </script>
+<script src="/assets/top-banner.js"></script>
 </body>
 </html>"""
 

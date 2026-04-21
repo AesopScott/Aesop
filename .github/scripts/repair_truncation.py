@@ -32,10 +32,12 @@ Writes a markdown report to aip/truncation-report.md.
 
 from __future__ import annotations
 
+import json as _json
 import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(".").resolve()
@@ -151,9 +153,47 @@ def lost_markers(prev: str, curr: str) -> list[str]:
     return missing
 
 
-def is_truncated(prev_bytes: bytes, curr_bytes: bytes) -> list[str]:
-    """Return a list of truncation reasons. Empty means not truncated."""
+def _is_json_valid(raw: bytes) -> bool:
+    """True if raw bytes decode as UTF-8 and parse as JSON."""
+    try:
+        _json.loads(raw.decode("utf-8"))
+        return True
+    except Exception:
+        return False
+
+
+def is_truncated(path: Path, prev_bytes: bytes, curr_bytes: bytes) -> list[str]:
+    """Return a list of truncation reasons. Empty means not truncated.
+
+    For .json files, a parse-level check runs first — a file that was valid
+    JSON and is now unparseable is always considered truncated, regardless
+    of byte-size heuristics. This catches cases where a mid-write cut leaves
+    the file slightly shorter but still structurally broken (see the 2026-04
+    eval-index.json incident).
+    """
     reasons: list[str] = []
+
+    # ── JSON-specific fast path ──
+    if path.suffix.lower() == ".json" and len(prev_bytes) >= MIN_PREV_SIZE:
+        prev_ok = _is_json_valid(prev_bytes)
+        curr_ok = _is_json_valid(curr_bytes)
+        if prev_ok and not curr_ok:
+            try:
+                _json.loads(curr_bytes.decode("utf-8"))
+            except Exception as e:
+                err_msg = str(e)[:200]
+            else:
+                err_msg = "unknown parse error"
+            reasons.append(
+                f"JSON was valid in previous version but no longer parses: {err_msg}"
+            )
+            return reasons
+        # If current still parses, no truncation even if bytes shrank; early return.
+        if curr_ok:
+            return reasons
+        # If both are broken, don't flag as a new truncation — pre-existing problem.
+        if not prev_ok and not curr_ok:
+            return reasons
 
     prev_size = len(prev_bytes)
     curr_size = len(curr_bytes)
@@ -222,13 +262,14 @@ def file_at_commit(commit: str, rel_path: str) -> bytes | None:
     return git_bytes("show", f"{commit}:{rel_path}")
 
 
-def find_intact_version(rel_path: str, curr_bytes: bytes) -> tuple[str, bytes] | None:
+def find_intact_version(
+    path: Path, rel_path: str, curr_bytes: bytes
+) -> tuple[str, bytes] | None:
     """
     Walk history newest-first. Skip any historical version that is itself
     truncated vs the version before it. Return the first intact one.
     """
     commits = git_log_commits(rel_path)
-    prev_content: bytes | None = None
     for i, commit in enumerate(commits):
         content = file_at_commit(commit, rel_path)
         if content is None:
@@ -240,7 +281,7 @@ def find_intact_version(rel_path: str, curr_bytes: bytes) -> tuple[str, bytes] |
 
         # Candidate is "intact" if, compared to its own predecessor, it
         # did not truncate. If there's no predecessor, accept it.
-        if older is None or not is_truncated(older, content):
+        if older is None or not is_truncated(path, older, content):
             # Also require that the candidate actually differs from the
             # current truncated bytes (no point "restoring" to the same bytes).
             if content != curr_bytes:
@@ -251,8 +292,12 @@ def find_intact_version(rel_path: str, curr_bytes: bytes) -> tuple[str, bytes] |
 def write_report(findings: list[Finding], scanned: int) -> None:
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     lines: list[str] = []
+    # Heartbeat: a timestamp on every run so the commit log proves the
+    # scheduled workflow is alive, even when there is nothing to repair.
+    now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lines.append("# File Truncation Repair Report")
     lines.append("")
+    lines.append(f"- **Last run:** {now_utc}")
     lines.append(f"- Files scanned: **{scanned}**")
     lines.append(f"- Truncated files found: **{len(findings)}**")
     repaired = [f for f in findings if f.repaired_from]
@@ -303,7 +348,7 @@ def main() -> int:
             findings.append(Finding(path=path, reasons=[f"read error: {e}"]))
             continue
 
-        reasons = is_truncated(prev_bytes, curr_bytes)
+        reasons = is_truncated(path, prev_bytes, curr_bytes)
         if not reasons:
             continue
 
@@ -315,7 +360,7 @@ def main() -> int:
         )
 
         try:
-            intact = find_intact_version(rel_path, curr_bytes)
+            intact = find_intact_version(path, rel_path, curr_bytes)
         except Exception as e:
             finding.repair_error = f"history walk failed: {e}"
             intact = None

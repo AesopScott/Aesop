@@ -30,6 +30,9 @@ def load_approved_drafts():
     for f in sorted(DRAFTS_DIR.glob("*.json")):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
+            # Skip non-dict files (e.g. index.json is a list of filenames)
+            if not isinstance(data, dict):
+                continue
             if data.get("status") == "approved":
                 drafts.append(data)
         except (json.JSONDecodeError, KeyError) as e:

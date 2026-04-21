@@ -160,6 +160,7 @@
     '    <a href="/ai-news/"><span class="ico" aria-hidden="true">\uD83D\uDCF0</span>AI News</a>' +
     '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83C\uDF4E</span>Teachers / Parents</a>' +
     '    <a class="tb-pill-right-start" href="/about/mission.html"><span class="ico" aria-hidden="true">\u2726</span>Our Mission</a>' +
+    '    <a href="/about/advisory-board.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Advisory Board</a>' +
     '    <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">\uD83D\uDCAC</span>Forums \u00B7 Discord</a>' +
     '    <a href="/report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">\u2691</span>Report</a>' +
     '  </nav>' +

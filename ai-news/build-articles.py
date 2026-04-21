@@ -81,7 +81,7 @@ TEMPLATE = """<!DOCTYPE html>
 
 <style>
 .article-page {{
-  max-width: 740px;
+  max-width: clamp(600px, 66vw, 900px);
   margin: 0 auto;
   padding: 2.5rem 2rem 4rem;
 }}

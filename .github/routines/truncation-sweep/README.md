@@ -7,7 +7,8 @@ a mid-write interruption. Updates `aip/truncation-report.md` on every
 run — even clean ones — so the commit log proves the routine is alive.
 
 ## Flow
-1. Collect files changed in the last 13 hours from `main` commits.
+1. Collect files changed in the last 20 minutes from `main` commits
+   (15-min interval + 5-min overlap = no gaps).
 2. For each candidate, compare current content vs. the prior version.
 3. Flag files that shrank ≥25% and lost structural closing markers
    (`</body>`, `</html>`, etc.) or end abruptly — or JSON that was
@@ -16,13 +17,13 @@ run — even clean ones — so the commit log proves the routine is alive.
    version of each flagged file.
 5. Restore truncated files; record unresolvable ones without touching them.
 6. Update `aip/truncation-report.md` with the run timestamp and findings.
-7. Commit everything in one `[skip ci]` commit; push to `main`.
+7. Commit only when repairs are made, or at 06:00 UTC daily heartbeat.
+   Clean non-heartbeat runs do not commit (no log noise at 96 runs/day).
 
 ## Inputs
 - **Connectors:** `github` (read + write on `AesopScott/Aesop`).
   No `web_search` or `web_fetch` needed.
-- **Schedule:** 06:00 UTC and 18:00 UTC daily (matching the old
-  GitHub Actions cadence).
+- **Schedule:** every 15 minutes.
 - **Repo:** `AesopScott/Aesop`, branch `main`.
 
 ## Outputs

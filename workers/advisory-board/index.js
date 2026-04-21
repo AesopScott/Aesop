@@ -60,12 +60,26 @@ async function handleAdd(request, env) {
     .filter(f => !member[f] || !String(member[f]).trim());
   if (missing.length) return json({ error: `Missing: ${missing.join(', ')}` }, 400);
 
+  // Extract photo before writing JSON — stored as a separate GitHub file
+  const photoData = member.photo || null;
+  delete member.photo;
+
   // Assign stable ID if not provided
   if (!member.id) {
     member.id = member.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
                 + '-' + Date.now();
   }
   member.addedAt = member.addedAt || new Date().toISOString();
+
+  // Upload photo to GitHub (non-fatal if it fails)
+  if (photoData) {
+    try {
+      await writePhoto(env.GITHUB_PAT, member.id, photoData);
+      member.hasPhoto = true;
+    } catch (err) {
+      console.error('Photo write failed (non-fatal):', err);
+    }
+  }
 
   return updateFile(env, data => {
     data.members = data.members || [];
@@ -110,6 +124,32 @@ async function updateFile(env, transform, message) {
     if (err.status === 404) return json({ error: 'Member not found' }, 404);
     console.error(err);
     return json({ error: err.message || 'GitHub write failed' }, 500);
+  }
+}
+
+// ── WRITE MEMBER PHOTO ──────────────────────────────────────────
+async function writePhoto(pat, id, dataUrl) {
+  // Strip the data URL prefix ("data:image/jpeg;base64,")
+  const base64   = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+  const photoApi = `https://api.github.com/repos/${REPO}/contents/about/advisory-board-photos/${id}.jpg`;
+
+  const r = await fetch(photoApi, {
+    method: 'PUT',
+    headers: {
+      Authorization:  `token ${pat}`,
+      'Content-Type': 'application/json',
+      Accept:         'application/vnd.github.v3+json',
+      'User-Agent':   'AESOP-Board-Worker/1.0',
+    },
+    body: JSON.stringify({
+      message: `Add photo for advisory board member: ${id}`,
+      content: base64,
+    }),
+  });
+
+  if (!r.ok) {
+    const text = await r.text();
+    throw new Error(`GitHub photo PUT ${r.status}: ${text}`);
   }
 }
 

@@ -183,6 +183,8 @@
     '        <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587"><span class="fi fi-tw lang-flag"></span> TW</button>' +
     '        <div class="lang-divider"></div>' +
     '        <button class="lang-btn" data-lang="ko" title="\ud55c\uad6d\uc5b4"><span class="fi fi-kr lang-flag"></span> KO</button>' +
+    '        <div class="lang-divider"></div>' +
+    '        <button class="lang-btn" data-lang="ur" title="\u0627\u0631\u062f\u0648"><span class="fi fi-pk lang-flag"></span> UR</button>' +
     '      </div>' +
     '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
     '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +

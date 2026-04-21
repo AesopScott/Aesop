@@ -1,4 +1,4 @@
-# Panel Review Rotation — Claude Routine Prompt
+# Rubric Review — Claude Routine Prompt
 
 Paste this into the "Instructions" field of a Claude Code Routine.
 

@@ -1,4 +1,4 @@
-# Panel Review Rotation — Claude Routine
+# Rubric Review — Claude Routine
 
 ## What it does
 Each Monday at 09:00 UTC, selects the highest-priority unreviewed (or

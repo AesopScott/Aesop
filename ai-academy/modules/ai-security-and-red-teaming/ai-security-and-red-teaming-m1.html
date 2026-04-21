@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.7 | 2026-04-20 -->
+<!-- v1.0.8 | 2026-04-20 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1217,4 +1217,57 @@ function chatReset(labId){
     l1:'Ready to threat-model your AI deployment. Tell me about the system — what model is it built on, what data does it access, and who are its users? Or ask me to apply a standard framework like STRIDE or LINDDUN to a typical LLM chatbot scenario.',
     l2:"Let's build adversary profiles for your clinical AI system. Describe the deployment — what model powers it, what data it can access, who has query access, and what business outcomes depend on its recommendations. Then we'll enumerate who would want to attack it and why.",
     l3:"Let's analyze your regulatory obligations. An LLM-based hiring tool in the EU is almost certainly high-risk under the EU AI Act — employment and recruitment AI is explicitly listed in Annex III. Tell me about your current compliance posture and I'll map the gaps between what you have and what the Act requires.",
-    l4:"This is a high-stakes deploy
+    l4:"This is a high-stakes deployment — an agentic system with real-world financial execution authority. Let's build the threat model layer by layer. Which MAESTRO layer do you want to start with? I'd suggest beginning with the Agent Layer, since autonomous trade execution is the highest-consequence capability. Or tell me which layer concerns you most."
+  };
+  addMsg(labId,'ai',openers[labId]||'Lab reset. How can I help?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var msgs=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:msgs
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an error. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]                           

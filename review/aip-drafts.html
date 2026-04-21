@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-21 -->
+<!-- v1.0.6 | 2026-04-21 -->
 <!-- v1.1.0 | 2026-04-14 -->
 <html lang="en">
 <head>
@@ -754,23 +754,44 @@ function renderCard(draft, idx) {
 }
 
 // ── APPROVE / REJECT ──────────────────────────────────────────────────────────
+async function ensurePAT(promptMsg) {
+  if (!GH_TOKEN) {
+    GH_TOKEN = prompt(promptMsg || 'Enter GitHub PAT:');
+    if (!GH_TOKEN) return false;
+    sessionStorage.setItem('aip_gh_token', GH_TOKEN);
+  }
+  return true;
+}
+
+function clearPAT() {
+  GH_TOKEN = '';
+  sessionStorage.removeItem('aip_gh_token');
+}
+
 async function setStatus(filename, newStatus) {
   const draft = allDrafts.find(d => d._filename === filename);
   if (!draft) return;
 
-  // Prompt for PAT if not yet provided (needed for writes)
-  if (!GH_TOKEN) {
-    GH_TOKEN = prompt('Enter GitHub PAT to approve/reject courses:');
-    if (!GH_TOKEN) { showToast('Action cancelled — PAT required.'); return; }
-    sessionStorage.setItem('aip_gh_token', GH_TOKEN);
+  if (!await ensurePAT('Enter GitHub PAT to approve/reject courses:')) {
+    showToast('Action cancelled — PAT required.');
+    return;
   }
 
   draft.status = newStatus;
 
   try {
-    // Fetch current SHA from API (needed for write operations)
+    // Fetch current SHA — if 401, token is stale: clear it and re-prompt once
     if (!draft._sha) {
-      const metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`);
+      let metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`);
+      if (metaRes.status === 401) {
+        clearPAT();
+        if (!await ensurePAT('GitHub PAT expired — enter a new one:')) {
+          showToast('Action cancelled — PAT required.');
+          draft.status = 'pending';
+          return;
+        }
+        metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`);
+      }
       if (!metaRes.ok) throw new Error(`Could not fetch file SHA: ${metaRes.status}`);
       const meta = await metaRes.json();
       draft._sha = meta.sha;
@@ -1000,17 +1021,21 @@ async function confirmRemove() {
   const course = devCourses.find(c => c.id === courseId);
   closeRemoveModal();
 
-  if (!GH_TOKEN) {
-    GH_TOKEN = prompt('Enter GitHub PAT to modify courses.html:');
-    if (!GH_TOKEN) { showToast('Action cancelled — PAT required.'); return; }
-    sessionStorage.setItem('aip_gh_token', GH_TOKEN);
+  if (!await ensurePAT('Enter GitHub PAT to modify courses.html:')) {
+    showToast('Action cancelled — PAT required.');
+    return;
   }
 
   const btn = document.querySelector(`#dev-${courseId} .btn-remove`);
   if (btn) { btn.disabled = true; btn.textContent = 'Removing…'; }
 
   try {
-    const metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/ai-academy/courses.html`);
+    let metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/ai-academy/courses.html`);
+    if (metaRes.status === 401) {
+      clearPAT();
+      if (!await ensurePAT('GitHub PAT expired — enter a new one:')) { showToast('Action cancelled.'); return; }
+      metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/ai-academy/courses.html`);
+    }
     if (!metaRes.ok) throw new Error(`Could not fetch courses.html metadata: ${metaRes.status}`);
     const meta = await metaRes.json();
     const currentContent = decodeURIComponent(escape(atob(meta.content.replace(/\n/g, ''))));

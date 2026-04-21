@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-21 -->
+<!-- v1.0.3 | 2026-04-21 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -983,34 +983,9 @@ function validate() {
   });
 });
 
-// ── GITHUB API ──
-// Fine-grained PAT: Contents read+write on AesopScott/Aesop only
-const INTAKE_PAT  = 'REPLACE_WITH_INTAKE_PAT';
-const REPO        = 'AesopScott/Aesop';
-const MEMBERS_PATH= 'about/advisory-board-members.json';
-const API_BASE    = `https://api.github.com/repos/${REPO}/contents/${MEMBERS_PATH}`;
-
-async function ghGet(pat) {
-  const r = await fetch(API_BASE, {
-    headers: { Authorization: `token ${pat}`, Accept: 'application/vnd.github.v3+json' }
-  });
-  if (!r.ok) throw Object.assign(new Error('GET failed'), { status: r.status });
-  const d = await r.json();
-  return {
-    data: JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g, ''))))),
-    sha: d.sha
-  };
-}
-
-async function ghPut(pat, payload, sha, message) {
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
-  const r = await fetch(API_BASE, {
-    method: 'PUT',
-    headers: { Authorization: `token ${pat}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, content: encoded, sha })
-  });
-  if (!r.ok) throw Object.assign(new Error('PUT failed'), { status: r.status });
-}
+// ── WORKER ENDPOINT ──
+// Set to your deployed Cloudflare Worker URL after running: npx wrangler deploy
+const WORKER_URL = 'https://aesop-advisory-board.REPLACE_WITH_YOUR_SUBDOMAIN.workers.dev';
 
 // ── SUBMIT ──
 document.getElementById('submitBtn').addEventListener('click', async () => {
@@ -1024,7 +999,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
   const name = `${v('firstName')} ${v('lastName')}`;
   const member = {
-    id:           name.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now(),
     name,
     pronouns:     v('pronouns')     || null,
     title:        v('jobTitle'),
@@ -1036,14 +1010,18 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     degree:       v('highestDegree') || null,
     tags:         allTags(),
     emoji:        selectedEmoji,
-    addedAt:      new Date().toISOString()
   };
 
   try {
-    const { data, sha } = await ghGet(INTAKE_PAT);
-    data.members = data.members || [];
-    data.members.push(member);
-    await ghPut(INTAKE_PAT, data, sha, `Add advisory board member: ${name}`);
+    const r = await fetch(`${WORKER_URL}/add`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(member),
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw Object.assign(new Error(d.error || 'Request failed'), { status: r.status });
+    }
 
     // Show success
     document.getElementById('mainForm').style.display    = 'none';
@@ -1057,13 +1035,9 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   } catch (err) {
     btn.disabled = false;
     btn.innerHTML = '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Add Me to the Advisory Board';
-    if (err.status === 401 || err.status === 403) {
-      status.style.color = 'var(--red)';
-      status.textContent = 'Submission token is invalid or expired. Please contact contact@aesopacademy.org.';
-    } else {
-      status.style.color = 'var(--red)';
-      status.textContent = `Something went wrong (${err.status || 'network error'}). Please try again or email contact@aesopacademy.org.`;
-    }
+    status.style.color  = 'var(--red)';
+    status.textContent  = `Something went wrong. Please try again or email contact@aesopacademy.org.`;
+    console.error(err);
   }
 });
 

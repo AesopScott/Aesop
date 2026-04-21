@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.0 | 2026-04-21 -->
+<!-- v1.0.1 | 2026-04-21 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -395,18 +395,18 @@ body {
   <div class="adm-pat-status">
     <div class="adm-pat-dot" id="patDot"></div>
     <span id="patLabel">Not authenticated</span>
-    <button class="btn-pat-change" id="btnChangePat">Change PAT</button>
+    <button class="btn-pat-change" id="btnChangePat">Sign out</button>
   </div>
 </header>
 
-<!-- PAT GATE -->
+<!-- PASSWORD GATE -->
 <div class="pat-gate" id="patGate">
   <div class="pat-gate-icon">🔐</div>
   <h2>Admin Access</h2>
-  <p>Enter your GitHub personal access token to manage advisory board members. Requires <strong>Contents: read &amp; write</strong> on the Aesop repository.</p>
-  <input type="password" class="pat-input" id="patInput" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
-  <div class="pat-error" id="patError">Invalid token — check it and try again.</div>
-  <button class="btn-pat-submit" id="btnPatSubmit">Authenticate</button>
+  <p>Enter the admin password to manage advisory board members.</p>
+  <input type="password" class="pat-input" id="patInput" placeholder="Password" autocomplete="current-password" spellcheck="false">
+  <div class="pat-error" id="patError">Incorrect password — try again.</div>
+  <button class="btn-pat-submit" id="btnPatSubmit">Sign In</button>
 </div>
 
 <!-- MAIN -->
@@ -428,14 +428,12 @@ body {
 
 <script>
 // ── CONFIG ──
-const REPO        = 'AesopScott/Aesop';
-const MEMBERS_PATH= 'about/advisory-board-members.json';
-const API_BASE    = `https://api.github.com/repos/${REPO}/contents/${MEMBERS_PATH}`;
-const PAT_KEY     = 'ab-admin-pat';
+// Set to your deployed Cloudflare Worker URL after running: npx wrangler deploy
+const WORKER_URL = 'https://aesop-advisory-board.REPLACE_WITH_YOUR_SUBDOMAIN.workers.dev';
+const PW_KEY     = 'ab-admin-pw';
 
 // ── STATE ──
-let pat  = sessionStorage.getItem(PAT_KEY) || '';
-let currentSha     = null;
+let adminPassword  = sessionStorage.getItem(PW_KEY) || '';
 let currentMembers = [];
 
 // ── TOAST ──
@@ -447,22 +445,22 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-// ── PAT MANAGEMENT ──
-function setPatStatus(ok) {
-  document.getElementById('patDot').className  = 'adm-pat-dot ' + (ok ? 'ok' : 'bad');
-  document.getElementById('patLabel').textContent = ok ? 'Authenticated' : 'Not authenticated';
+// ── AUTH ──
+function setAuthStatus(ok) {
+  document.getElementById('patDot').className     = 'adm-pat-dot ' + (ok ? 'ok' : 'bad');
+  document.getElementById('patLabel').textContent = ok ? 'Signed in' : 'Not signed in';
 }
 
 function showGate(focus) {
-  document.getElementById('patGate').style.display   = '';
-  document.getElementById('admMain').style.display   = 'none';
+  document.getElementById('patGate').style.display = '';
+  document.getElementById('admMain').style.display = 'none';
   if (focus) setTimeout(() => document.getElementById('patInput').focus(), 50);
 }
 
 document.getElementById('btnChangePat').addEventListener('click', () => {
-  sessionStorage.removeItem(PAT_KEY);
-  pat = '';
-  setPatStatus(false);
+  sessionStorage.removeItem(PW_KEY);
+  adminPassword = '';
+  setAuthStatus(false);
   document.getElementById('patInput').value = '';
   document.getElementById('patError').classList.remove('show');
   showGate(true);
@@ -478,50 +476,34 @@ async function tryAuth() {
   const val   = input.value.trim();
   if (!val) { input.classList.add('error'); return; }
   input.classList.remove('error');
-  document.getElementById('btnPatSubmit').textContent = 'Checking…';
-  document.getElementById('btnPatSubmit').disabled = true;
 
+  const btn = document.getElementById('btnPatSubmit');
+  btn.textContent = 'Checking…';
+  btn.disabled    = true;
+
+  // Test the password by calling /list (worker validates nothing for list,
+  // but /remove will fail with 401 if wrong — test by doing a dummy remove)
+  // Actually just try to load members; password check happens on delete.
+  // We do a lightweight validation: try to list first.
   try {
-    await ghGet(val); // test the token
-    pat = val;
-    sessionStorage.setItem(PAT_KEY, pat);
+    const r = await fetch(`${WORKER_URL}/list`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    adminPassword = val;
+    sessionStorage.setItem(PW_KEY, val);
     document.getElementById('patError').classList.remove('show');
     document.getElementById('patGate').style.display = 'none';
     document.getElementById('admMain').style.display = 'block';
-    setPatStatus(true);
-    renderMembers();
-  } catch (err) {
+    setAuthStatus(true);
+    renderFromData(d.members || []);
+  } catch {
+    document.getElementById('patError').textContent = 'Could not connect to worker — check URL config.';
     document.getElementById('patError').classList.add('show');
-    setPatStatus(false);
+    setAuthStatus(false);
   } finally {
-    document.getElementById('btnPatSubmit').textContent = 'Authenticate';
-    document.getElementById('btnPatSubmit').disabled = false;
+    btn.textContent = 'Sign In';
+    btn.disabled    = false;
   }
-}
-
-// ── GITHUB API ──
-async function ghGet(tok) {
-  const r = await fetch(API_BASE, {
-    headers: { Authorization: `token ${tok}`, Accept: 'application/vnd.github.v3+json' }
-  });
-  if (!r.ok) throw Object.assign(new Error(), { status: r.status });
-  const d = await r.json();
-  return {
-    data: JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g, ''))))),
-    sha:  d.sha
-  };
-}
-
-async function ghPut(payload, sha, message) {
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
-  const r = await fetch(API_BASE, {
-    method: 'PUT',
-    headers: { Authorization: `token ${pat}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, content: encoded, sha })
-  });
-  if (!r.ok) throw Object.assign(new Error(), { status: r.status });
-  const d = await r.json();
-  return d.content.sha;
 }
 
 // ── LOAD + RENDER ──
@@ -529,25 +511,25 @@ async function renderMembers() {
   const list = document.getElementById('memberList');
   list.innerHTML = '<div class="adm-empty">Loading…</div>';
   try {
-    const { data, sha } = await ghGet(pat);
-    currentSha     = sha;
-    currentMembers = data.members || [];
-    document.getElementById('memberCount').textContent = currentMembers.length;
-
-    if (!currentMembers.length) {
-      list.innerHTML = '<div class="adm-empty"><strong>No members yet</strong>Share the intake form to start building the board.</div>';
-      return;
-    }
-    list.innerHTML = '';
-    currentMembers.forEach((m, idx) => list.appendChild(buildRow(m, idx)));
+    const r = await fetch(`${WORKER_URL}/list`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    renderFromData(d.members || []);
   } catch (err) {
-    if (err.status === 401 || err.status === 403) {
-      setPatStatus(false);
-      showGate(true);
-    } else {
-      list.innerHTML = `<div class="adm-empty"><strong>Failed to load</strong>${err.status || 'Network error'} — try refreshing.</div>`;
-    }
+    list.innerHTML = `<div class="adm-empty"><strong>Failed to load</strong>Check worker URL or try refreshing.</div>`;
   }
+}
+
+function renderFromData(members) {
+  currentMembers = members;
+  document.getElementById('memberCount').textContent = members.length;
+  const list = document.getElementById('memberList');
+  if (!members.length) {
+    list.innerHTML = '<div class="adm-empty"><strong>No members yet</strong>Share the intake form to start building the board.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  members.forEach((m, idx) => list.appendChild(buildRow(m, idx)));
 }
 
 document.getElementById('btnRefresh').addEventListener('click', renderMembers);
@@ -559,13 +541,12 @@ function esc(s) {
 function buildRow(m, idx) {
   const row = document.createElement('div');
   row.className = 'member-row';
-  row.dataset.idx = idx;
 
   const addedDate = m.addedAt
     ? new Date(m.addedAt).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })
     : '';
-  const location  = [m.city, m.country].filter(Boolean).join(', ');
-  const tagsHtml  = (m.tags && m.tags.length)
+  const location = [m.city, m.country].filter(Boolean).join(', ');
+  const tagsHtml = (m.tags && m.tags.length)
     ? `<div class="member-tags">${m.tags.map(t => `<span class="member-tag">${esc(t)}</span>`).join('')}</div>`
     : '';
 
@@ -579,63 +560,63 @@ function buildRow(m, idx) {
     </div>
     <div class="member-actions">
       <a class="li-link" href="${esc(m.linkedin)}" target="_blank" rel="noopener">LinkedIn ↗</a>
-      <button class="btn-delete" data-idx="${idx}">Remove</button>
+      <button class="btn-delete">Remove</button>
       <div class="delete-confirm" id="confirm-${idx}">
         <div class="delete-confirm-text">Remove ${esc(m.name)}?</div>
         <div class="delete-confirm-btns">
-          <button class="btn-confirm-yes" data-idx="${idx}">Yes, remove</button>
-          <button class="btn-confirm-no"  data-idx="${idx}">Cancel</button>
+          <button class="btn-confirm-yes">Yes, remove</button>
+          <button class="btn-confirm-no">Cancel</button>
         </div>
       </div>
     </div>`;
 
-  // Remove button → show confirm
   row.querySelector('.btn-delete').addEventListener('click', () => {
     row.classList.add('deleting');
     document.getElementById(`confirm-${idx}`).classList.add('show');
     row.querySelector('.btn-delete').style.display = 'none';
   });
 
-  // Cancel
   row.querySelector('.btn-confirm-no').addEventListener('click', () => {
     row.classList.remove('deleting');
     document.getElementById(`confirm-${idx}`).classList.remove('show');
     row.querySelector('.btn-delete').style.display = '';
   });
 
-  // Confirm delete
   row.querySelector('.btn-confirm-yes').addEventListener('click', async () => {
     const yesBtn = row.querySelector('.btn-confirm-yes');
-    yesBtn.disabled = true;
+    yesBtn.disabled    = true;
     yesBtn.textContent = 'Removing…';
     try {
-      // Re-fetch to get latest SHA in case of concurrent edits
-      const { data, sha } = await ghGet(pat);
-      const name     = currentMembers[idx].name;
-      data.members   = (data.members || []).filter((_, i) => i !== idx);
-      currentSha     = await ghPut(data, sha, `Remove advisory board member: ${name}`);
-      currentMembers = data.members;
-      document.getElementById('memberCount').textContent = currentMembers.length;
-      row.style.transition = 'opacity 0.3s, max-height 0.4s';
+      const r = await fetch(`${WORKER_URL}/remove`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ id: m.id, password: adminPassword }),
+      });
+      if (r.status === 401) {
+        showToast('Incorrect password', true);
+        yesBtn.disabled = false;
+        yesBtn.textContent = 'Yes, remove';
+        row.classList.remove('deleting');
+        document.getElementById(`confirm-${idx}`).classList.remove('show');
+        row.querySelector('.btn-delete').style.display = '';
+        return;
+      }
+      if (!r.ok) throw new Error(r.status);
+
+      row.style.transition = 'opacity 0.3s';
       row.style.opacity    = '0';
-      setTimeout(() => { row.remove(); }, 350);
-      showToast(`${name} removed from advisory board`);
-      // Re-index remaining rows
+      setTimeout(() => { row.remove(); }, 320);
+      currentMembers = currentMembers.filter((_, i) => i !== idx);
+      document.getElementById('memberCount').textContent = currentMembers.length;
+      showToast(`${m.name} removed from advisory board`);
       setTimeout(renderMembers, 500);
     } catch (err) {
-      yesBtn.disabled = false;
+      yesBtn.disabled    = false;
       yesBtn.textContent = 'Yes, remove';
       row.classList.remove('deleting');
       document.getElementById(`confirm-${idx}`).classList.remove('show');
       row.querySelector('.btn-delete').style.display = '';
-      if (err.status === 401 || err.status === 403) {
-        showToast('Token expired — please re-authenticate', true);
-        sessionStorage.removeItem(PAT_KEY);
-        setPatStatus(false);
-        showGate(true);
-      } else {
-        showToast(`Failed to remove (${err.status || 'network error'})`, true);
-      }
+      showToast(`Remove failed — try again`, true);
     }
   });
 
@@ -643,20 +624,16 @@ function buildRow(m, idx) {
 }
 
 // ── INIT ──
-if (pat) {
-  ghGet(pat)
-    .then(() => {
+if (adminPassword) {
+  fetch(`${WORKER_URL}/list`)
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => {
       document.getElementById('patGate').style.display = 'none';
       document.getElementById('admMain').style.display = 'block';
-      setPatStatus(true);
-      renderMembers();
+      setAuthStatus(true);
+      renderFromData(d.members || []);
     })
-    .catch(() => {
-      sessionStorage.removeItem(PAT_KEY);
-      pat = '';
-      setPatStatus(false);
-      showGate(false);
-    });
+    .catch(() => showGate(false));
 } else {
   showGate(false);
 }

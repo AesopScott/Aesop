@@ -4,6 +4,7 @@ Paste this into the "Instructions" field of a Claude Code Routine.
 
 **Connectors required:** `github` (read + write access to `AesopScott/Aesop`).
 **Schedule:** every 15 minutes.
+**Model:** claude-haiku (select the latest Haiku in the Routine UI — this task is mechanical and does not need Sonnet/Opus).
 **Repository:** `AesopScott/Aesop`.
 
 ---

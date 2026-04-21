@@ -99,26 +99,60 @@ Identify the level from the module's HTML content (look for `data-level`, level 
 - NEEDS REVISION: total ≥ 55 AND D5 ≥ 8
 - FAIL: total < 55 OR D5 < 8
 
-## Step 4 — Write the eval-report.json
+## Step 3b — All-clear check
 
-Write the file to `ai-academy/modules/{course-id}/{course-id}-eval-report.json`. If a file already exists there, overwrite it entirely.
+After selecting the course in Step 1, if **every** live course in `course-registry.json` already has a review dated within the last 90 days AND has `"reviewers": ["Claude", "Gemini", "Perplexity"]` — do nothing and stop. Write a one-line summary: "All courses reviewed within 90 days — no run needed." Do not commit anything.
 
-Schema (match exactly — the review dashboard reads this format):
+Otherwise, continue with the selected course.
+
+## Step 4 — Score each module three times (full panel)
+
+Read all the module files once. Then run **three separate scoring passes** over every module — one per reviewer persona. Each pass scores all five dimensions independently.
+
+### Pass 1 — Claude (Narrative & Curriculum Integrity)
+Apply the rubric exactly as described in Step 3. Primary critical attention on D1.
+
+### Pass 2 — Gemini (Technical & Factual Accuracy)
+Adopt the Gemini reviewer persona. Primary critical attention on **D2 — Concept Accuracy**:
+- Are AI terms (tokens, RLHF, hallucination, transformers, etc.) defined correctly at the appropriate depth?
+- Are real-world cases cited accurately with correct attribution?
+- Does the content actively counter common AI misconceptions?
+
+Apply the same rubric to all five dimensions, but weight your scrutiny toward technical correctness. A definition that Claude accepted as "good enough narratively" may need a harder look from a technical-accuracy standpoint.
+
+### Pass 3 — Perplexity (Real-World Alignment & Currency)
+Adopt the Perplexity reviewer persona. Primary critical attention on **currency and applied relevance**:
+- Do the real-world examples and cases reflect the AI landscape of the last 12 months?
+- Are cited tools, companies, or incidents still representative of current AI reality?
+- Does D5 (Applied Outcome) hold up in today's AI environment — can a learner actually do the lab with currently available tools?
+
+Apply the same rubric to all five dimensions, but weight your scrutiny toward whether the content would feel dated or irrelevant to someone following today's AI news.
+
+Each pass produces independent scores and notes. Do not anchor Pass 2 or Pass 3 to Pass 1's numbers — each reviewer should reflect their own genuine assessment.
+
+## Step 5 — Write the eval-report.json
+
+Write the file to `ai-academy/modules/{course-id}/{course-id}-eval-report.json`. Overwrite if it exists.
+
+For each module, `panelAverage` = average of Claude total + Gemini total + Perplexity total, rounded to 1 decimal.
+`panelVerdict` is determined by the panelAverage (not any individual reviewer's total).
+
+Schema (match exactly):
 
 ```json
 {
   "course": "Course Display Name",
   "courseId": "course-id",
   "date": "ISO 8601 UTC timestamp",
-  "reviewers": ["Claude"],
+  "reviewers": ["Claude", "Gemini", "Perplexity"],
   "modules": [
     {
       "module": "M1: Module Title",
-      "panelAverage": 86.0,
+      "panelAverage": 79.3,
       "panelVerdict": {
-        "min": 80,
-        "label": "PASS",
-        "color": "#22c55e"
+        "min": 70,
+        "label": "PASS W/ NOTES",
+        "color": "#eab308"
       },
       "reviews": {
         "Claude": {
@@ -130,8 +164,8 @@ Schema (match exactly — the review dashboard reads this format):
             "d4": { "c1": 4, "c2": 5, "c3": 4 },
             "d5": { "c1": 4, "c2": 4, "c3": 4 }
           },
-          "notes": "2–3 sentence overall assessment of this module's strengths and primary weakness.",
-          "topIssue": "One-sentence description of the single most important thing that needs to improve in this module.",
+          "notes": "Narrative is strong; lab executability is the weak point.",
+          "topIssue": "Lab requires a tool not described in the lesson.",
           "dimScores": [
             { "dim": 1, "name": "Narrative Integrity",   "score": 23, "max": 25 },
             { "dim": 2, "name": "Concept Accuracy",      "score": 17, "max": 20 },
@@ -141,11 +175,51 @@ Schema (match exactly — the review dashboard reads this format):
           ],
           "total": 86,
           "d5Score": 14,
-          "verdict": {
-            "min": 80,
-            "label": "PASS",
-            "color": "#22c55e"
-          }
+          "verdict": { "min": 80, "label": "PASS", "color": "#22c55e" }
+        },
+        "Gemini": {
+          "reviewer": "Gemini",
+          "scores": {
+            "d1": { "c1": 4, "c2": 4, "c3": 4, "c4": 4 },
+            "d2": { "c1": 3, "c2": 3, "c3": 4 },
+            "d3": { "c1": 4, "c2": 4, "c3": 4 },
+            "d4": { "c1": 4, "c2": 4, "c3": 4 },
+            "d5": { "c1": 3, "c2": 4, "c3": 3 }
+          },
+          "notes": "Technical definitions are mostly correct but lack precision in two places.",
+          "topIssue": "Definition of 'hallucination' conflates two distinct failure modes.",
+          "dimScores": [
+            { "dim": 1, "name": "Narrative Integrity",   "score": 20, "max": 25 },
+            { "dim": 2, "name": "Concept Accuracy",      "score": 13, "max": 20 },
+            { "dim": 3, "name": "Level Appropriateness", "score": 16, "max": 20 },
+            { "dim": 4, "name": "Delivery Architecture", "score": 12, "max": 15 },
+            { "dim": 5, "name": "Applied Outcome",       "score": 13, "max": 20 }
+          ],
+          "total": 74,
+          "d5Score": 13,
+          "verdict": { "min": 70, "label": "PASS W/ NOTES", "color": "#eab308" }
+        },
+        "Perplexity": {
+          "reviewer": "Perplexity",
+          "scores": {
+            "d1": { "c1": 4, "c2": 4, "c3": 4, "c4": 4 },
+            "d2": { "c1": 4, "c2": 3, "c3": 4 },
+            "d3": { "c1": 4, "c2": 4, "c3": 4 },
+            "d4": { "c1": 4, "c2": 3, "c3": 4 },
+            "d5": { "c1": 3, "c2": 4, "c3": 3 }
+          },
+          "notes": "Content is mostly current but two cited examples are from 2022 and feel dated.",
+          "topIssue": "The autonomous vehicles case study predates the 2024 regulatory shifts and should be updated.",
+          "dimScores": [
+            { "dim": 1, "name": "Narrative Integrity",   "score": 20, "max": 25 },
+            { "dim": 2, "name": "Concept Accuracy",      "score": 15, "max": 20 },
+            { "dim": 3, "name": "Level Appropriateness", "score": 16, "max": 20 },
+            { "dim": 4, "name": "Delivery Architecture", "score": 11, "max": 15 },
+            { "dim": 5, "name": "Applied Outcome",       "score": 13, "max": 20 }
+          ],
+          "total": 75,
+          "d5Score": 13,
+          "verdict": { "min": 70, "label": "PASS W/ NOTES", "color": "#eab308" }
         }
       }
     }
@@ -159,9 +233,7 @@ Schema (match exactly — the review dashboard reads this format):
 - NEEDS REVISION (55–69, D5≥8): `#f97316`
 - FAIL (<55 or D5<8): `#ef4444`
 
-**panelAverage**: the average total score across all reviewers (only one reviewer in this run, so it equals the Claude total).
-
-## Step 5 — Update eval-index.json
+## Step 6 — Update eval-index.json
 
 Read `ai-academy/modules/eval-index.json`. Update (or add) the entry for this course:
 
@@ -169,30 +241,28 @@ Read `ai-academy/modules/eval-index.json`. Update (or add) the entry for this co
 "{course-id}": {
   "course": "Course Display Name",
   "date": "ISO 8601 UTC timestamp",
-  "reviewers": ["Claude"],
+  "reviewers": ["Claude", "Gemini", "Perplexity"],
   "moduleCount": N,
-  "panelAverage": 72.4,
+  "panelAverage": 79.3,
   "reportFile": "{course-id}/{course-id}-eval-report.json"
 }
 ```
 
-- `date`: the current run's UTC timestamp.
-- `moduleCount`: number of modules reviewed in this run.
-- `panelAverage`: average of all module totals from this run, rounded to one decimal place.
+- `panelAverage`: average of all module panelAverages, rounded to 1 decimal.
 - Remove any `_note` field if it was previously set to "eval-report.json is corrupt".
 
 Keep all other course entries unchanged. Do not reorder them.
 
-## Step 6 — Commit and push
+## Step 7 — Commit and push
 
 Commit the eval-report.json and the updated eval-index.json together in one commit on `main`:
 
 ```
-Review: {Course Display Name} — panel pass #{date} ({N} modules, avg {X})
+Review: {Course Display Name} — full panel ({N} modules, avg {X})
 
-Claude reviewer — Narrative & Curriculum Integrity lens
-Modules reviewed: M1, M2, … MN
-Top issues: [brief phrase from topIssue of lowest-scoring module]
+Reviewers: Claude · Gemini · Perplexity
+Modules: M1, M2, … MN
+Top issue: [topIssue from the lowest-scoring module across all reviewers]
 ```
 
 Push to `origin main`. **Do not open a PR.**
@@ -201,14 +271,16 @@ If the push is rejected because `main` moved, rebase once and retry. If it still
 
 ## Guardrails
 - Review exactly one course per run.
+- If every live course already has all 3 reviewers and was reviewed within 90 days, do nothing — no commit, no output.
 - Only write to `ai-academy/modules/{course-id}/{course-id}-eval-report.json` and `ai-academy/modules/eval-index.json`.
 - Never edit module HTML files.
-- Scores must reflect genuine evaluation of the content — do not inflate scores.
+- Scores for each reviewer must reflect that reviewer's independent perspective — do not anchor Gemini or Perplexity scores to Claude's numbers. Do not inflate.
 - If a module file is empty or not found, record `"module": "MN: (not found)"` with all scores 0 and note "Module file missing."
 - Never force-push.
 
 ## Success criteria
-- `{course-id}-eval-report.json` written with one review object per module.
-- `eval-index.json` updated with current timestamp, reviewer list, module count, and panel average.
+- `{course-id}-eval-report.json` written with three review objects per module (Claude, Gemini, Perplexity).
+- `eval-index.json` updated with current timestamp, `"reviewers": ["Claude", "Gemini", "Perplexity"]`, module count, and panel average.
 - One commit on `main`, pushed.
-- Summary: course name, modules reviewed, per-module totals, overall average.
+- Summary: course name, modules reviewed, per-module panel averages, overall average, commit SHA.
+- OR: "All courses reviewed within 90 days — no run needed." with no commit.

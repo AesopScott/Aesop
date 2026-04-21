@@ -250,4 +250,19 @@
       var m = path.match(/\/ai-academy\/modules\/([a-zA-Z-]+)\//);
       if (m) current = m[1];
       sel.querySelectorAll('.lang-btn').forEach(function (btn) {
-        var cod
+        var code = btn.dataset.lang;
+        btn.classList.toggle('lang-active', code === current);
+        btn.addEventListener('click', function () {
+          location.href = (code === 'en') ? '/' : '/ai-academy/modules/' + code + '/courses.html';
+        });
+      });
+    }
+  }
+
+  // Run now if DOM is already interactive, else after it parses.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
+  } else {
+    mount();
+  }
+})();

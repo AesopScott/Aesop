@@ -95,12 +95,14 @@ RULES:
 - Each topic should be specific enough for a focused course (not just "AI" or "machine learning")
 - Topics should be educational/literacy focused — things a general audience would take a course on
 - For each topic, list which signals it came from
+- PAY SPECIAL ATTENTION to signals about specific AI models (Claude, GPT-4, Gemini, Llama, Mistral, Copilot, DeepSeek, Perplexity, etc.) — these are high-demand gaps. Propose model-specific or model-comparison courses when you see them (e.g. "Choosing the Right AI Model", "Getting the Most from Claude", "Open-Source AI Models Explained", "AI Model Benchmarks Demystified").
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
 - "signals": array of the original signal texts that fed into this topic
 - "signal_sources": array of source names (e.g. ["google_trends", "reddit"])
 - "demand_score": 1-10 estimated demand based on signal strength
+- "is_model_topic": true if this topic is specifically about one or more named AI models, false otherwise
 
 Return ONLY the JSON array. No preamble, no markdown fences."""
 
@@ -233,7 +235,8 @@ def generate_drafts(gaps):
         f"- {t['topic']} (demand: {t.get('demand_score', '?')}/10, "
         f"corpus similarity: {t['corpus_score']:.2f}, "
         f"nearest existing: '{t['nearest_course']}', "
-        f"signals from: {', '.join(t.get('signal_sources', ['unknown']))})"
+        f"signals from: {', '.join(t.get('signal_sources', ['unknown']))}"
+        + (", ⚑ MODEL TOPIC" if t.get('is_model_topic') else "") + ")"
         for t in topics_to_draft
     )
     existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
@@ -253,6 +256,9 @@ For EACH topic, return a JSON object with exactly these fields:
 - "synopsis": 2-sentence course description for a general audience
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for AI literacy, referencing the demand signals
+- "is_model_topic": true if the course is specifically about one or more named AI models or model selection/comparison
+
+For topics marked ⚑ MODEL TOPIC, design courses that help learners understand, choose, and use specific AI models effectively — these are extremely high-demand right now.
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
@@ -276,6 +282,7 @@ Return ONLY a JSON array of objects. No preamble, no markdown fences."""
         draft["demand_score"] = gap.get("demand_score", 0)
         draft["corpus_score"] = gap.get("corpus_score", 0)
         draft["nearest_existing"] = gap.get("nearest_course", "unknown")
+        draft["is_model_topic"] = gap.get("is_model_topic", False) or draft.get("is_model_topic", False)
 
     return drafts
 

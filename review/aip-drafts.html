@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.6 | 2026-04-21 -->
+<!-- v1.0.7 | 2026-04-21 -->
 <!-- v1.1.0 | 2026-04-14 -->
 <html lang="en">
 <head>
@@ -89,7 +89,57 @@
     font-size: 22px;
     color: var(--muted);
     text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
   }
+
+  .btn-run-agent {
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 14px 32px;
+    border-radius: 10px;
+    border: 2px solid var(--teal);
+    background: transparent;
+    color: var(--teal-light);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn-run-agent:hover:not(:disabled) {
+    background: var(--teal);
+    color: #fff;
+  }
+  .btn-run-agent:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-run-agent .run-spinner {
+    display: none;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin-agent 0.7s linear infinite;
+  }
+  .btn-run-agent.running .run-spinner { display: inline-block; }
+  @keyframes spin-agent {
+    to { transform: rotate(360deg); }
+  }
+
+  #agent-status {
+    font-size: 18px;
+    color: var(--muted);
+    min-height: 24px;
+  }
+  #agent-status.ok  { color: var(--teal-light); }
+  #agent-status.err { color: #a05050; }
 
   .pulse-dot {
     display: inline-block;
@@ -585,7 +635,12 @@
   </div>
   <div class="header-meta">
     <div><span class="pulse-dot"></span>Research Agent Active</div>
-    <div style="margin-top:8px">Runs every Monday · 9:00 UTC</div>
+    <div>Runs every Monday · 9:00 UTC</div>
+    <button class="btn-run-agent" id="runAgentBtn" onclick="runAgent()">
+      <span class="run-spinner"></span>
+      ▶ Run Now
+    </button>
+    <div id="agent-status"></div>
   </div>
 </header>
 
@@ -863,6 +918,88 @@ function ghFetch(path, opts = {}) {
   };
   if (GH_TOKEN) headers['Authorization'] = `Bearer ${GH_TOKEN}`;
   return fetch(`https://api.github.com${path}`, { ...opts, headers });
+}
+
+// ── RUN AGENT ─────────────────────────────────────────────────────────────────
+async function runAgent() {
+  if (!await ensurePAT('Enter GitHub PAT to trigger the research agent:')) {
+    showToast('Action cancelled — PAT required.');
+    return;
+  }
+
+  const btn = document.getElementById('runAgentBtn');
+  const status = document.getElementById('agent-status');
+
+  btn.disabled = true;
+  btn.classList.add('running');
+  btn.querySelector('span:last-child') && (btn.lastChild.textContent = '');
+  status.textContent = 'Dispatching workflow…';
+  status.className = '';
+
+  try {
+    const res = await ghFetch(
+      `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/aip-generate.yml/dispatches`,
+      { method: 'POST', body: JSON.stringify({ ref: 'main' }) }
+    );
+
+    if (res.status === 401) {
+      clearPAT();
+      throw new Error('PAT rejected (401) — please try again with a fresh token.');
+    }
+    if (res.status === 404) {
+      throw new Error('Workflow not found — check aip-generate.yml exists on main.');
+    }
+    if (!res.ok) {
+      throw new Error(`GitHub returned ${res.status}`);
+    }
+
+    // 204 No Content = success
+    status.textContent = '✓ Agent dispatched — results land in ~2 min.';
+    status.className = 'ok';
+    showToast('AIP Research Agent triggered successfully.');
+
+    // Poll for the run to appear and show its status
+    await pollLatestRun(status);
+
+  } catch (err) {
+    status.textContent = '✗ ' + err.message;
+    status.className = 'err';
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('running');
+  }
+}
+
+async function pollLatestRun(statusEl) {
+  // Wait a moment for GitHub to register the dispatch
+  await new Promise(r => setTimeout(r, 3000));
+
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    try {
+      const res = await ghFetch(
+        `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/aip-generate.yml/runs?per_page=1`
+      );
+      if (!res.ok) break;
+      const data = await res.json();
+      const run = data.workflow_runs?.[0];
+      if (!run) break;
+
+      const { status, conclusion } = run;
+      if (status === 'completed') {
+        if (conclusion === 'success') {
+          statusEl.textContent = '✓ Agent completed — reload to see new drafts.';
+          statusEl.className = 'ok';
+        } else {
+          statusEl.textContent = `✗ Agent finished with: ${conclusion}`;
+          statusEl.className = 'err';
+        }
+        return;
+      }
+      statusEl.textContent = `⟳ Agent running… (${status})`;
+    } catch (_) { break; }
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────

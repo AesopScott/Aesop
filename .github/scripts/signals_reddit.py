@@ -21,6 +21,15 @@ SUBREDDITS = [
     "ArtificialInteligence",
     "deeplearning",
     "datascience",
+    # Model-focused communities
+    "Bing",               # Copilot / GPT-4 usage
+    "GoogleGeminiAI",
+    "ollama",             # Local model runners
+    "OpenAI",
+    "LanguageModelUsers",
+    "AIAssistants",
+    "StableDiffusion",    # Image model literacy
+    "ChatGPTPromptEngineering",
 ]
 
 # Timeframes: hot (trending now) + top of the month (sustained interest)
@@ -40,6 +49,27 @@ EDUCATION_SIGNALS = [
 HEADERS = {
     "User-Agent": "AesopAcademy/1.0 (educational research bot; contact@aesopacademy.org)",
 }
+
+
+# Specific AI model names and families — high-value signals for model literacy courses
+MODEL_TERMS = [
+    "claude", "claude 3", "claude sonnet", "claude opus", "claude haiku",
+    "chatgpt", "gpt-4", "gpt-4o", "gpt-5", "gpt4",
+    "gemini", "gemini pro", "gemini ultra",
+    "llama", "llama 3", "llama 4", "meta ai",
+    "mistral", "mixtral",
+    "copilot", "bing chat",
+    "perplexity",
+    "deepseek",
+    "phi-3", "phi-4", "microsoft phi",
+    "qwen", "yi model",
+    "ollama", "lm studio",
+    "hugging face", "open source model",
+    "multimodal", "vision model", "image model",
+    "reasoning model", "o1", "o3",
+    "fine-tuning", "fine tuning", "rlhf", "rag",
+    "model comparison", "benchmark",
+]
 
 
 def _extract_ai_topics(title):
@@ -63,6 +93,10 @@ def _score_educational_relevance(title):
     for signal in EDUCATION_SIGNALS:
         if signal in lower:
             score += 1
+    # Bonus for model-specific signals — these are high-demand curriculum gaps
+    for model in MODEL_TERMS:
+        if model in lower:
+            score += 2
     return score
 
 

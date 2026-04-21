@@ -22,6 +22,25 @@ SEED_QUERIES = [
     "generative AI",
 ]
 
+# Model-specific seed queries — explicitly track demand around named models
+MODEL_SEED_QUERIES = [
+    "Claude AI",
+    "ChatGPT",
+    "GPT-4",
+    "Gemini AI",
+    "Llama AI",
+    "Mistral AI",
+    "how to use Claude",
+    "how to use ChatGPT",
+    "AI model comparison",
+    "best AI model",
+    "Claude vs ChatGPT",
+    "open source AI models",
+    "local AI model",
+    "fine tuning AI model",
+    "AI model for business",
+]
+
 # Categories to scan for related rising queries
 CATEGORY_SEEDS = [
     "artificial intelligence",
@@ -29,6 +48,8 @@ CATEGORY_SEEDS = [
     "AI healthcare",
     "AI business",
     "AI coding",
+    "large language model",
+    "AI model",
 ]
 
 
@@ -40,8 +61,8 @@ def collect_signals(max_signals=30):
     signals = []
     seen_topics = set()
 
-    # Phase 1: Get related queries for each seed
-    for seed in SEED_QUERIES:
+    # Phase 1: Get related queries for each seed (general + model-specific)
+    for seed in SEED_QUERIES + MODEL_SEED_QUERIES:
         try:
             pytrends.build_payload([seed], timeframe="today 3-m", geo="US")
             related = pytrends.related_queries()

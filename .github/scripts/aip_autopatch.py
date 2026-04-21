@@ -143,49 +143,28 @@ def insert_tab_button(html, tab_html, draft_title):
 
 
 def insert_course_panel(html, panel_html):
-    """Insert course panel before the closing </div> of core-tab-content."""
-    # Find the last </div> before </nav> or the end of the tab content section
-    # The panels are inside <div class="core-tab-content">
-    marker = '<div class="core-tab-content">'
-    content_start = html.find(marker)
-    if content_start == -1:
-        print("  ERROR: Could not find core-tab-content div")
-        return html
+    """Insert course panel before the closing </div><!-- /.core-tab-content --> marker."""
+    # Anchor to the explicit closing comment — this is far more reliable than
+    # counting nested </div> tags, and immune to new panels or sections being added.
+    CLOSE_MARKER = "</div><!-- /.core-tab-content -->"
+    close_pos = html.find(CLOSE_MARKER)
+    if close_pos == -1:
+        # Fallback: try without the comment (older file format)
+        marker = '<div class="core-tab-content">'
+        content_start = html.find(marker)
+        if content_start == -1:
+            print("  ERROR: Could not find core-tab-content close marker")
+            return html
+        section_end = html.find("</section>", content_start)
+        if section_end == -1:
+            print("  ERROR: Could not find closing </section>")
+            return html
+        close_pos = html.rfind("</div>", content_start, section_end)
+        if close_pos == -1:
+            html = html[:section_end] + panel_html + "\n" + html[section_end:]
+            return html
 
-    # Find the closing </div> that matches core-tab-content
-    # It's followed by </div> for core-tabs-wrap
-    # Look for the pattern that ends the panels section
-    # The last panel ends, then we have closing divs for the layout
-    # Find: </div>\n    </div>\n  </div>\n</section>
-    section_end = html.find("</section>", content_start)
-    if section_end == -1:
-        print("  ERROR: Could not find closing </section>")
-        return html
-
-    # Walk backwards from </section> to find where to insert
-    # Pattern: panels end, then </div> (core-tab-content) </div> (core-tabs-wrap) </div> (core-section-inner) </section>
-    # We want to insert before the first </div> closing the tab content
-
-    # Find the last </div> of a panel (ends with </div>\n) before the closing divs
-    # Look for the last core-panel closing
-    last_panel_end = html.rfind("</div>\n", content_start, section_end)
-    # Go back through the closing </div> tags to find where panels end
-    # Actually, simpler: insert right before the closing structure
-
-    # Find the closing pattern for core-tab-content
-    # It should be: [last panel]</div>\n    </div>\n  </div>\n</section>
-    close_pattern = re.search(
-        r'(</div>\s*</div>\s*</div>\s*</section>)',
-        html[content_start:section_end + 10]
-    )
-
-    if close_pattern:
-        insert_pos = content_start + close_pattern.start()
-        html = html[:insert_pos] + panel_html + "\n" + html[insert_pos:]
-    else:
-        # Fallback: insert before </section>
-        html = html[:section_end] + panel_html + "\n" + html[section_end:]
-
+    html = html[:close_pos] + panel_html + "\n" + html[close_pos:]
     return html
 
 
@@ -228,6 +207,10 @@ def main():
         new_count += 1
 
     if new_count > 0:
+        # Safety check: never write a file that lost its closing tags
+        if not html.rstrip().endswith("</html>"):
+            print("\n❌ ABORT: patched HTML does not end with </html> — file NOT written to prevent truncation.")
+            sys.exit(1)
         COURSES_HTML.write_text(html, encoding="utf-8")
         print(f"\n✅ Patched courses.html with {new_count} new course(s)")
     else:

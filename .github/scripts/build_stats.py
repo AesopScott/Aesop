@@ -36,7 +36,7 @@ STATS_PATH = REPO_ROOT / "stats.json"
 
 # Canonical list of UI languages actually supported by the router in index.html.
 # Keep this in sync with the <button data-lang="..."> pills in the top banner.
-LANGUAGES = ["en", "es", "hi", "ar"]
+LANGUAGES = ["en", "es", "hi", "ar", "zh-TW", "ko", "ur"]
 
 
 def count_live_courses() -> int:

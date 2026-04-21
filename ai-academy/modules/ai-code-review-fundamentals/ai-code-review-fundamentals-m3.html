@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-21 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Code Review Fundamentals — M3: Hallucinated APIs and Phantom Dependencies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ai-code-review-fundamentals-m3 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+.code-block{background:#060e18;border:1px solid var(--border-dark);border-radius:4px;padding:0.85rem 1rem;margin:0.75rem 0;font-family:'Courier New',monospace;font-size:0.8rem;line-height:1.7;color:#a89f93;overflow-x:auto;}
+.code-block .cm{color:#4a5a6a;}
+.code-block .kw{color:#f43f5e;}
+.code-block .fn{color:#c9a05a;}
+.code-block .str{color:#4fcf8a;}
+.code-block .err{color:#f07070;text-decoration:underline wavy #f07070;}
+.inline-code{font-family:'Courier New',monospace;font-size:0.82em;background:rgba(255,255,255,0.04);border:1px solid var(--border-dark);border-radius:3px;padding:0.1em 0.35em;color:#c9a05a;}
+.table-wrap{overflow-x:auto;margin:1rem 0;}
+table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+th{background:rgba(var(--accent-rgb),0.06);border:1px solid var(--border-dark);padding:0.55rem 0.85rem;text-align:left;color:var(--accent);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+td{border:1px solid var(--border-dark);padding:0.55rem 0.85rem;color:#6e6861;vertical-align:top;line-height:1.6;}
+td strong{color:#a89f93;}
+tr:nth-child(even) td{background:rgba(255,255,255,0.01);}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero,.quiz-hero,.lab-hero{padding:1.5rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════════ L1 ═══════════════════════════════════════ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 1</div>
+      <h1>The Anatomy of a Hallucinated API</h1>
+      <div class="tagline">What fabricated interfaces look like, why they feel real, and how they enter production codebases undetected.</div>
+      <div class="lesson-question">How does a function that has never existed end up committed to a production repository?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context — March 2023">
+        <p class="story-text">When security researcher <em>Joseph Thacker</em> began systematically testing ChatGPT's ability to generate Python code that called third-party APIs, he documented a pattern that had already been silently entering codebases worldwide: the model would confidently produce syntactically correct, logically plausible function calls to endpoints that did not exist. The Stripe SDK would gain a <em>charge.refund_partial()</em> method it had never shipped. The Twilio library would acquire a <em>send_whatsapp_bulk()</em> convenience wrapper no engineer had ever written. Each fabrication was formatted exactly like the real documentation.</p>
+      </div>
+
+      <div class="section-heading">Why Hallucinated APIs Feel Authentic</div>
+      <div class="section-body">
+        <p>Large language models are trained on enormous volumes of API documentation, Stack Overflow threads, GitHub repositories, and tutorial blog posts. This training creates a powerful internal model of how APIs <em>should</em> look — naming conventions, parameter patterns, return types, error classes. When asked to write code using a library, the model synthesizes a response that is statistically consistent with everything it has seen about that library's style.</p>
+        <p>The result is a hallucination that passes superficial inspection. The method name follows the library's naming convention. The parameters match the types the library typically uses. The docstring, if the model generates one, echoes real documentation prose. A developer scanning the output sees familiar patterns and proceeds.</p>
+        <p>This phenomenon is distinct from a simple syntax error. The code is syntactically valid. It may even pass static analysis. The failure surfaces only at runtime — or, if the hallucinated package is installed via a similarly-named malicious package, it may never surface at all.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Documented Case — 2023 PyPI Typosquatting Wave</div>
+        <p>Researchers at Vulcan Cyber published findings in May 2023 showing that AI-generated package names that did not exist in PyPI were being registered by threat actors <em>after</em> the hallucinations were observed in the wild. The attack model: wait for an AI tool to suggest a nonexistent package name, register that name with malicious code, then collect installs from developers who ran the AI-generated requirements file without verification.</p>
+      </div>
+
+      <div class="section-heading">The Structural Signature of a Fabricated Call</div>
+      <div class="section-body">
+        <p>Hallucinated APIs tend to cluster around predictable patterns. Understanding these patterns is the first step toward systematic detection during code review.</p>
+      </div>
+
+      <div class="key-term">
+        <div class="kt-term">Plausible Compound Names</div>
+        <div class="kt-def">Methods like <span class="inline-code">client.batch_process_async()</span> or <span class="inline-code">session.get_with_retry()</span> — combinations of real words that sound like they belong but do not appear in any changelog or official release.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Version-Locked Ghosts</div>
+        <div class="kt-def">Features attributed to specific version numbers that do not exist: "added in v2.4.1" when no such version shipped that method. The model confabulates a plausible version history.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Convenience Wrappers</div>
+        <div class="kt-def">High-level helper methods that wrap functionality available only through lower-level calls. The model infers these would be useful, then invents them as if they ship with the library.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Phantom Configuration Keys</div>
+        <div class="kt-def">Settings passed to constructors or config objects — <span class="inline-code">retry_on_rate_limit=True</span>, <span class="inline-code">auto_paginate=True</span> — that the library's actual constructor silently ignores because it never defined them.</div>
+      </div>
+
+      <div class="section-heading">An Illustrative Code Sample</div>
+      <div class="section-body"><p>Consider this plausible-looking Python snippet generated by an LLM tasked with "write code to send a templated SMS via Twilio":</p></div>
+
+      <div class="code-block">
+<span class="kw">from</span> twilio.rest <span class="kw">import</span> Client<br>
+<br>
+client = Client(account_sid, auth_token)<br>
+<br>
+<span class="cm"># Send a pre-approved template message</span><br>
+message = client.messages.<span class="err">create_from_template</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;to=<span class="str">"+15551234567"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;from_=<span class="str">"+15559876543"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;template_sid=<span class="str">"HXabcdef1234567890"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">template_vars</span>={<span class="str">"1"</span>: <span class="str">"John"</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">auto_approve</span>=<span class="kw">True</span><br>
+)
+      </div>
+
+      <div class="section-body">
+        <p>The Twilio Python SDK has no <span class="inline-code">create_from_template()</span> method on the messages resource. Content Templates are managed through a separate Content API with a completely different call pattern. <span class="inline-code">auto_approve</span> is not a recognized parameter in any version of the SDK. This code will raise an <span class="inline-code">AttributeError</span> at runtime — but only if it runs.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Review Discipline</div>
+        <p>Any method call on a third-party object that you did not personally verify in the library's official changelog or source code must be treated as potentially hallucinated. Familiarity with a library's naming style is not verification. The model is trained on that same style and uses it to fabricate convincingly.</p>
+      </div>
+
+      <div class="section-heading">Why Runtime Is Too Late</div>
+      <div class="section-body">
+        <p>The naive assumption is that hallucinated APIs self-reveal quickly: the code runs, an exception fires, the developer investigates. In practice, three conditions routinely delay or suppress discovery.</p>
+        <p><strong>Infrequent code paths.</strong> A method called only during error handling, monthly billing runs, or specific feature flag states may not execute in testing. The hallucination ships to production and waits.</p>
+        <p><strong>Silent parameter absorption.</strong> Some libraries accept arbitrary keyword arguments via <span class="inline-code">**kwargs</span> and simply ignore unrecognized ones. A hallucinated configuration key that a constructor silently discards produces no error — the feature just does not work as intended, and the bug may be attributed to other causes.</p>
+        <p><strong>Package substitution.</strong> As documented in the Vulcan Cyber research, a hallucinated package name that an attacker subsequently registers means the install succeeds, the import succeeds, and the code may even run — with attacker-controlled behavior replacing the expected logic.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-body">
+        <p>Lesson 2 examines the dependency manifest specifically — how phantom packages enter <span class="inline-code">requirements.txt</span>, <span class="inline-code">package.json</span>, and <span class="inline-code">go.mod</span> files, and the verification workflow that catches them before install.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ Q1 ═══════════════════════════════════════ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">The Anatomy of a Hallucinated API — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">Which structural feature most reliably distinguishes a hallucinated API method from a genuine one during static code review?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The method name uses snake_case rather than camelCase</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The method is called on a third-party object inside a try/except block</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">The method name does not appear in the library's official changelog or source code</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The method accepts more than three parameters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Absence from official documentation and source is the definitive marker. Style consistency is exactly what makes hallucinations hard to detect — the model replicates the library's conventions precisely.</div>
+        <div class="quiz-feedback wrong">Not quite. Hallucinated APIs follow the target library's conventions faithfully — that is what makes them dangerous. The only reliable test is verifying existence against authoritative source: official docs, changelog, or library source code.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">The 2023 Vulcan Cyber research documented a specific attack that exploited AI hallucinations. What was the attack mechanism?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Attackers poisoned LLM training data to insert backdoors into generated code</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Attackers registered hallucinated package names on PyPI with malicious code, then collected installs from developers using AI-generated requirements files</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Attackers used prompt injection to make AI assistants recommend packages they controlled</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Attackers modified PyPI metadata to make legitimate packages appear as hallucinations in AI outputs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The attack required no sophisticated technical access — just monitoring AI output for nonexistent package names, registering those names, and waiting for developers to run pip install on AI-generated dependency lists without independent verification.</div>
+        <div class="quiz-feedback wrong">That describes a different threat model. The Vulcan Cyber finding was specifically about registering hallucinated-but-nonexistent package names on public registries after observing them in AI-generated code.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">A library constructor accepts **kwargs and silently ignores unrecognized keys. An AI-generated call passes <code style="font-family:monospace;font-size:0.9em">auto_paginate=True</code> which is not a real parameter. What is the likely outcome?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The constructor raises a TypeError listing the unrecognized keyword</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">The constructor runs without error, but the expected pagination behavior never activates</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Python's import system detects the invalid parameter and warns at module load time</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The hallucination is caught at compile time by the interpreter</button>
+        </div>
+        <div class="quiz-feedback right">Correct. This is the silent failure mode — arguably more dangerous than a loud exception. The code runs, no error fires, but the feature does not work. The bug may be attributed to logic errors elsewhere, and the hallucinated parameter may remain in the codebase indefinitely.</div>
+        <div class="quiz-feedback wrong">With **kwargs absorption, Python will not raise on unrecognized keys — they are simply collected into the kwargs dict and never referenced. The failure is behavioral, not syntactic, making it particularly hard to detect.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ LAB 1 ═══════════════════════════════════════ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — API Hallucination Identification</h1>
+      <div class="tagline">Interact with the AI tutor · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are reviewing a pull request that includes AI-generated code using the <strong>OpenAI Python SDK (v1.x)</strong>. The snippet below was committed by a junior engineer who used Copilot to write it. Your job is to identify which method calls are hallucinated and explain your reasoning to the tutor.</p>
+        <div class="code-block">
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI<br>
+<br>
+client = OpenAI(api_key=api_key, <span class="err">auto_retry=True</span>, <span class="err">rate_limit_buffer=0.8</span>)<br>
+<br>
+<span class="cm"># Summarize a document with automatic chunking</span><br>
+response = client.chat.completions.<span class="err">create_chunked</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model=<span class="str">"gpt-4o"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: document_text}],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">chunk_strategy</span>=<span class="str">"semantic"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;max_tokens=<span class="str">1024</span><br>
+)<br>
+<br>
+<span class="cm"># Stream with built-in progress callback</span><br>
+<span class="kw">for</span> chunk <span class="kw">in</span> client.chat.completions.<span class="err">stream_with_progress</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model=<span class="str">"gpt-4o"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;messages=messages,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">on_progress</span>=progress_callback<br>
+):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(chunk)
+        </div>
+        <div class="lab-prompt">Start by telling the tutor which elements look suspicious to you and why. Then ask about the real API patterns you should use instead.</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">API Hallucination Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. You have a code snippet in front of you that was generated by an AI coding assistant. I can see it contains several hallucinated elements in the OpenAI Python SDK v1.x. Walk me through what looks suspicious to you — pick any element and tell me why you think it might not be real.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Identify a suspicious element and explain your reasoning…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ L2 ═══════════════════════════════════════ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 2</div>
+      <h1>Phantom Dependencies in Manifest Files</h1>
+      <div class="tagline">How hallucinated packages enter requirements files, and the verification workflow that stops them before install.</div>
+      <div class="lesson-question">What makes a nonexistent package name dangerous before a single line of it runs?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Incident — April 2023">
+        <p class="story-text">Bar Lanyado, a researcher at Lasso Security, published a study in which he asked multiple AI assistants — including ChatGPT, Bard, and Claude — to recommend Python packages for various tasks. He found that models would with some regularity suggest package names that did not exist on PyPI. When he registered several of those invented names as test packages, he was able to confirm that at least some installs from developer environments followed within days — meaning developers had trusted AI-recommended package names without checking their existence on the registry.</p>
+      </div>
+
+      <div class="section-heading">Where Phantom Dependencies Appear</div>
+      <div class="section-body">
+        <p>AI-generated dependency hallucinations surface in several distinct places, each with a different risk profile and detection approach.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Language / Runtime</th>
+              <th>Hallucination Risk</th>
+              <th>Detection Point</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="inline-code">requirements.txt</span></td>
+              <td>Python / pip</td>
+              <td><strong>High</strong> — free-form, no lock file required by default</td>
+              <td>pip install failure or PyPI lookup</td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">package.json</span></td>
+              <td>Node.js / npm</td>
+              <td><strong>High</strong> — npm install fails silently on 404 in some configs</td>
+              <td>npm install error or npmjs.com lookup</td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">go.mod</span></td>
+              <td>Go / modules</td>
+              <td><strong>Medium</strong> — go get verifies against VCS, fails loudly</td>
+              <td>go mod tidy failure</td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">Cargo.toml</span></td>
+              <td>Rust / cargo</td>
+              <td><strong>Medium</strong> — crates.io lookup at build time</td>
+              <td>cargo build failure</td>
+            </tr>
+            <tr>
+              <td><span class="inline-code">build.gradle</span></td>
+              <td>Java / Gradle</td>
+              <td><strong>Medium</strong> — Maven Central query at sync time</td>
+              <td>Gradle sync failure</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-heading">The Typosquatting Attack Surface</div>
+      <div class="section-body">
+        <p>A package name that does not exist today can be registered tomorrow. This creates a unique attack window specific to AI-generated dependency lists: the hallucination is observable before the attack exists, giving threat actors advance notice of which names developers will attempt to install.</p>
+        <p>The Python Package Index does not restrict registration of most package names, and name similarity to existing packages is not automatically blocked (PyPI introduced some typosquatting protections after high-profile incidents, but coverage is incomplete). An attacker who monitors AI assistant outputs for novel package suggestions has a list of high-probability target names to register.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — requestslib vs requests</div>
+        <p>The legitimate Python HTTP library is named <strong>requests</strong>. AI assistants have been observed suggesting <strong>requestslib</strong>, <strong>python-requests-extended</strong>, and <strong>requests-plus</strong> — all of which have at various points been registered by parties other than Kenneth Reitz's project. Some registered names contained code that exfiltrated environment variables on import. The <strong>requests</strong> library has over 30 billion all-time downloads; the attack surface from confusion with lookalike names is enormous.</p>
+      </div>
+
+      <div class="section-heading">Verification Workflow for Dependency Review</div>
+      <div class="section-body">
+        <p>A robust review protocol for any AI-assisted dependency addition involves three sequential checks, none of which can be skipped when the dependency originates from an AI suggestion.</p>
+      </div>
+
+      <div class="key-term">
+        <div class="kt-term">Step 1 — Registry Existence</div>
+        <div class="kt-def">Manually navigate to the registry URL for the package name: <span class="inline-code">pypi.org/project/&lt;name&gt;</span>, <span class="inline-code">npmjs.com/package/&lt;name&gt;</span>. Confirm the package exists and the page is not a redirect. Do not rely on pip/npm install output alone — some failure modes are non-obvious.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Step 2 — Publisher Identity</div>
+        <div class="kt-def">Verify the publisher matches the expected maintainer. For major libraries, the publisher will be a well-known individual or organization account. A package published a day ago by an unknown account that shares a name with a popular library is a strong signal of typosquatting.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Step 3 — Source Linkage</div>
+        <div class="kt-def">Follow the source repository link from the registry page. Confirm the repository exists, has a reasonable commit history, and is the canonical upstream for the library you intend to use. AI assistants sometimes suggest packages whose names have been reassigned or whose PyPI entries now point to entirely different projects.</div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Automation Note</div>
+        <p>Tools like <strong>pip-audit</strong>, <strong>socket.dev</strong>, and <strong>Snyk Open Source</strong> automate parts of this verification — but none are a substitute for the publisher identity check on AI-suggested packages. These tools primarily query known-vulnerability databases; a newly registered malicious package will not yet appear in those databases. Registry existence and publisher verification must remain manual steps for any dependency that did not appear in the codebase before AI involvement.</p>
+      </div>
+
+      <div class="section-heading">Reviewing a requirements.txt Diff</div>
+      <div class="section-body">
+        <p>In a pull request review, the dependency manifest diff is often the highest-value target. Any new package added in a PR where the branch author used AI assistance should be individually verified. The review comment should not simply approve the addition — it should record the verification: "Confirmed <span class="inline-code">httpx</span> 0.27.0 is the encode/httpx project, publisher @tomchristie, 1.2k commits, existing dependency in our monorepo."</p>
+        <p>For packages that <em>cannot</em> be verified — the registry page 404s, the publisher account is new, the repository has no history — the correct action is to reject the PR with a clear comment and request the engineer use an already-approved alternative or go through the dependency approval process.</p>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="section-body">
+        <p>Lesson 3 moves from dependency manifests to runtime behavior: how hallucinated method signatures cause subtle bugs even when the underlying package is real and correctly installed.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson 2 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ Q2 ═══════════════════════════════════════ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Phantom Dependencies in Manifest Files — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">Bar Lanyado's 2023 research demonstrated a specific risk from AI package hallucinations. Which of the following best summarizes his finding?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">AI assistants systematically recommend outdated package versions with known CVEs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">AI assistants suggest nonexistent package names that developers then attempt to install, creating an exploitable registration window for attackers</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">AI assistants insert hidden import statements for attacker-controlled packages into generated code</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">AI assistants confuse package names across languages, recommending npm packages in Python contexts</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The core finding was that hallucinated-but-nonexistent package names create a predictable registration target for attackers. Lanyado confirmed this by registering several himself and observing install attempts within days.</div>
+        <div class="quiz-feedback wrong">Lanyado's specific finding was about packages that did not exist at all — not outdated, hidden, or cross-language confusion. The hallucinated names created an open registration opportunity that attackers could exploit.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">During a PR review, you see <code style="font-family:monospace;font-size:0.9em">requests-async-extended==0.4.2</code> added to requirements.txt. The PyPI page exists but the publisher account was created 3 days ago and has no other packages. What is the correct action?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Approve the PR — the package exists on PyPI, which is sufficient verification</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Run pip install in a sandbox first; if it installs cleanly, approve the PR</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Reject the PR — a newly created publisher account with no history is a strong typosquatting signal, regardless of registry presence</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Approve with a comment noting the suspicious publisher, but allow it to proceed to staging</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Registry existence is a necessary but not sufficient condition. A brand-new publisher account for a package with a name similar to a popular library is precisely the typosquatting pattern documented in multiple real incidents. The PR should be blocked until the engineer can establish a safe alternative.</div>
+        <div class="quiz-feedback wrong">A package can exist on PyPI and still be malicious. The three-day-old publisher account with no other packages is a critical red flag that must result in rejection, not conditional approval. Installing in a sandbox may not surface malicious behavior that activates only in specific conditions.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">Which dependency manifest type fails loudest and earliest when a hallucinated package name is added, providing the safest default behavior?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">requirements.txt with pip</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">package.json with npm</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">go.mod with go modules</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">All manifest types fail with equal immediacy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Go modules perform VCS verification at resolution time and fail loudly if the module path does not resolve to a real repository. This provides earlier, more reliable detection than pip or npm, which can produce ambiguous or silent failures in some configurations.</div>
+        <div class="quiz-feedback wrong">Go modules stand out here — they resolve module paths against actual VCS repositories at build time, making hallucinated module paths immediately and unambiguously detectable. pip and npm have more varied failure modes and can in some configurations produce less obvious errors.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ LAB 2 ═══════════════════════════════════════ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Manifest Verification Practice</h1>
+      <div class="tagline">Interact with the AI tutor · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are reviewing a <strong>requirements.txt</strong> diff in a pull request. The branch author used GitHub Copilot to scaffold a new microservice. Below is the additions section of the diff. Discuss with the tutor which entries need the deepest scrutiny and how you would conduct the verification.</p>
+        <div class="code-block">
+<span class="cm">+ boto3==1.34.0</span><br>
+<span class="cm">+ fastapi==0.110.0</span><br>
+<span class="kw">+ pydantic-validators-extended==0.2.1</span><br>
+<span class="kw">+ httpx-retry-middleware==1.0.0</span><br>
+<span class="cm">+ uvicorn[standard]==0.27.1</span><br>
+<span class="kw">+ aws-lambda-powertools-async==0.9.3</span><br>
+<span class="cm">+ python-dotenv==1.0.1</span>
+        </div>
+        <div class="lab-prompt">Gold lines are well-known packages. Red lines are the ones worth interrogating. Tell the tutor which ones concern you most and walk through your verification steps.</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Manifest Verification Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Good morning. You have a requirements.txt diff in front of you from an AI-assisted PR. Some of these additions look familiar; others should raise your antenna. Which entries would you prioritize for the deepest verification, and why?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Identify the high-risk entries and explain your verification approach…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ L3 ═══════════════════════════════════════ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 3</div>
+      <h1>Hallucinated Method Signatures and Silent Failures</h1>
+      <div class="tagline">When the package is real but the method signature is invented — and why the resulting bugs are among the hardest to attribute.</div>
+      <div class="lesson-question">What breaks when an AI correctly identifies a real package but invents the parameters it accepts?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Documented Pattern — GitHub Copilot SDK Usage Studies, 2022–2024">
+        <p class="story-text">Multiple independent evaluations of GitHub Copilot's code suggestions — including studies by researchers at <em>NYU</em> and published analyses by <em>GitClear</em> — documented that Copilot would correctly identify which SDK method to call for a given task but would frequently hallucinate the parameter names, default values, and call signatures. The underlying package would install correctly. The import would succeed. The method would exist. Only the specific parameters passed would be wrong — sometimes silently wrong, sometimes raising cryptic errors that traced back several layers.</p>
+      </div>
+
+      <div class="section-heading">The Three Failure Modes of Signature Hallucination</div>
+      <div class="section-body">
+        <p>When an AI assistant fabricates a method parameter, the outcome at runtime depends on how the receiving function handles unexpected input. Three distinct failure modes result, each with different detectability.</p>
+      </div>
+
+      <div class="key-term">
+        <div class="kt-term">Mode A — TypeError at Call Site</div>
+        <div class="kt-def">The function explicitly rejects unrecognized keyword arguments. Python raises <span class="inline-code">TypeError: func() got an unexpected keyword argument 'param_name'</span>. This is the <em>best</em> failure mode — it surfaces immediately, the traceback points directly at the hallucinated parameter, and the fix is unambiguous.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Mode B — Silent Absorption</div>
+        <div class="kt-def">The function accepts <span class="inline-code">**kwargs</span> and ignores unknown keys. The call succeeds; the hallucinated parameter has no effect. The feature the parameter was supposed to configure does not work, but no exception fires. The bug manifests as a behavioral gap, not an error.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Mode C — Parameter Aliasing</div>
+        <div class="kt-def">The hallucinated parameter name resembles but differs from a real parameter. The real parameter uses its default value; the developer's intended configuration is silently ignored. Particularly dangerous when the real default is permissive and the intended configuration was a security constraint.</div>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real-World Case — AWS Boto3 Signature Hallucination</div>
+        <p>AWS boto3 is one of the most frequently used Python SDKs and one of the most frequently hallucinated. AI assistants commonly fabricate parameters on S3, Lambda, and IAM client methods. A documented pattern: Copilot suggesting <span class="inline-code">s3_client.put_object(..., acl='private', <strong>enforce_encryption=True</strong>)</span> — where <span class="inline-code">enforce_encryption</span> is not a real parameter. The call succeeds (boto3 uses **kwargs internally in some paths). The object uploads without enforced encryption. Security reviewers looking only at the code see a parameter that implies encryption is required and may not check the actual S3 bucket policy.</p>
+      </div>
+
+      <div class="section-heading">Signature Verification Workflow</div>
+      <div class="section-body">
+        <p>For any method call in AI-generated code that accepts keyword arguments, the review workflow requires checking each parameter name against the actual function signature, not the surrounding documentation prose.</p>
+      </div>
+
+      <div class="key-term">
+        <div class="kt-term">Source Inspection</div>
+        <div class="kt-def">Navigate to the installed package source or the library's GitHub repository. Find the actual function definition. Read the parameter list. Compare each keyword argument in the AI-generated call against the real signature. This takes 90 seconds and catches 100% of Mode A and Mode B hallucinations.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Interactive Shell Verification</div>
+        <div class="kt-def">In a Python shell with the library installed: <span class="inline-code">import inspect; print(inspect.signature(library.module.function))</span>. This outputs the real parameter list including defaults. Cross-reference every kwarg in the AI-generated call against this output.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Unit Test Coverage</div>
+        <div class="kt-def">A unit test that calls the function with the exact parameters in the AI-generated code will catch Mode A failures immediately. Mode B failures require tests that assert the <em>outcome</em> of the configuration, not merely that the call succeeded. For security parameters, always test the behavioral outcome.</div>
+      </div>
+
+      <div class="section-heading">The Security Implication of Mode C</div>
+      <div class="section-body">
+        <p>Mode C failures — parameter aliasing — are the most consequential for security-sensitive code. An AI assistant generating IAM policy code, encryption configuration, or authentication middleware is particularly likely to invent plausible-sounding security parameters.</p>
+        <p>The psychological dynamic is dangerous: a developer who sees <span class="inline-code">require_mfa=True</span> in their PR tends not to verify whether that parameter is real, because its presence signals that the security consideration was addressed. The review stops at the parameter name rather than verifying that the parameter actually configures the intended behavior in the library.</p>
+      </div>
+
+      <div class="code-block">
+<span class="cm"># AI-generated — appears to enforce HTTPS</span><br>
+client = boto3.client(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">'s3'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;region_name=<span class="str">'us-east-1'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">force_https</span>=<span class="kw">True</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># not a real parameter</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">verify_ssl</span>=<span class="kw">True</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># not a real parameter in this position</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;config=Config(signature_version=<span class="str">'s3v4'</span>)<br>
+)<br>
+<br>
+<span class="cm"># Actual HTTPS enforcement requires bucket policy — not client config</span>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Review Rule for Security Parameters</div>
+        <p>Any parameter in AI-generated code whose name implies a security constraint — <em>require_, enforce_, verify_, force_, restrict_</em> — must be independently verified against the real function signature before the PR is approved. The presence of a security-sounding parameter that does nothing is more dangerous than its absence, because it may suppress further security review.</p>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="section-body">
+        <p>Lesson 4 brings together the detection patterns from Lessons 1–3 and presents a practical code review checklist for AI-generated code touching third-party integrations.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson 3 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ Q3 ═══════════════════════════════════════ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Hallucinated Method Signatures and Silent Failures — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">A boto3 S3 call includes the parameter <code style="font-family:monospace;font-size:0.9em">enforce_encryption=True</code>. boto3 accepts **kwargs internally and the call succeeds. What failure mode is this, and what is the security risk?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Mode A — TypeError raised at runtime, no security risk because the bug is visible</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Mode B — silent absorption; the parameter has no effect, and the reviewer may wrongly believe encryption is enforced</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Mode C — parameter aliasing to an existing boto3 parameter with a different name</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">No failure mode — boto3 maps enforce_encryption to its ServerSideEncryption option internally</button>
+        </div>
+        <div class="quiz-feedback right">Correct. This is Mode B — the call succeeds, the parameter is silently ignored, and the object may be stored without encryption. The additional danger is that a reviewer who sees the parameter may conclude the security requirement is addressed and not look further at the bucket policy or upload call structure.</div>
+        <div class="quiz-feedback wrong">Because boto3 uses **kwargs in some internal paths, this call will not raise a TypeError. The parameter is silently dropped — Mode B. The security consequence is that the developer and reviewer may both believe encryption is enforced when it is not.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">Which Python one-liner allows you to inspect the real parameter signature of any callable during review verification?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">print(dir(library.module.function))</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">import inspect; print(inspect.signature(library.module.function))</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">help(library.module.function.__doc__)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">print(library.module.function.__code__.co_varnames)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. <code style="font-family:monospace;font-size:0.9em">inspect.signature()</code> returns the real parameter list with defaults and annotations, exactly matching what the function will actually accept. It is the fastest authoritative check available without leaving your shell.</div>
+        <div class="quiz-feedback wrong">The correct tool is <code style="font-family:monospace;font-size:0.9em">inspect.signature()</code> from Python's standard library. <code style="font-family:monospace;font-size:0.9em">dir()</code> lists attributes, not parameter signatures. <code style="font-family:monospace;font-size:0.9em">__doc__</code> shows docstrings which may themselves be incorrect. <code style="font-family:monospace;font-size:0.9em">co_varnames</code> includes all local variables, not just parameters.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">Why are Mode C failures (parameter aliasing) considered the most dangerous of the three signature hallucination failure modes?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Because they cause immediate TypeErrors that are difficult to interpret</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Because a plausible-sounding security parameter may suppress further review even though it has no real effect on the library's behavior</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Because they modify the library's internal state in unpredictable ways</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Because the Python interpreter raises a warning rather than an error, which is easy to miss in CI logs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The psychological danger is the key issue: a reviewer who sees <code style="font-family:monospace;font-size:0.9em">require_mfa=True</code> or <code style="font-family:monospace;font-size:0.9em">force_https=True</code> tends to consider the security concern addressed. The hallucinated parameter functions as a false reassurance that may prevent the reviewer from checking the actual security configuration.</div>
+        <div class="quiz-feedback wrong">Mode C is dangerous specifically because it is quiet and reassuring, not loud. A plausible security parameter name provides false confidence to reviewers, who may stop investigating once they see it. No error fires; no warning appears. The security gap exists invisibly behind a comforting-looking parameter name.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ LAB 3 ═══════════════════════════════════════ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Signature Hallucination Detection</h1>
+      <div class="tagline">Interact with the AI tutor · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>The following AI-generated code uses the real <strong>boto3</strong> library to configure an S3 upload with server-side encryption. Your job is to identify which parameters are real, which are hallucinated, and which failure mode each hallucination represents. Discuss your analysis with the tutor.</p>
+        <div class="code-block">
+<span class="kw">import</span> boto3<br>
+<span class="kw">from</span> botocore.config <span class="kw">import</span> Config<br>
+<br>
+s3 = boto3.client(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="str">'s3'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;region_name=<span class="str">'us-east-1'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">enforce_tls</span>=<span class="kw">True</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;config=Config(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;signature_version=<span class="str">'s3v4'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">retry_mode</span>=<span class="str">'adaptive'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">max_retry_attempts</span>=<span class="str">5</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br>
+)<br>
+<br>
+s3.put_object(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Bucket=<span class="str">'my-secure-bucket'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Key=<span class="str">'data/file.json'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Body=json_data,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ServerSideEncryption=<span class="str">'AES256'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">EncryptionContext</span>={<span class="str">'purpose'</span>: <span class="str">'backup'</span>},<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">RequireEncryption</span>=<span class="kw">True</span><br>
+)
+        </div>
+        <div class="lab-prompt">Note: The real boto3 Config object uses <code style="font-family:monospace;font-size:0.9em">retries={'mode': 'adaptive', 'max_attempts': 5}</code> not separate keys. And <code style="font-family:monospace;font-size:0.9em">EncryptionContext</code> is a KMS parameter, not AES256.</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Signature Hallucination Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">This snippet uses the real boto3 library, so the import and the client will work. But look carefully at the parameters — several are hallucinated, and one of them carries a security implication. Which parameters would you flag first, and what failure mode do you expect from each?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Identify the hallucinated parameters and classify each failure mode…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ L4 ═══════════════════════════════════════ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 4</div>
+      <h1>The Code Review Checklist for AI-Generated Integrations</h1>
+      <div class="tagline">A systematic, step-by-step review protocol for any pull request where AI tooling touched third-party API or library code.</div>
+      <div class="lesson-question">What does a complete, defensible review of AI-generated third-party integration code look like?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context — Enterprise Adoption Patterns, 2023–2024">
+        <p class="story-text">As GitHub Copilot Enterprise and similar tools became standard at large engineering organizations, security teams at companies including <em>Shopify</em>, <em>Microsoft</em>, and <em>Atlassian</em> published internal guidance — portions of which became public through engineering blog posts and conference talks — on how to extend existing code review processes to account for AI-generated content. The consistent theme: existing review workflows caught most hallucinations in obvious cases, but subtle signature and configuration hallucinations required explicit checklist items to surface reliably.</p>
+      </div>
+
+      <div class="section-heading">The Five-Point Integration Review Protocol</div>
+      <div class="section-body">
+        <p>The following protocol synthesizes patterns from published enterprise guidance, security research, and the failure modes documented in Lessons 1–3. It applies to any PR where AI tooling was used to generate code that calls external packages, APIs, or SDKs.</p>
+      </div>
+
+      <div class="key-term">
+        <div class="kt-term">Point 1 — Declare AI Involvement</div>
+        <div class="kt-def">PR descriptions should indicate which sections were AI-generated or AI-assisted. Many teams now enforce this with PR templates. Reviewers who know AI was involved can apply this protocol; reviewers who don't know may apply standard review depth and miss hallucinations that look plausible.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Point 2 — Isolate the Dependency Diff</div>
+        <div class="kt-def">Before reading any code, examine the dependency manifest diff in isolation. For each new entry: verify registry existence, publisher identity, and source repository linkage as described in Lesson 2. Do not approve the PR if any entry fails publisher identity verification.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Point 3 — Enumerate All Third-Party Call Sites</div>
+        <div class="kt-def">Search the diff for every method call on a third-party object. Build a list. Review each item independently against official documentation or source. Do not rely on the surrounding code context to confirm a method exists — the AI generated that context too.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Point 4 — Verify Security-Implying Parameters</div>
+        <div class="kt-def">Flag every parameter whose name implies a security property: anything beginning with <em>require_, enforce_, verify_, restrict_, force_, disable_, allow_</em>. For each flagged parameter, use <span class="inline-code">inspect.signature()</span> or library source to confirm it is real and confirm its actual behavior matches the intent.</div>
+      </div>
+      <div class="key-term">
+        <div class="kt-term">Point 5 — Validate Behavioral Outcomes, Not Parameters</div>
+        <div class="kt-def">For security-relevant configurations (encryption, authentication, authorization, rate limiting), do not accept the presence of a parameter as proof the feature is active. Require tests or manual verification that the actual runtime behavior matches the intended configuration. A hallucinated parameter that silently does nothing must be caught at this step.</div>
+      </div>
+
+      <div class="section-heading">Review Comment Standards</div>
+      <div class="section-body">
+        <p>Code review comments on AI-generated integration code should be specific enough to be auditable. A comment that says "Looks good" on a section of boto3 configuration provides no evidence that verification occurred. A comment that says "Verified <span class="inline-code">ServerSideEncryption='AES256'</span> against boto3 1.34.0 put_object signature — real parameter, correct value for bucket without KMS. Confirmed <span class="inline-code">RequireEncryption</span> is NOT a real parameter and has been removed in this review" provides a record of the verification that protects both the reviewer and the organization.</p>
+        <p>This level of specificity is not required for every line — it is required for lines where hallucination risk is elevated: any third-party call site generated by an AI tool, especially in security-sensitive contexts.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Tooling That Helps (and Its Limits)</div>
+        <p>Static analysis tools like <strong>Pyright</strong> and <strong>mypy</strong> with strict stub packages will catch some hallucinated method names when type stubs are available — the IDE underlines the fabricated method. However: (1) many libraries have incomplete stubs, (2) **kwargs absorption prevents type checkers from flagging hallucinated parameters, and (3) type stubs may themselves be generated or outdated. Type checker silence is not confirmation of correctness. It is one signal among several.</p>
+      </div>
+
+      <div class="section-heading">Handling Legacy AI-Generated Code</div>
+      <div class="section-body">
+        <p>Organizations that adopted AI coding tools in 2022–2023 before formal review protocols existed may have significant amounts of AI-generated integration code that was never subjected to the verification steps above. The recommended approach is a targeted audit rather than a full codebase scan:</p>
+        <p><strong>1.</strong> Query your version control history for commits from periods of active Copilot or ChatGPT adoption. <strong>2.</strong> Filter for commits that modified files touching external API integrations (files that import boto3, openai, stripe, twilio, etc.). <strong>3.</strong> Apply the five-point protocol to the integration surface in those files. <strong>4.</strong> Prioritize files in authentication, payment, and data storage paths — the highest-consequence locations for silent parameter hallucinations.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Core Principle</div>
+        <p>An AI assistant's code is a first draft produced by a system that has never run the code it writes. Every external interface in that draft — package names, method names, parameter names, configuration values — must be verified against authoritative sources by a human who understands the stakes. The AI is a productive author. You are the editor responsible for what ships.</p>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="section-body">
+        <p>You have completed all four lessons. Proceed to Lab 4 to practice applying the full five-point protocol, then take the Module Test to assess your mastery of hallucinated APIs and phantom dependencies.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson 4 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ Q4 ═══════════════════════════════════════ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">The Code Review Checklist — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">According to the five-point review protocol, what should a reviewer do BEFORE reading any AI-generated code in a PR?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Examine the dependency manifest diff in isolation and verify each new entry against registry, publisher identity, and source repository</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Run the code in a sandboxed environment and observe runtime behavior</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Search the diff for security-implying parameter names</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Ask the PR author which AI tool they used and what prompts they provided</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Point 2 of the protocol — isolating and verifying the dependency diff — must happen before code review begins. A malicious or nonexistent package in the manifest means the code review is irrelevant; the package itself is the threat vector.</div>
+        <div class="quiz-feedback wrong">The manifest check comes first — before code, before runtime testing. A hallucinated package name that has been registered maliciously makes all subsequent code analysis moot. Dependency verification is the gate that must be cleared first.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">A reviewer approves a PR with the comment "Looks good — encryption configured correctly." The PR includes <code style="font-family:monospace;font-size:0.9em">RequireEncryption=True</code> on an S3 put_object call, which is a hallucinated parameter. What review failure does this represent?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">The reviewer should have run mypy, which would have caught the hallucinated parameter</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">The reviewer failed Point 4 — security-implying parameters were not individually verified against the real function signature</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">The review comment is too short but the approval is technically correct</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">The reviewer should have applied Point 1 and confirmed the PR was AI-generated before proceeding</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Point 4 requires explicit verification of any parameter whose name implies a security property. "RequireEncryption" is exactly the kind of name that demands this check. The comment "encryption configured correctly" reflects assumption, not verification — a reviewable failure on Point 4.</div>
+        <div class="quiz-feedback wrong">The primary failure here is Point 4 — security-implying parameter names must be individually checked against the real function signature, not assumed to be real because they look plausible. The non-specific approval comment compounds the problem by creating a false audit trail.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">When auditing legacy code from a period before AI review protocols were in place, which files should be prioritized for the five-point protocol?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">All files modified in the relevant period, starting with the most recently changed</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Files where the original author has since left the organization</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Files importing external SDK clients in authentication, payment, and data storage paths</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Files flagged by automated SAST tools as having potential vulnerabilities</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The highest-consequence locations for silent parameter hallucinations are authentication, payment processing, and data storage — where a hallucinated security parameter that silently does nothing can result in auth bypass, data exposure, or unencrypted storage. SAST tools will not reliably catch Mode B or Mode C hallucinations.</div>
+        <div class="quiz-feedback wrong">The audit should be risk-stratified by consequence, not by recency or staffing changes. Files integrating with external SDKs in security-sensitive paths — auth, payment, storage — are where hallucinated parameters cause the most damage and where the audit effort yields the highest return.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ LAB 4 ═══════════════════════════════════════ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Full Protocol Review Simulation</h1>
+      <div class="tagline">Interact with the AI tutor · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are the senior reviewer on a PR that modifies a <strong>Stripe payment integration</strong>. The author used ChatGPT to generate the refund handling code. Apply the full five-point protocol and discuss your review decisions with the tutor. Focus on Points 3, 4, and 5.</p>
+        <div class="code-block">
+<span class="cm"># requirements.txt additions</span><br>
+<span class="cm">+ stripe==8.5.0</span><br>
+<span class="kw">+ stripe-webhooks-extended==0.1.0</span><br>
+<br>
+<span class="cm"># refund.py</span><br>
+<span class="kw">import</span> stripe<br>
+stripe.api_key = settings.STRIPE_SECRET_KEY<br>
+<br>
+<span class="kw">def</span> <span class="fn">process_refund</span>(charge_id, amount_cents):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;refund = stripe.Refund.<span class="err">create_partial</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;charge=charge_id,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;amount=amount_cents,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">idempotency_auto</span>=<span class="kw">True</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">notify_customer</span>=<span class="kw">True</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> refund
+        </div>
+        <div class="lab-prompt">Walk through each of the five review points with the tutor. The real Stripe SDK uses <code style="font-family:monospace;font-size:0.9em">stripe.Refund.create()</code> — not <code style="font-family:monospace;font-size:0.9em">create_partial()</code>. Partial amounts are passed via the <code style="font-family:monospace;font-size:0.9em">amount</code> parameter to the standard <code style="font-family:monospace;font-size:0.9em">create()</code> call.</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Full Protocol Review Lab</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">This is a payment integration PR — high stakes. You have the manifest diff and the code in front of you. Let's work through this systematically. Start with Point 2: the dependency manifest. What do you see there before you even look at the code?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Begin with the manifest diff — what do you see before looking at the code?" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ MODULE TEST ═══════════════════════════════════════ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 3 Test</h1>
+      <div class="tagline">Hallucinated APIs and Phantom Dependencies — 15 questions · 80% to pass</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. What is the primary reason hallucinated API method names pass superficial code review?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">They follow the target library's naming conventions faithfully, making them look authentic to reviewers familiar with the library</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">They are always accompanied by correct docstrings that reviewers tend to trust</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Reviewers rarely read third-party method names during code review</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Type checkers systematically fail to flag hallucinated names</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">The answer is that hallucinated names follow library naming conventions — the model learned these conventions from training data and applies them convincingly.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. In the 2023 Vulcan Cyber research, what was the temporal relationship between AI hallucinations and attacker package registrations?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Attackers pre-registered names and then influenced AI training to suggest them</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Attackers observed hallucinated names in AI output and then registered those names on package registries</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Registrations and hallucinations occurred simultaneously through coordinated campaigns</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">The timing was random with no causal relationship between hallucinations and registrations</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Attackers observed hallucinated names first, then registered them — creating a predictable attack pipeline from AI output to malicious package.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. Which of the following is an example of a "phantom configuration key" as defined in this module?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">A required parameter that the developer forgot to pass</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">A deprecated parameter that still works but should not be used</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">A keyword argument passed to a constructor that the library never defined, which gets silently absorbed via **kwargs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">A configuration file key that overrides a parameter passed in code</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">A phantom configuration key is a fabricated kwarg that looks like it configures something but is silently ignored because the library never defined it.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Why are infrequent code paths particularly dangerous locations for hallucinated API calls?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">They are excluded from static analysis by most linting tools</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">They may not execute in testing, allowing hallucinations to ship to production and remain dormant until the path is triggered</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Code coverage tools actively skip them, making them invisible to CI</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">AI models are specifically trained to target error handling paths with hallucinations</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">The danger is that untested paths can carry hallucinations all the way to production, where they wait until the path is triggered — potentially months later in an error handler or monthly billing run.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. Bar Lanyado's 2023 experiment confirmed which specific behavior about developer practices?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Developers always verify package names before running pip install</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Some developers installed packages from AI-generated requirements without independently verifying their existence on the registry</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">AI assistants refuse to generate requirements files for packages they are uncertain about</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">PyPI's automated scanning catches most maliciously registered packages within 24 hours</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Lanyado confirmed installs followed to his test packages within days, demonstrating that developers do not uniformly verify AI-suggested packages before installation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. Which runtime is considered safest against hallucinated dependencies because it verifies module paths against real VCS repositories?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Python / pip</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Node.js / npm</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Go / go modules</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Ruby / bundler</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Go modules resolve against actual VCS paths at build time, providing the loudest and earliest failure for hallucinated module names.</div>
+        <div class="quiz-feedback wrong">Go modules stand out for their VCS-backed verification at resolution time, giving loud immediate failures for nonexistent module paths.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. The three-step dependency verification workflow requires checking registry existence, publisher identity, and source repository linkage. In what order should these checks be performed?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Source repository → publisher identity → registry existence</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Publisher identity → registry existence → source repository</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Registry existence → publisher identity → source repository linkage</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The order does not matter as long as all three are completed</button>
+        </div>
+        <div class="quiz-feedback right">Correct. You must first confirm the package exists before meaningful publisher or source checks are possible. If registry existence fails, the other two steps are unnecessary.</div>
+        <div class="quiz-feedback wrong">The correct order is registry existence first — if the package does not exist, the other checks cannot proceed. Then publisher identity, then source linkage.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. A Python function uses **kwargs and silently ignores unrecognized keys. An AI-generated call passes a hallucinated security parameter. This represents which failure mode?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Mode A — TypeError at call site</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Mode B — silent absorption</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Mode C — parameter aliasing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Mode D — import error</button>
+        </div>
+        <div class="quiz-feedback right">Correct. **kwargs absorption with no error is the definition of Mode B — silent failure where the call succeeds but the intended behavior never activates.</div>
+        <div class="quiz-feedback wrong">**kwargs absorption with no error is Mode B — silent. Mode A would be a TypeError. Mode C would be matching a real parameter with a different name.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Which Python standard library call produces the real parameter signature of any callable, including defaults and annotations?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">dir(function)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">help(function)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">inspect.signature(function)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">function.__annotations__</button>
+        </div>
+        <div class="quiz-feedback right">Correct. <code style="font-family:monospace;font-size:0.9em">inspect.signature()</code> returns the authoritative parameter signature including defaults and type annotations.</div>
+        <div class="quiz-feedback wrong">The correct call is <code style="font-family:monospace;font-size:0.9em">inspect.signature()</code> from Python's inspect module — it returns exactly the real parameter list.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. Why does a hallucinated security parameter potentially create MORE risk than the complete absence of that parameter?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Because hallucinated parameters can overwrite real security settings in the library's internal config</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Because its presence may satisfy reviewers that a security concern was addressed, preventing further investigation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Because Python logs a warning when unrecognized security parameters are passed, which may be misread as a security notice</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Because hallucinated parameters are always passed to underlying C extensions that may interpret them unexpectedly</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A parameter like <code style="font-family:monospace;font-size:0.9em">require_mfa=True</code> that does nothing functions as a false assurance — reviewers see it and stop looking. Absence would trigger a review question; presence suppresses it.</div>
+        <div class="quiz-feedback wrong">The psychological danger is that a plausible-looking security parameter satisfies reviewers and stops investigation. Absence would raise a question; a convincing-looking hallucinated presence closes it.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. According to the five-point review protocol, what should happen BEFORE reading any AI-generated code in a PR?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Examine the dependency manifest diff in isolation and verify each new entry</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Ask the PR author to provide a list of AI prompts used</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Run the test suite in a sandboxed environment</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Search for security-implying parameter names in the diff</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The manifest check (Point 2) must precede code review — a compromised dependency makes all code review moot.</div>
+        <div class="quiz-feedback wrong">Manifest verification precedes everything. A malicious package in the dependencies makes the code review irrelevant.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Pyright and mypy can sometimes catch hallucinated method names. What is the critical limitation of relying on them as the primary detection mechanism?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">They only analyze Python 3 code and miss Python 2 hallucinations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Many libraries have incomplete stubs, and **kwargs absorption prevents type checkers from flagging hallucinated parameter names; type checker silence is not confirmation of correctness</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">They require the hallucinated code to be executed once before they can flag it</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">They only work on methods defined within the project, not third-party libraries</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Incomplete stubs and **kwargs mean type checkers miss a significant fraction of hallucinations. They are one useful signal, not a sufficient verification mechanism.</div>
+        <div class="quiz-feedback wrong">The key limitations are incomplete stub coverage and **kwargs absorption — both mean type checker silence cannot be trusted as confirmation that a call is real.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. Point 5 of the review protocol requires validating behavioral outcomes, not just parameter presence. For an encryption configuration, what does this mean in practice?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Confirm the encryption parameter is spelled correctly in the source file</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Check that the parameter appears in the official documentation index</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Require tests or manual verification confirming that data is actually encrypted at rest, not just that the parameter is present in the call</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Confirm the library version in requirements.txt matches the documentation version</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Point 5 exists precisely because Mode B failures mean a call can succeed with a parameter silently doing nothing. Behavioral verification confirms the outcome, not the syntax.</div>
+        <div class="quiz-feedback wrong">Point 5 requires testing the actual outcome — is the data encrypted — not that the parameter exists or is spelled correctly. Mode B failures make parameter presence an unreliable proxy for feature activation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. When auditing legacy AI-generated code, which combination of factors should place a file at the highest priority in the audit queue?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Modified by an engineer who has since left + contains more than 500 lines of code</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Committed during a Copilot adoption period + flagged by SAST with low-severity findings</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Committed during an AI adoption period + imports external SDK clients + located in auth, payment, or data storage paths</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Contains the most recent AI-generated commit messages + has the lowest test coverage percentage</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The intersection of AI-era commits, external SDK usage, and security-sensitive code paths represents the highest-consequence audit target — where hallucinated silent parameters do the most damage.</div>
+        <div class="quiz-feedback wrong">The priority is consequence × hallucination likelihood. Files that are AI-era, touch external SDKs, and sit in auth/payment/storage paths combine all three risk factors.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. A review comment on an AI-generated Stripe integration says: "Verified stripe.Refund.create() against stripe-python 8.5.0 source — create_partial() does not exist. Replaced with standard create() + amount parameter. Confirmed idempotency_auto and notify_customer are not real parameters and have been removed." What does this comment exemplify?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Over-documentation that slows down the review process without adding security value</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">A review that focused too narrowly on the method name and missed the parameter issues</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">An auditable verification record that confirms Points 3 and 4 of the review protocol were applied, protecting both the reviewer and the organization</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">A comment appropriate only for security-team reviews, not standard engineering PR reviews</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Specific, verifiable review comments create an audit trail confirming that the five-point protocol was applied. They protect the reviewer, create institutional knowledge, and distinguish genuine verification from assumption.</div>
+        <div class="quiz-feedback wrong">Specific, documented verification is exactly what the protocol calls for on AI-generated integration code. It is not over-documentation — it is evidence that review occurred, which protects the organization and creates institutional knowledge.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+    </div>
+  </div>
+
+</div><!-- end content-area -->
+
+<script>
+var COURSE_ID='ai-code-review-fundamentals';
+var MODULE_ID='ai--m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+
+      (pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert code review tutor for AESOP AI Academy, teaching AI Code Review Fundamentals Module 3. The student is reviewing AI-generated OpenAI Python SDK v1.x code that contains hallucinated elements. The hallucinated elements in the code snippet are: (1) auto_retry=True in the OpenAI() constructor — not a real parameter; (2) rate_limit_buffer=0.8 in the constructor — not real; (3) client.chat.completions.create_chunked() — does not exist, the real method is create(); (4) chunk_strategy="semantic" — hallucinated parameter; (5) client.chat.completions.stream_with_progress() — does not exist, real streaming uses create() with stream=True; (6) on_progress=progress_callback — hallucinated parameter. Guide the student to identify each hallucination, explain why it feels authentic, classify the failure mode (A/B/C from the lesson), and describe what the real API call pattern should be. Ask probing questions. Be specific about the real OpenAI SDK v1.x API. Warmly redirect off-topic questions. Keep responses to 3-5 sentences.',
+  l2:'You are an expert code review tutor for AESOP AI Academy, teaching AI Code Review Fundamentals Module 3. The student is reviewing a requirements.txt diff from an AI-assisted PR. The entries are: boto3==1.34.0 (real, well-established), fastapi==0.110.0 (real, well-established), pydantic-validators-extended==0.2.1 (suspicious — not a real PyPI package; pydantic has validators built in; this name suggests it could be a hallucinated or typosquatted package), httpx-retry-middleware==1.0.0 (suspicious — httpx has retry support via httpx.HTTPTransport with retries parameter, no separate package named this exists on PyPI; likely hallucinated), uvicorn[standard]==0.27.1 (real), aws-lambda-powertools-async==0.9.3 (suspicious — AWS Lambda Powertools is a real package but the -async variant name does not match the real package aws-lambda-powertools; this is a hallucinated package name), python-dotenv==1.0.1 (real). Guide the student through the verification workflow: registry existence check, publisher identity check, source repository linkage. Help them understand why the three suspicious packages (pydantic-validators-extended, httpx-retry-middleware, aws-lambda-powertools-async) need the deepest scrutiny. Warmly redirect off-topic questions. Keep responses to 3-5 sentences.',
+  l3:'You are an expert code review tutor for AESOP AI Academy, teaching AI Code Review Fundamentals Module 3. The student is analyzing a boto3 S3 code snippet for hallucinated parameters. The analysis: (1) enforce_tls=True in boto3.client() — NOT a real parameter, Mode B failure (silently absorbed), does not enforce TLS; (2) signature_version="s3v4" in Config() — REAL parameter, correct; (3) retry_mode="adaptive" as a direct Config() keyword — HALLUCINATED; the real API is retries={"mode": "adaptive"} as a dict; this is a Mode C/A failure depending on botocore version; (4) max_retry_attempts=5 as a direct Config() keyword — HALLUCINATED; the real API is retries={"max_attempts": 5} inside the retries dict; (5) ServerSideEncryption="AES256" in put_object() — REAL parameter, correct; (6) EncryptionContext in put_object with AES256 — WRONG/HALLUCINATED in this context; EncryptionContext is a real parameter but only applies to SSE-KMS (aws:kms), not AES256; passing it with AES256 is a logical error that boto3 may silently ignore; (7) RequireEncryption=True in put_object() — NOT a real parameter, Mode C security implication. Guide the student to classify each finding and understand the Mode B/C security implications. Keep responses to 3-5 sentences.',
+  l4:'You are an expert code review tutor for AESOP AI Academy, teaching AI Code Review Fundamentals Module 3. The student is applying the full five-point review protocol to a Stripe payment integration PR. The issues are: MANIFEST — stripe==8.5.0 is real and correct; stripe-webhooks-extended==0.1.0 is a hallucinated package name — the real Stripe Python SDK handles webhooks, there is no separate official stripe-webhooks-extended package on PyPI; this should be flagged and rejected (Point 2 failure). CODE — stripe.Refund.create_partial() does not exist in the Stripe Python SDK; the real method is stripe.Refund.create() with an amount parameter for partial refunds (Point 3 finding); idempotency_auto=True is hallucinated — real idempotency uses the idempotency_key parameter or stripe.Refund.create() with idempotency_key as a separate kwarg (Point 4); notify_customer=True is hallucinated — Stripe does not automatically email customers about refunds via this SDK parameter; email notification is configured in Stripe Dashboard settings (Point 4). Guide the student systematically through all five points, praise correct identifications, prompt for the points they miss. Emphasize Point 2 (manifest) must be flagged before even reading the code. Keep responses to 4-6 sentences.'
+};
+
+var _fallbacks={
+  l1:[
+    'Good observation. The method create_chunked() does not appear in the OpenAI Python SDK v1.x at any released version. The real pattern for chat completions always goes through client.chat.completions.create() — partial results come from the stream=True parameter, not a separate chunking method. What about the constructor parameters — do auto_retry and rate_limit_buffer look real to you?',
+    'Exactly right — auto_retry and rate_limit_buffer are hallucinated constructor kwargs. The OpenAI() constructor in v1.x accepts api_key, organization, base_url, timeout, max_retries, and a few others — but not those two. Because the constructor does not use strict kwargs checking in all paths, these may be silently absorbed. Which failure mode from the lesson does that represent?',
+    'Correct — that is Mode B, silent absorption. The calls succeed, no exception fires, but the retry and rate-limiting behavior the developer expected never activates. The last element to examine is stream_with_progress() with its on_progress callback — this method does not exist either. Real streaming in v1.x uses create() with stream=True and iterates over the returned stream object directly. You have now identified every hallucinated element. Well done — you are ready for the quiz.'
+  ],
+  l2:[
+    'Good start. The two entries that deserve the most immediate scrutiny are pydantic-validators-extended and httpx-retry-middleware — both have names that follow real library conventions but do not correspond to real packages on PyPI. pydantic ships validators as core functionality; there is no official extended validators package. What would be your first verification step for these?',
+    'Correct — navigate directly to pypi.org/project/pydantic-validators-extended and pypi.org/project/httpx-retry-middleware. If either 404s, the PR must be rejected immediately. The third suspicious entry is aws-lambda-powertools-async — the real package is aws-lambda-powertools without the -async suffix. An -async variant does not appear in the official AWS release history. What would you check after confirming registry existence?',
+    'Good — publisher identity is the critical next step. A brand-new account with no other packages for a library that implies AWS tooling is a strong typosquatting signal. For these three entries, the correct PR action is rejection with a clear comment explaining that the packages cannot be verified and requesting that the engineer use the real alternatives: pydantic built-in validators, httpx built-in retry transport, and aws-lambda-powertools respectively. That is solid manifest review practice.'
+  ],
+  l3:[
+    'Good identification. The enforce_tls=True parameter on boto3.client() is hallucinated — it is not in the boto3 client constructor signature. Because boto3 uses internal kwargs handling, this call will succeed with no error: Mode B, silent absorption. The TLS behavior is not actually changed. What do you make of the retry-related parameters in the Config() object?',
+    'Exactly right — retry_mode and max_retry_attempts as direct Config() keyword arguments are hallucinated. The real botocore Config API uses a retries dict: Config(retries={"mode": "adaptive", "max_attempts": 5}). Depending on the botocore version, these may raise a TypeError or be silently ignored — Mode A or Mode B. Now look at put_object() — which parameters there concern you most?',
+    'Correct — RequireEncryption=True is the most dangerous finding in put_object(). It does not exist in the boto3 put_object signature. Combined with EncryptionContext being used incorrectly with AES256 (it only applies to KMS), a reviewer who sees this code might believe server-side encryption is fully enforced when it is not. The only genuinely correct parameter here is ServerSideEncryption="AES256" itself. That is Mode C for RequireEncryption — a security-implying hallucination that suppresses further review. Excellent analysis.'
+  ],
+  l4:[
+    'Correct — the manifest is the first stop. stripe==8.5.0 is the real Stripe Python SDK and checks out. But stripe-webhooks-extended==0.1.0 is a problem: this package does not exist in the official Stripe Python ecosystem. The Stripe SDK handles webhook signature verification internally via stripe.Webhook.construct_event(). This entry should be rejected before you read a single line of the payment code. What does Point 3 of the protocol ask you to do next?',
+    'Exactly — enumerate all third-party call sites in the diff. The key one here is stripe.Refund.create_partial(). This method does not exist in the Stripe Python SDK. The real API is stripe.Refund.create() with an optional amount parameter for partial refunds. This would raise an AttributeError at runtime — Mode A. Now apply Point 4: what security-implying parameters do you see in that call?',
+    'Right — idempotency_auto=True and notify_customer=True are both hallucinated. The real idempotency mechanism uses idempotency_key as a parameter with a developer-supplied unique string. notify_customer is not a real parameter at all — Stripe refund email behavior is configured at the account/dashboard level, not per-API-call. For Point 5, you would want a test confirming that the refund actually processes at the correct partial amount and that idempotency works via the real key mechanism. Excellent full-protocol review.'
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbacks[labId];
+  if(!arr||arr.length===0) return 'Good thinking. Keep exploring the code — what other elements look suspicious to you?';
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  var firstMsg={
+    l1:'Welcome to Lab 1. You have a code snippet in front of you that was generated by an AI coding assistant. I can see it contains several hallucinated elements in the OpenAI Python SDK v1.x. Walk me through what looks suspicious to you — pick any element and tell me why you think it might not be real.',
+    l2:'Good morning. You have a requirements.txt diff in front of you from an AI-assisted PR. Some of these additions look familiar; others should raise your antenna. Which entries would you prioritize for the deepest verification, and why?',
+    l3:'This snippet uses the real boto3 library, so the import and the client will work. But look carefully at the parameters — several are hallucinated, and one of them carries a security implication. Which parameters would you flag first, and what failure mode do you expect from each?',
+    l4:'This is a payment integration PR — high stakes. You have the manifest diff and the code in front of you. Let\'s work through this systematically. Start with Point 2: the dependency manifest. What do you see there before you even look at the code?'
+  };
+  container.innerHTML='';
+  addMsg(labId,'ai',firstMsg[labId]);
+  var inp=document.getElementById('inp-'+labId);
+  if(inp) inp.value='';
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I had trouble responding. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      btn.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI tutor is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+updateTabs();
+</script>
+</body>
+</html>

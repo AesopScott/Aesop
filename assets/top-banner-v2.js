@@ -157,6 +157,7 @@
     '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
     '  <nav class="tb-pills" aria-label="Primary navigation">' +
     '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home">AESOP<em>AI Academy</em></a>' +
+    '    <span style="font-size:0.6rem;opacity:0.45;flex-shrink:0;margin-right:0.25rem;">nav-v2</span>' +
     '    <a href="/ai-academy/courses.html#courses"><span class="ico" aria-hidden="true">\uD83D\uDCDA</span>Courses</a>' +
     '    <a href="/ai-news/"><span class="ico" aria-hidden="true">\uD83D\uDCF0</span>AI News</a>' +
     '    <a href="/ai-academy/students.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Students</a>' +

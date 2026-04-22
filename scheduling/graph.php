@@ -2,38 +2,40 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
 
-function getValidAccessToken(): ?string {
-    $tokens = getStoredTokens();
+function getValidAccessToken(int $accountId = 1): ?string {
+    $tokens = getStoredTokens($accountId);
     if (!$tokens) return null;
 
-    // Refresh 5 minutes before expiry
+    // Use 'common' endpoint for second account (different tenant)
+    $tenantEndpoint = $accountId === 1 ? AZURE_TENANT_ID : 'common';
+
     if (time() >= $tokens['expires_at'] - 300) {
         $data = httpPost(
-            'https://login.microsoftonline.com/' . AZURE_TENANT_ID . '/oauth2/v2.0/token',
+            "https://login.microsoftonline.com/$tenantEndpoint/oauth2/v2.0/token",
             [
                 'client_id'     => AZURE_CLIENT_ID,
                 'client_secret' => AZURE_CLIENT_SECRET,
                 'refresh_token' => $tokens['refresh_token'],
                 'grant_type'    => 'refresh_token',
-                'scope'         => 'Calendars.ReadWrite offline_access',
+                'scope'         => 'Calendars.Read offline_access',
             ]
         );
         if (!isset($data['access_token'])) return null;
         $newRefresh = $data['refresh_token'] ?? $tokens['refresh_token'];
-        storeTokens($data['access_token'], $newRefresh, time() + (int)$data['expires_in']);
+        storeTokens($data['access_token'], $newRefresh, time() + (int)$data['expires_in'], $accountId);
         return $data['access_token'];
     }
 
     return $tokens['access_token'];
 }
 
-function graphGet(string $endpoint): array {
-    $token = getValidAccessToken();
+function graphGet(string $endpoint, int $accountId = 1): array {
+    $token = getValidAccessToken($accountId);
     return httpRequest('GET', 'https://graph.microsoft.com/v1.0' . $endpoint, null, $token);
 }
 
-function graphPost(string $endpoint, array $body): array {
-    $token = getValidAccessToken();
+function graphPost(string $endpoint, array $body, int $accountId = 1): array {
+    $token = getValidAccessToken($accountId);
     return httpRequest('POST', 'https://graph.microsoft.com/v1.0' . $endpoint, $body, $token);
 }
 

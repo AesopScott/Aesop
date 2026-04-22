@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.16 | 2026-04-21 -->
+<!-- v1.0.17 | 2026-04-22 -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -313,6 +313,10 @@ function isLive(cid) {
     const e = REGISTRY[v];
     if (e && e.status === 'live') return true;
   }
+  // Fallback: courses-data.json carries a live:true flag for courses whose
+  // registry key is a placeholder (e.g. ap-7) that doesn't match the slug.
+  const courseEntry = COURSES.find(c => c.id === cid);
+  if (courseEntry && courseEntry.live === true) return true;
   return false;
 }
 // Back-compat: any code that does `LIVE_COURSES.has(x)`, `LIVE_COURSES.size`,
@@ -2292,6 +2296,32 @@ async function writeRegistryEntry(cid) {
   // liveCids(), and the LIVE_COURSES getter reflect the new entry without
   // requiring a page reload.
   REGISTRY = registry;
+
+  // Also set live:true in the in-memory COURSES array so the fallback
+  // branch of isLive() is consistent immediately (no reload needed).
+  const courseInMem = COURSES.find(c => c.id === cid);
+  if (courseInMem) courseInMem.live = true;
+
+  // Write live:true back into courses-data.json so the fallback persists
+  // across reloads for courses whose registry key is a placeholder.
+  try {
+    const cdHandle = await repoFolderHandle.getFileHandle('ai-academy/modules/courses-data.json', { create: false })
+      .catch(() => repoFolderHandle.getFileHandle('courses-data.json', { create: false }));
+    const cdFile = await cdHandle.getFile();
+    const cdData = JSON.parse(await cdFile.text());
+    let cdChanged = false;
+    for (const c of (cdData.courses || [])) {
+      if (c.id === cid || c.id === regKey) { c.live = true; cdChanged = true; }
+    }
+    if (cdChanged) {
+      const cdWritable = await cdHandle.createWritable();
+      await cdWritable.write(JSON.stringify(cdData, null, 2));
+      await cdWritable.close();
+      console.log('courses-data.json updated: live:true for', cid);
+    }
+  } catch(e) {
+    console.warn('Could not update courses-data.json live flag:', e.message);
+  }
 
   console.log('Registry updated for', cid);
 }

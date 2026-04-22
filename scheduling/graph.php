@@ -6,21 +6,21 @@ function getValidAccessToken(int $accountId = 1): ?string {
     $tokens = getStoredTokens($accountId);
     if (!$tokens) return null;
 
-    // Use 'common' endpoint for second account (different tenant)
-    $tenantEndpoint = $accountId === 1 ? AZURE_TENANT_ID : 'common';
-
     if (time() >= $tokens['expires_at'] - 300) {
         $data = httpPost(
-            "https://login.microsoftonline.com/$tenantEndpoint/oauth2/v2.0/token",
+            'https://login.microsoftonline.com/common/oauth2/v2.0/token',
             [
                 'client_id'     => AZURE_CLIENT_ID,
                 'client_secret' => AZURE_CLIENT_SECRET,
                 'refresh_token' => $tokens['refresh_token'],
                 'grant_type'    => 'refresh_token',
-                'scope'         => 'Calendars.Read offline_access',
+                'scope'         => 'Calendars.ReadWrite offline_access',
             ]
         );
-        if (!isset($data['access_token'])) return null;
+        if (!isset($data['access_token'])) {
+            error_log('[scheduler] Token refresh failed for account ' . $accountId . ': ' . json_encode($data));
+            return null;
+        }
         $newRefresh = $data['refresh_token'] ?? $tokens['refresh_token'];
         storeTokens($data['access_token'], $newRefresh, time() + (int)$data['expires_in'], $accountId);
         return $data['access_token'];

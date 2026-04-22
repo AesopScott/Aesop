@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-21 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Context Window Race — Module 1: What a Context Window Is</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-context-window-race-m1 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-error{color:#f07070;font-size:0.78rem;font-style:italic;padding:0.5rem 1rem;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-intro" onclick="goPage('p-intro')">Intro</div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═════════════════════════════ INTRO ═════════════════════════════ -->
+<div class="page active" id="p-intro">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">The Context Window Race · Introduction</div>
+    <h1>The Dimension of AI That Will Define the Next Decade</h1>
+    <div class="tagline">Why the size of what an AI can hold in mind at once matters more than almost anything else about it</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Before We Begin">
+      <p class="story-text">In 1876, when Alexander Graham Bell filed his telephone patent, the pressing engineering problem was not whether voice could travel over wire — it already could — but how far. Early telephone exchanges in Boston and New Haven covered a few city blocks. By 1915, AT&T's transcontinental line finally reached San Francisco, but only after engineers solved the problem of signal decay: how much information could be kept coherent across distance. The answer to that question reshaped commerce, journalism, and the command structures of armies. The technology was not new; its <em>reach</em> was.</p>
+      <p class="story-text">The same pattern is now playing out in artificial intelligence, measured not in miles but in tokens. In 2020, GPT-3 could hold roughly 4,000 tokens in working memory — about three pages of text. By early 2023, Claude's initial release handled 9,000. By mid-2023, Anthropic pushed Claude to 100,000 tokens. Google's Gemini 1.5 Pro, announced in February 2024, demonstrated a one-million-token context window. The underlying model architectures did not change beyond recognition between those milestones. What changed — radically, consequentially — was reach.</p>
+      <p class="story-text">This course is about understanding that race: what a context window actually is at a technical and practical level, why its size determines what tasks AI can and cannot perform, how engineers have expanded it, and what tradeoffs accumulate as it grows. The goal is not to make you a researcher but to make you a clear-eyed practitioner who knows why a 200-page contract poses different challenges than a 2-page one, and what to do about it. We will work from documented technical facts and real product histories, not speculation.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn primary" onclick="goPage('p-l1')">Begin Lesson 1 →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LESSON 1 ═════════════════════════════ -->
+<div class="page" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">The Context Window Race · Lesson 1</div>
+    <h1>The Working Memory of a Language Model</h1>
+    <div class="tagline">What a context window is, what tokens are, and why the boundary matters so acutely in practice</div>
+    <div class="lesson-question">If an AI cannot remember what you wrote three pages ago, what does that mean for how you use it?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Opening Scene">
+      <p class="story-text">In March 2023, a group of lawyers at a New York firm were preparing for a complex contract dispute. They fed the full 312-page merger agreement into ChatGPT-4, which had launched days earlier with a 32,000-token context window. The model summarized the first forty pages faithfully. By page 200, it was contradicting its own earlier summaries. <em>Clauses it had described as unconditional had quietly become conditional</em> in the model's understanding, because the relevant qualifying language appeared earlier in the document than the definitions it modified — and that earlier material had, in effect, scrolled off the model's working memory. The lawyers caught it. Many users do not. The problem had a name by then: context overflow. It would drive one of the most intense engineering competitions in modern software history.</p>
+      <p class="story-text">The episode illustrates something fundamental: a language model's capabilities are not simply a function of its training. They are also, acutely, a function of what it can attend to in a given moment. The context window is that moment — its length, its fidelity, and its limits.</p>
+    </div>
+
+    <h2 class="section-heading">What Exactly Is a Context Window?</h2>
+    <div class="section-body">
+      <p>A <em>context window</em> is the total amount of text — measured in tokens — that a language model can process in a single forward pass. Everything the model knows about your current conversation or document must fit inside this window. Nothing outside it exists, from the model's perspective, during inference.</p>
+      <p>The term "window" is apt. Think of sliding a physical reading frame across a very long scroll. The frame shows you some portion of the scroll with perfect clarity. Whatever lies outside the frame is, for the moment, invisible. The model's attention mechanisms — the computational heart of transformer architecture — operate on the tokens inside this frame and nothing else.</p>
+      <p>This is fundamentally different from how human memory works. You can ask a person to recall chapter three of a book they finished two weeks ago, and they will do so imperfectly but meaningfully. A language model has no such long-term episodic store during a single inference call. It has only what fits in the window.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Tokens: The Unit of Measure</h2>
+    <div class="section-body">
+      <p>Before context windows make sense, you need to understand tokens. A <em>token</em> is not a word. It is a chunk of text determined by a statistical process called byte-pair encoding (BPE), standardized independently for each model family. OpenAI's tiktoken library, used for GPT models, splits text into tokens that average roughly 0.75 words in English — meaning 1,000 words is approximately 1,333 tokens.</p>
+      <p>Common English words like "the," "is," and "run" are each one token. Rare words or technical terms may be split into several tokens: "tokenization" might become ["token", "ization"]. Whitespace, punctuation, and code syntax each consume tokens. A Python function with comments might tokenize at a higher rate than equivalent prose. Non-English languages often tokenize less efficiently — a sentence in Turkish or Finnish may require twice as many tokens as the same semantic content in English, because the tokenizer was trained predominantly on English text.</p>
+      <p>This matters practically. If you are working with a 128,000-token model and feeding it a legal document, you cannot simply count pages. You must estimate tokens. A dense 100-page PDF might consume 60,000 tokens; a lightly spaced one might consume 40,000. Tools like OpenAI's Tokenizer page and Anthropic's token counter allow direct inspection.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Concrete Scale</div>
+      <p>GPT-4's original 8,192-token context window holds approximately 6,000 words — roughly a long magazine article. GPT-4-32k holds about 24,000 words, or a short novella. Claude 3's 200,000-token context holds approximately 150,000 words — the length of War and Peace. Gemini 1.5 Pro's 1,000,000-token context holds roughly 750,000 words, equivalent to seven copies of that novel simultaneously.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">What the Window Contains</h2>
+    <div class="section-body">
+      <p>The context window does not contain only your most recent message. It holds, in sequence, everything that has been exchanged in the current session: the system prompt (instructions given to the model before the conversation begins), all prior user messages, all prior assistant responses, any documents or code you have pasted in, and your current message. The model sees all of this as a single, ordered token sequence.</p>
+      <p>This has a non-obvious implication: <em>every response the model generates consumes context space</em>. A long assistant reply uses up tokens that are no longer available for new input. In long conversations, chat interfaces typically truncate or summarize earlier exchanges as the window fills. When that truncation occurs is often opaque to the user, and the behavior it causes — the model apparently "forgetting" things said early in the conversation — is frequently misattributed to the model being careless rather than to the hard constraint it is operating under.</p>
+      <p>System prompts are particularly important to understand here. In production applications — think a customer-support chatbot or a coding assistant — the system prompt may itself consume thousands of tokens before the user types a single character. A detailed system prompt of 4,000 tokens on a model with a 32,000-token context leaves only 28,000 tokens for the actual conversation. Developers who do not track this routinely hit limits they did not anticipate.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Key Distinction</div>
+      <p>A model's <strong>parameter count</strong> (how much it "knows" from training) and its <strong>context window</strong> (how much it can see right now) are completely separate quantities. A very large model with a small context window cannot analyze a long document. A smaller model with a very large context window can — but may reason about it less accurately. Both dimensions matter, and neither substitutes for the other.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Key Terms</h2>
+    <div class="section-body">
+      <div class="key-term"><span class="kt-term">Context window</span><span class="kt-def">The maximum number of tokens a model can process in one inference pass — its working memory for a given interaction.</span></div>
+      <div class="key-term"><span class="kt-term">Token</span><span class="kt-def">A sub-word unit of text produced by byte-pair encoding; approximately 0.75 English words on average for GPT-family tokenizers.</span></div>
+      <div class="key-term"><span class="kt-term">System prompt</span><span class="kt-def">Pre-conversation instructions placed before the user's first message; they consume context window space before any dialogue begins.</span></div>
+      <div class="key-term"><span class="kt-term">Context overflow</span><span class="kt-def">The condition that occurs when a conversation or document exceeds the context window, causing the model to lose access to earlier material.</span></div>
+      <div class="key-term"><span class="kt-term">Forward pass</span><span class="kt-def">The single computational operation in which the model processes all tokens in the context window to produce its next output.</span></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-intro')">← Intro</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q1')">Quiz →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ QUIZ 1 ═════════════════════════════ -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">Five questions · Select the best answer · Immediate feedback</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-1">
+      <div class="quiz-q">1. A language model's context window is best described as:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The total amount of text the model was trained on</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">The maximum number of tokens the model can process in a single inference pass</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The number of parameters in the model's neural network</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The speed at which the model generates new tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The context window is the working memory of a single inference pass — everything the model can attend to at once. It is entirely separate from training data size or parameter count.</div>
+      <div class="quiz-feedback wrong">Not quite. The context window is distinct from training data (what the model learned) and from parameters (the model's stored knowledge). It is specifically the limit on how much text the model can process in one go.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-2">
+      <div class="quiz-q">2. Using OpenAI's standard tokenizer, approximately how many tokens does 1,000 English words represent?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Exactly 1,000 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Approximately 500 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Approximately 1,333 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Approximately 2,500 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Because tokens are sub-word units averaging about 0.75 words each, 1,000 words tokenizes to roughly 1,333 tokens. This ratio is important when estimating whether a document will fit within a context window.</div>
+      <div class="quiz-feedback wrong">Not quite. Tokens are smaller than words — averaging about 0.75 words each — so 1,000 words produces more tokens than words. The correct estimate is approximately 1,333 tokens.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-3">
+      <div class="quiz-q">3. Which of the following occupies space in the context window during a chat conversation?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Only the user's most recent message</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Only the user's messages, not the model's responses</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The system prompt and the current user message only</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">The system prompt, all prior messages from both parties, any pasted documents, and the current message</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The entire conversation history — system prompt, every exchange, every pasted document — accumulates in the context window as a single token sequence. This is why long conversations gradually lose access to early material.</div>
+      <div class="quiz-feedback wrong">Not quite. The context window holds the entire conversation as a single token sequence: system prompt, all prior user and assistant messages, pasted documents, and the current message. Every token from every part of the conversation counts toward the limit.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-4">
+      <div class="quiz-q">4. A developer builds a customer support chatbot with a 4,000-token system prompt on a model that has a 32,000-token context window. How many tokens remain for the actual conversation?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">32,000 tokens — system prompts don't count against the limit</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">28,000 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">36,000 tokens — system prompts extend the window</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">4,000 tokens — the system prompt replaces the base window</button>
+      </div>
+      <div class="quiz-feedback right">Correct. System prompts consume context window space just like any other tokens. A 4,000-token system prompt on a 32,000-token model leaves exactly 28,000 tokens for all subsequent conversation.</div>
+      <div class="quiz-feedback wrong">Not quite. System prompts occupy the context window the same way user messages do. 32,000 − 4,000 = 28,000 tokens remain for the actual conversation. Developers who ignore system prompt length often hit limits unexpectedly.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-5">
+      <div class="quiz-q">5. A model with 100 billion parameters but a 4,096-token context window is asked to analyze a 50,000-token document. What happens?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">The large parameter count compensates, allowing the full document to be processed</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">The model compresses the document to fit automatically without any loss</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-5')">The model cannot process the full document in one pass regardless of parameter count</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">The model processes the document in segments and retains perfect memory across them</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Parameter count and context window are independent. No matter how large the model, it cannot attend to tokens outside its context window in a single inference pass. The 50,000-token document simply does not fit in a 4,096-token window.</div>
+      <div class="quiz-feedback wrong">Not quite. Parameters encode what the model knows from training; the context window determines what it can see right now. These are separate quantities. A 50,000-token document cannot be processed in a single pass by a model with a 4,096-token context window, regardless of how many parameters it has.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LAB 1 ═════════════════════════════ -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1: Probing the Context Window Concept</h1>
+    <div class="tagline">A guided conversation with an AI to deepen your understanding of tokens, context windows, and their practical limits</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>Use the chat below to explore what you just learned. The AI assistant is configured specifically for this lesson. Ask it at least three substantive questions about context windows, tokens, or the practical limits of working memory in language models.</p>
+      <p>Good starting points appear below — but follow your own curiosity. The lab completes after three exchanges.</p>
+      <div class="lab-prompt">Try asking: "How would I estimate whether a document I'm working with will fit in a model's context window?" — or — "What actually happens to a conversation when it overflows the context window?" — or — "Why do different languages tokenize at different rates?"</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>AI Lab Assistant</span>
+        <div class="chat-badge">Context Window Race · L1</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Hello. I'm your lab assistant for Lesson 1 of The Context Window Race. Ask me anything about what a context window is, how tokens work, what happens when a context window overflows, or how to estimate whether your content will fit. What would you like to explore?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Ask about context windows, tokens, or practical limits…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LESSON 2 ═════════════════════════════ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">The Context Window Race · Lesson 2</div>
+    <h1>Why Attention Is Expensive, and Why That Matters</h1>
+    <div class="tagline">The quadratic cost of the transformer attention mechanism and how it shaped the context window race</div>
+    <div class="lesson-question">If extending a context window from 4,000 to 32,000 tokens were free, why would engineers spend years trying to do it?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="The Engineering Reality">
+      <p class="story-text">When the original "Attention Is All You Need" paper was published by Vaswani et al. at Google Brain in June 2017, it introduced the transformer architecture that now underlies virtually every major language model. The paper's title was a declaration of design philosophy: replace recurrence with attention. What it did not advertise prominently was the cost buried in that choice. <em>Attention scales quadratically with sequence length.</em> Double the tokens in the context window, and the attention computation does not double — it quadruples. At the time, with sequences of a few hundred tokens, this was manageable. By 2022, when researchers wanted to push contexts into the tens of thousands, it became the central engineering problem of the field.</p>
+      <p class="story-text">This is not an abstract concern. It translates directly into GPU hours, latency, and inference cost. A model responding to a 100,000-token prompt in 2023 was, by the physics of the computation, doing something qualitatively different — and far more expensive — than responding to a 4,000-token prompt. Understanding why is understanding the engine of the context window race.</p>
+    </div>
+
+    <h2 class="section-heading">The Attention Mechanism Explained</h2>
+    <div class="section-body">
+      <p>In a transformer, every token in the context window must compare itself to every other token in the context window to determine how much "attention" to pay to it. If your context has N tokens, the model must compute N × N attention scores. This is the quadratic relationship: <em>N² computations</em>.</p>
+      <p>At 4,096 tokens: 4,096² = approximately 16.8 million attention computations per layer. At 32,768 tokens: 32,768² = approximately 1.07 billion computations per layer. At 128,000 tokens: approximately 16.4 billion. And models have many layers — GPT-4's architecture, though not publicly confirmed, is estimated to have 96 transformer layers. The compounding is significant.</p>
+      <p>Beyond raw computation, the attention matrix must be stored in memory. At 128,000 tokens with 16-bit floating point precision, storing the full attention matrix for a single layer requires roughly 32 gigabytes. This exceeds the VRAM capacity of a single high-end GPU. Long-context inference therefore requires either distributing computation across many GPUs or using techniques to avoid materializing the full attention matrix — which is exactly what the engineering innovation in this space has focused on.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Flash Attention: The Key Breakthrough</h2>
+    <div class="section-body">
+      <p>In June 2022, Tri Dao, Dan Fu, Stefano Ermon, and Atri Rudra at Stanford published <em>FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</em>. The paper identified that the bottleneck in attention computation was not the floating-point operations per se but the movement of data between GPU high-bandwidth memory (HBM) and the much faster on-chip SRAM. The attention matrix was being written to and read from slow memory repeatedly.</p>
+      <p>FlashAttention reorganized the computation into tiles — computing attention in small blocks that fit entirely in fast SRAM, never materializing the full attention matrix in slow memory. The mathematical result was identical; the memory footprint and speed were dramatically improved. FlashAttention 2, published in 2023, refined parallelism further and achieved roughly 9× speedup over standard attention on A100 GPUs. It became the de facto standard attention implementation for virtually every major model by 2023, and it is a significant reason why context windows that were impractical in 2021 became routine by 2024.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Why This Matters to You</div>
+      <p>When a model provider charges per token, the quadratic cost of attention is part of what you are paying for. Long-context inference is genuinely more expensive to run than short-context inference — not linearly more, but superlinearly. A 200,000-token prompt costs substantially more than ten 20,000-token prompts containing the same total information, because the attention cost of the full sequence dwarfs the sum of the parts. Budget accordingly when designing systems that use very long contexts.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Sparse Attention and Alternatives</h2>
+    <div class="section-body">
+      <p>FlashAttention is an implementation optimization — it computes the same full quadratic attention more efficiently. A parallel line of research attacks the quadratic problem by changing what is computed. <em>Sparse attention</em> methods allow each token to attend only to a structured subset of other tokens rather than all of them, reducing the N² computation toward N log N or even N.</p>
+      <p>OpenAI's 2019 Sparse Transformer demonstrated this principle. Subsequent work by Google (Longformer, BigBird) and others developed practical sparse attention patterns including sliding window attention (each token attends to its local neighborhood), global attention (a small set of designated tokens attend to everything), and random attention (random token pairs). These approaches made processing very long sequences computationally tractable but introduced a new question: which tokens actually need to attend to which others? Getting that wrong means the model misses relationships it should see.</p>
+      <p>By 2024, the dominant engineering direction was not sparse attention but rather combining FlashAttention with positional encoding improvements — specifically, techniques like Rotary Position Embedding (RoPE) with extended frequency scaling — to allow standard attention to generalize to sequence lengths longer than those seen in training without catastrophic degradation. This is how Llama 3's context was extended from 8,192 to 128,000 tokens in successive releases.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">The Core Tension</div>
+      <p>The context window race is not simply about making numbers bigger. Every increase in context length requires either accepting higher compute costs, accepting architectural compromises that may affect quality, or discovering new engineering techniques that change the tradeoff curve. The history of the race is the history of researchers finding ways to move that curve — and then model providers deciding how much of the remaining cost to absorb.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Key Terms</h2>
+    <div class="section-body">
+      <div class="key-term"><span class="kt-term">Quadratic scaling</span><span class="kt-def">The property of standard transformer attention whereby computational cost grows as the square of sequence length (N²), not linearly.</span></div>
+      <div class="key-term"><span class="kt-term">FlashAttention</span><span class="kt-def">A 2022 Stanford algorithm by Tri Dao et al. that computes exact attention without materializing the full attention matrix in slow memory, enabling dramatically longer context windows at practical cost.</span></div>
+      <div class="key-term"><span class="kt-term">Sparse attention</span><span class="kt-def">An attention variant in which each token attends to only a structured subset of other tokens, reducing the N² computation toward more manageable complexity.</span></div>
+      <div class="key-term"><span class="kt-term">VRAM</span><span class="kt-def">Video RAM — the high-bandwidth memory on a GPU where model weights and intermediate computations (including attention matrices) must reside during inference.</span></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ QUIZ 2 ═════════════════════════════ -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">Five questions · Select the best answer · Immediate feedback</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q2-1">
+      <div class="quiz-q">1. Standard transformer attention scales with sequence length in which way?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Linearly — doubling tokens doubles the computation</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Quadratically — doubling tokens quadruples the computation</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Logarithmically — doubling tokens adds a small fixed overhead</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Exponentially — doubling tokens causes computation to explode beyond control</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Standard attention requires every token to compare itself to every other token, producing N² attention scores. Doubling N quadruples the computation, which is why extending context windows requires serious engineering effort.</div>
+      <div class="quiz-feedback wrong">Not quite. Standard attention is quadratic: N tokens require N² attention score computations. Doubling the sequence length quadruples the attention computation, not merely doubles it.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-2">
+      <div class="quiz-q">2. What was the core insight of the FlashAttention paper published by Tri Dao et al. in 2022?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Replace full attention with sparse attention to reduce computation</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Train models on longer sequences by using more GPUs in parallel</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Reorganize attention computation into tiles to minimize slow memory transfers, without changing the mathematical result</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Approximate attention scores using random projections to reduce computation</button>
+      </div>
+      <div class="quiz-feedback right">Correct. FlashAttention kept the mathematics identical to standard attention but reorganized computation into tiles that fit in fast on-chip SRAM, avoiding expensive reads and writes to slow GPU HBM. The result was identical; the memory footprint and speed were dramatically improved.</div>
+      <div class="quiz-feedback wrong">Not quite. FlashAttention does not approximate or reduce the computation — it computes exact attention. Its innovation was IO-awareness: reorganizing the computation to minimize slow memory (HBM) access by tiling operations that fit in fast SRAM.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-3">
+      <div class="quiz-q">3. If a 4,096-token context requires storing approximately 32 MB for the attention matrix, roughly how much memory does a 128,000-token context require?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Approximately 1 GB (roughly 32× more)</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Approximately 32 GB (roughly 1,024× more, due to quadratic scaling)</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Approximately 128 MB (roughly 4× more)</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Approximately 4 GB (roughly 128× more)</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Because attention scales quadratically, going from 4,096 to 128,000 tokens is a 31.25× increase in sequence length, which produces roughly 31.25² ≈ 977× more memory demand — approximately 32 GB. This is why long-context inference requires multiple GPUs or FlashAttention-style tiling.</div>
+      <div class="quiz-feedback wrong">Not quite. Attention memory scales quadratically: if the sequence length increases by ~31×, the memory increases by ~31² ≈ 977×. Starting from ~32 MB yields roughly 32 GB — which is why long-context inference is a serious GPU memory challenge.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-4">
+      <div class="quiz-q">4. Sparse attention approaches like Longformer differ from FlashAttention in which fundamental way?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Sparse attention computes fewer attention scores by restricting which tokens attend to which; FlashAttention computes the full set of attention scores more efficiently</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">FlashAttention uses sparse matrices while Longformer uses dense matrices</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">They are essentially the same technique with different names</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Sparse attention is an implementation optimization; FlashAttention changes the underlying math</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is the essential distinction. FlashAttention is an implementation trick that computes exact (full) attention faster. Sparse attention changes what is computed — only certain token pairs attend to each other — which introduces an approximation but can reduce complexity from N² toward N log N or N.</div>
+      <div class="quiz-feedback wrong">Not quite. The key distinction is in what is computed vs. how it is computed. Sparse attention reduces the number of attention score computations by restricting attention patterns. FlashAttention computes all the same attention scores as standard attention, just using a more memory-efficient tiling strategy.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-5">
+      <div class="quiz-q">5. Why might sending one 200,000-token prompt cost more than ten 20,000-token prompts with the same total token count?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Providers charge a premium for using the long-context feature</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-5')">The attention computation for the 200,000-token prompt is superlinear — the single long sequence is computationally more expensive than the sum of ten shorter sequences</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Long prompts require the model to load different weights, adding overhead</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">There is no difference; token cost is purely linear regardless of sequence arrangement</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Because attention cost scales quadratically, a single 200,000-token sequence costs (200,000)² = 40 billion attention operations, while ten 20,000-token sequences cost 10 × (20,000)² = 4 billion total. The single long sequence is 10× more expensive in attention computation alone, even at the same total token count.</div>
+      <div class="quiz-feedback wrong">Not quite. This follows directly from quadratic scaling. A single 200k-token sequence requires 200k² attention operations. Ten 20k-token sequences require 10 × 20k² = 4 billion operations total. The single long sequence costs 10× more in attention computation, even though the raw token counts are equal.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LAB 2 ═════════════════════════════ -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2: Understanding Attention Cost</h1>
+    <div class="tagline">Explore the engineering tradeoffs behind long-context AI with your AI lab assistant</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>This lab is about the engineering reality behind expanding context windows. Use the chat to explore quadratic scaling, FlashAttention, sparse attention, and their practical implications. Ask at least three substantive questions to complete the lab.</p>
+      <div class="lab-prompt">Try asking: "If FlashAttention computes the exact same math, why does it help with long contexts?" — or — "When would you choose sparse attention over full attention, and what do you lose?" — or — "How does the quadratic cost of attention affect how I should design applications that use large context windows?"</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>AI Lab Assistant</span>
+        <div class="chat-badge">Context Window Race · L2</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">Welcome to Lab 2. I'm here to help you understand the engineering behind attention computation and why extending context windows is hard. Ask me about FlashAttention, quadratic scaling, sparse attention, memory constraints, or how these tradeoffs show up in real systems. What's on your mind?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Ask about attention cost, FlashAttention, sparse attention…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LESSON 3 ═════════════════════════════ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">The Context Window Race · Lesson 3</div>
+    <h1>The Race: From 2,048 Tokens to One Million</h1>
+    <div class="tagline">A documented timeline of context window milestones and the competitive dynamics that drove them</div>
+    <div class="lesson-question">What actually changed, and when, as AI companies raced to offer the longest context windows?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="The Timeline Begins">
+      <p class="story-text">On May 28, 2024, Google announced that Gemini 1.5 Pro was available to developers with a one-million-token context window — enough to process roughly eleven hours of audio, one hour of video, 30,000 lines of code, or 700,000 words of text. <em>Google framed this not as an incremental improvement but as a category shift.</em> The announcement included a demonstration: Gemini 1.5 Pro successfully located a specific scene in a 45-minute film given only a hand-drawn sketch as reference — a task requiring genuine comprehension of the entire video. What is instructive about this milestone is not just that it happened, but the path that led there: a series of discrete steps, each driven by a combination of technical breakthrough and competitive pressure, spanning just four years.</p>
+    </div>
+
+    <h2 class="section-heading">The Documented Milestones</h2>
+    <div class="section-body">
+      <p><strong>2020 — GPT-3: 2,048 tokens.</strong> OpenAI's GPT-3, released in May 2020 with 175 billion parameters, used a 2,048-token context window. This was standard for the era. The model could handle a few pages of text — enough for most single-document tasks but insufficient for sustained document analysis or multi-document reasoning.</p>
+      <p><strong>2022 — Anthropic Claude (beta): 9,000 tokens; AI21 Jurassic-2: up to 8,192 tokens.</strong> As the transformer ecosystem matured following the publication of FlashAttention, context windows began expanding. Anthropic's initial private beta of Claude used 9,000 tokens, already more than GPT-3.5's 4,096-token public API. AI21 Labs' Jurassic-2 offered up to 8,192 tokens.</p>
+      <p><strong>March 2023 — GPT-4 launch: 8,192 and 32,768 tokens.</strong> OpenAI launched GPT-4 with two context configurations: 8k and 32k tokens. The 32k version could handle approximately 24,000 words — a substantial document — but was priced significantly higher and initially limited to select partners. The same week, Anthropic launched Claude 1 with a 9,000-token context.</p>
+      <p><strong>May 2023 — Anthropic Claude: 100,000 tokens.</strong> Anthropic announced Claude's context window expansion to 100,000 tokens. This was a genuine inflection point. 100,000 tokens represents approximately 75,000 words — the length of a typical novel. For the first time, users could load an entire book, a full codebase, or a year's worth of meeting transcripts into a single context. Anthropic demonstrated this by having Claude analyze the entire text of The Great Gatsby in one pass.</p>
+      <p><strong>November 2023 — GPT-4 Turbo: 128,000 tokens.</strong> OpenAI responded at its first DevDay conference on November 6, 2023, announcing GPT-4 Turbo with a 128,000-token context window at significantly reduced pricing. The context expansion was paired with a knowledge cutoff extension to April 2023.</p>
+      <p><strong>February 2024 — Google Gemini 1.5 Pro: 1,000,000 tokens.</strong> Google's announcement in February 2024 of Gemini 1.5 Pro represented a full order-of-magnitude jump over the previous leaders. The architecture underlying this milestone used a Mixture of Experts (MoE) approach combined with advances in positional encoding, enabling in-context learning at scales previously thought to require fine-tuning.</p>
+      <p><strong>2024 onward — Claude 3 (200k), Llama 3.1 (128k), Gemini 1.5 Flash (1M), GPT-4o (128k).</strong> By mid-2024, 100,000+ token context windows had become table stakes for frontier models, and the competition shifted from raw context length toward <em>quality at length</em> — whether models actually use long contexts reliably, rather than simply accepting them.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The "Lost in the Middle" Problem</h2>
+    <div class="section-body">
+      <p>A landmark paper published by researchers at Stanford, UC Berkeley, and Samaya AI in July 2023 — titled "Lost in the Middle: How Language Models Use Long Contexts" — documented a critical quality problem that context length milestones were obscuring. The researchers found that when relevant information was placed in the middle of a long context, model performance degraded significantly compared to when the same information was placed at the beginning or end.</p>
+      <p>Specifically, across tested models, retrieving information from the middle of a 20-document context performed roughly 10–20 percentage points worse than retrieval from the edges of the same context. This was observed across multiple models and configurations. The implication: a model advertised as supporting 100,000 tokens does not necessarily use those tokens with equal fidelity throughout. <em>Accepting a long document and reasoning reliably over all of it are different capabilities.</em></p>
+      <p>This finding reframed the competitive conversation. By late 2023 and into 2024, benchmark suites specifically designed to test retrieval from arbitrary positions in long contexts — such as the Needle in a Haystack test, popularized by Greg Kamradt in November 2023 — became the de facto standard for evaluating long-context quality rather than mere length.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Needle in a Haystack</div>
+      <p>The Needle in a Haystack benchmark, developed by Greg Kamradt and widely adopted in late 2023, evaluates a model by hiding a specific fact (the "needle") at various positions within a long document (the "haystack") and asking the model to retrieve it. Performance is mapped as a heatmap across document depth and context length. Early results showed striking patterns: Claude 1 and GPT-4 struggled at document depths above 70%, while Claude 2.1 showed improvement but still degraded near 80% depth. Claude 3 models, announced in March 2024, achieved near-perfect Needle in a Haystack scores across 200,000 tokens — the first publicly demonstrated result of this quality at that scale.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">What Drove the Race</h2>
+    <div class="section-body">
+      <p>The context window race was not driven by a single technical breakthrough but by the convergence of several factors: FlashAttention lowering the implementation cost, improved positional encoding techniques allowing models to generalize to longer sequences, hardware improvements (A100 and H100 GPUs offering higher VRAM and bandwidth), and direct competitive pressure between Anthropic, OpenAI, and Google, each monitoring the others' releases closely.</p>
+      <p>Pricing also shaped the race. Long context inference costs more to serve, but the models with the longest context were initially priced at premiums that made routine use impractical. The period from 2023 to 2024 saw a rapid compression in per-token pricing — Claude's API pricing dropped by over 90% between initial release and 2024 pricing tiers — driven by a mix of infrastructure efficiency and competitive undercutting. By mid-2024, processing a 100,000-token context cost approximately $0.30 on Anthropic's Haiku model, down from prices that would have exceeded $15 for equivalent tokens on 2023 models.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ QUIZ 3 ═════════════════════════════ -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">Five questions · Select the best answer · Immediate feedback</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q3-1">
+      <div class="quiz-q">1. Which event represented the first genuine inflection point in the context window race, enabling the processing of a full novel in one pass?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">GPT-4's launch in March 2023 with a 32,768-token option</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Anthropic's announcement of Claude's 100,000-token context in May 2023</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Google's Gemini 1.5 Pro announcement in February 2024</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">OpenAI's GPT-4 Turbo at 128,000 tokens in November 2023</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Anthropic's May 2023 announcement of a 100,000-token context (approximately 75,000 words) was the first to cross the threshold of holding a complete novel in a single pass, and was widely recognized as a qualitative shift in what long-context AI could accomplish.</div>
+      <div class="quiz-feedback wrong">Not quite. While GPT-4's 32k option and later milestones were important, the moment most recognized as a qualitative inflection was Anthropic's May 2023 expansion to 100,000 tokens — enough to load a complete novel in one pass.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-2">
+      <div class="quiz-q">2. The "Lost in the Middle" paper (2023) identified what critical limitation of long-context models?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Models refuse to process documents longer than their advertised context window</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Models produce longer responses when given longer contexts, wasting tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Models perform significantly worse at retrieving information placed in the middle of a long context compared to the beginning or end</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Models lose grammatical accuracy when processing text beyond 10,000 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The Stanford/Berkeley/Samaya research showed consistent performance degradation when relevant information appeared in the middle of a long document, a pattern now called the "lost in the middle" effect. It distinguished between a model accepting long contexts and a model reliably using them.</div>
+      <div class="quiz-feedback wrong">Not quite. The paper's key finding was about retrieval position within the context: information at the beginning and end of a long document was retrieved more reliably than information in the middle, regardless of whether the total length was within the model's advertised limit.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-3">
+      <div class="quiz-q">3. The Needle in a Haystack benchmark tests models by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Measuring the speed at which a model processes tokens of varying lengths</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Comparing model outputs on documents in different languages</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Hiding a specific fact at various positions in a long document and measuring retrieval accuracy across positions and context lengths</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Testing whether models can generate text that passes as human-written</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Developed by Greg Kamradt in November 2023, the benchmark places a "needle" fact at different depths within a "haystack" document and maps retrieval accuracy as a heatmap across both document position and total context length. It became the standard measure of long-context quality.</div>
+      <div class="quiz-feedback wrong">Not quite. The Needle in a Haystack test specifically evaluates whether a model can find a specific piece of information (the needle) placed at varying depths within a long document (the haystack). The results are visualized as a 2D heatmap across context length and document position depth.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-4">
+      <div class="quiz-q">4. Google's Gemini 1.5 Pro announcement in February 2024 was notable for reaching which context window size?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">200,000 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">500,000 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">1,000,000 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">128,000 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Gemini 1.5 Pro's one-million-token context, announced in February 2024, represented a full order-of-magnitude jump over the previous leaders and was demonstrated on tasks including processing an entire 45-minute film.</div>
+      <div class="quiz-feedback wrong">Not quite. Gemini 1.5 Pro reached one million tokens — a full order of magnitude beyond the then-current leaders. This milestone was announced in February 2024 and included demonstrations of multimodal long-context tasks including full-video comprehension.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-5">
+      <div class="quiz-q">5. What does the documented price compression in long-context API pricing between 2023 and 2024 suggest about the economics of the context window race?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Long-context inference became cheaper because models became smaller</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Prices fell because governments subsidized AI infrastructure</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-5')">A combination of infrastructure efficiency gains and competitive undercutting drove prices down rapidly, making previously impractical use cases economically viable</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Prices fell because the quality of long-context inference also declined proportionally</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The roughly 90%+ drop in per-token pricing between 2023 and mid-2024 reflected both genuine infrastructure efficiency improvements and direct competitive pressure among providers. This compression is what transformed long-context AI from a research curiosity into a routine engineering tool.</div>
+      <div class="quiz-feedback wrong">Not quite. The rapid price compression — over 90% for some Claude tiers — reflected both genuine efficiency gains (hardware improvements, software optimizations) and competitive dynamics among Anthropic, OpenAI, and Google, each pricing to win developer adoption.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LAB 3 ═════════════════════════════ -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3: The Race in Historical Context</h1>
+    <div class="tagline">Discuss context window milestones, competitive dynamics, and what the race means for practitioners</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>Use this lab to explore the competitive and practical dimensions of the context window race. Ask about the milestones, the "lost in the middle" problem, how benchmarks like Needle in a Haystack changed the conversation, or what these developments mean for how you build with AI.</p>
+      <div class="lab-prompt">Try asking: "What should I actually check before assuming a model's long context is reliable for my use case?" — or — "How did the 'lost in the middle' finding change how AI labs designed models?" — or — "Is a 1M-token context practically useful or mostly a marketing milestone?"</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>AI Lab Assistant</span>
+        <div class="chat-badge">Context Window Race · L3</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">Welcome to Lab 3. I'm ready to discuss the documented history of the context window race — the milestones, the research that complicated the narrative (like "Lost in the Middle"), the benchmarks that emerged, and what this all means for practitioners. What would you like to explore?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Ask about the context window race, milestones, or practical implications…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LESSON 4 ═════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">The Context Window Race · Lesson 4</div>
+    <h1>Practical Implications: What Context Length Means for Your Work</h1>
+    <div class="tagline">How to reason about context windows when designing prompts, applications, and workflows</div>
+    <div class="lesson-question">Knowing that larger context windows exist, how should they actually change the way you structure your interactions with AI?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Practical Ground">
+      <p class="story-text">In late 2023, a team of software engineers at Replit publicly described how they had rebuilt their AI coding assistant around Claude's 100,000-token context window. Their previous workflow chunked large codebases into segments and processed them separately, then tried to reconcile the results. The new workflow loaded the entire relevant codebase — sometimes 60,000 to 80,000 tokens — into a single context. The improvement in coherence was immediate. <em>The model could now see a function call and the function definition it was calling in the same pass,</em> rather than having to infer from partial views. Bug identification rates improved; proposed refactors became structurally coherent across file boundaries. The engineers were not using a more capable model. They were using the same model with enough context to actually see the problem.</p>
+      <p class="story-text">That case is a useful frame for thinking about context windows as a practitioner: they are not just a number to note in a spec sheet, but a structural constraint that determines whether certain tasks are even possible in a given workflow design.</p>
+    </div>
+
+    <h2 class="section-heading">When Context Window Size Determines Feasibility</h2>
+    <div class="section-body">
+      <p>Some tasks are intrinsically context-constrained. Reviewing a full 200-page contract for clause conflicts requires that both conflicting clauses be simultaneously visible to the model. Summarizing a research paper requires seeing the entire paper. Debugging a multi-file codebase for a cross-module issue requires access to all relevant modules. Translating a novel while maintaining character consistency requires seeing earlier characterization when writing later chapters.</p>
+      <p>In each case, no amount of prompt engineering compensates for a context window that is simply too small to contain the relevant material. The only solutions are: use a model with a larger context window; chunk the material and accept the coherence limitations this introduces; or use retrieval-augmented generation (RAG) to pull in relevant chunks dynamically, accepting that the chunking logic may miss relevant context.</p>
+      <p>Understanding which situation you are in before you start building is significant. A team that builds a RAG pipeline assuming context windows are always insufficient may be introducing unnecessary complexity and quality degradation for tasks where a sufficiently long context window would have worked straightforwardly.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Retrieval vs. Full-Context Decision</h2>
+    <div class="section-body">
+      <p>Retrieval-Augmented Generation (RAG) was the dominant paradigm for handling long documents before 100,000+ token context windows became practical. In RAG, a document corpus is chunked into segments, those segments are embedded and stored in a vector database, and at query time only the most relevant chunks (by embedding similarity) are retrieved and inserted into the context. This allowed applications to work with arbitrarily large document collections that could never fit in any context window.</p>
+      <p>RAG remains essential for genuinely large-scale document retrieval — querying across thousands of documents, for example. But for tasks involving a single long document or a bounded set of documents, the emergence of 100k+ context windows changed the calculus. Loading the full document directly is simpler, eliminates chunking errors, and preserves structural relationships that chunk-level retrieval can sever (a clause on page 1 that qualifies a provision on page 80 may never appear in the same retrieved chunk).</p>
+      <p>The practical decision rule: if your total relevant material fits within the available context window at the cost you can accept, prefer full-context. If it exceeds the context window, or if cost at that token count is prohibitive, design a RAG or chunking strategy. Track this decision explicitly in your system design documentation, because it will affect every downstream quality and debugging consideration.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Position Matters</div>
+      <p>Given the documented "lost in the middle" effect, when you must place critical information in a long context, prefer placing it near the <strong>beginning</strong> or <strong>end</strong> of the context rather than in the middle. When writing system prompts, put the most critical instructions first and, if important, repeat key constraints near the end. This is not a workaround for a bug — it is working with the architecture's known attention patterns.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Estimating Token Budgets in Practice</h2>
+    <div class="section-body">
+      <p>Developing a reliable intuition for token costs is a practical skill. The following rough estimates work for English-language prose with standard models:</p>
+      <p>A single-spaced page of dense text: approximately 500–700 tokens. A typical 10-page PDF report: 5,000–7,000 tokens. A 100-page legal document: 50,000–70,000 tokens. A software repository of 50 Python files averaging 200 lines each: approximately 60,000–100,000 tokens depending on comment density. An hour of transcribed speech: approximately 8,000–12,000 tokens.</p>
+      <p>For production applications, do not estimate — measure. OpenAI's tiktoken library is open-source and available as a Python package; it provides exact GPT-family token counts for any input. Anthropic provides a token counting API endpoint. Building token counting into your preprocessing pipeline catches context overflows before they produce silent failures.</p>
+      <p>Also account for the output. If you are asking a model to generate a 2,000-token summary and your input is 125,000 tokens on a 128,000-token model, the model may truncate or behave unexpectedly when it generates output that would push the total beyond the limit. Budget for output tokens as well as input tokens.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Context Windows and Agentic Systems</h2>
+    <div class="section-body">
+      <p>Agentic AI systems — those that perform multi-step tasks, use tools, and maintain state over extended operations — have a particularly acute relationship with context windows. In an agent loop, each tool call result, each intermediate reasoning step, and each prior action is typically appended to the context. A complex agent task that takes forty steps and uses three external tools may accumulate 30,000–50,000 tokens of intermediate state before producing a final answer.</p>
+      <p>This has two implications for agent design. First, the available context window constrains the number of steps an agent can take before its early actions scroll off its visible history — a form of procedural amnesia that can cause agents to repeat steps or lose track of constraints set early in the task. Second, very long agentic contexts are expensive to run, because each new token generated requires attending over the full accumulated history.</p>
+      <p>Production agentic systems typically implement context compression strategies: periodically summarizing the accumulated history into a compact representation, retaining verbatim only the most recent N exchanges, or using structured memory stores that store key facts externally and retrieve them as needed. Understanding the context window is prerequisite to designing these compression strategies effectively.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Quick Reference</div>
+      <p>Before starting any AI-assisted task: (1) Estimate your total input token count. (2) Add your system prompt token count. (3) Add an estimate for expected output. (4) Compare to the model's context window. (5) If you are above 80% of capacity, redesign — context that is close to the limit increases the risk of truncation and quality degradation. If you are well within limit, consider whether RAG complexity is necessary at all.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ QUIZ 4 ═════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Lesson 4 Quiz</h1>
+    <div class="tagline">Five questions · Select the best answer · Immediate feedback</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q4-1">
+      <div class="quiz-q">1. Based on the documented Replit case, what was the primary benefit of switching to a full-context approach using Claude's 100,000-token window?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The model became faster at generating code completions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The API cost was lower than their previous chunked approach</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">The model could simultaneously see function calls and their definitions across file boundaries, improving coherence and bug detection</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The model was able to generate entirely new features without human review</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The Replit team's key insight was structural: by loading the full codebase into one context, the model could see relationships between code elements that chunked processing severed. The improvement was in coherence, not model capability per se.</div>
+      <div class="quiz-feedback wrong">Not quite. The Replit case illustrated a coherence benefit: the model could see a function call and its definition in the same context window, rather than processing them in separate chunks and losing the structural relationship. Speed and cost were not the primary drivers.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-2">
+      <div class="quiz-q">2. When is RAG (Retrieval-Augmented Generation) still preferable to loading full documents into a large context window?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Always — RAG is more reliable than full-context for all tasks</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">When the total relevant material exceeds the available context window, or when cost at that token count is prohibitive, particularly for large-scale multi-document retrieval</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Never — full context windows have made RAG obsolete</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Only when working with non-English languages</button>
+      </div>
+      <div class="quiz-feedback right">Correct. RAG remains essential when material exceeds the context window or when cost makes large-context inference impractical. For tasks where a single bounded document set fits within the available window at acceptable cost, full-context loading is often simpler and more coherent.</div>
+      <div class="quiz-feedback wrong">Not quite. RAG remains valuable when document collections genuinely exceed context window capacity or when per-token costs make large contexts impractical. Neither approach is universally superior — the choice depends on the task, the material size, and the cost constraints.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-3">
+      <div class="quiz-q">3. Applying the "lost in the middle" finding practically: where should you place the most critical instructions in a long system prompt?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">In the middle, where the model gives most attention</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">At the beginning and, if critical, repeated near the end</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Distributed evenly throughout the prompt</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">After all the context documents, so it is freshest in the model's attention</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The documented pattern is that models attend most reliably to content at the beginning and end of a long context. Placing critical instructions first, and reinforcing them near the end, works with this architectural tendency rather than against it.</div>
+      <div class="quiz-feedback wrong">Not quite. Research consistently shows that middle-position content is retrieved less reliably. Critical instructions should go at the beginning of the context, and if especially important, they can be reiterated near the end as well.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-4">
+      <div class="quiz-q">4. A developer has a 128,000-token context window and a task that requires 125,000 tokens of input plus an expected 5,000-token output. What is the primary concern?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">No concern — 125,000 tokens fits within the 128,000-token window</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">The total of input plus output (130,000 tokens) exceeds the context window, likely causing truncation or unexpected behavior during generation</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">The output will automatically be compressed to fit the remaining 3,000 tokens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Output tokens do not count against the context window</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Both input and output tokens count toward the context window. With 125,000 input tokens and a 5,000-token expected output, the total of 130,000 tokens exceeds a 128,000-token limit. The model will likely truncate the output or behave unexpectedly. Always budget for output as well as input.</div>
+      <div class="quiz-feedback wrong">Not quite. Output tokens count against the context window just as input tokens do. The total of 125,000 (input) + 5,000 (output) = 130,000 tokens exceeds the 128,000-token limit. This will cause truncation or degraded behavior. Budget for both input and output.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-5">
+      <div class="quiz-q">5. In long agentic AI systems, why do engineers implement context compression strategies such as periodic summarization of accumulated history?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">To make the agent's reasoning more explainable to users</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Because agents require shorter contexts than standard chat interactions</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-5')">Because each tool call and intermediate step accumulates in the context, and without compression the agent runs out of context window before completing complex tasks, while also incurring increasing per-step inference costs</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">To prevent the agent from using information from early in the task, which is considered unreliable</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Agentic loops accumulate context with each step — tool results, reasoning traces, prior actions — until the window fills. Without compression, the agent suffers procedural amnesia (early constraints scroll off) and incurs rapidly increasing inference costs from attending over a growing history. Compression strategies preserve useful state while keeping the context manageable.</div>
+      <div class="quiz-feedback wrong">Not quite. In agent loops, each step adds to the context. Without compression, the context eventually fills, causing the agent to lose access to early instructions or decisions (procedural amnesia), and each new step becomes more expensive to compute as the attention history grows. Compression strategies address both problems.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ LAB 4 ═════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4: Applying Context Window Thinking</h1>
+    <div class="tagline">Work through real workflow decisions with your AI lab assistant</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>This is the applied lab for Module 1. Bring a real scenario from your own work — or use one of the prompts below — and work through the context window considerations with the AI assistant. The goal is to develop concrete judgment about when and how context limits affect your specific use case.</p>
+      <div class="lab-prompt">Try asking: "I want to use AI to review a 150-page contract — walk me through how I should think about context window choice for this task." — or — "How would I design an AI agent for a multi-step research task given what I now know about context accumulation?" — or — "What token budget should I build in for a customer support chatbot with a detailed system prompt?"</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>AI Lab Assistant</span>
+        <div class="chat-badge">Context Window Race · L4</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">Welcome to the final lab for Module 1. Now we get applied. Bring me a real task or scenario — document review, code analysis, agent design, chatbot architecture, whatever you're actually building — and let's work through the context window considerations together. Or ask me to walk through one of the example scenarios. What's your use case?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Describe your use case or ask a practical question about context windows…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════ MODULE TEST ═════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 1 Test</h1>
+    <div class="tagline">15 questions · 80% to pass · Covers all four lessons</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt-1">
+      <div class="quiz-q">1. A context window is best defined as:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">The maximum number of tokens a model can process in a single inference pass</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The amount of training data a model was exposed to</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The number of layers in the model's neural network</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The memory used to store model weights during inference</button>
+      </div>
+      <div class="quiz-feedback right">Correct.</div>
+      <div class="quiz-feedback wrong">Not quite. The context window is the working memory of a single inference pass — the maximum tokens processed at once, separate from training data or architectural properties.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-2">
+      <div class="quiz-q">2. Approximately how many English words does one token represent, using GPT-family tokenizers?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Exactly one word</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Approximately 0.75 words</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Approximately two words</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Approximately 0.25 words</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Tokens are sub-word units averaging ~0.75 English words, so 1,000 words ≈ 1,333 tokens.</div>
+      <div class="quiz-feedback wrong">Not quite. Tokens average about 0.75 English words — they are smaller than words, not larger.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-3">
+      <div class="quiz-q">3. Which of these does NOT occupy space in a model's context window during a conversation?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">System prompt</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Prior assistant responses</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">The model's training data</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Pasted documents</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Training data is baked into the model's weights — it does not appear as tokens in the context window during inference.</div>
+      <div class="quiz-feedback wrong">Not quite. The training data is encoded into model weights during training and does not appear as tokens in the context window. Everything else listed — system prompts, prior messages, pasted documents — does occupy context space.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-4">
+      <div class="quiz-q">4. Standard transformer attention scales with sequence length in what way?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Linearly</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Quadratically (N²)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Logarithmically</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Exponentially</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Attention requires every token to compare with every other token: N × N = N² operations.</div>
+      <div class="quiz-feedback wrong">Not quite. Standard attention is quadratic: N tokens require N² attention computations.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-5">
+      <div class="quiz-q">5. FlashAttention, published in 2022, improved long-context inference by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Reducing the number of attention computations using sparse patterns</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Tiling attention computation to minimize slow GPU memory transfers, computing the same result more efficiently</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Compressing the attention matrix using lossy approximations</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Distributing attention computation across multiple GPUs automatically</button>
+      </div>
+      <div class="quiz-feedback right">Correct. FlashAttention is an IO-aware implementation that computes exact attention in tiles that fit in fast SRAM, avoiding costly HBM reads and writes.</div>
+      <div class="quiz-feedback wrong">Not quite. FlashAttention computes exact (not approximate) attention, using the same number of operations as standard attention but reorganizing them into tiles that fit in fast on-chip memory.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-6">
+      <div class="quiz-q">6. Anthropic first expanded Claude's context window to 100,000 tokens in:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">March 2023 (alongside the GPT-4 launch)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">May 2023</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">November 2023 (alongside GPT-4 Turbo)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">February 2024</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Anthropic announced the 100,000-token Claude context in May 2023, the first context window large enough to hold a complete novel.</div>
+      <div class="quiz-feedback wrong">Not quite. Anthropic's 100,000-token announcement came in May 2023, between the GPT-4 launch (March 2023) and GPT-4 Turbo (November 2023).</div>
+    </div>
+
+    <div class="quiz-box" id="mt-7">
+      <div class="quiz-q">7. The "Lost in the Middle" research paper found that model performance on retrieval tasks was:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Uniform across all positions in a long document</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Best when relevant information was in the middle of the document</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Significantly better when relevant information was at the beginning or end compared to the middle</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Better with shorter documents regardless of information position</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The paper documented consistent degradation in retrieval accuracy when target information appeared in the middle of a long context versus at the edges.</div>
+      <div class="quiz-feedback wrong">Not quite. The paper's central finding was that middle-position information was retrieved significantly less reliably than beginning- or end-position information.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-8">
+      <div class="quiz-q">8. Google's Gemini 1.5 Pro reached which context window size at its February 2024 announcement?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">200,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">500,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">1,000,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">128,000 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Gemini 1.5 Pro's one-million-token context was announced February 2024, representing a full order-of-magnitude jump.</div>
+      <div class="quiz-feedback wrong">Not quite. Gemini 1.5 Pro reached one million tokens — the largest announced context window at that date.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-9">
+      <div class="quiz-q">9. The Needle in a Haystack benchmark was developed by Greg Kamradt in what month and year?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">May 2023</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">November 2023</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">February 2024</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">June 2022</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Kamradt's Needle in a Haystack benchmark emerged in November 2023 and quickly became the standard for evaluating long-context quality.</div>
+      <div class="quiz-feedback wrong">Not quite. The benchmark was popularized in November 2023, following the "Lost in the Middle" paper and the GPT-4 Turbo / Claude long-context announcements.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-10">
+      <div class="quiz-q">10. A model parameter count of 100 billion and a context window of 4,096 tokens means the model:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Can process very long documents because its large parameter count compensates</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Cannot process more than 4,096 tokens in one pass, regardless of parameter count</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Has a special extended context mode enabled by its parameter count</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Can use its parameters as additional working memory beyond the context window</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Parameters and context window are independent dimensions. Parameter count encodes learned knowledge; context window determines what can be attended to in a single inference pass.</div>
+      <div class="quiz-feedback wrong">Not quite. Parameters and context window are completely separate. No matter how many parameters a model has, it cannot attend to tokens outside its context window in a single pass.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-11">
+      <div class="quiz-q">11. For a standard English-language document, approximately how many tokens does a dense single-spaced page contain?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">50–100 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">500–700 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">2,000–3,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">5,000–7,000 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A dense single-spaced page of English prose typically runs 500–700 tokens — a useful reference point for estimating context requirements.</div>
+      <div class="quiz-feedback wrong">Not quite. A dense single-spaced page of English runs approximately 500–700 tokens. At ~1,333 tokens per 1,000 words, a 400-word page yields roughly 530 tokens.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-12">
+      <div class="quiz-q">12. RAG (Retrieval-Augmented Generation) remains preferable to full-context loading when:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The document is less than 10 pages long</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The model has a context window larger than 100,000 tokens</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">The total relevant material exceeds the available context window, or when inference cost at that token count is prohibitive</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The task involves any form of question answering</button>
+      </div>
+      <div class="quiz-feedback right">Correct. RAG is the right choice when material exceeds the context window capacity or when the per-token cost of loading everything makes full-context inference impractical.</div>
+      <div class="quiz-feedback wrong">Not quite. The core decision criterion is whether the material fits within the available context window at acceptable cost. If it does, full-context loading is often simpler and more coherent. If it does not, RAG is necessary.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-13">
+      <div class="quiz-q">13. Byte-pair encoding (BPE) tokenization tends to be LESS efficient (more tokens per word) for:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">English prose text</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">JavaScript source code</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Languages like Turkish or Finnish, which have complex morphology and were underrepresented in tokenizer training</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Short English sentences with common words</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Because tokenizers are trained primarily on English text, morphologically complex or less-represented languages tokenize less efficiently — the same semantic content requires more tokens than the equivalent English text.</div>
+      <div class="quiz-feedback wrong">Not quite. BPE tokenizers trained predominantly on English text are less efficient for morphologically rich or underrepresented languages. A Turkish or Finnish sentence may require twice as many tokens as the equivalent English content.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-14">
+      <div class="quiz-q">14. In an agentic AI system, why do early instructions sometimes get "forgotten" during a long multi-step task?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">The model intentionally deprioritizes older instructions as the task evolves</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Agentic systems use a different model architecture that lacks persistent memory</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Each step's output is appended to the context; when enough steps accumulate, early tokens fall outside the context window and are no longer visible to the model</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">The model's attention mechanism gives zero weight to tokens older than a fixed threshold</button>
+      </div>
+      <div class="quiz-feedback right">Correct. In agent loops, the growing context of tool results and intermediate steps eventually pushes early tokens out of the context window entirely. Once outside the window, those tokens are invisible to the model — not deprioritized, but truly absent.</div>
+      <div class="quiz-feedback wrong">Not quite. It is not that the model ignores early tokens — it literally cannot see them once they fall outside the context window. Each appended step brings the total closer to the limit, and early content eventually scrolls off entirely.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-15">
+      <div class="quiz-q">15. A developer has a 128,000-token model and plans a task with 90,000 tokens of input and 5,000 tokens of expected output. The recommended safe approach is to:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Proceed without modification — 90,000 tokens is well within the 128,000 limit</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Reduce the expected output to 1,000 tokens to save space</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Account for total input plus output (95,000 tokens) and verify this stays comfortably below the 128,000 limit, ideally below 80% of capacity (102,400 tokens) — in this case the headroom is adequate but should be tracked</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Switch to RAG because any input over 50,000 tokens requires chunking</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Total context consumption is input plus output: 90,000 + 5,000 = 95,000 tokens, which is about 74% of the 128,000-token window. This is within the safe range, but the developer should track it and ensure the system prompt (if any) is accounted for as well.</div>
+      <div class="quiz-feedback wrong">Not quite. Output tokens count against the context window. The correct check is total input + output = 95,000 tokens, which is ~74% of capacity — fine, but the full budget including any system prompt must be tracked. The 80% guideline exists because very high utilization increases risk of truncation and quality issues.</div>
+    </div>
+
+    <div id="mt-score" class="mt-score"></div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn" onclick="goPage('p-intro')">↩ Back to Intro</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='the-context-window-race';
+var MODULE_ID='the-m1';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-intro';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an AI lab assistant for AESOP AI Academy — The Context Window Race course, Lesson 1: What a Context Window Is. Help learners understand: (1) what a context window is — the maximum tokens a model processes in one inference pass, (2) what tokens are — sub-word units averaging ~0.75 English words in GPT-family tokenizers, (3) what occupies the context window — system prompts, full conversation history, pasted documents, and the current message, (4) the difference between context window (working memory now) and parameters (learned knowledge from training), (5) what context overflow means and why it causes apparent "forgetting." Use concrete examples, real numbers, and documented product details. Do not invent fictional scenarios. Stay on topic; warmly redirect off-topic questions.',
+  l2:'You are an AI lab assistant for AESOP AI Academy — The Context Window Race course, Lesson 2: Why Attention Is Expensive. Help learners understand: (1) the quadratic N² scaling of transformer attention — every token must compare to every other token, (2) what this means in concrete memory and compute terms at different context sizes, (3) FlashAttention (2022, Tri Dao et al.) — how IO-aware tiling computes exact attention without materializing the full matrix in slow GPU HBM, achieving ~9× speedup on A100s, (4) sparse attention approaches (Longformer, BigBird) — how they differ from FlashAttention by changing what is computed, not just how, (5) why long-context inference costs more than the sum of shorter-context equivalents. Use real papers, real hardware specs, documented results. Stay on topic; warmly redirect off-topic questions.',
+  l3:'You are an AI lab assistant for AESOP AI Academy — The Context Window Race course, Lesson 3: The Race from 2,048 to 1M Tokens. Help learners understand: (1) the documented timeline — GPT-3 at 2,048 (2020), Claude/GPT-4 launches (March 2023), Claude 100k (May 2023), GPT-4 Turbo 128k (November 2023), Gemini 1.5 Pro 1M (February 2024), (2) the "Lost in the Middle" paper (Stanford/Berkeley/Samaya, July 2023) and what it revealed about quality vs. raw length, (3) the Needle in a Haystack benchmark (Greg Kamradt, November 2023) and how it changed how long-context quality is evaluated, (4) the competitive dynamics and pricing compression that drove the race, (5) what "quality at length" means and why it matters as much as raw context size. Use only documented facts. Stay on topic; warmly redirect off-topic questions.',
+  l4:'You are an AI lab assistant for AESOP AI Academy — The Context Window Race course, Lesson 4: Practical Implications. Help learners apply what they know to real scenarios. Cover: (1) when context window size determines task feasibility — full-document tasks like contract review, codebase analysis, transcript summarization, (2) the RAG vs. full-context decision — when each is appropriate, using the criterion of whether material fits within the window at acceptable cost, (3) token budget estimation — practical rules of thumb (~500-700 tokens per dense page, ~1,333 tokens per 1,000 words) and tools like tiktoken, (4) the "lost in the middle" implication for prompt design — critical instructions at beginning and end, (5) agentic context accumulation — why agents need context compression strategies and what those look like in practice. Be practical and specific. Help learners think through their own real use cases. Stay on topic; warmly redirect off-topic questions.'
+};
+
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var _fallbacks={
+  l1:[
+    "Good question. A context window is like the model's working desk — it can only work with what's on the desk right now. Anything that doesn't fit on the desk (outside the context window) is invisible to the model during that inference pass. The key insight is that this is completely separate from what the model 'knows' from training — training knowledge is baked into the weights permanently. The context window is just what's visible right now.",
+    "Tokens are sub-word units, not words. The GPT tokenizer uses byte-pair encoding (BPE) to split text into chunks that average about 0.75 words in English. So 'context' might be one token, but 'contextualization' might be two or three. This means 1,000 English words is roughly 1,333 tokens. For non-English languages with complex morphology — Turkish, Finnish, Arabic — the ratio is even less efficient because the tokenizer was trained mainly on English.",
+    "Context overflow happens when the accumulated conversation — system prompt + all messages + your current message — exceeds the context window limit. Chat interfaces typically handle this by silently truncating or summarizing early messages. From the model's perspective, those early tokens simply don't exist anymore. It's not that the model 'forgot' — it literally cannot see text outside its window. This is why very long conversations can feel like the model loses track of things said at the start."
+  ],
+  l2:[
+    "FlashAttention doesn't reduce the number of attention computations — it computes exactly the same math as standard attention. What it changes is the memory access pattern. Standard attention writes the full N×N attention matrix to slow GPU HBM (high-bandwidth memory) and reads it back multiple times. FlashAttention tiles the computation into blocks that fit in fast on-chip SRAM and never writes the full matrix to slow memory. Same result, dramatically less data movement — which is the real bottleneck.",
+    "You'd choose sparse attention when you have sequence lengths so long that even FlashAttention can't make full attention practical, or when you have strong prior knowledge about which token pairs actually matter — for example, in a sliding window approach where nearby tokens interact most. What you lose is the ability for any token to attend to any other token — you're betting that your sparsity pattern captures all important relationships, which may miss long-range dependencies you didn't anticipate.",
+    "For application design: the quadratic cost means a 10× longer context is roughly 100× more expensive in attention computation, not 10×. So if you're deciding between one large context call and multiple smaller ones, the cost difference is superlinear. For most practical work with modern models and FlashAttention implementations, this is already accounted for in the provider's pricing — but it explains why long-context inference is priced higher per token than short-context inference."
+  ],
+  l3:[
+    "The 'lost in the middle' finding changed model evaluation fundamentally. Before it, labs mostly advertised maximum context length and demonstrated single impressive use cases. After it, the question became: does the model actually use the full context reliably, or does performance degrade in the middle? This drove the creation of systematic benchmarks like Needle in a Haystack, which map retrieval accuracy as a 2D heatmap across document depth and context length. Now, a model claiming 200k context needs to show it works at 80% document depth, not just at the edges.",
+    "Whether a 1M-token context is practically useful depends entirely on your use case. For genuinely large-scale tasks — processing a full day's video footage, analyzing an entire software repository with hundreds of files, or loading a years' worth of research literature — it opens workflows that were previously impossible with single-context approaches. For most everyday tasks involving documents under 100 pages, a 200k context is more than sufficient. The million-token capability is a real engineering achievement, but it doesn't change most practitioners' day-to-day work.",
+    "Before using a long-context model for your specific use case, check two things: (1) Does the model's Needle in a Haystack heatmap show reliable performance at the document depth where your critical information will appear? Claude 3 models showed strong performance across 200k tokens; earlier models degraded significantly past 70% depth. (2) Does your task involve retrieving specific facts from a fixed position, or synthesizing information from across the document? Models tend to handle synthesis better than precise retrieval at middle positions."
+  ],
+  l4:[
+    "For a 150-page contract review: estimate ~60,000-90,000 tokens depending on density. With Claude 3 (200k window) or GPT-4 Turbo (128k), you can load the full contract in one pass — which is strongly preferable for clause-conflict detection, because conflicting clauses may be on page 1 and page 120, and chunked processing might never see them together. Budget your system prompt (aim for under 3,000 tokens for instructions), add the document tokens, leave headroom for a substantial response. If the contract is exceptionally long, consider Claude's 200k window specifically for this use case.",
+    "For a multi-step research agent: the core design decision is your context compression strategy. Each tool call result gets appended to the context — after 30-40 steps of web searches, document reads, and reasoning traces, you can easily accumulate 40,000-60,000 tokens of intermediate state. Options: (1) periodic summarization — every N steps, compress the accumulated history into a structured summary and replace the verbatim history, (2) sliding window — retain only the last K full exchanges verbatim, (3) structured external memory — store key findings in a separate store and retrieve relevant items at each step. The right choice depends on whether your agent needs to refer back to exact earlier outputs or just their conclusions.",
+    "For a customer support chatbot token budget: start with your system prompt and measure it precisely using tiktoken. A detailed system prompt might run 2,000-5,000 tokens. On a 32k model, that leaves 27,000-30,000 tokens for conversation. Estimate your typical conversation length — most support conversations are 10-20 exchanges of ~100 tokens each, so ~2,000-4,000 tokens. That's very comfortable. The concern comes when you add knowledge base documents to the system prompt — each policy document you inline adds thousands of tokens. Consider whether those documents need to be inlined or can be retrieved via RAG based on the specific query."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbacks[labId];
+  if(!replies) return "I'm in offline mode. Please try refreshing the page to reconnect to the AI.";
+  var idx=_fallbackIdx[labId]%replies.length;
+  _fallbackIdx[labId]++;
+  return replies[idx];
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  msgs.innerHTML='';
+  var greetings={
+    l1:'Hello. I\'m your lab assistant for Lesson 1 of The Context Window Race. Ask me anything about what a context window is, how tokens work, what happens when a context window overflows, or how to estimate whether your content will fit. What would you like to explore?',
+    l2:'Welcome to Lab 2. I\'m here to help you understand the engineering behind attention computation and why extending context windows is hard. Ask me about FlashAttention, quadratic scaling, sparse attention, memory constraints, or how these tradeoffs show up in real systems. What\'s on your mind?',
+    l3:'Welcome to Lab 3. I\'m ready to discuss the documented history of the context window race — the milestones, the research that complicated the narrative (like "Lost in the Middle"), the benchmarks that emerged, and what this all means for practitioners. What would you like to explore?',
+    l4:'Welcome to the final lab for Module 1. Now we get applied. Bring me a real task or scenario — document review, code analysis, agent design, chatbot architecture, whatever you\'re actually building — and let\'s work through the context window considerations together. Or ask me to walk through one of the example scenarios. What\'s your use case?'
+  };
+  addMsg(labId,'ai',greetings[labId]||'Lab reset. Ask me a question to continue.');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(chatExchanges[labId]===undefined) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:500,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an issue generating a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+updateTabs();
+</script>
+
+</body>
+</html>

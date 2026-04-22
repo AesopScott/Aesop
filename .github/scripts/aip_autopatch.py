@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
-AIP Auto-Patch — adds approved AIP drafts to courses.html
+AIP Auto-Patch — adds approved AIP drafts to courses.html and courses-data.json
 
 Reads all JSON files in aip/drafts/, finds approved ones not yet in
 courses.html, and injects:
   1. A sidebar tab button (Coming Soon) in the Core Courses group
   2. A course panel with title, synopsis, and module list
+
+Also syncs approved drafts into courses-data.json so they appear in the
+module generator dropdown with proper {n, title, sub} module objects.
 
 Panels use id="aip-{draft_id}" to avoid clashing with existing IDs.
 Tab buttons are inserted alphabetically within the Core Courses group.
@@ -19,6 +22,7 @@ from pathlib import Path
 
 DRAFTS_DIR = Path("aip/drafts")
 COURSES_HTML = Path("ai-academy/courses.html")
+COURSES_DATA = Path("ai-academy/modules/courses-data.json")
 
 # Icons to cycle through for AIP courses
 ICONS = ["🧠", "🔬", "🌐", "⚡", "🔮", "📊", "🛡️", "🎯", "💡", "🚀"]
@@ -168,6 +172,42 @@ def insert_course_panel(html, panel_html):
     return html
 
 
+def sync_to_courses_data(drafts):
+    """Add approved drafts to courses-data.json with proper module format."""
+    if not COURSES_DATA.exists():
+        print("  courses-data.json not found — skipping mod-gen sync.")
+        return 0
+
+    data = json.loads(COURSES_DATA.read_text(encoding="utf-8"))
+    existing_ids = {c["id"] for c in data.get("courses", [])}
+
+    added = 0
+    for draft in drafts:
+        draft_id = draft["id"]
+        if draft_id in existing_ids:
+            continue
+
+        raw_modules = draft.get("modules", [])
+        modules = [
+            {"n": i + 1, "title": m if isinstance(m, str) else m.get("title", ""), "sub": ""}
+            for i, m in enumerate(raw_modules)
+        ]
+
+        entry = {"id": draft_id, "name": draft["title"], "modules": modules}
+        data.setdefault("courses", []).append(entry)
+        existing_ids.add(draft_id)
+        print(f"  + courses-data.json: {draft['title']} ({len(modules)} modules)")
+        added += 1
+
+    if added:
+        COURSES_DATA.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"  ✅ courses-data.json updated with {added} new course(s)")
+    else:
+        print("  ✓ courses-data.json already up to date")
+
+    return added
+
+
 def main():
     if not DRAFTS_DIR.exists():
         print("No drafts directory found. Exiting.")
@@ -186,6 +226,12 @@ def main():
 
     print(f"Found {len(drafts)} approved draft(s)")
 
+    # ── Sync to courses-data.json (mod gen) ──────────────────────────────
+    print("\n── Syncing to courses-data.json ──")
+    sync_to_courses_data(drafts)
+
+    # ── Patch courses.html ────────────────────────────────────────────────
+    print("\n── Patching courses.html ──")
     new_count = 0
     for i, draft in enumerate(drafts):
         draft_id = draft["id"]
@@ -197,11 +243,9 @@ def main():
 
         print(f"  + Adding: {title}")
 
-        # Build HTML fragments
         tab_btn = build_tab_button(draft)
         panel = build_course_panel(draft, i)
 
-        # Insert into courses.html
         html = insert_tab_button(html, tab_btn, title)
         html = insert_course_panel(html, panel)
         new_count += 1
@@ -214,7 +258,7 @@ def main():
         COURSES_HTML.write_text(html, encoding="utf-8")
         print(f"\n✅ Patched courses.html with {new_count} new course(s)")
     else:
-        print("\nNo new courses to add.")
+        print("\nNo new courses to add to courses.html.")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<!-- v1.0.1 | 2026-04-21 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule a Meeting</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:   #2563eb;
+      --blue-h: #1d4ed8;
+      --green:  #16a34a;
+      --gray-1: #f8fafc;
+      --gray-2: #f1f5f9;
+      --gray-3: #e2e8f0;
+      --gray-5: #64748b;
+      --gray-7: #334155;
+      --gray-9: #0f172a;
+      --radius: 10px;
+      --shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--gray-1);
+      color: var(--gray-9);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header h1 { font-size: 1.75rem; font-weight: 700; }
+    .header p  { color: var(--gray-5); margin-top: .5rem; line-height: 1.6; }
+
+    /* Cards */
+    .card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-title {
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--gray-5);
+      margin-bottom: 1rem;
+    }
+
+    /* Month nav */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .month-nav h2 { font-size: 1.1rem; font-weight: 600; }
+    .month-nav button {
+      background: none;
+      border: 1px solid var(--gray-3);
+      border-radius: 8px;
+      padding: .35rem .75rem;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--gray-7);
+      transition: background .15s;
+    }
+    .month-nav button:hover { background: var(--gray-2); }
+    .month-nav button:disabled { opacity: .35; cursor: default; }
+
+    /* Calendar grid */
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-dow {
+      text-align: center;
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--gray-5);
+      padding: .25rem 0;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: .875rem;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all .15s;
+      position: relative;
+    }
+    .cal-day.empty   { cursor: default; }
+    .cal-day.past    { color: var(--gray-3); cursor: default; }
+    .cal-day.no-slots{ color: var(--gray-5); cursor: default; }
+    .cal-day.has-slots {
+      background: #eff6ff;
+      color: var(--blue);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cal-day.has-slots:hover { background: #dbeafe; }
+    .cal-day.selected {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue-h);
+    }
+    .cal-day .dot {
+      position: absolute;
+      bottom: 4px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+    .cal-day.selected .dot { background: #fff; }
+
+    /* Time slots */
+    .times-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: .5rem;
+    }
+    .time-btn {
+      padding: .6rem .5rem;
+      border: 2px solid var(--gray-3);
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      font-size: .875rem;
+      font-weight: 500;
+      color: var(--gray-7);
+      text-align: center;
+      transition: all .15s;
+    }
+    .time-btn:hover   { border-color: var(--blue); color: var(--blue); background: #eff6ff; }
+    .time-btn.active  { border-color: var(--blue); background: var(--blue); color: #fff; }
+
+    .empty-state {
+      text-align: center;
+      padding: 1.5rem 0;
+      color: var(--gray-5);
+      font-size: .9rem;
+    }
+
+    /* Form */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: .875rem;
+      font-weight: 500;
+      margin-bottom: .35rem;
+      color: var(--gray-7);
+    }
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: .6rem .85rem;
+      border: 1.5px solid var(--gray-3);
+      border-radius: 8px;
+      font-size: .9rem;
+      font-family: inherit;
+      color: var(--gray-9);
+      transition: border .15s;
+      outline: none;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus { border-color: var(--blue); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    .tz-note {
+      font-size: .78rem;
+      color: var(--gray-5);
+      margin-top: .25rem;
+    }
+
+    /* Submit */
+    .btn-submit {
+      width: 100%;
+      padding: .8rem;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-submit:hover:not(:disabled) { background: var(--blue-h); }
+    .btn-submit:disabled { opacity: .55; cursor: default; }
+
+    /* Confirmation */
+    .confirm-card {
+      text-align: center;
+      padding: 2.5rem;
+    }
+    .confirm-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: #dcfce7;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 1.25rem;
+    }
+    .confirm-card h2 { font-size: 1.4rem; margin-bottom: .5rem; }
+    .confirm-card p  { color: var(--gray-5); line-height: 1.6; }
+    .confirm-time {
+      background: var(--gray-2);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      margin: 1.25rem 0;
+      font-weight: 600;
+      color: var(--gray-9);
+    }
+    .join-btn {
+      display: inline-block;
+      margin-top: .75rem;
+      padding: .65rem 1.4rem;
+      background: var(--green);
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: .9rem;
+    }
+
+    /* Loading / error */
+    .loading { text-align: center; color: var(--gray-5); padding: 1.5rem 0; }
+    .error-msg { color: #dc2626; font-size: .875rem; margin-top: .5rem; }
+
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: .4rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      .times-grid { grid-template-columns: repeat(3, 1fr); }
+      .card { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1 id="page-title">Schedule a Meeting</h1>
+    <p id="page-blurb">Pick a time that works for you and I'll send you a calendar invite.</p>
+  </div>
+
+  <!-- Step 1: Calendar -->
+  <div class="card" id="step-calendar">
+    <div class="card-title">Select a Date</div>
+    <div class="month-nav">
+      <button id="prev-month" onclick="changeMonth(-1)" disabled>&#8249;</button>
+      <h2 id="month-label"></h2>
+      <button id="next-month" onclick="changeMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-dow"></div>
+    <div class="cal-grid" id="cal-days"></div>
+    <div id="cal-loading" class="loading">Loading availability…</div>
+  </div>
+
+  <!-- Step 2: Time -->
+  <div class="card" id="step-time" style="display:none">
+    <div class="card-title">Select a Time <span id="tz-display" class="tz-note"></span></div>
+    <div class="times-grid" id="times-grid"></div>
+  </div>
+
+  <!-- Step 3: Form -->
+  <div class="card" id="step-form" style="display:none">
+    <div class="card-title">Your Details</div>
+    <div class="form-group">
+      <label for="f-name">Full Name <span style="color:#dc2626">*</span></label>
+      <input type="text" id="f-name" placeholder="Jane Smith" autocomplete="name">
+    </div>
+    <div class="form-group">
+      <label for="f-email">Email Address <span style="color:#dc2626">*</span></label>
+      <input type="email" id="f-email" placeholder="jane@example.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="f-note">Note (optional)</label>
+      <textarea id="f-note" placeholder="What would you like to discuss?"></textarea>
+    </div>
+    <div id="form-error" class="error-msg" style="display:none"></div>
+    <button class="btn-submit" id="btn-book" onclick="submitBooking()">Confirm Meeting</button>
+  </div>
+
+  <!-- Confirmation -->
+  <div class="card confirm-card" id="step-confirm" style="display:none">
+    <div class="confirm-icon">&#10003;</div>
+    <h2>You're booked!</h2>
+    <p>A calendar invite has been sent to your email.</p>
+    <div class="confirm-time" id="confirm-time"></div>
+    <p>Check your inbox for the invite — it may take a minute to arrive.</p>
+    <a id="join-link" class="join-btn" href="#" target="_blank" style="display:none">
+      Join Teams Meeting &rarr;
+    </a>
+  </div>
+</div>
+
+<script>
+const SLOTS_URL = 'slots.php';
+const BOOK_URL  = 'book.php';
+
+let allSlots   = [];       // [{start, utc, ts}, …]
+let slotsByDay = {};       // 'YYYY-MM-DD' -> [slot, …]
+let selectedTs = null;
+let viewYear, viewMonth;   // currently displayed month
+
+const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('tz-display').textContent = '(' + userTz.replace(/_/g,' ') + ')';
+
+  try {
+    const res  = await fetch(SLOTS_URL);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    allSlots = data.slots || [];
+    buildSlotIndex();
+
+    document.getElementById('cal-loading').style.display = 'none';
+
+    // Start at today's month
+    const now = new Date();
+    viewYear  = now.getFullYear();
+    viewMonth = now.getMonth();
+    renderCalendar();
+
+  } catch (e) {
+    document.getElementById('cal-loading').textContent = 'Could not load availability: ' + e.message;
+  }
+}
+
+function buildSlotIndex() {
+  slotsByDay = {};
+  for (const slot of allSlots) {
+    const key = localDateKey(new Date(slot.utc));
+    (slotsByDay[key] = slotsByDay[key] || []).push(slot);
+  }
+}
+
+// 'YYYY-MM-DD' in the user's local timezone
+function localDateKey(date) {
+  return date.toLocaleDateString('sv-SE', { timeZone: userTz }); // sv-SE gives ISO format
+}
+
+// ─── Calendar ────────────────────────────────────────────────────────────────
+function renderCalendar() {
+  const today   = new Date();
+  today.setHours(0,0,0,0);
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const lastDay  = new Date(viewYear, viewMonth + 1, 0);
+
+  document.getElementById('month-label').textContent =
+    firstDay.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  // Prev button: disable if this month <= today's month
+  const prevBtn = document.getElementById('prev-month');
+  prevBtn.disabled = (viewYear < today.getFullYear()) ||
+    (viewYear === today.getFullYear() && viewMonth <= today.getMonth());
+
+  // DOW headers
+  const dowEl = document.getElementById('cal-dow');
+  dowEl.innerHTML = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    dowEl.appendChild(el);
+  });
+
+  // Day cells
+  const grid = document.getElementById('cal-days');
+  grid.innerHTML = '';
+
+  // Leading blanks
+  for (let i = 0; i < firstDay.getDay(); i++) {
+    const blank = document.createElement('div');
+    blank.className = 'cal-day empty';
+    grid.appendChild(blank);
+  }
+
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const date    = new Date(viewYear, viewMonth, d);
+    const key     = date.toLocaleDateString('sv-SE');
+    const slots   = slotsByDay[key] || [];
+    const isPast  = date < today;
+    const cell    = document.createElement('div');
+    cell.className = 'cal-day';
+    cell.textContent = d;
+
+    if (isPast) {
+      cell.classList.add('past');
+    } else if (slots.length === 0) {
+      cell.classList.add('no-slots');
+    } else {
+      cell.classList.add('has-slots');
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      cell.appendChild(dot);
+      cell.onclick = () => selectDay(key, cell);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+function changeMonth(delta) {
+  viewMonth += delta;
+  if (viewMonth > 11) { viewMonth = 0;  viewYear++; }
+  if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
+  renderCalendar();
+}
+
+function selectDay(key, cell) {
+  // Deselect previous
+  document.querySelectorAll('.cal-day.selected').forEach(el => {
+    el.classList.remove('selected');
+  });
+  cell.classList.add('selected');
+
+  renderTimes(slotsByDay[key] || []);
+  document.getElementById('step-time').style.display = '';
+  document.getElementById('step-form').style.display = 'none';
+  selectedTs = null;
+  document.getElementById('step-time').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── Times ───────────────────────────────────────────────────────────────────
+function renderTimes(slots) {
+  const grid = document.getElementById('times-grid');
+  grid.innerHTML = '';
+
+  if (!slots.length) {
+    grid.innerHTML = '<div class="empty-state">No times available for this day.</div>';
+    return;
+  }
+
+  slots.forEach(slot => {
+    const date = new Date(slot.utc);
+    const label = date.toLocaleTimeString([], {
+      hour: 'numeric', minute: '2-digit', timeZone: userTz
+    });
+    const btn = document.createElement('button');
+    btn.className   = 'time-btn';
+    btn.textContent = label;
+    btn.onclick     = () => selectTime(slot, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function selectTime(slot, btn) {
+  document.querySelectorAll('.time-btn.active').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedTs = slot.ts;
+  document.getElementById('step-form').style.display = '';
+  document.getElementById('step-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── Booking ─────────────────────────────────────────────────────────────────
+async function submitBooking() {
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const note  = document.getElementById('f-note').value.trim();
+  const errEl = document.getElementById('form-error');
+
+  errEl.style.display = 'none';
+
+  if (!name)      { showErr('Please enter your name.');          return; }
+  if (!email)     { showErr('Please enter your email address.'); return; }
+  if (!selectedTs){ showErr('Please select a time.');            return; }
+
+  const btn = document.getElementById('btn-book');
+  btn.disabled   = true;
+  btn.innerHTML  = '<span class="spinner"></span>Booking…';
+
+  try {
+    const res  = await fetch(BOOK_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name, email, note, ts: selectedTs }),
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    // Show confirmation
+    document.getElementById('step-calendar').style.display = 'none';
+    document.getElementById('step-time').style.display     = 'none';
+    document.getElementById('step-form').style.display     = 'none';
+    document.getElementById('step-confirm').style.display  = '';
+    document.getElementById('confirm-time').textContent    = data.time;
+
+    if (data.joinUrl) {
+      const link = document.getElementById('join-link');
+      link.href          = data.joinUrl;
+      link.style.display = 'inline-block';
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (e) {
+    showErr(e.message || 'Something went wrong. Please try again.');
+    btn.disabled  = false;
+    btn.innerHTML = 'Confirm Meeting';
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent    = msg;
+  el.style.display  = '';
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

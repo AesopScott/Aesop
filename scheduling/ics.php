@@ -148,7 +148,7 @@ function icsDate(string $evt, string $name): ?int {
     $val = preg_replace('/^(\d{8}T\d{6}).*/', '$1', $val);
 
     // UTC timestamp ending with Z
-    if (preg_match('/^\d{8}T\d{6}$/', $val) && str_ends_with(trim($m[2]), 'Z')) {
+    if (preg_match('/^\d{8}T\d{6}$/', $val) && substr(trim($m[2]), -1) === 'Z') {
         return gmmktime(
             (int)substr($val,9,2), (int)substr($val,11,2), (int)substr($val,13,2),
             (int)substr($val,4,2), (int)substr($val,6,2), (int)substr($val,0,4)

@@ -50,7 +50,7 @@ echo "=== SAMPLE DTSTART FORMATS (first 10) ===\n";
 $shown = 0;
 foreach ($events as $e) {
     foreach ($e as $k => $v) {
-        if (str_starts_with($k, 'DTSTART')) {
+        if (strpos($k, 'DTSTART') === 0) {
             echo "$k:$v\n";
             $shown++;
             break;
@@ -65,10 +65,9 @@ $countPast = 0;
 $countFail = 0;
 
 foreach ($events as $e) {
-    // Find DTSTART line
     $dtRaw = null;
     foreach ($e as $k => $v) {
-        if (str_starts_with($k, 'DTSTART')) { $dtRaw = $v; break; }
+        if (strpos($k, 'DTSTART') === 0) { $dtRaw = $v; break; }
     }
 
     if (!$dtRaw) { $countFail++; continue; }

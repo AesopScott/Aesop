@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-22 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Context Window Race – M8: Where Context Length Is Going</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-context-window-race-m8 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;font-style:italic;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.timeline-row{display:flex;gap:1.25rem;align-items:flex-start;margin-bottom:1.25rem;}
+.timeline-year{font-family:'Crimson Pro',Georgia,serif;font-size:1.1rem;font-weight:600;color:var(--gold);min-width:3.5rem;padding-top:0.1rem;}
+.timeline-content{flex:1;border-left:1px solid var(--border-dark);padding-left:1rem;}
+.timeline-content strong{display:block;font-size:0.87rem;color:#c0b8af;margin-bottom:0.2rem;}
+.timeline-content span{font-size:0.82rem;color:#6e6861;line-height:1.75;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.85rem;margin:1.25rem 0;}
+.stat-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.1rem;text-align:center;}
+.stat-card .stat-num{font-family:'Crimson Pro',Georgia,serif;font-size:1.55rem;font-weight:600;color:var(--gold);line-height:1;}
+.stat-card .stat-label{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-top:0.35rem;}
+.stat-card .stat-note{font-size:0.75rem;color:#6e6861;margin-top:0.3rem;line-height:1.5;}
+.challenge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.85rem;margin:1.25rem 0;}
+.challenge-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.1rem;}
+.challenge-card .ch-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem;}
+.challenge-card .ch-title{font-family:'Crimson Pro',Georgia,serif;font-size:0.98rem;font-weight:600;color:#e8e3db;margin-bottom:0.35rem;}
+.challenge-card .ch-body{font-size:0.8rem;color:#6e6861;line-height:1.7;}
+.future-list{list-style:none;margin:1rem 0;}
+.future-list li{font-size:0.87rem;color:#a89f93;line-height:1.8;padding:0.4rem 0 0.4rem 1.5rem;position:relative;border-bottom:1px solid rgba(26,39,56,0.6);}
+.future-list li::before{content:'→';position:absolute;left:0;color:var(--accent);}
+.future-list li:last-child{border-bottom:none;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.75rem 1.25rem 1.25rem;}.stat-grid{grid-template-columns:1fr 1fr;}.challenge-grid{grid-template-columns:1fr;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════════════════════ L1 -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 1</div>
+      <h1>From 4K to Millions: The Scaling Trajectory</h1>
+      <div class="tagline">How context windows grew from a technical footnote to a competitive battleground — and where the trajectory points next.</div>
+      <div class="lesson-question">What does the historical rate of context growth tell us about where these windows are headed?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context">
+        <p class="story-text">In June 2023, Anthropic released Claude 2 with a <em>100,000-token</em> context window. Tech journalists called it staggering. Twelve months later, Google's Gemini 1.5 Pro demonstrated <em>1,000,000 tokens</em>. The number had grown tenfold in a single year. The race wasn't slowing — it was accelerating.</p>
+      </div>
+
+      <div class="section-heading">The Timeline of Context Expansion</div>
+      <div class="section-body">
+        <p>The history of context window growth is one of the fastest capability progressions in AI. In 2020, GPT-3 launched with 2,048 tokens — enough for a short essay. By early 2023, GPT-4 reached 32,768 tokens in its extended variant. Then the dam broke.</p>
+        <p>The jump from 32K to 100K tokens was significant, but it was Anthropic's and Google's subsequent moves that reframed expectations entirely.</p>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-year">2020</div>
+        <div class="timeline-content"><strong>GPT-3 — 2,048 tokens</strong><span>OpenAI's landmark model ships with a context window equivalent to roughly 1,500 words. Fine for Q&amp;A; inadequate for long documents.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">2022</div>
+        <div class="timeline-content"><strong>Claude 1 — 9,000 tokens / GPT-4 — 8K → 32K</strong><span>Anthropic's first Claude ships with ~9K tokens. OpenAI extends GPT-4 to 32,768 in a limited "GPT-4-32k" variant. Longer contexts arrive but remain slow and expensive.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">2023</div>
+        <div class="timeline-content"><strong>Claude 2 — 100,000 tokens</strong><span>Anthropic announces the 100K context in May 2023. Users can submit an entire novel in a single prompt. Competitors scramble to respond.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">2024 Q1</div>
+        <div class="timeline-content"><strong>Gemini 1.5 Pro — 1,000,000 tokens (preview)</strong><span>Google's February 2024 announcement of a 1M-token context in Gemini 1.5 Pro is the single largest leap in the race. In tests, the model correctly recalled a specific scene from 402 pages of documents.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">2024 Q3</div>
+        <div class="timeline-content"><strong>Gemini 1.5 Pro — 2,000,000 tokens (GA)</strong><span>Google extends the window to 2M tokens in general availability, making it accessible via API. The equivalent of roughly 1,500 research papers simultaneously in context.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">2025</div>
+        <div class="timeline-content"><strong>Claude 3.7 Sonnet — 200K; GPT-4o — 128K standard</strong><span>The 100K–200K range becomes the competitive floor. Even mid-tier models routinely offer what was record-breaking just 18 months prior.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Why Growth Doesn't Follow Moore's Law Neatly</div>
+      <div class="section-body">
+        <p>Unlike transistor counts, context window growth has been driven by architectural choices, not just hardware. The core bottleneck is the <em>attention mechanism</em>: standard transformers scale in compute as O(n²) with sequence length. Doubling the context quadruples the compute required for attention alone.</p>
+        <p>The leaps above each represented a significant engineering decision — not just a chip upgrade. Google's 1M-token Gemini relied on a custom architecture called <em>Multi-Head Latent Attention</em> combined with aggressive sparse-attention techniques that allowed the model to skip computing attention over distant, less relevant tokens.</p>
+        <p>This means context scaling curves look episodic: long plateaus interrupted by sudden jumps when a new architectural technique is proven at scale.</p>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-num">~500×</div>
+          <div class="stat-label">Growth 2020–2024</div>
+          <div class="stat-note">From GPT-3's 2K to Gemini's 1M tokens in four years</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">O(n²)</div>
+          <div class="stat-label">Attention Cost</div>
+          <div class="stat-note">Standard transformers — doubling context quadruples attention compute</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">2M</div>
+          <div class="stat-label">Current Peak (2025)</div>
+          <div class="stat-note">Gemini 1.5 Pro in GA — the largest publicly available context window</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">~$0.007</div>
+          <div class="stat-label">Cost per 1K tokens (input)</div>
+          <div class="stat-note">Gemini 1.5 Pro pricing as of early 2025 — a fraction of 2023 rates</div>
+        </div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Insight</div>
+        <p>The historical pattern suggests that context length milestones arrive in waves tied to architectural breakthroughs rather than steady increments. Understanding <em>what architectural technique enabled each leap</em> is the key to predicting where the next ceiling will be set — and when it might be broken.</p>
+      </div>
+
+      <div class="section-heading">The Competitive Dynamic</div>
+      <div class="section-body">
+        <p>Context length has become a marquee specification — the AI equivalent of megapixels in early smartphone cameras. When Anthropic announced 100K, OpenAI's 8K window suddenly looked dated. When Google announced 1M, Anthropic's 200K lost its "world's largest" distinction within months.</p>
+        <p>This competition has had a direct user benefit: prices per token have fallen sharply as labs compete, and what once required enterprise contracts is now available in standard API tiers. The trend strongly suggests that by 2026–2027, multi-million-token contexts will be unremarkable baseline capabilities rather than premium features.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Event</div>
+        <p>In February 2024, Google's research team published detailed benchmarks showing Gemini 1.5 Pro could recall a specific line of dialogue from a 1-hour audio file inserted into context alongside a multi-hour video — simultaneously. The demo was not cherry-picked: the researchers used the "needle in a haystack" methodology pioneered by community researcher Greg Kamradt in late 2023 to stress-test recall at arbitrary positions within the context.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q1 -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">The Scaling Trajectory · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq1">
+        <div class="quiz-q">Which model first publicly demonstrated a 1,000,000-token context window in early 2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Claude 2</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq1')">Gemini 1.5 Pro</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">GPT-4-32k</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Llama 3</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Google announced Gemini 1.5 Pro's 1M-token context in February 2024, later extended to 2M in general availability.</div>
+        <div class="quiz-feedback wrong">Not quite. Gemini 1.5 Pro was the first to publicly demonstrate and then release a 1,000,000-token context window.</div>
+      </div>
+
+      <div class="quiz-box" id="qq2">
+        <div class="quiz-q">Why does standard transformer attention scale as O(n²) with context length?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Because weights must be re-trained for each new length</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Because token embeddings grow proportionally to sequence length</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq2')">Because each token must compute attention scores against every other token</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Because GPU memory bandwidth doubles with each additional layer</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Standard attention requires computing a score between every pair of tokens — if you have n tokens, that's n×n comparisons, hence O(n²) cost.</div>
+        <div class="quiz-feedback wrong">Not quite. The quadratic scaling comes from the pairwise comparison: every token must attend to every other token, producing n² attention operations.</div>
+      </div>
+
+      <div class="quiz-box" id="qq3">
+        <div class="quiz-q">What was the approximate context window of GPT-3 at launch in 2020?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">512 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq3')">2,048 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">8,192 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">32,768 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GPT-3 launched with a 2,048-token context — about 1,500 words — which was considered large at the time but now looks tiny against current models.</div>
+        <div class="quiz-feedback wrong">Not quite. GPT-3's original context window was 2,048 tokens — enough for roughly a short essay, not a full document.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB 1 -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Mapping the Milestones</h1>
+      <div class="tagline">Discuss context window scaling history with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've just read about context window growth from 2K to 2M tokens. Now explore the deeper implications with your lab assistant. Ask about what drove each architectural leap, why the growth curve is "episodic" rather than smooth, or what business use cases became newly possible at specific size thresholds.</p>
+        <div class="lab-prompt">Starter: "What was the key architectural technique that let Google reach 1M tokens, and why couldn't they just extend the previous approach?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Lab Assistant</span>
+          <div class="chat-badge">Context Window History</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Ready to explore context window scaling history. Ask me about the architectural breakthroughs, what made each milestone significant, or how cost curves changed alongside capability — I'll ground every answer in documented events and research.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about context window history..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ L2 -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 2</div>
+      <h1>The Engineering Ceilings Ahead</h1>
+      <div class="tagline">The hard physics, memory constraints, and attention-cost problems that will shape — and possibly cap — context window growth.</div>
+      <div class="lesson-question">If architectural breakthroughs drove the past, what barriers must the next breakthrough overcome?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Problem">
+        <p class="story-text">When Google ran Gemini 1.5 Pro at 1 million tokens, the compute bill for a single inference call was staggering. Processing one million tokens at full attention would require roughly <em>10¹² floating-point operations</em> — more than a thousand trillion computations for a single prompt. Labs don't publish exact numbers, but estimates from researchers at NVIDIA suggest that naive full-attention at 1M tokens would cost more per query than a standard model costs per day. The race toward infinite context runs directly into the wall of physics.</p>
+      </div>
+
+      <div class="section-heading">The Three Core Ceilings</div>
+
+      <div class="challenge-grid">
+        <div class="challenge-card">
+          <div class="ch-label">Ceiling 1</div>
+          <div class="ch-title">Attention Compute (O(n²))</div>
+          <div class="ch-body">Standard self-attention requires computing every token's relationship with every other token. At 1M tokens, that's 10¹² pairwise computations per attention layer. Modern models have dozens of layers. Without sparse or approximate attention, million-token contexts are economically impossible at scale.</div>
+        </div>
+        <div class="challenge-card">
+          <div class="ch-label">Ceiling 2</div>
+          <div class="ch-title">GPU Memory (KV Cache)</div>
+          <div class="ch-body">During inference, models store key-value (KV) cache entries for every token in context. At 1M tokens with a large model, the KV cache alone can require hundreds of gigabytes of GPU VRAM — exceeding what any single current GPU can hold. Distributing this across chips introduces latency.</div>
+        </div>
+        <div class="challenge-card">
+          <div class="ch-label">Ceiling 3</div>
+          <div class="ch-title">Retrieval Degradation</div>
+          <div class="ch-body">Even when compute allows long contexts, model accuracy on information placed in the middle of the context degrades sharply. The "lost in the middle" phenomenon, documented by Stanford researchers in 2023, shows models reliably recall information at the beginning and end of context but miss facts buried in the middle.</div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Sparse Attention: The Leading Solution</div>
+      <div class="section-body">
+        <p>The most successful approach to breaking the O(n²) ceiling has been <em>sparse attention</em>: instead of computing attention between all token pairs, the model selectively attends only to the most relevant tokens. Several variants have reached production:</p>
+        <p><strong>Sliding window attention</strong> (used in Mistral's models): each token only attends to a fixed window of nearby tokens plus a set of "global" tokens designated as important. This reduces attention cost to near-linear.</p>
+        <p><strong>Flash Attention</strong> (Tri Dao, 2022, adopted by most major labs): a GPU kernel optimization that doesn't reduce the theoretical complexity but dramatically reduces memory bandwidth usage, enabling longer contexts on existing hardware. Flash Attention 2 and 3 have each provided roughly 2–4× throughput improvements.</p>
+        <p><strong>Ring Attention</strong> (DeepMind / UC Berkeley, 2023): distributes the KV cache across multiple GPU devices in a ring topology, allowing the combined VRAM of many chips to hold extraordinarily long contexts. This is the technique that made Gemini 1.5's million-token context physically feasible.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Real Research: "Lost in the Middle"</div>
+        <p>In July 2023, researchers from Stanford and UC Berkeley published a paper titled "Lost in the Middle: How Language Models Use Long Contexts." They tested multiple large language models on multi-document question answering and found that performance was significantly higher when the relevant document appeared at the beginning or end of the context — and dropped sharply when it was placed in the middle. This effect held even for models explicitly designed for long context. The finding has directly shaped how production RAG systems are architected: critical information is deliberately placed at the start or end of prompts, not the middle.</p>
+      </div>
+
+      <div class="section-heading">The Memory Wall</div>
+      <div class="section-body">
+        <p>GPU VRAM has grown — the NVIDIA H100 ships with 80GB, the H200 with 141GB — but these numbers are dwarfed by the KV cache requirements of multi-million-token contexts for large models. A rough calculation: for a 70-billion-parameter model with a 1M-token context, the KV cache requires approximately <em>700GB to 1.4TB</em> of memory depending on precision, compared to the model weights themselves at roughly 140GB in BF16.</p>
+        <p>This has driven two parallel approaches: <em>KV cache compression</em> techniques that reduce memory per token (e.g., grouped-query attention, which Llama 3 uses), and <em>offloading</em> to CPU RAM or SSD storage with async prefetch. Neither fully solves the problem at very long contexts, but each extends the practical ceiling.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Flash Attention Impact</div>
+        <p>Tri Dao's Flash Attention paper (2022, Stanford) was immediately adopted by Hugging Face, Mosaic ML, and most major labs within six months of publication. Its core insight — that the bottleneck is memory bandwidth rather than raw FLOPs — led to a kernel rewrite that made 10–20× longer contexts viable on the same hardware. Flash Attention 3, released in 2024, optimized specifically for H100 architecture and achieved approximately 75% of theoretical peak FP16 FLOP utilization.</p>
+      </div>
+
+      <div class="section-heading">What This Means for Future Growth</div>
+      <div class="section-body">
+        <p>The engineering ceilings don't make context window growth impossible — they make it expensive and architecturally demanding. The pattern from previous breakthroughs (Flash Attention, Ring Attention, sparse attention variants) suggests that the next leap will come from a novel technique that sidesteps a current bottleneck, not from incremental hardware improvements alone.</p>
+        <p>The practical implication for AI users: the 2M-token ceiling isn't a hard physical limit, but expanding beyond it will require either a significant architectural innovation or a substantial increase in inference infrastructure cost — likely both.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn" onclick="goPage('p-q2')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q2 -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Engineering Ceilings · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq4">
+        <div class="quiz-q">What is the "lost in the middle" phenomenon documented by Stanford/UC Berkeley researchers in 2023?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Models forget training data when fine-tuned on long documents</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq4')">Model accuracy on information placed in the middle of a long context degrades significantly compared to information at the beginning or end</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Attention layers in the middle of the network are less effective than early or late layers</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">GPU memory errors occur more often at the midpoint of long inference calls</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Stanford/Berkeley paper showed models reliably recall information at the beginning and end of context but struggle with facts buried in the middle — a finding that directly shaped RAG system design.</div>
+        <div class="quiz-feedback wrong">Not quite. The phenomenon is about positional recall within a single context window: models are less reliable at retrieving information from the middle of their context versus the beginning or end.</div>
+      </div>
+
+      <div class="quiz-box" id="qq5">
+        <div class="quiz-q">What was the core insight behind Flash Attention that made it so impactful?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">It reduced the theoretical complexity of attention from O(n²) to O(n log n)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">It eliminated the need for key-value caching entirely</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq5')">The bottleneck was memory bandwidth, not raw FLOPs — rewriting the GPU kernel to minimize memory reads/writes made long contexts viable on existing hardware</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">It used quantization to reduce attention weights from 32-bit to 8-bit precision</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Flash Attention kept the same O(n²) theoretical complexity but recognized that memory bandwidth — not compute — was the actual bottleneck, and redesigned the kernel accordingly.</div>
+        <div class="quiz-feedback wrong">Not quite. Flash Attention doesn't change the O(n²) theoretical complexity. Its key insight was that GPU memory bandwidth was the real bottleneck, and it rewrote the attention kernel to minimize memory traffic.</div>
+      </div>
+
+      <div class="quiz-box" id="qq6">
+        <div class="quiz-q">Which technique distributes the KV cache across multiple GPU devices to enable million-token contexts?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Flash Attention 3</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Grouped-Query Attention</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq6')">Ring Attention</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">Sliding Window Attention</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Ring Attention, developed by DeepMind and UC Berkeley researchers in 2023, distributes the KV cache across GPUs in a ring topology — enabling the combined VRAM of many chips to handle contexts that no single chip could hold.</div>
+        <div class="quiz-feedback wrong">Not quite. Ring Attention is the technique that distributes KV cache across multiple GPU devices in a ring topology, making million-token contexts physically feasible for Gemini 1.5.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB 2 -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Engineering the Ceiling</h1>
+      <div class="tagline">Probe the technical barriers to context window growth with your lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've learned about the three main engineering ceilings: attention compute cost, KV cache memory, and retrieval degradation. Now dig into the tradeoffs with your lab assistant. Ask about how specific techniques like Flash Attention or Ring Attention trade one problem for another, or what would need to be true for a 10M-token model to be economically viable.</p>
+        <div class="lab-prompt">Starter: "If Ring Attention solves the memory problem by spreading the KV cache across GPUs, what new problems does that create for latency and inference cost?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Lab Assistant</span>
+          <div class="chat-badge">Context Engineering Ceilings</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Ready to explore the engineering limits of context windows. Ask me about sparse attention tradeoffs, KV cache compression techniques, the lost-in-the-middle problem's practical impact, or what the path to 10M-token contexts would require.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about engineering ceilings..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ L3 -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 3</div>
+      <h1>Memory, Retrieval, and the Hybrid Future</h1>
+      <div class="tagline">Why the future of AI memory isn't just a bigger context window — and the emerging architectures that combine context with external retrieval and persistent memory systems.</div>
+      <div class="lesson-question">When does a bigger context window stop being the right solution — and what replaces it?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Fork in the Road">
+        <p class="story-text">In late 2023, two research directions diverged sharply. One camp — Google, Anthropic — bet that context windows would grow large enough to hold everything relevant. The other — led by startups like Mem.ai and integrated into OpenAI's GPT-4 plugins — argued that <em>retrieval-augmented generation</em> was the correct architecture: keep the context window short and fast, and dynamically fetch only what's needed. By 2025, the industry had stopped choosing between them. The winning answer turned out to be: <em>both</em>.</p>
+      </div>
+
+      <div class="section-heading">Three Approaches to AI Memory</div>
+      <div class="section-body">
+        <p>There are now three distinct architectural approaches to giving AI models access to large amounts of information, and they are increasingly used together rather than as alternatives:</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">In-Context (Raw Context)</span>
+        <span class="kt-def">Everything the model needs is placed directly in the context window at inference time. Maximum fidelity, no retrieval latency, but bounded by context size and cost at scale.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Retrieval-Augmented Generation (RAG)</span>
+        <span class="kt-def">A retrieval system (typically vector search over embeddings) selects relevant chunks and inserts them into a shorter context. Scales to arbitrary document collections; dependent on retrieval quality.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Persistent Memory / Long-Term Memory</span>
+        <span class="kt-def">Structured key-value stores, episodic memory databases, or fine-tuned parametric knowledge that persists across sessions. Requires write operations; enables true personalization over time.</span>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">When RAG Wins Over Raw Context</div>
+      <div class="section-body">
+        <p>RAG has a decisive advantage when the total relevant knowledge base exceeds even the largest context windows. A legal research firm with 50 years of case law — millions of documents — cannot fit that corpus into any context window. RAG allows querying this corpus dynamically.</p>
+        <p>OpenAI formalized this approach in March 2023 with the release of the <em>Retrieval plugin</em> for ChatGPT, allowing the model to query external document stores via semantic search. This was followed by the more tightly integrated <em>file search</em> capability in the Assistants API, released in November 2023, which automated chunking, embedding, and retrieval behind a simple API interface.</p>
+        <p>However, RAG has a fundamental weakness: if the retrieval step fails to surface the relevant chunk, the model cannot answer correctly even if it would have been able to reason correctly given the full text. The 2023 "lost in the middle" problem is a retrieval problem — not just a context problem.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Deployment: Notion AI Memory</div>
+        <p>In 2024, Notion released "Notion AI Q&A," which used RAG over a user's entire Notion workspace. The system embedded all pages, used vector search to retrieve relevant chunks, and fed them to a language model. A key engineering challenge Notion's team documented publicly: at very large workspaces (hundreds of thousands of notes), retrieval precision dropped. Their solution combined keyword search with semantic search in a hybrid retrieval approach — demonstrating that even for practical deployments, RAG architecture must be carefully tuned rather than assumed to work at scale.</p>
+      </div>
+
+      <div class="section-heading">When Raw Context Wins Over RAG</div>
+      <div class="section-body">
+        <p>For tasks requiring reasoning across an entire document — not just locating a fact — RAG often fails. If someone asks a model to "identify all the inconsistencies across this 80-page contract," RAG may retrieve individual sections but miss cross-section contradictions that are only apparent when holding the entire document simultaneously.</p>
+        <p>This is the use case that long context windows are purpose-built for. Google's 2024 Gemini 1.5 technical report explicitly demonstrated this with a "needle in a haystack" variant requiring multi-hop reasoning: finding information A, then using it to locate information B, when both were buried in 500 pages. RAG consistently failed this multi-hop task; full-context succeeded.</p>
+      </div>
+
+      <div class="section-heading">Emerging Hybrid Architectures</div>
+      <div class="section-body">
+        <p>The current frontier combines all three approaches. <em>Agentic memory systems</em> — demonstrated in frameworks like LangChain's memory module and AutoGPT's memory architecture — use a tiered approach: short-term in-context working memory, medium-term RAG over session history, and long-term structured memory in a persistent database.</p>
+        <p>OpenAI took a step toward standardizing this in February 2024 with the launch of <em>Memory for ChatGPT</em>: a system that automatically writes facts from conversations to a user-level persistent store and injects them into future system prompts. By May 2025, this had expanded to include user-controlled memory management and enterprise-level workspace memory.</p>
+        <p>The research direction that may ultimately unify these approaches is <em>learned retrieval</em>: training the model itself to decide what to retrieve, when, and how to integrate retrieved information — rather than treating retrieval as a separate pipeline step. This approach, explored in Meta AI's MemGPT paper (2023) and subsequent work, aims to give models human-like memory management capabilities.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Insight</div>
+        <p>The question "how large will context windows get?" is becoming less central than "how should context, retrieval, and persistent memory be orchestrated together?" The most capable 2025 systems are hybrids that use each approach where it performs best — suggesting that future AI capability gains will come as much from memory architecture as from raw context size increases.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn" onclick="goPage('p-q3')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q3 -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Memory, Retrieval & Hybrid Architectures · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq7">
+        <div class="quiz-q">For which type of task does a raw long context window decisively outperform RAG?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Searching a corpus of millions of documents for a specific fact</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq7')">Multi-hop reasoning across an entire document where cross-section relationships matter</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Answering questions from a knowledge base larger than any context window</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Personalizing responses based on a user's full conversation history from past weeks</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When reasoning requires holding the entire document simultaneously — such as identifying cross-section contradictions in a contract or multi-hop fact-finding — RAG often fails because it retrieves chunks independently, missing relationships between them.</div>
+        <div class="quiz-feedback wrong">Not quite. Long context windows excel at reasoning that requires the entire document to be held simultaneously, such as finding relationships between passages that RAG would retrieve as separate, unconnected chunks.</div>
+      </div>
+
+      <div class="quiz-box" id="qq8">
+        <div class="quiz-q">What did OpenAI launch in February 2024 that represented a move toward persistent AI memory?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">The Retrieval plugin for ChatGPT's plugin store</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">GPT-4 Turbo with 128K context</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq8')">Memory for ChatGPT, which automatically saves facts from conversations for use in future sessions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">The Assistants API file search capability</button>
+        </div>
+        <div class="quiz-feedback right">Correct. OpenAI's Memory feature, launched February 2024, automatically writes facts from conversations to a user-level persistent store and injects them into future system prompts — the first mass-market implementation of cross-session AI memory.</div>
+        <div class="quiz-feedback wrong">Not quite. In February 2024, OpenAI launched "Memory for ChatGPT" — a system that automatically extracts and stores facts from conversations and uses them in future sessions.</div>
+      </div>
+
+      <div class="quiz-box" id="qq9">
+        <div class="quiz-q">What was the key engineering problem Notion AI's team publicly documented when deploying RAG over large workspaces?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Embedding models were too slow to index large workspaces</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq9')">Retrieval precision dropped at very large workspaces, requiring a hybrid keyword + semantic search approach</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">The language model refused to answer questions about private workspace content</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Context window limits prevented inserting retrieved chunks alongside the user's question</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Notion's engineering team documented that pure semantic search degraded at scale, and their solution combined keyword and semantic retrieval in a hybrid system — a now-common pattern in production RAG deployments.</div>
+        <div class="quiz-feedback wrong">Not quite. Notion documented that retrieval precision degraded at large scales (hundreds of thousands of notes), and their fix was a hybrid retrieval approach combining keyword and semantic search.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB 3 -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Memory Architecture Tradeoffs</h1>
+      <div class="tagline">Design hybrid memory systems with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've learned about three memory approaches — in-context, RAG, and persistent memory — and why the future is hybrid. Now apply that understanding. Describe a real-world use case to your lab assistant and work through which memory architecture (or combination) best fits it, and why. Consider retrieval precision, cost, and the multi-hop reasoning requirement.</p>
+        <div class="lab-prompt">Starter: "I'm building a legal research assistant that needs to handle both case-level full-document analysis AND queries across a database of 500,000 past cases. What memory architecture should I use?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>Lab Assistant</span>
+          <div class="chat-badge">Memory Architecture Design</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Ready to work through memory architecture design. Describe your use case and I'll help you reason through the tradeoffs between in-context, RAG, and persistent memory — drawing on documented production patterns from real deployments.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Describe your use case or ask about memory architectures..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ L4 -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 8 · Lesson 4</div>
+      <h1>Applications Unlocked by Extreme Contexts</h1>
+      <div class="tagline">The real use cases that become possible — or dramatically better — when context windows reach millions of tokens, and what this means for how you should be building with AI today.</div>
+      <div class="lesson-question">Which applications are only possible at certain context thresholds — and what threshold is next?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="What Changes">
+        <p class="story-text">When context windows crossed 100K tokens in 2023, a specific category of task became newly possible: submitting an entire codebase in a single prompt. When they crossed 1M tokens in 2024, a different category emerged: submitting <em>an entire company's document archive</em> and asking questions across it. Each threshold doesn't just improve existing use cases — it creates entirely new ones that were architecturally impossible before.</p>
+      </div>
+
+      <div class="section-heading">Use Cases Unlocked by Threshold</div>
+      <div class="section-body">
+        <p>Context window size isn't a smooth continuous variable for applications — specific capabilities become possible at specific thresholds, making each major milestone categorically rather than incrementally different.</p>
+      </div>
+
+      <div class="timeline-row">
+        <div class="timeline-year">~8K</div>
+        <div class="timeline-content"><strong>Single document Q&A</strong><span>A short report, a research paper, a legal brief. Basic summarization and question-answering over individual documents. Available since GPT-4's initial 8K context in 2023.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">~32K</div>
+        <div class="timeline-content"><strong>Small codebase analysis / multi-document synthesis</strong><span>A microservice, a small library, or a handful of related documents. First meaningful cross-document reasoning becomes possible. GPT-4-32k enabled this in mid-2023.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">~100K</div>
+        <div class="timeline-content"><strong>Full novel / entire codebase / transcript analysis</strong><span>A complete novel, a medium-sized software project, a full day's worth of meeting transcripts. Character consistency analysis, codebase-wide refactoring, or full conversation review. Claude 2 unlocked this in mid-2023.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">~1M</div>
+        <div class="timeline-content"><strong>Full audio/video / large repository / multi-year document archive</strong><span>A 1-hour video in its entirety, a large open-source repository (e.g., CPython's ~1.2M token codebase), or a company's full document archive for a specific domain. Gemini 1.5 Pro enabled this in 2024.</span></div>
+      </div>
+      <div class="timeline-row">
+        <div class="timeline-year">~10M+</div>
+        <div class="timeline-content"><strong>Entire scientific literature / full legal case history</strong><span>Not yet available commercially. Would enable querying the complete published literature of a scientific subfield, or a law firm's complete case history. Requires architectural breakthroughs beyond current sparse attention approaches.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Real Applications at the Frontier</div>
+      <div class="section-body">
+        <p><strong>Genomics research:</strong> In 2024, Google DeepMind demonstrated Gemini 1.5's ability to reason over genomic sequences exceeding 700,000 nucleotides in a single context — a use case that required full-sequence context because mutations early in a sequence affect interpretation of mutations later in it. RAG-based approaches had failed to capture these long-range dependencies.</p>
+        <p><strong>Video understanding:</strong> Google's Project Astra (2024 Google I/O demonstration) used Gemini's long context to process a live video stream alongside conversation history, allowing the model to remember what it had seen earlier in a session and reference it in later answers. The demo showed the model correctly recalling where a specific object had been placed minutes earlier in the session.</p>
+        <p><strong>Full repository code review:</strong> Cognition AI's Devin agent (released March 2024) relied on long context to maintain awareness of the entire codebase it was editing across a multi-hour software development session — tracking dependencies, prior edits, and test results simultaneously. This was explicitly cited as a capability gated on sufficiently long context in Cognition's public documentation.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The CPython Benchmark</div>
+        <p>In early 2024, researchers tested Gemini 1.5 Pro's code understanding by submitting the entire CPython source repository (~1.2M tokens) as context and asking questions about cross-file dependencies, historical architectural decisions embedded in comments, and function relationships that required reading dozens of files simultaneously. The model answered correctly on the majority of questions that required multi-file reasoning — a task that had previously required a human engineer with deep project familiarity. This benchmark directly influenced how software companies began evaluating long-context models for code review automation.</p>
+      </div>
+
+      <div class="section-heading">What Practitioners Should Do Now</div>
+      <div class="section-body">
+        <p>The trajectory is clear: context windows will continue growing, costs will continue falling, and applications that are economically impractical today will become routine. The practitioner implication is to <em>design for the context window you'll have, not the one you have now</em> — but to do so thoughtfully.</p>
+      </div>
+
+      <ul class="future-list">
+        <li><strong>Audit your RAG pipelines for tasks that actually require full-document context.</strong> If your retrieval frequently misses multi-hop relationships, the answer may be a longer context window, not better retrieval.</li>
+        <li><strong>Benchmark the "lost in the middle" effect for your specific use case.</strong> Don't assume long context equals accurate recall — structure your prompts to put critical information at the beginning or end, and test empirically.</li>
+        <li><strong>Track cost per million tokens, not just capability.</strong> Gemini 1.5 Pro's 1M context became practically usable only when costs dropped to ~$7/1M input tokens. The next major application unlocks will follow cost reductions, not just capability announcements.</li>
+        <li><strong>Plan for hybrid architectures.</strong> The winning systems combine long context, RAG, and persistent memory. Design your data architecture now so you can adopt each as it becomes cost-effective for your use case.</li>
+        <li><strong>Watch the 10M-token threshold.</strong> The applications it unlocks — full scientific literature, complete legal archives — will create category-defining products in regulated industries. The companies that have already digitized and structured their knowledge assets will be first to benefit.</li>
+      </ul>
+
+      <div class="callout">
+        <div class="callout-label">The Cost Curve Matters as Much as the Capability Curve</div>
+        <p>Gemini 1.5 Pro's 1M-token context was announced in February 2024 at prices that made it impractical for many applications. By mid-2024, Google had reduced costs by more than 75%. The gap between "technically possible" and "economically deployable" closes faster than most practitioners expect — and often on a different timeline than the capability announcement itself suggests.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn" onclick="goPage('p-q4')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q4 -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Applications Unlocked by Extreme Contexts · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq10">
+        <div class="quiz-q">Approximately how many tokens is the entire CPython source repository, used to benchmark Gemini 1.5 Pro's code understanding?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">~100,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">~400,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq10')">~1.2 million tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">~5 million tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. CPython's source repository is approximately 1.2 million tokens — fitting within Gemini 1.5 Pro's context window and enabling cross-file code reasoning that required simultaneous access to dozens of files.</div>
+        <div class="quiz-feedback wrong">Not quite. The CPython source repository is approximately 1.2 million tokens — large enough to require Gemini 1.5 Pro's 1M+ context window for full-repository reasoning.</div>
+      </div>
+
+      <div class="quiz-box" id="qq11">
+        <div class="quiz-q">Why did Google DeepMind use long context (rather than RAG) for genomic sequence analysis in 2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Genomic databases are too large to embed with standard embedding models</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq11')">Mutations early in a sequence affect interpretation of mutations later in it — long-range dependencies that RAG-based chunk retrieval misses</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Privacy regulations prevented genomic data from being stored in external vector databases</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">RAG retrieval was too slow for real-time genomic analysis requirements</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Genomic sequences have long-range dependencies where context at position 1 affects interpretation at position 700,000 — precisely the multi-hop, cross-section reasoning that full context excels at and chunked RAG fails to capture.</div>
+        <div class="quiz-feedback wrong">Not quite. The reason is about long-range dependencies in genomic sequences: a mutation early in the sequence affects how you interpret mutations much later. RAG retrieves chunks independently and misses this dependency.</div>
+      </div>
+
+      <div class="quiz-box" id="qq12">
+        <div class="quiz-q">What practical advice does the lesson give about placing critical information in long prompts, based on the "lost in the middle" research?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Always place critical information exactly at the midpoint of the context for best recall</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Repeat critical information at three evenly spaced intervals throughout the context</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq12')">Place critical information at the beginning or end of the context window, not buried in the middle</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">Use XML tags to mark critical sections so the model gives them extra attention</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The practical takeaway from the lost-in-the-middle research is to structure prompts so critical information appears at the beginning or end of the context, where model recall is most reliable — not buried in the middle.</div>
+        <div class="quiz-feedback wrong">Not quite. The Stanford/Berkeley research showed models reliably recall from the beginning and end of context but not the middle — so the practical advice is to put critical information at those positions.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB 4 -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Planning for Future Context</h1>
+      <div class="tagline">Work through real application design with your AI lab assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've seen how specific context thresholds unlock specific application categories, and you've learned the practitioner implications. Now apply the framework to a real or hypothetical product or workflow you care about. Work with your lab assistant to identify what context threshold changes the application category, what the cost curve means for timing, and how to structure a hybrid architecture that's viable now and scalable forward.</p>
+        <div class="lab-prompt">Starter: "I work in pharmaceutical research. What context threshold would unlock the ability to query the complete published literature for a specific drug target, and what's the realistic timeline for that becoming economically deployable?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>Lab Assistant</span>
+          <div class="chat-badge">Future Context Applications</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Ready to work through future context application design. Tell me about your domain or use case and I'll help you map which context thresholds unlock which capabilities, analyze the cost curves, and design a hybrid architecture that works today while planning for tomorrow's capabilities.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Describe your use case or ask about future context applications..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ MODULE TEST -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 8 — Final Test</h1>
+      <div class="tagline">Where Context Length Is Going · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt1">
+        <div class="quiz-q">1. What was GPT-3's context window size at launch in 2020?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">2,048 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">8,192 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">512 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">4,096 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GPT-3 launched with a 2,048-token context in 2020.</div>
+        <div class="quiz-feedback wrong">GPT-3 launched with 2,048 tokens — about 1,500 words — in 2020.</div>
+      </div>
+
+      <div class="quiz-box" id="mt2">
+        <div class="quiz-q">2. Which model first publicly demonstrated a 100,000-token context window?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">Claude 2 (Anthropic, 2023)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Gemini 1.5 Pro (Google, 2024)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">GPT-4-32k (OpenAI, 2023)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Llama 2 (Meta, 2023)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Anthropic's Claude 2, announced May 2023, was the first widely available model with a 100K-token context.</div>
+        <div class="quiz-feedback wrong">Claude 2 (Anthropic, May 2023) was the first to publicly demonstrate a 100K-token context window.</div>
+      </div>
+
+      <div class="quiz-box" id="mt3">
+        <div class="quiz-q">3. Why is standard transformer attention described as O(n²) in computational cost?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Because the model has n layers and each processes n tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">Because each of n tokens must compute attention scores against every other token, producing n² pairwise operations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Because memory usage doubles for every doubling of sequence length</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Because training requires processing all pairs of training examples</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Each token must attend to every other token — n tokens × n tokens = n² attention operations per layer.</div>
+        <div class="quiz-feedback wrong">Standard attention requires n×n pairwise comparisons — every token against every other token — giving O(n²) complexity.</div>
+      </div>
+
+      <div class="quiz-box" id="mt4">
+        <div class="quiz-q">4. What architectural technique did Google use to make Gemini 1.5 Pro's 1M-token context physically feasible across multiple GPUs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Flash Attention 3</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Sliding Window Attention</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">Ring Attention</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Grouped-Query Attention</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Ring Attention distributes the KV cache across multiple GPUs in a ring topology, allowing the combined VRAM of many chips to hold the enormous KV cache required for million-token contexts.</div>
+        <div class="quiz-feedback wrong">Ring Attention is the technique that distributes the KV cache across GPUs in a ring topology, enabling million-token contexts.</div>
+      </div>
+
+      <div class="quiz-box" id="mt5">
+        <div class="quiz-q">5. The "lost in the middle" phenomenon shows that model recall accuracy is highest for information placed where in the context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">In the middle of the context window</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">At the beginning and end of the context window</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Evenly distributed throughout the context</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">In the first 10% of the context only</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Stanford/Berkeley research found models reliably recall information at the beginning and end of context, but accuracy degrades for information placed in the middle.</div>
+        <div class="quiz-feedback wrong">The "lost in the middle" research showed models recall best from the beginning and end of context — not the middle.</div>
+      </div>
+
+      <div class="quiz-box" id="mt6">
+        <div class="quiz-q">6. What was Flash Attention's core insight, and what bottleneck did it target?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">It reduced theoretical attention complexity from O(n²) to O(n log n) by skipping irrelevant token pairs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">It eliminated the KV cache entirely through a new memory-free attention formulation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">GPU memory bandwidth — not raw FLOPs — was the bottleneck; rewriting the attention kernel to minimize memory reads/writes made long contexts viable on existing hardware</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">It replaced floating-point attention with integer operations to reduce compute cost by 8×</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tri Dao's Flash Attention recognized that memory bandwidth was the real bottleneck and rewrote the GPU kernel accordingly — without changing the O(n²) theoretical complexity.</div>
+        <div class="quiz-feedback wrong">Flash Attention's insight was that memory bandwidth (not raw FLOPs) was the bottleneck, and it rewrote the GPU kernel to minimize memory traffic while keeping the same theoretical complexity.</div>
+      </div>
+
+      <div class="quiz-box" id="mt7">
+        <div class="quiz-q">7. For which task category does RAG have a decisive structural advantage over raw long context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">Querying knowledge bases that are larger than any current context window can hold</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Identifying contradictions between sections of a single long document</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Multi-hop reasoning across an entire codebase</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Analyzing long-range dependencies in genomic sequences</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When the total knowledge base exceeds any context window — millions of documents — RAG is the only viable approach because even the largest contexts cannot hold everything simultaneously.</div>
+        <div class="quiz-feedback wrong">RAG's structural advantage is scale: when the knowledge base exceeds any context window's capacity, RAG is the only viable option for querying it.</div>
+      </div>
+
+      <div class="quiz-box" id="mt8">
+        <div class="quiz-q">8. What was the approximate context size at which full-novel and complete-codebase analysis first became possible?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">32,768 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">~100,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">~1,000,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">~8,000 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The ~100K threshold, reached by Claude 2 in 2023, was the point at which full novels, medium-sized codebases, and full-day transcripts became operable in a single context.</div>
+        <div class="quiz-feedback wrong">The ~100K threshold (Claude 2, 2023) was the milestone that enabled full-novel and complete-codebase analysis in a single context window.</div>
+      </div>
+
+      <div class="quiz-box" id="mt9">
+        <div class="quiz-q">9. What did OpenAI's "Memory for ChatGPT" (February 2024) do that was new?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">It extended ChatGPT's context window to 1 million tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">It allowed ChatGPT to retrieve information from the web in real time</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">It automatically saved facts from conversations to a persistent user-level store that was injected into future sessions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">It enabled multi-user shared memory for enterprise team deployments</button>
+        </div>
+        <div class="quiz-feedback right">Correct. ChatGPT Memory automatically extracted and stored facts from conversations, making them available in future sessions — the first mass-market implementation of cross-session AI memory.</div>
+        <div class="quiz-feedback wrong">OpenAI's Memory feature automatically saved facts from conversations to a persistent store, injecting them into future sessions — enabling cross-session personalization.</div>
+      </div>
+
+      <div class="quiz-box" id="mt10">
+        <div class="quiz-q">10. Why did Google DeepMind use long context (not RAG) for genomic sequence analysis in 2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Genomic data is too sensitive to store in external vector databases</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">Long-range dependencies in genomic sequences mean mutations early in the sequence affect interpretation of mutations later — a cross-document relationship RAG's chunking misses</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">RAG embedding models are not trained on genomic data and therefore cannot retrieve relevant chunks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Genomic analysis requires sub-millisecond latency that RAG retrieval cannot achieve</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Genomic sequences have long-range dependencies that require the entire sequence to be held in context simultaneously — RAG's independent chunk retrieval misses these cross-position relationships.</div>
+        <div class="quiz-feedback wrong">Long-range genomic dependencies mean position 1 affects interpretation at position 700,000 — a relationship that RAG's chunked retrieval cannot capture.</div>
+      </div>
+
+      <div class="quiz-box" id="mt11">
+        <div class="quiz-q">11. Approximately how much did Google reduce Gemini 1.5 Pro's cost per token between its announcement (February 2024) and mid-2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">About 10%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">About 30%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">More than 75%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">About 50%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Google reduced Gemini 1.5 Pro pricing by more than 75% between its February 2024 announcement and mid-2024, demonstrating how quickly the gap between "technically possible" and "economically deployable" can close.</div>
+        <div class="quiz-feedback wrong">Google reduced Gemini 1.5 Pro's costs by more than 75% in the months following its launch — a common pattern where capability announcements precede practical deployability.</div>
+      </div>
+
+      <div class="quiz-box" id="mt12">
+        <div class="quiz-q">12. What was the key finding when researchers tested Gemini 1.5 Pro on the entire CPython source repository (~1.2M tokens)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">The model successfully found individual function definitions but failed at cross-file reasoning</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">The model correctly answered questions requiring multi-file reasoning — tracking dependencies and relationships across dozens of files simultaneously</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">The model ran out of context before completing the repository analysis</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">The model performed similarly to a RAG-based approach on all question types</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Gemini 1.5 Pro answered the majority of multi-file reasoning questions correctly — questions that required simultaneously holding dozens of files and tracking cross-file dependencies.</div>
+        <div class="quiz-feedback wrong">The CPython benchmark showed Gemini 1.5 Pro correctly handling multi-file reasoning questions that required tracking cross-file dependencies across the full ~1.2M-token repository.</div>
+      </div>
+
+      <div class="quiz-box" id="mt13">
+        <div class="quiz-q">13. What is sliding window attention, and what is its primary advantage over full attention?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It processes tokens in batches of fixed size, reducing parallelization overhead</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">Each token attends only to a fixed-size window of nearby tokens plus designated global tokens, reducing attention cost to near-linear in sequence length</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It slides the context window across a long document in overlapping chunks, re-running inference for each chunk</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It dynamically adjusts the context window size based on document complexity during inference</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Sliding window attention (used in Mistral's models) limits each token's attention to nearby tokens plus global tokens, reducing the O(n²) cost to approximately O(n) — enabling much longer contexts on the same hardware.</div>
+        <div class="quiz-feedback wrong">Sliding window attention limits each token to attending within a fixed window plus global tokens, bringing cost from O(n²) to near-linear — the approach used in Mistral's architecture.</div>
+      </div>
+
+      <div class="quiz-box" id="mt14">
+        <div class="quiz-q">14. Which application category is identified as requiring a context threshold of ~10M tokens or more — a threshold not yet commercially available in 2025?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Full novel summarization</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Complete codebase review for a large software project</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">Querying the complete published scientific literature for a research subfield or a law firm's full case history</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Multi-document synthesis across a company's quarterly reports</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Querying complete scientific literature or full legal case histories requires ~10M+ tokens — a threshold that remains beyond current commercial availability and requires architectural breakthroughs beyond current sparse attention techniques.</div>
+        <div class="quiz-feedback wrong">The ~10M token threshold is where applications like querying complete scientific literature or full legal archives become possible — this remains beyond current commercial availability.</div>
+      </div>
+
+      <div class="quiz-box" id="mt15">
+        <div class="quiz-q">15. What does the lesson recommend as the key practitioner strategy for context window planning?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Wait until 10M token contexts are available before redesigning any AI architecture</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Always use RAG because it scales better than context windows at every size</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Design hybrid architectures that work today while structuring data assets to take advantage of larger context windows as they become cost-effective</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Focus only on context window capability announcements, not cost per token, since costs always follow capability quickly</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The recommended approach is to build hybrid architectures viable now (combining context, RAG, and persistent memory) while structuring data assets to take advantage of future context expansions — and tracking cost curves, not just capability announcements.</div>
+        <div class="quiz-feedback wrong">The lesson recommends hybrid architectures that work now while planning forward — and explicitly tracking cost curves alongside capability announcements, since cost reduction determines when capabilities become deployable.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">Restart Module</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='the-context-window-race';
+var MODULE_ID='the-m8';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy, The Context Window Race course, Module 8: Where Context Length Is Going. Stay on topic. Warmly redirect off-topic questions.\n\n';
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are an expert AI lab assistant for The Context Window Race, Module 8, Lesson 1: The Scaling Trajectory. Help learners understand the historical growth of context windows from GPT-3\'s 2K tokens (2020) through Claude 2\'s 100K (2023) to Gemini 1.5 Pro\'s 2M (2024). Ground all answers in documented events: GPT-3 launch, GPT-4-32k, Claude 2 announcement (May 2023), Gemini 1.5 Pro announcement (February 2024), Gemini 1.5 Pro GA at 2M tokens. Explain the O(n²) attention bottleneck, why growth is episodic rather than smooth (architectural breakthroughs), how costs fell alongside capability, and the Greg Kamradt "needle in a haystack" methodology. Be specific, accurate, and pedagogically clear. Do not speculate beyond documented facts.',
+  l2: 'You are an expert AI lab assistant for The Context Window Race, Module 8, Lesson 2: Engineering Ceilings. Help learners understand the three main barriers to context window growth: (1) O(n²) attention compute, (2) KV cache GPU memory demands (with specific numbers: H100=80GB, H200=141GB, ~700GB-1.4TB KV cache for 70B model at 1M tokens), (3) retrieval degradation / lost-in-the-middle. Explain Flash Attention (Tri Dao, Stanford 2022) — its memory bandwidth insight, adoption by major labs, Flash Attention 2 and 3 improvements. Explain Ring Attention (DeepMind/UC Berkeley 2023) — ring topology KV cache distribution. Explain sliding window attention and grouped-query attention. Discuss tradeoffs: how each technique solves one problem but introduces others. Be specific and accurate.',
+  l3: 'You are an expert AI lab assistant for The Context Window Race, Module 8, Lesson 3: Memory, Retrieval, and the Hybrid Future. Help learners reason through the three memory architectures — in-context, RAG, and persistent memory — and when each is appropriate. Reference real deployments: OpenAI Retrieval plugin (March 2023), OpenAI Assistants API file search (November 2023), Notion AI Q&A hybrid retrieval challenges (2024), OpenAI Memory for ChatGPT (February 2024). Explain the MemGPT paper (Meta AI 2023) concept of learned retrieval. Help learners design hybrid architectures for their specific use cases. Be specific about failure modes of each approach — RAG\'s chunking misses multi-hop dependencies; long context is expensive; persistent memory requires careful write management.',
+  l4: 'You are an expert AI lab assistant for The Context Window Race, Module 8, Lesson 4: Applications Unlocked by Extreme Contexts. Help learners map specific context thresholds to specific application categories: 8K→single doc Q&A, 32K→small codebase/multi-doc, 100K→full novel/codebase/transcripts, 1M→full video/large repos/archives, 10M+→complete scientific literature/full legal archives. Reference real cases: Google DeepMind genomic sequence analysis (700K+ nucleotides, 2024), Google Project Astra live video memory (2024 Google I/O), Cognition AI Devin agent full-repo awareness (March 2024), CPython ~1.2M token benchmark. Explain cost curves — Gemini 1.5 Pro 75%+ cost reduction mid-2024. Help learners design forward-looking hybrid architectures for their specific domains. Be specific and grounded in documented capabilities.'
+};
+
+var LAB_FALLBACKS={
+  l1:[
+    "Great question about context window history. The key pattern to understand is that growth has been episodic rather than smooth — long plateaus followed by sudden jumps when a new architectural technique was proven at scale. The jump from 32K to 100K tokens (Claude 2, May 2023) was significant, but the leap from 100K to 1M tokens (Gemini 1.5 Pro, February 2024) was the most dramatic: a 10× increase in a single announcement. Each leap required not just better hardware, but a new architectural technique that sidestepped the O(n²) attention bottleneck.",
+    "The 'needle in a haystack' methodology you might have read about was pioneered by community researcher Greg Kamradt in late 2023. It places a specific piece of information at a known position within a large context and tests whether the model can recall it. This became the standard benchmark for evaluating long-context models because it quantifies recall quality at every position within the context — revealing the 'lost in the middle' degradation pattern that purely accuracy-based benchmarks missed.",
+    "One important dimension of the scaling trajectory is cost. When Claude 2's 100K context launched, processing a full context was expensive enough to limit most applications to power users. The competitive pressure between Anthropic, Google, and OpenAI has driven costs down dramatically — Gemini 1.5 Pro's input cost dropped more than 75% between its February 2024 announcement and mid-2024. The applications that become viable are often determined more by when costs cross a deployability threshold than by when the capability is first announced.",
+    "The ~500× growth from GPT-3's 2K tokens (2020) to Gemini's 2M tokens (2024) is remarkable by any measure. But equally important is what didn't change: the O(n²) theoretical complexity of standard attention. Every major breakthrough in this period found ways to work around this cost rather than eliminate it — sparse attention, Flash Attention's memory bandwidth optimization, Ring Attention's multi-GPU distribution. The next major leap will likely also need to work around O(n²) rather than solve it directly."
+  ],
+  l2:[
+    "The KV cache memory problem is often underappreciated compared to the attention compute problem. For a 70-billion-parameter model at 1 million tokens of context, the KV cache alone requires roughly 700GB to 1.4TB of GPU memory (depending on precision) — compared to the model weights themselves at ~140GB in BF16. The H100's 80GB of VRAM isn't even close. Ring Attention's solution — distributing the KV cache across many GPUs in a ring topology — solves the memory problem but introduces network communication latency between GPUs, which becomes the new bottleneck at very long contexts.",
+    "Flash Attention's elegance is worth understanding deeply. Tri Dao's 2022 Stanford paper recognized that for attention computation on GPUs, the actual bottleneck wasn't the number of floating-point operations (FLOPs) but the number of times data had to move between GPU SRAM and DRAM — memory bandwidth. By restructuring the attention computation as a 'tiling' operation that maximizes GPU cache reuse and minimizes memory traffic, Flash Attention achieved the same theoretical result with dramatically fewer memory operations. Flash Attention 3 (2024) pushed this further, achieving ~75% of H100's theoretical peak FP16 throughput.",
+    "The 'lost in the middle' finding from Stanford and UC Berkeley (July 2023) had immediate practical consequences. Production RAG systems began deliberately placing retrieved chunks at the beginning or end of context rather than in the middle. Prompt engineers started structuring long prompts with critical instructions and key facts bookending the content. The finding also cast doubt on whether just extending context windows was sufficient — a model that nominally supports 1M tokens but only reliably recalls from the first and last ~50K tokens isn't functionally as capable as its spec suggests.",
+    "Grouped-query attention (GQA), used in Llama 3, addresses the KV cache problem from a different angle: rather than distributing the KV cache across GPUs (Ring Attention) or optimizing memory access patterns (Flash Attention), GQA reduces the size of the KV cache itself by having multiple attention heads share the same key-value pairs. This reduces KV cache memory by a factor of 4-8× depending on the grouping — less dramatic than Ring Attention for extreme lengths, but more practical for standard inference hardware."
+  ],
+  l3:[
+    "The RAG vs. long context decision isn't binary — it's a spectrum based on your task's characteristics. Ask yourself two questions: (1) Does the total relevant information exceed any context window? If yes, RAG is required regardless of other considerations. (2) Does answering the question require reasoning about relationships between information that would be retrieved as separate chunks? If yes, RAG will struggle and long context (or a hybrid) is needed. Most production systems encounter both conditions simultaneously — a large knowledge base where specific tasks require cross-document reasoning — which is why hybrid architectures have become standard.",
+    "Notion AI's Q&A deployment in 2024 illustrates a common RAG engineering challenge: pure semantic search degrades at scale. When a Notion workspace has hundreds of thousands of notes, the vector space becomes crowded and precision drops — semantically similar but irrelevant notes start appearing in results. Their solution — combining keyword search (BM25 or similar) with semantic search (embedding similarity) — is now called 'hybrid retrieval' and is the default recommendation for production RAG systems. The keyword component ensures exact matches and rare terms are found; the semantic component handles paraphrase and conceptual similarity.",
+    "MemGPT (Meta AI, 2023) represents a conceptually different approach to the memory problem. Rather than treating retrieval as a preprocessing step (standard RAG) or extending context (longer windows), MemGPT gives the model explicit memory management operations — the ability to decide what to write to long-term memory, what to retrieve, and how to integrate retrieved content. The model becomes an agent managing its own memory. This 'learned retrieval' approach is still research-stage but points toward a future where the artificial separation between in-context, retrieved, and persistent memory dissolves.",
+    "The tiered memory architecture emerging in production agentic systems uses all three memory types in a principled way: short-term in-context memory handles the immediate task, medium-term RAG over session history provides recent context beyond the working window, and long-term persistent memory stores stable facts and user preferences. The engineering challenge is managing writes to persistent memory — writing too much creates noise; writing too little loses important facts. OpenAI's ChatGPT Memory (February 2024) let users manage this tradeoff directly, showing that memory management may itself become a user-facing interface concern."
+  ],
+  l4:[
+    "The threshold framing is crucial for application design. Many AI product failures come from trying to use a model at a task that genuinely requires a larger context than it has. A common example: trying to use a 32K-token model to review a large codebase via RAG — retrieving individual files — and finding it can't reason about cross-file dependencies. The solution isn't better RAG; it's a model with enough context to hold the entire relevant codebase simultaneously. Mapping your specific task to the threshold that enables it is the foundation of realistic capability planning.",
+    "The Cognition AI Devin agent (March 2024) case is instructive for enterprise AI planning. Devin's ability to work on software projects over multi-hour sessions depended critically on maintaining awareness of the full codebase, prior edits, test results, and task state simultaneously. Cognition explicitly documented that this required sufficient context length — not just intelligent tool use. This illustrates a broader pattern: autonomous agents working on complex tasks need context long enough to hold their entire working state, not just the current subtask.",
+    "The cost curve caveat is important for business planning. When Gemini 1.5 Pro was announced in February 2024 with a 1M-token context, the pricing made many applications economically impractical. By mid-2024, after more than 75% cost reduction, those same applications crossed into deployable territory. If you're evaluating whether to build an application that requires long context today, factor in the expected cost trajectory — not just the current price. The pattern consistently shows that capability announcements precede practical deployability by 6-18 months, with cost reduction being the decisive factor.",
+    "For the ~10M token threshold that would unlock complete scientific literature or full legal archives, the path requires solving problems beyond current sparse attention: the KV cache for a 70B model at 10M tokens would require 7-14TB of memory even with grouped-query attention. The likely solution will combine architectural innovations (more aggressive KV cache compression, perhaps learned token pruning), hardware advances (HBM4 memory with higher bandwidth), and system-level optimizations (async offloading to CPU/SSD with predictive prefetch). Companies in regulated industries with large document archives should be structuring and digitizing those assets now — being ready to query them when the cost and capability threshold is reached is a competitive advantage."
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=LAB_FALLBACKS[labId]||[];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1)%arr.length;
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(container){
+    container.innerHTML='';
+    var initMsgs={
+      l1:'Ready to explore context window scaling history. Ask me about the architectural breakthroughs, what made each milestone significant, or how cost curves changed alongside capability — I\'ll ground every answer in documented events and research.',
+      l2:'Ready to explore the engineering limits of context windows. Ask me about sparse attention tradeoffs, KV cache compression techniques, the lost-in-the-middle problem\'s practical impact, or what the path to 10M-token contexts would require.',
+      l3:'Ready to work through memory architecture design. Describe your use case and I\'ll help you reason through the tradeoffs between in-context, RAG, and persistent memory — drawing on documented production patterns from real deployments.',
+      l4:'Ready to work through future context application design. Tell me about your domain or use case and I\'ll help you map which context thresholds unlock which capabilities, analyze the cost curves, and design a hybrid architecture that works today while planning for tomorrow\'s capabilities.'
+    };
+    var div=document.createElement('div');
+    div.className='chat-msg ai';
+    div.textContent=initMsgs[labId]||'Ready to help.';
+    container.appendChild(div);
+  }
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(inp){inp.value='';inp.disabled=false;}
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  inp.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;inp.disabled=false;inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI assistant for the AESOP AI Academy.');
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:500,
+          system:sysPrompt,
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I wasn\'t able to generate a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;inp.disabled=false;inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;inp.disabled=false;inp.focus();
+}
+
+updateTabs();
+</script>
+
+</body>
+</html>

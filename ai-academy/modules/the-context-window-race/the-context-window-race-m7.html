@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-22 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Context Window Race — M7: RAG vs. Long Context</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-context-window-race-m7 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.comparison-table{width:100%;border-collapse:collapse;font-size:0.84rem;margin:1rem 0;}
+.comparison-table th{background:rgba(var(--accent-rgb),0.06);color:var(--accent);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.6rem 0.85rem;text-align:left;border-bottom:1px solid rgba(var(--accent-rgb),0.15);}
+.comparison-table td{padding:0.6rem 0.85rem;border-bottom:1px solid var(--border-dark);color:#6e6861;vertical-align:top;line-height:1.6;}
+.comparison-table td strong{color:#a89f93;}
+.comparison-table tr:last-child td{border-bottom:none;}
+.comparison-table td:first-child{color:#a89f93;font-weight:600;}
+.metric-row{display:flex;gap:1rem;margin:1rem 0;flex-wrap:wrap;}
+.metric-card{flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:0.85rem 1rem;}
+.metric-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;}
+.metric-val{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:var(--gold);}
+.metric-sub{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.metric-row{flex-direction:column;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 1</div>
+      <h1>Two Philosophies, One Problem</h1>
+      <div class="tagline">When you need a model to know more than it can hold, do you extend the window or build a retrieval system?</div>
+      <div class="lesson-question">Why did Google and OpenAI bet on opposite solutions to the same knowledge-access problem?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context — 2023">
+        <p class="story-text">In late 2022 and through 2023, two serious engineering problems collided. Models were getting better at reasoning but remained frustratingly <em>amnesiac</em> — unable to access documents longer than a few pages without losing track of earlier content. Enterprise customers needed AI that could answer questions against their private knowledge bases, legal teams needed models that could read entire case files, and medical researchers needed systems that could reason across hundreds of papers simultaneously.</p>
+        <p class="story-text">The industry forked. One camp — represented most visibly by <span class="char">Anthropic</span> and later <span class="char">Google DeepMind</span> — decided the right move was to push context windows toward hundreds of thousands and eventually millions of tokens. The other camp — exemplified by the explosive growth of frameworks like <span class="char">LangChain</span> and <span class="char">LlamaIndex</span>, both founded in 2022 — decided the right architecture was to keep the window modest and build sophisticated retrieval pipelines around it.</p>
+        <p class="story-text">These were not merely technical disagreements. They were bets on <em>what the fundamental bottleneck actually was</em>.</p>
+      </div>
+
+      <div class="section-heading">What RAG Actually Is</div>
+      <div class="section-body">
+        <p>Retrieval-Augmented Generation (RAG) was formally described in a <strong>2020 paper by Lewis et al. at Facebook AI Research</strong>, titled "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks." The core idea: instead of asking the model to memorize everything at training time, store facts in an external vector database, retrieve only the relevant chunks at query time, and inject them into the context window alongside the user's question.</p>
+        <p>The architecture has three stages. First, an <em>indexing phase</em> converts documents into embedding vectors and stores them in a database (Pinecone, Weaviate, Chroma, pgvector, and others became important infrastructure here). Second, a <em>retrieval phase</em> converts the user's query into an embedding and finds the most semantically similar document chunks — typically the top-k results. Third, a <em>generation phase</em> stuffs those retrieved chunks plus the original query into the model's context window and asks for a response.</p>
+        <p>The practical appeal was enormous. A company with 10 million documents did not need to fine-tune a model on all of them or pay for a million-token context on every query. They retrieved maybe 5,000 tokens of relevant material, used a 16k-context model that cost a fraction as much, and got good answers.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Historical Record</div>
+        <p>The LangChain framework, created by Harrison Chase in October 2022, reached 1 million GitHub stars in under 18 months — the fastest any developer framework had grown to that milestone to that point. The explosive adoption was a direct signal of how hungry the market was for a RAG-friendly orchestration layer.</p>
+      </div>
+
+      <div class="section-heading">What Long Context Actually Is</div>
+      <div class="section-body">
+        <p>The long-context bet was different in kind. Rather than building retrieval infrastructure around the model, long-context advocates argued that if you could put everything relevant into the window at once, you would get fundamentally better reasoning. The model could attend to any part of the document at any time, notice contradictions between section 2 and section 47, and reason holistically rather than from retrieved fragments.</p>
+        <p>The milestones came fast. <strong>Anthropic's Claude 2, released in July 2023</strong>, supported 100,000 tokens — roughly a full novel or 75,000 words of business documents. <strong>Google's Gemini 1.5 Pro, announced in February 2024</strong>, pushed to 1 million tokens in research preview, later expanding to 2 million. <strong>Anthropic's Claude 3, released March 2024</strong>, maintained the 200k ceiling while substantially improving recall within it.</p>
+        <p>These were not incremental improvements. A 1-million-token context window can hold approximately <em>700 books</em>, or an entire software codebase, or decades of a company's email archives. The question became whether the capability was actually usable — and at what cost.</p>
+      </div>
+
+      <div class="section-heading">The Core Trade-off in 2023–2024</div>
+      <div class="section-body">
+        <p>By mid-2023, both approaches had clear profiles. RAG systems were cost-efficient and fast for large corpora — you only paid for the tokens you retrieved. But they introduced retrieval failure modes: if the retrieval step pulled the wrong chunks, the model answered confidently from bad evidence. Embedding quality, chunking strategy, and reranking all became critical engineering concerns.</p>
+        <p>Long-context models eliminated the retrieval error entirely — everything was in the window — but brought severe cost and latency penalties. Running a 100k-token Claude 2 prompt in mid-2023 cost roughly $15–20 per call at list pricing. For a system handling thousands of queries per day, that was prohibitive for most use cases.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Terms</div>
+        <div class="key-term"><span class="kt-term">RAG</span><span class="kt-def">Retrieval-Augmented Generation — architecture that retrieves document chunks into context at query time rather than embedding all knowledge in model weights or the context window.</span></div>
+        <div class="key-term"><span class="kt-term">Vector Database</span><span class="kt-def">A database that stores and queries high-dimensional embedding vectors, enabling semantic similarity search. Examples: Pinecone (founded 2019), Weaviate, Chroma, pgvector.</span></div>
+        <div class="key-term"><span class="kt-term">Chunking</span><span class="kt-def">The process of splitting source documents into segments (chunks) before embedding them. Chunk size and overlap are key engineering parameters in any RAG pipeline.</span></div>
+        <div class="key-term"><span class="kt-term">Top-k Retrieval</span><span class="kt-def">The standard retrieval pattern: embed the query, find the k most similar document chunks by cosine similarity, inject them into the prompt.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="section-body">
+        <p>The tension was real and unresolved as of late 2023. Engineers building production systems had to make a genuine architectural choice with significant cost implications. The debate was not academic — it shaped infrastructure budgets, latency SLAs, and reliability engineering for thousands of enterprise AI deployments.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn primary" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Two Philosophies, One Problem</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">The original RAG paper was published by which organization, and in what year?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">OpenAI, 2021</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Facebook AI Research, 2020</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Google Brain, 2019</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">DeepMind, 2022</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Lewis et al. at Facebook AI Research published "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks" in 2020, establishing the foundational RAG architecture.</div>
+        <div class="quiz-feedback wrong">Not quite. The paper was "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks" by Lewis et al. at Facebook AI Research, published in 2020.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">What was Claude 2's context window length when Anthropic released it in July 2023?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">32,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">200,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">100,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">1,000,000 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Claude 2 launched in July 2023 with a 100,000-token context window — roughly the length of a full novel.</div>
+        <div class="quiz-feedback wrong">Not quite. Claude 2 launched with 100,000 tokens in July 2023. The 200k limit came with Claude 3 in March 2024.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">Which of the following is a core failure mode specific to RAG systems that does NOT affect pure long-context approaches?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">High per-query token cost</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Retrieval pulling irrelevant chunks, causing the model to answer from bad evidence</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Inability to reason across distant parts of a document</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Slow inference due to attention over long sequences</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Retrieval failure is unique to RAG. If the top-k chunks don't contain the answer, the model either hallucinates or says it doesn't know — even if the answer exists in the corpus.</div>
+        <div class="quiz-feedback wrong">Not quite. Retrieval failure is the RAG-specific failure mode. High cost, slow inference, and cross-document reasoning difficulties are more characteristic of long-context approaches.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-4">
+        <div class="quiz-q">What maximum context length did Google's Gemini 1.5 Pro support when announced in February 2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">200,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">500,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">1,000,000 tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">2,000,000 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Gemini 1.5 Pro was announced in February 2024 with 1 million tokens in research preview, later expanding to 2 million — the largest publicly available context window at the time.</div>
+        <div class="quiz-feedback wrong">Not quite. Gemini 1.5 Pro launched with 1 million tokens in research preview in February 2024.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Architecture Decision</h1>
+      <div class="tagline">Explore the RAG vs. long-context trade-off through a real engineering scenario</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Scenario: You're an AI engineer at a mid-size law firm in 2023</h4>
+        <p>Your firm has 2 million pages of past case documents and needs an AI system to answer paralegal questions about precedents. You must decide: build a RAG pipeline over the corpus, or use a long-context model and stuff documents in at query time. Discuss the trade-offs with your AI assistant.</p>
+        <div class="lab-prompt">Start by asking: "What are the cost implications of using a 100k-token context model vs. a RAG approach for a 2-million-page legal corpus?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">RAG vs. Long Context</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you think through the RAG vs. long-context decision for your law firm scenario. Ask me about costs, retrieval quality, latency, or real architectural trade-offs — and I'll give you honest, grounded analysis.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about the architecture decision…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 2</div>
+      <h1>The Cost Collapse and Its Consequences</h1>
+      <div class="tagline">When long-context pricing dropped by 90%, the economics of the debate shifted — but retrieval didn't disappear.</div>
+      <div class="lesson-question">Did falling prices make RAG obsolete, or did they just change which problems RAG was needed for?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Price War — 2024">
+        <p class="story-text">In March 2023, running GPT-4 at 32k tokens cost <em>$0.12 per 1,000 tokens</em> for input. By mid-2024, models with far larger windows had crashed to a fraction of that cost. The long-context pricing collapse was not subtle — it was one of the most rapid cost deflations in the history of computing infrastructure.</p>
+        <p class="story-text">When <span class="char">OpenAI</span> released GPT-4o in May 2024 at prices roughly 50% lower than GPT-4 Turbo, and when <span class="char">Anthropic</span> dropped Claude 3 Haiku to $0.25 per million input tokens — cheaper than a postage stamp per 4,000 words — the calculus changed. The cost argument against long-context weakened dramatically. The question became more nuanced: not "can I afford this?" but "when does retrieval still earn its engineering complexity?"</p>
+      </div>
+
+      <div class="section-heading">Documented Price Movements (2023–2024)</div>
+      <div class="section-body">
+        <p>The specific numbers matter here. <strong>GPT-4 8k (March 2023)</strong>: $0.03/1k input tokens, $0.06/1k output. <strong>GPT-4 Turbo 128k (November 2023)</strong>: $0.01/1k input — a 67% reduction while quadrupling the context. <strong>Claude 3 Haiku (March 2024)</strong>: $0.25/million input tokens, meaning $0.00025 per 1k tokens — another 97% reduction from GPT-4's original pricing. <strong>GPT-4o (May 2024)</strong>: $5/million input, later halved to $2.50/million for cached inputs via the Prompt Caching feature launched in August 2024.</p>
+        <p>These were not incremental discounts. The price-per-token for frontier models dropped by roughly <em>95–97%</em> between March 2023 and mid-2024. A long-context query that cost $15 in mid-2023 might cost $0.30–0.50 by mid-2024. The absolute cost objection to long context largely evaporated for most enterprise use cases.</p>
+      </div>
+
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">GPT-4 Input (Mar 2023)</div>
+          <div class="metric-val">$30</div>
+          <div class="metric-sub">per million tokens</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">GPT-4o Input (May 2024)</div>
+          <div class="metric-val">$5</div>
+          <div class="metric-sub">per million tokens</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Claude 3 Haiku (Mar 2024)</div>
+          <div class="metric-val">$0.25</div>
+          <div class="metric-sub">per million tokens</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Price Decline</div>
+          <div class="metric-val">~97%</div>
+          <div class="metric-sub">in 14 months</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Prompt Caching: A Third Path Emerges</div>
+      <div class="section-body">
+        <p>The most important economic innovation of 2024 for the RAG vs. long-context debate was <strong>prompt caching</strong>. Anthropic launched Prompt Caching for Claude in August 2024; OpenAI followed with Prompt Caching for GPT-4o in the same month. The mechanism: if you send the same large system prompt or document corpus repeatedly, the model caches the KV (key-value) computation state after the first call. Subsequent calls that reuse the cached prefix are dramatically cheaper and faster.</p>
+        <p>The practical implication: a company that serves hundreds of users against the same large document set — say, a 200k-token product manual — could load that manual once, cache it, and amortize the cost across thousands of queries at 90% discount on the cached tokens. This directly addressed one of RAG's historical cost advantages: for repeated queries over a stable corpus, long context with caching could now be <em>cheaper</em> than RAG at scale.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Deployment — Cursor (Code Editor)</div>
+        <p>The AI code editor Cursor, which reached $100M ARR by early 2025, uses a hybrid approach that illustrates the evolved thinking. For large codebases, Cursor maintains a RAG index over the repository for retrieval of relevant files, but uses long context (often 100k+ tokens) for the actual reasoning and code generation once relevant files are identified. The retrieval step is for navigation; the long context is for synthesis. This "RAG for finding, long context for reasoning" pattern became common in production systems by 2024.</p>
+      </div>
+
+      <div class="section-heading">What RAG Still Does Better</div>
+      <div class="section-body">
+        <p>Despite falling costs, RAG retained genuine advantages in several scenarios. First, <em>corpus scale</em>: no context window can hold a corpus of 10 billion tokens. For truly large knowledge bases, retrieval is structurally necessary — long context only wins when the entire corpus fits in the window. Second, <em>freshness</em>: RAG systems can update their index in real time as new documents arrive. A long-context system stuffing fixed documents can't respond to data that arrived after the context was constructed. Third, <em>explainability</em>: RAG systems know exactly which chunks they retrieved, making it trivial to show citations. Long-context systems can point to passages but require more careful prompt engineering to produce reliable sourcing.</p>
+        <p>Fourth and perhaps most importantly: <em>latency at scale</em>. Processing 100,000 tokens has irreducible minimum latency — even with fast hardware, time-to-first-token scales with context length for some architectures. A RAG system retrieving 2,000 tokens and querying a small model can return answers in under a second; a long-context approach on the same query might take 3–8 seconds depending on context size and model. For real-time applications, this gap is material.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Nuanced Outcome</div>
+        <p>The cost collapse did not make RAG obsolete — it clarified when each approach is appropriate. Long context won the "small-to-medium corpus, high reasoning quality" cases. RAG retained the "massive corpus, real-time freshness, low latency, citation-required" cases. The honest answer to "RAG or long context?" by mid-2024 was: it depends on corpus size, freshness requirements, latency SLA, and cost at your query volume. The debate became engineering rather than theology.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson 2 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">The Cost Collapse and Its Consequences</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">By approximately what percentage did frontier model input token pricing drop between March 2023 and mid-2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">About 30–40%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">About 50–60%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">About 70–80%</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">About 95–97%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GPT-4 launched at $30/million input tokens in early 2023. Claude 3 Haiku cost $0.25/million by March 2024 — a ~97% reduction in roughly 14 months.</div>
+        <div class="quiz-feedback wrong">Not quite. The price collapse was far more dramatic — roughly 95–97% from March 2023 to mid-2024, making it one of the fastest infrastructure cost deflations on record.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">What is "prompt caching" as launched by Anthropic and OpenAI in August 2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Storing the model's output so it doesn't need to regenerate the same answer twice</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Caching the KV computation state for a repeated context prefix, reducing cost and latency for subsequent calls</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Pre-computing embeddings for frequently used prompts in a vector database</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Compressing long prompts using lossy summarization before sending to the model</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Prompt caching saves the KV (key-value) attention computation for a stable prefix. Subsequent queries reusing that prefix skip recomputing it, resulting in significant cost and latency reductions — typically 90% discount on cached tokens.</div>
+        <div class="quiz-feedback wrong">Not quite. Prompt caching specifically refers to caching the KV computation state — the intermediate attention representations — so the model doesn't recompute them for a repeated document prefix.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">According to the lesson, which scenario still clearly favors RAG over long-context as of mid-2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Summarizing a single 50,000-word annual report</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Analyzing a 150-page PDF contract for specific clauses</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Querying a corpus of 10 billion tokens that cannot fit in any existing context window</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Answering questions about a 200,000-token product manual shared across many users</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Corpus scale is where RAG remains structurally necessary. No context window can hold 10 billion tokens, so retrieval is the only viable architecture for truly massive knowledge bases regardless of cost.</div>
+        <div class="quiz-feedback wrong">Not quite. The 10-billion-token corpus scenario is where RAG wins structurally — no context window can hold it. The 200k manual with many users is actually a prompt-caching candidate that might favor long context.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-4">
+        <div class="quiz-q">The AI code editor Cursor uses a "hybrid" approach. What does it use RAG for, and what does it use long context for?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">RAG for generating code; long context for finding relevant files</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">RAG for finding relevant files in the codebase; long context for synthesis and reasoning once those files are identified</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">RAG for answering user questions; long context only for writing tests</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Long context for all operations; RAG only as a fallback when context is exceeded</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cursor's pattern — RAG for navigation/finding, long context for reasoning/synthesis — became a widely adopted hybrid pattern in production systems by 2024.</div>
+        <div class="quiz-feedback wrong">Not quite. Cursor uses RAG to identify which files are relevant (the retrieval/navigation task), then loads those files into a long context for the actual coding reasoning. "RAG for finding, long context for reasoning."</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Prompt Caching Economics</h1>
+      <div class="tagline">Analyze when prompt caching changes the RAG vs. long-context decision</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Scenario: You're evaluating infrastructure for a customer support AI</h4>
+        <p>Your company has a 180,000-token product documentation corpus. You serve 5,000 customer support queries per day, all drawing from the same documentation set. Compare the economics of: (A) RAG pipeline, (B) raw long-context calls, and (C) long-context with prompt caching.</p>
+        <div class="lab-prompt">Start by asking: "Walk me through the daily cost calculation for each of the three approaches at current 2024 pricing."</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Cost Analysis</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to Lab 2. I'll help you work through the economics of prompt caching versus RAG for your customer support scenario. We'll look at real 2024 pricing from Anthropic and OpenAI to build an honest comparison. What would you like to calculate first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about cost calculations…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 3</div>
+      <h1>The "Lost in the Middle" Problem</h1>
+      <div class="tagline">Bigger windows don't guarantee better recall. Research revealed that models systematically miss information buried in the middle of long contexts.</div>
+      <div class="lesson-question">If a model has a 100k-token window but reliably ignores tokens 20k–80k, does the window size actually matter?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Stanford Finding — 2023">
+        <p class="story-text">In June 2023, researchers at <span class="char">Stanford</span> and <span class="char">UC Berkeley</span> published a paper that quietly undermined much of the long-context optimism: <em>"Lost in the Middle: How Language Models Use Long Contexts."</em> The paper's finding was damaging: when relevant information was placed in the <em>middle</em> of long contexts, model performance degraded substantially compared to when that information appeared at the beginning or end.</p>
+        <p class="story-text">The U-shaped performance curve — strong recall at the start and end of context, weak recall in the middle — was consistent across GPT-3.5-Turbo, GPT-4, and Claude 1.3. The problem wasn't the window size. The problem was that the <em>attention mechanism</em> itself had a recency bias and a primacy bias that left the middle undertended.</p>
+      </div>
+
+      <div class="section-heading">What the Paper Actually Measured</div>
+      <div class="section-body">
+        <p>The Stanford/Berkeley paper (Liu et al., 2023) tested models on two tasks: <strong>multi-document question answering</strong> (find the answer in one of k documents) and <strong>key-value retrieval</strong>. In both tasks, the researchers varied the position of the relevant information within a long prompt. Performance on GPT-3.5-Turbo 16k dropped from ~75% accuracy when the answer was at the front to ~50% when it was in the middle, then recovered to ~65% at the end. The effect was similar but somewhat less pronounced in GPT-4.</p>
+        <p>The practical implication was immediate: if you had a 50-document RAG result and the most relevant document happened to land in the middle after sorting, the model might miss it. Engineers needed to think carefully about <em>document ordering within context</em> — a detail that the "just make the context longer" narrative had ignored.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The U-Shaped Recall Curve</div>
+        <p>Performance peaks when relevant information is at position 0 (beginning of context) or position k (end of context). It troughs when the information is positioned at approximately 40–60% through the context. This pattern held across models and tasks tested in the 2023 paper, with varying severity. Some models showed 20–30 percentage point drops in accuracy for mid-context vs. beginning-of-context placement.</p>
+      </div>
+
+      <div class="section-heading">Did This Argument Age Well?</div>
+      <div class="section-body">
+        <p>By 2024, the picture had become more nuanced. <strong>Google's Gemini 1.5 Pro</strong>, released in February 2024, was explicitly benchmarked on a "needle in a haystack" test — finding a specific piece of information hidden at various positions in a 1-million-token context. Google reported near-perfect retrieval accuracy across positions, including the middle. This was a direct response to the lost-in-the-middle critique.</p>
+        <p><strong>Anthropic</strong> made similar claims for Claude 3, publishing results showing high recall accuracy across context positions for their 200k models. These were not peer-reviewed results — they were vendor benchmarks — but they suggested that the worst forms of the lost-in-the-middle problem were being addressed in newer architectures.</p>
+        <p>However, external third-party testing told a more mixed story. Greg Kamradt's "Needle in a Haystack" benchmark, which became a widely-used community evaluation, showed that models often had specific "blind spots" at particular context positions even if overall performance was high. Real-world users reported that very long contexts still produced occasional failures on content buried deep in the middle of documents.</p>
+      </div>
+
+      <div class="section-heading">RAG as an Antidote to Position Sensitivity</div>
+      <div class="section-body">
+        <p>The lost-in-the-middle finding actually gave RAG a renewed argument. A well-designed RAG system doesn't have a position problem in the same way — it retrieves a small number of highly relevant chunks (top-3 to top-10) and places them in a short context where position sensitivity is negligible. The relevant information is always "near the beginning" of a short context.</p>
+        <p>This led to an important engineering observation: the failure mode of long context and the failure mode of RAG are <em>different in kind</em>. RAG fails when retrieval is wrong — when the embedding-based search doesn't find the right passage. Long context fails when the right passage is in the window but the model's attention doesn't weight it properly. Knowing which failure mode is more dangerous for your application helps you choose the right architecture.</p>
+      </div>
+
+      <div class="section-heading">Reranking and Ordering as Mitigations</div>
+      <div class="section-body">
+        <p>The engineering response to position sensitivity produced a class of tools: <em>rerankers</em>. After initial retrieval, a reranker (typically a cross-encoder model like Cohere Rerank or BGE-Reranker) scores each retrieved chunk against the query using full attention rather than just embedding similarity. The top-ranked chunks are then placed at high-attention positions in the context — beginning or end. <strong>Cohere launched its Rerank API</strong> in late 2023 partly as a direct response to this use case.</p>
+        <p>The ordering insight also influenced how engineers structured long-context prompts: instructions and the most critical documents at the beginning, supporting context in the middle, re-statement of the key question at the end. The "sandwich" pattern — critical content at both ends, supporting material in the middle — became a documented prompt engineering technique.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Concept</div>
+        <p>Context window size and effective usable context are not the same thing. A model's nominal context length is the maximum tokens it can process. Its effective context is the portion from which it reliably extracts information. For most models tested in 2023, effective context was substantially smaller than nominal context — particularly for content in the middle of very long inputs. Model improvements in 2024 narrowed but did not fully close this gap.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson 3 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">The "Lost in the Middle" Problem</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">The "Lost in the Middle" paper was published by researchers at which institutions?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">MIT and Carnegie Mellon</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Stanford and UC Berkeley</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">OpenAI and DeepMind</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Google Brain and Anthropic</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Liu et al. from Stanford and UC Berkeley published "Lost in the Middle: How Language Models Use Long Contexts" in June 2023.</div>
+        <div class="quiz-feedback wrong">Not quite. The paper was by Liu et al. from Stanford and UC Berkeley, published in June 2023.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">What shape best describes the recall performance curve when information is placed at different positions within a long context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Flat — performance is consistent throughout</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Linear decline — performance decreases monotonically toward the end</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">U-shaped — high at beginning and end, low in the middle</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Inverted U — high in the middle, low at the ends</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The U-shaped curve captures the primacy bias (good recall at the start) and recency bias (good recall at the end) with poor performance for content buried in the middle of long contexts.</div>
+        <div class="quiz-feedback wrong">Not quite. The shape is U-shaped — strong at beginning and end (primacy and recency bias), weakest for content in the middle of the context.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">What is a "reranker" in the context of RAG pipelines, and why did the lost-in-the-middle problem increase its importance?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">A model that re-orders documents in the training corpus for better fine-tuning</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">A tool that re-orders the model's token generation to prioritize important words</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">A cross-encoder model that scores retrieved chunks against the query to identify the most relevant ones, enabling placement at high-attention positions in context</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">An embedding model that replaces vector similarity search with exact keyword matching</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Rerankers like Cohere Rerank use full cross-encoder attention to score retrieved chunks against the query — more accurate than embedding similarity — and the output can be ordered to place the most relevant chunks at position-sensitive locations in the context.</div>
+        <div class="quiz-feedback wrong">Not quite. A reranker is a cross-encoder that re-scores retrieved chunks for relevance. The lost-in-the-middle finding made reranking valuable because it lets you place the truly relevant chunks at the beginning or end of context, avoiding the poorly-attended middle.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-4">
+        <div class="quiz-q">Greg Kamradt's "Needle in a Haystack" benchmark tests what specific capability?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">A model's ability to find a specific piece of information hidden at varying positions within a very long context document</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">How accurately a RAG system identifies the correct document in a large corpus</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The latency of a model processing prompts of different token lengths</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">Whether a model can distinguish real facts from hallucinated ones in a mixed document</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Needle in a Haystack test places a specific "needle" sentence at different positions and depths within a long "haystack" document, then asks the model to retrieve it. It became a community-standard way to probe position-dependent recall.</div>
+        <div class="quiz-feedback wrong">Not quite. "Needle in a Haystack" specifically tests whether a model can recall a piece of information placed at various positions within a very long document — directly testing the lost-in-the-middle phenomenon.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Diagnosing Position Failures</h1>
+      <div class="tagline">Learn to design retrieval pipelines that account for attention position sensitivity</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Scenario: Debugging a legal Q&A system with mysterious answer failures</h4>
+        <p>Your legal Q&A system uses a 50k-token long-context approach. You've noticed it consistently fails to answer questions about content from pages 80–150 of 200-page contracts, even though those pages are in the context. Apply your knowledge of the lost-in-the-middle problem to diagnose and fix it.</p>
+        <div class="lab-prompt">Start by asking: "Why would my model consistently miss content from pages 80–150 of a 200-page document when the whole document is in context?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Context Recall Debugging</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to Lab 3. I'll help you diagnose and fix your legal Q&A system's position-related failures. This is a real problem that many production long-context systems encounter. Describe your issue and let's work through the root cause and solutions systematically.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Describe your system's failure mode…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 4</div>
+      <h1>Hybrid Architectures and the 2025 Landscape</h1>
+      <div class="tagline">The RAG vs. long-context debate didn't produce a winner. It produced a synthesis — and new questions about what retrieval even means as contexts keep expanding.</div>
+      <div class="lesson-question">When context windows reach 10 million tokens, does "retrieval" become a feature of the model rather than the infrastructure?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Convergence — 2024–2025">
+        <p class="story-text">By early 2025, the production reality looked nothing like the clean debate of 2023. The systems doing the most sophisticated knowledge work — enterprise search at companies like <span class="char">Glean</span>, code intelligence at <span class="char">Sourcegraph</span>, customer support at large SaaS vendors — were all hybrids. They used vector search to navigate large corpora, keyword search (BM25) to catch exact-match cases that embedding search missed, reranking to refine the retrieved set, and then long-context models to do the actual reasoning.</p>
+        <p class="story-text">The question had quietly shifted from "RAG or long context?" to "which retrieval strategy feeds which context length for which query type?" This was a harder engineering question, but a more honest one.</p>
+      </div>
+
+      <div class="section-heading">The Hybrid RAG Pattern in Production</div>
+      <div class="section-body">
+        <p>The dominant production pattern that emerged by 2024–2025 had several layers. First, <em>sparse retrieval</em> using BM25 keyword search — fast, cheap, excellent for exact-match queries. Second, <em>dense retrieval</em> using embedding vectors — slower but better for semantic similarity and paraphrase. Third, <em>hybrid fusion</em> combining both signals via techniques like Reciprocal Rank Fusion (RRF). Fourth, <em>reranking</em> with a cross-encoder. Fifth, the surviving chunks fed into a <em>long-context model</em> for generation.</p>
+        <p>This five-stage pipeline might seem overwrought, but each stage addresses a genuine failure mode of the others. The result was demonstrably better than pure RAG or pure long-context in production evaluations published by teams at <strong>Elasticsearch</strong>, <strong>Cohere</strong>, and <strong>Databricks</strong> in 2024.</p>
+      </div>
+
+      <div class="section-heading">GraphRAG: When Relationships Matter More Than Chunks</div>
+      <div class="section-body">
+        <p><strong>Microsoft Research published GraphRAG in April 2024</strong>, addressing a specific failure mode of standard chunk-based RAG: questions that require synthesizing information spread across many documents rather than finding a single relevant passage. Standard RAG finds chunks similar to the query; it doesn't aggregate or synthesize across the corpus.</p>
+        <p>GraphRAG builds a knowledge graph from the document corpus — extracting entities, relationships, and communities of related concepts. At query time, it uses the graph structure to find relevant communities and synthesizes a global answer. Microsoft tested it on a corpus of news articles and podcast transcripts, showing that for "global" questions (summarization, cross-cutting themes, comparative questions), GraphRAG substantially outperformed standard RAG. For "local" questions (find a specific fact), standard RAG remained competitive.</p>
+        <p>GraphRAG was computationally expensive — the indexing phase required many LLM calls to extract the graph — but the quality improvement on synthesis tasks was real enough that several enterprise vendors began building it into their products by late 2024.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">What GraphRAG Solved — and What It Didn't</div>
+        <p>GraphRAG's key insight: vector similarity finds documents similar to the query, but can't answer "what are all the themes across this entire corpus?" because no single chunk is similar to that query. The knowledge graph approach addresses this by building a hierarchical community structure that enables global summarization. The tradeoff: significantly higher indexing cost and latency versus standard RAG.</p>
+      </div>
+
+      <div class="section-heading">The Future Question: Models That Retrieve Internally</div>
+      <div class="section-body">
+        <p>As context windows push toward 10 million tokens and model quality improves, a more speculative question emerges: will retrieval eventually become a capability of the model itself rather than external infrastructure? Some evidence points in this direction. <strong>DeepMind's work on Memorizing Transformers (2022)</strong> showed models that could retrieve from their own "external memory" using learned attention — a kind of neural retrieval baked into architecture rather than implemented as a pipeline.</p>
+        <p>More concretely, models with 10-million-token contexts could theoretically hold the equivalent of a mid-size company's entire document corpus in a single context call — eliminating the need for a separate retrieval system for many use cases. Whether this is economically viable depends on how inference costs evolve. If the trajectory of 2023–2024 continues, it may become cheaper to run a 10M-token context than to build and maintain a RAG pipeline for the same corpus by the late 2020s.</p>
+        <p>But RAG advocates note that this still doesn't solve the freshness problem, the truly-massive-corpus problem (petabyte-scale knowledge bases won't fit in any foreseeable context), or the latency problem for real-time applications. The debate will continue to evolve as the underlying constraints shift.</p>
+      </div>
+
+      <div class="section-heading">A Decision Framework for 2025</div>
+      <div class="section-body">
+        <p>Based on the evidence accumulated through 2024–2025, a practical decision framework looks something like this:</p>
+        <p><strong>Use pure long context when:</strong> your corpus fits within a 200k–1M context, you need holistic reasoning across the entire document, freshness is not a primary concern, query volume is modest enough that caching amortizes the cost, and accuracy in the middle of the document is critical (use newer models with better position recall).</p>
+        <p><strong>Use RAG when:</strong> your corpus is genuinely massive (cannot fit in any context window), documents update in real-time and freshness matters, you need reliable citations and source attribution, latency must be under 1–2 seconds, or you need to serve many users against different subsets of a large corpus without caching the entire corpus for each.</p>
+        <p><strong>Use hybrid when:</strong> you need both navigation (finding which documents are relevant from millions) and reasoning (deep analysis of those documents), or when accuracy requirements are high enough that multiple retrieval strategies reduce the risk of missing relevant content.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Honest Summary</div>
+        <p>Neither approach won the RAG vs. long-context debate because both addressed real constraints. Long context won on reasoning quality and holistic synthesis when the corpus fits in the window. RAG won on scale, freshness, latency, and cost for high-volume use cases. The lasting outcome was a richer engineering toolkit — hybrid pipelines, rerankers, GraphRAG, prompt caching — that took the best of both and reduced the failure modes of each. The question for the next five years is how far the cost and quality improvements of long-context inference will shift that balance.</p>
+      </div>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Pure RAG</th>
+            <th>Pure Long Context</th>
+            <th>Hybrid (2024–2025)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Corpus Scale</td>
+            <td>Unlimited (indexed)</td>
+            <td>Limited by window</td>
+            <td>RAG for navigation, LC for reasoning</td>
+          </tr>
+          <tr>
+            <td>Freshness</td>
+            <td>Real-time updates</td>
+            <td>Static at query time</td>
+            <td>RAG index updated in real-time</td>
+          </tr>
+          <tr>
+            <td>Reasoning Quality</td>
+            <td>Limited by chunk quality</td>
+            <td>Best for holistic synthesis</td>
+            <td>Near-LC quality with lower cost</td>
+          </tr>
+          <tr>
+            <td>Latency</td>
+            <td>Fast (small context)</td>
+            <td>Slow (large context)</td>
+            <td>Moderate</td>
+          </tr>
+          <tr>
+            <td>Cost per Query</td>
+            <td>Low</td>
+            <td>High (without caching)</td>
+            <td>Medium; caching helps at scale</td>
+          </tr>
+          <tr>
+            <td>Citation/Attribution</td>
+            <td>Easy (known chunks)</td>
+            <td>Requires prompt engineering</td>
+            <td>Easy (from retrieval stage)</td>
+          </tr>
+          <tr>
+            <td>Key Failure Mode</td>
+            <td>Retrieval misses answer</td>
+            <td>Lost in the middle</td>
+            <td>Complexity, more failure points</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson 4 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Hybrid Architectures and the 2025 Landscape</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">Microsoft Research published GraphRAG in April 2024. What specific failure mode of standard chunk-based RAG does it address?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The inability to retrieve very short text passages accurately</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Questions requiring synthesis across many documents rather than finding a single relevant chunk</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The high cost of embedding generation for large corpora</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Multilingual retrieval failures when documents are in different languages</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GraphRAG addresses "global" questions — ones requiring synthesis across many documents — by building a knowledge graph with communities of related entities, enabling aggregate answers that standard chunk retrieval cannot produce.</div>
+        <div class="quiz-feedback wrong">Not quite. GraphRAG specifically addresses the failure of standard RAG on global/synthetic questions that require aggregating information across many documents — not retrieving a single relevant chunk.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">In the five-stage hybrid RAG pipeline described in the lesson, what is "Reciprocal Rank Fusion (RRF)"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">A fine-tuning technique that improves embedding model accuracy on domain-specific queries</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">A compression method that reduces the token count of retrieved documents</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">A technique for combining the ranked results from sparse (BM25) and dense (embedding) retrieval into a single unified ranking</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">A method for recursively chunking documents at multiple granularities</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RRF is a rank fusion technique that combines results from multiple retrieval systems (e.g., BM25 and vector search) into a single ranked list, giving weight based on rank position rather than raw score — which makes it robust to score-scale differences between retrieval methods.</div>
+        <div class="quiz-feedback wrong">Not quite. Reciprocal Rank Fusion (RRF) is a hybrid fusion technique that merges ranked lists from different retrieval methods (like BM25 and vector search) into a single unified ranking.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">According to the lesson's decision framework, which scenario most clearly favors pure RAG over long context in 2025?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Analyzing a 50-page quarterly earnings report to extract key financial figures</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Reasoning across an entire 300-page technical specification document for contradictions</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">A news monitoring system that must answer questions about events from the last hour, drawing from thousands of articles published per day</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Summarizing a complete novel for a book club discussion platform</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Real-time freshness is a clear RAG advantage. A news system with thousands of new articles per hour cannot pre-load all content into a fixed context; it must retrieve freshly indexed documents dynamically.</div>
+        <div class="quiz-feedback wrong">Not quite. The news monitoring scenario — requiring real-time freshness across thousands of daily articles — is the clearest RAG case. The others (fixed documents, manageable size) are better candidates for long-context approaches.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-4">
+        <div class="quiz-q">The lesson describes enterprise systems like Glean and Sourcegraph as using hybrid architectures by 2025. What does "hybrid" specifically mean in their case?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Alternating between RAG and long-context depending on user preference settings</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Using RAG for paid queries and long context for free tier queries</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">Using vector search to navigate large corpora, plus keyword search, reranking, and then long-context models for final reasoning</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Training separate fine-tuned models for retrieval and generation tasks</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The production hybrid pattern combines multiple retrieval strategies (vector + keyword, reranking) for navigation across large corpora, then uses long-context models for the actual reasoning once relevant documents are identified.</div>
+        <div class="quiz-feedback wrong">Not quite. The hybrid pattern means combining multiple retrieval strategies (vector search + BM25 + reranking) for corpus navigation, then using a long-context model for deep reasoning on the retrieved content.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Designing a Hybrid Pipeline</h1>
+      <div class="tagline">Architect a production-grade hybrid RAG system for a real-world enterprise scenario</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Scenario: Enterprise knowledge base for a Fortune 500 company</h4>
+        <p>You're the AI architect at a company with: 5 million internal documents (policies, project histories, emails), hundreds of new documents added daily, 2,000 employees asking questions across all domains, latency SLA of &lt;3 seconds, and a requirement to show citations for every answer. Design the optimal hybrid architecture.</p>
+        <div class="lab-prompt">Start by asking: "Walk me through how to design the retrieval stage of a hybrid pipeline for a 5-million-document corpus with real-time ingestion requirements."</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Pipeline Architecture</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4. I'll help you design a production hybrid pipeline for your enterprise scenario. We'll work through indexing strategy, retrieval stages, reranking, context construction, and the generation step — considering your specific constraints of 5M documents, daily ingestion, 3-second latency SLA, and citation requirements.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Ask about pipeline design…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 7 — Test</h1>
+      <div class="tagline">RAG vs. Long Context · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. Who authored the original RAG paper, and what was the primary institution?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Lewis et al. at Facebook AI Research (2020)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Brown et al. at OpenAI (2020)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Vaswani et al. at Google Brain (2017)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Raffel et al. at Google (2019)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Lewis et al. at Facebook AI Research published "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks" in 2020.</div>
+        <div class="quiz-feedback wrong">The original RAG paper was by Lewis et al. at Facebook AI Research, published in 2020.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. What context window did Claude 2 launch with in July 2023?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">32,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">100,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">200,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">1,000,000 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Claude 2 launched in July 2023 with 100,000 tokens.</div>
+        <div class="quiz-feedback wrong">Claude 2 launched with 100,000 tokens in July 2023.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. LangChain was created by Harrison Chase in what month and year?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">January 2022</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">March 2023</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">October 2022</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">June 2021</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Harrison Chase created LangChain in October 2022, and it reached 1 million GitHub stars in under 18 months.</div>
+        <div class="quiz-feedback wrong">LangChain was created in October 2022 by Harrison Chase.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. GPT-4's input price at launch (March 2023) was approximately $30 per million tokens. What did Claude 3 Haiku cost per million input tokens at launch in March 2024?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">$3.00</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">$1.00</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">$0.25</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">$0.05</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Claude 3 Haiku launched at $0.25/million input tokens in March 2024 — roughly a 99% reduction from GPT-4's original pricing.</div>
+        <div class="quiz-feedback wrong">Claude 3 Haiku cost $0.25 per million input tokens — representing roughly a 99% price reduction from GPT-4's March 2023 launch pricing.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. Both Anthropic and OpenAI launched prompt caching in what month?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">March 2024</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">May 2024</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">August 2024</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">January 2025</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Both Anthropic and OpenAI launched prompt caching in August 2024.</div>
+        <div class="quiz-feedback wrong">Both Anthropic and OpenAI launched prompt caching in August 2024.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. The "Lost in the Middle" paper found that recall performance had which shape when plotted against information position in the context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Monotonically decreasing from beginning to end</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">U-shaped: high at beginning and end, low in the middle</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Flat with occasional random drops</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Inverted U: best recall in the middle</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The U-shaped curve reflects primacy bias (strong at the start) and recency bias (strong at the end), with poor performance for content in the middle.</div>
+        <div class="quiz-feedback wrong">The "Lost in the Middle" paper found a U-shaped recall curve — high at the beginning and end, poor in the middle.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. What is the three-stage architecture of a standard RAG system (in correct order)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Generation → Retrieval → Indexing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Retrieval → Indexing → Generation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Indexing → Retrieval → Generation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Indexing → Generation → Retrieval</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RAG follows: Indexing (embed and store documents), Retrieval (find similar chunks for the query), Generation (use retrieved chunks plus query as context for the model).</div>
+        <div class="quiz-feedback wrong">The three stages are Indexing (embed and store), Retrieval (find relevant chunks), then Generation (LLM produces answer from retrieved context).</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. Google's Gemini 1.5 Pro was announced in February 2024 with what maximum context window in research preview?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">200,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">500,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">1,000,000 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">10,000,000 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Gemini 1.5 Pro launched in research preview with 1 million tokens in February 2024, later expanding to 2 million.</div>
+        <div class="quiz-feedback wrong">Gemini 1.5 Pro launched with 1 million tokens in research preview in February 2024.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Microsoft Research published GraphRAG in April 2024. What data structure does it build from the document corpus?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A hierarchical B-tree index for fast keyword retrieval</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A fine-tuned embedding model specific to the domain</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">A knowledge graph with entities, relationships, and community structures</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A decision tree classifying documents by topic</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GraphRAG extracts entities and relationships to build a knowledge graph with community structures, enabling global synthesis queries that chunk-based RAG cannot handle.</div>
+        <div class="quiz-feedback wrong">GraphRAG builds a knowledge graph — extracting entities, relationships, and communities — to enable cross-document synthesis that standard chunk retrieval cannot perform.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. Which retrieval method is generally better for exact-match queries (e.g., specific product names or legal case citations): BM25 or dense vector retrieval?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">BM25 (sparse/keyword retrieval)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Dense vector retrieval (embedding-based)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">They perform identically on exact-match queries</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Dense retrieval with a very high cosine similarity threshold</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BM25 (keyword-based sparse retrieval) excels at exact-match queries because it directly matches terms. Dense retrieval handles semantic similarity better but can miss exact-match cases if the query phrasing differs from document phrasing.</div>
+        <div class="quiz-feedback wrong">BM25 keyword retrieval handles exact-match cases better. Dense embedding search is better for semantic similarity when phrasing varies, but can miss direct term matches.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. What does "Reciprocal Rank Fusion (RRF)" do in a hybrid retrieval pipeline?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Fine-tunes the embedding model using ranked feedback from users</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Combines ranked result lists from multiple retrieval methods (e.g., BM25 + vector) into a single unified ranking</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Recursively splits documents into smaller chunks for better granularity</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Filters retrieved chunks by confidence score before passing to the LLM</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RRF merges ranked lists from multiple retrieval systems by weighting results based on their rank positions, making it robust to score-scale differences between methods.</div>
+        <div class="quiz-feedback wrong">Reciprocal Rank Fusion combines multiple ranked result lists (e.g., from BM25 and vector search) into one unified ranking based on each document's rank position across systems.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Cursor (the AI code editor that reached $100M ARR by early 2025) uses a hybrid approach. What does Cursor use long context for specifically?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Finding which files in the codebase are relevant to the query</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Synthesis and reasoning once relevant files have been identified by RAG</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Indexing the codebase into a vector database</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Generating test cases from API documentation only</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cursor uses RAG to identify relevant files, then loads those files into a long context for deep code reasoning and generation — "RAG for finding, long context for reasoning."</div>
+        <div class="quiz-feedback wrong">Cursor uses long context for the actual reasoning and code synthesis, after RAG has identified which files are relevant. "RAG for finding, long context for reasoning."</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. According to the lesson's decision framework, which scenario most clearly favors LONG CONTEXT over RAG in 2025?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Real-time news monitoring across 10,000 articles per day</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">A petabyte-scale enterprise data warehouse search system</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Finding contradictions between sections of a 300-page technical specification where holistic reasoning across the whole document is required</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">A chatbot that must answer questions about products released after its training cutoff</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Holistic reasoning across a fixed document — especially finding contradictions across widely separated sections — is a case where long context significantly outperforms RAG, which might not retrieve all relevant sections.</div>
+        <div class="quiz-feedback wrong">The contradiction-finding task requires holistic reasoning across the entire document simultaneously. Long context wins here because RAG might not retrieve all the relevant sections that together reveal the contradiction.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. The "sandwich" prompt engineering technique for long-context models places content in what order?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">All supporting context first, then the question, then the answer format instructions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Question first, all documents in the middle, answer format at end</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Critical content and instructions at the beginning, supporting material in the middle, restatement of the key question at the end</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Documents sorted by length (shortest first), question at end</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The sandwich pattern exploits primacy and recency bias: the most critical content goes at the beginning and end (high attention), with supporting material in the middle (lower attention).</div>
+        <div class="quiz-feedback wrong">The sandwich pattern places critical content at the beginning AND end (exploiting primacy/recency bias), with less critical supporting material in the middle.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. What is the key insight that explains why prompt caching can sometimes make long-context approaches CHEAPER than RAG for certain use cases at scale?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Caching eliminates the need to run the LLM at all for repeat queries</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Cached prompts use a smaller model that costs less per token</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">When many users query the same large document corpus, the KV computation for that corpus is paid once and reused at ~90% discount, amortizing the long-context cost across all subsequent queries</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Prompt caching compresses the document to reduce its token count before processing</button>
+        </div>
+        <div class="quiz-feedback right">Correct. For stable, widely-shared corpora (like product documentation), prompt caching means the expensive long-context computation is done once. Subsequent queries pay only ~10% of the full price for the cached prefix, which can undercut RAG's per-query cost at high volume.</div>
+        <div class="quiz-feedback wrong">Prompt caching caches the KV computation state. For a stable corpus with many users, the first call pays full price and subsequent calls reuse the cached computation at ~90% discount — amortizing the long-context overhead across thousands of queries.</div>
+      </div>
+
+      <div class="mt-score" id="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">Review from Start</button>
+    </div>
+  </div>
+
+</div><!-- end content-area -->
+
+<script>
+var COURSE_ID='the-context-window-race';
+var MODULE_ID='the-m7';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI systems architect and lab assistant for AESOP AI Academy, teaching "The Context Window Race" course, Module 7 on RAG vs. Long Context. The student is a law firm engineer in 2023 deciding between RAG and long-context approaches for a 2-million-page legal document corpus. Help them think through: real 2023 pricing (GPT-4 at $0.03/1k input tokens, Claude 2 100k context), cost-per-query calculations, latency differences, retrieval quality trade-offs, and when each approach makes sense. Be specific with numbers. Reference real tools: Pinecone, Weaviate, LlamaIndex, LangChain. Stay on topic; warmly redirect off-topic questions.',
+  l2:'You are an expert AI systems architect and lab assistant for AESOP AI Academy, teaching "The Context Window Race" course, Module 7 on RAG vs. Long Context. The student is analyzing pricing for a customer support AI with 180,000-token documentation corpus and 5,000 queries/day. Help them calculate real costs for: (A) RAG pipeline using Claude 3 Haiku at $0.25/million tokens with ~3,000 retrieved tokens per query, (B) raw long-context at $3/million input tokens for 180k context each call, (C) long-context with Anthropic prompt caching at 90% discount on cached prefix after first call. Walk through the math carefully. Reference real August 2024 Anthropic and OpenAI prompt caching announcements. Stay on topic; warmly redirect off-topic questions.',
+  l3:'You are an expert AI systems architect and lab assistant for AESOP AI Academy, teaching "The Context Window Race" course, Module 7 on RAG vs. Long Context. The student has a legal Q&A system that consistently fails on content from pages 80-150 of 200-page contracts. Help them: diagnose this as a lost-in-the-middle problem (Liu et al. Stanford/UC Berkeley 2023), understand the U-shaped recall curve, explore mitigations (rerankers like Cohere Rerank, document ordering/sandwich pattern, splitting documents and using RAG instead), and decide whether to restructure as a hybrid. Be specific about the 2023 paper findings and practical engineering solutions. Stay on topic; warmly redirect off-topic questions.',
+  l4:'You are an expert AI systems architect and lab assistant for AESOP AI Academy, teaching "The Context Window Race" course, Module 7 on RAG vs. Long Context. The student is designing a hybrid RAG pipeline for a Fortune 500 company: 5 million documents, hundreds of new docs daily, 2,000 employee users, <3 second latency SLA, citation requirements. Walk them through: dual-stage retrieval (BM25 + dense vector), Reciprocal Rank Fusion, reranking (Cohere Rerank or similar), context construction with retrieved chunks, and generation with a long-context model. Discuss real infrastructure choices: Elasticsearch for BM25, Pinecone/Weaviate for vectors, chunk sizing (256-512 tokens typical), update pipeline design. Reference GraphRAG (Microsoft 2024) as an option for synthesis queries. Stay on topic; warmly redirect off-topic questions.'
+};
+
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var _fallbacks={
+  l1:[
+    "Great question on cost. With Claude 2 in mid-2023 at roughly $0.01 per 1,000 input tokens and 100k context, a full-context legal query costs about $1.00 per call in input alone. At 1,000 queries per day, that's $1,000/day just in input tokens — before output and operational costs. A RAG pipeline using a smaller 8k-context model at lower pricing might cost 20–50x less per query by retrieving only 3,000–5,000 relevant tokens instead of stuffing the entire corpus.",
+    "The retrieval quality trade-off is real. RAG's failure mode is retrieval error — if the embedding search doesn't surface the right case precedent, the model answers from whatever it did retrieve. For legal work, that's serious. Long context eliminates retrieval error but introduces position sensitivity: the Stanford 'Lost in the Middle' paper (2023) showed GPT-4 could miss content positioned 40–60% through a long context. For a 100-page contract, content on pages 40–60 is most at risk.",
+    "For your 2-million-page legal corpus, pure long context is structurally impossible — no context window can hold that. You'll need RAG regardless. The real question is what context length to use for generation after retrieval. Using a 16k context with 5–10 retrieved chunks (each ~500 tokens) gives you good coverage with much lower cost. Consider reranking retrieved results so the most relevant passages appear at the beginning of context, not buried in the middle."
+  ],
+  l2:[
+    "Let's run the numbers. For approach B (raw long-context, 180k tokens per call): at Claude 3 Sonnet pricing of approximately $3/million input tokens, each query costs 180,000 × $3/1,000,000 = $0.54 in input tokens. At 5,000 queries/day, that's $2,700/day or roughly $81,000/month in input costs alone — before output tokens.",
+    "Now approach A (RAG): if you retrieve ~3,000 tokens per query using Claude 3 Haiku at $0.25/million tokens, each query costs 3,000 × $0.25/1,000,000 = $0.00075. At 5,000 queries/day: $3.75/day or ~$112/month. That's a 720x cost difference versus raw long-context on this corpus size.",
+    "Approach C (prompt caching) changes the math dramatically. With Anthropic's August 2024 caching, the first call pays full price for the 180k-token corpus prefix. Every subsequent call reuses the cached KV state at ~90% discount. If your documentation corpus is stable, you pay full price once and ~10% per subsequent call. At scale, this can approach RAG's economics while giving you the full-document reasoning quality of long context."
+  ],
+  l3:[
+    "Your pages 80–150 failure is a textbook lost-in-the-middle problem. In a 200-page contract loaded as ~50,000 tokens, pages 80–150 represent roughly the 40–75% position in the context. The Stanford/UC Berkeley paper (Liu et al., 2023) showed models tested including GPT-3.5-Turbo 16k and GPT-4 had dramatically lower recall in exactly this range — sometimes 20–30 percentage points below beginning-of-context performance.",
+    "Three mitigation strategies to consider: First, restructure as hybrid RAG — chunk the contract into 500-token sections, embed them, and retrieve the relevant sections for each specific question. This eliminates position sensitivity entirely. Second, use the sandwich pattern — place the most critical clauses at the beginning and end of your context, use the middle for boilerplate. Third, add a reranker: retrieve candidate sections with embedding search, score them with a cross-encoder like Cohere Rerank, and place the top-ranked sections at the beginning of context.",
+    "The most robust solution for legal work is probably hybrid: use RAG with a reranker to identify the most relevant contract clauses, then load those clauses plus surrounding context into a long-context model for careful analysis. This gives you the precision of retrieval (avoiding position sensitivity) and the holistic reasoning of long context for the actual analysis. Cohere Rerank, launched late 2023, was built partly for exactly this use case."
+  ],
+  l4:[
+    "For your 5-million-document corpus with daily ingestion, you'll want a dual-index architecture. First, a BM25 index (Elasticsearch works well here) for exact-match and keyword queries — employees searching for specific policy names, project codes, or legal citations. Second, a dense vector index (Pinecone, Weaviate, or pgvector in Postgres) for semantic search. Run both in parallel for every query and merge results using Reciprocal Rank Fusion.",
+    "For your <3 second latency SLA: the retrieval stage (BM25 + vector) should complete in 50–200ms at scale. Reranking with Cohere Rerank adds another 100–300ms. Context construction is trivial. Your bottleneck is LLM generation. To hit 3 seconds, you'll want a fast model for most queries — Claude 3 Haiku or GPT-4o-mini can generate 500-token responses in under 2 seconds. Reserve larger models for complex multi-document synthesis.",
+    "For citation requirements, your architecture makes this straightforward. Every retrieved chunk has a source document ID and chunk position in your index. Pass these as structured metadata alongside the text chunks. In your system prompt, instruct the model to cite sources using the provided document IDs. Since you know exactly which chunks are in context, you can post-process the response to verify citations point to actual retrieved documents — eliminating hallucinated citations."
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbacks[labId]||[];
+  if(!arr.length) return "I'm in offline mode. Please try refreshing to restore the AI connection.";
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var welcomes={
+    l1:'Welcome to Lab 1. I\'m here to help you think through the RAG vs. long-context decision for your law firm scenario. Ask me about costs, retrieval quality, latency, or real architectural trade-offs — and I\'ll give you honest, grounded analysis.',
+    l2:'Welcome to Lab 2. I\'ll help you work through the economics of prompt caching versus RAG for your customer support scenario. We\'ll look at real 2024 pricing from Anthropic and OpenAI to build an honest comparison. What would you like to calculate first?',
+    l3:'Welcome to Lab 3. I\'ll help you diagnose and fix your legal Q&A system\'s position-related failures. This is a real problem that many production long-context systems encounter. Describe your issue and let\'s work through the root cause and solutions systematically.',
+    l4:'Welcome to Lab 4. I\'ll help you design a production hybrid pipeline for your enterprise scenario. We\'ll work through indexing strategy, retrieval stages, reranking, context construction, and the generation step — considering your specific constraints of 5M documents, daily ingestion, 3-second latency SLA, and citation requirements.'
+  };
+  addMsg(labId,'ai',welcomes[labId]||'Lab reset. Ready to continue.');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+  var succeeded=false;
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an error. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      succeeded=true;
+      break;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      succeeded=true;
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+  }
+}
+</script>
+
+</body>
+</html>

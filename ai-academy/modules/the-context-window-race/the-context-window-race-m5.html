@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-22 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Context Window Race – M5: What You Can Do With Long Context</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-context-window-race-m5 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-error{color:#f07070;font-size:0.78rem;font-style:italic;padding:0.5rem 1rem;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin:1.25rem 0;}
+.info-card{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.25rem;}
+.info-card-label{font-size:0.58rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.info-card h4{font-family:'Crimson Pro',Georgia,serif;font-size:0.97rem;font-weight:600;color:#e8e3db;margin-bottom:0.4rem;}
+.info-card p{font-size:0.82rem;line-height:1.7;color:#6e6861;}
+.stat-row{display:flex;gap:1.5rem;flex-wrap:wrap;margin:1.25rem 0;}
+.stat-block{flex:1;min-width:140px;background:rgba(201,160,90,0.03);border:1px solid rgba(201,160,90,0.1);border-radius:6px;padding:0.85rem 1rem;text-align:center;}
+.stat-num{font-family:'Crimson Pro',Georgia,serif;font-size:1.6rem;font-weight:600;color:var(--gold);line-height:1;}
+.stat-label{font-size:0.68rem;color:var(--muted);margin-top:0.3rem;line-height:1.4;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1.25rem;}.stat-row{gap:0.75rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════════════ L1 ═══════════════════════════════════════════ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 1</div>
+      <h1>Whole-Document Analysis at Once</h1>
+      <div class="tagline">When a model can hold an entire manuscript, legal filing, or codebase in memory simultaneously, the nature of analysis changes fundamentally.</div>
+      <div class="lesson-question">What does it actually mean to read a 500-page document in a single pass — and why does it matter?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context">
+        <p class="story-text">In 2023, Morgan Stanley began deploying GPT-4 with a 32k-token window to index and query its internal research library of roughly <em>100,000 documents</em>. The firm's financial advisors had previously spent significant time searching across disconnected PDFs. With enough context to hold entire research reports — not just excerpts — the model could synthesize across a full document without losing the thread between page 1 and page 47.</p>
+      </div>
+
+      <div class="section-heading">Why Token Length Changes the Analysis Problem</div>
+      <div class="section-body">
+        <p>Before long-context models, the dominant pattern was <em>retrieval-augmented generation (RAG)</em>: chunk a document into small pieces, embed them, find the most relevant chunks for a query, and inject those chunks into a short context window. This works — but it introduces a fundamental limitation. The model only ever sees <strong>fragments</strong>. It cannot observe how chapter 3 contradicts chapter 11 unless both happen to land in the same retrieval result.</p>
+        <p>Long context removes the chunking step for many tasks. A 200,000-token window (as offered by Claude 3 models from Anthropic as of 2024) can hold approximately <strong>150,000 words</strong> — roughly the length of two typical novels, or a complete corporate annual report plus earnings call transcripts, all at once.</p>
+        <p>The practical shift: instead of asking "which part of this document is relevant?", a model can be asked "read this entire document and tell me what I need to know." The analysis becomes holistic rather than fragmented.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — Legal Discovery</div>
+        <p>Anthropic's technical report for Claude 2.1 (November 2023) demonstrated the model successfully answering questions requiring synthesis across a full 200k-token legal brief — a task impossible with 4k-context predecessors without extensive manual chunking and cross-referencing.</p>
+      </div>
+
+      <div class="section-heading">What Changes When You Can Read the Whole Thing</div>
+      <div class="section-body">
+        <p><strong>Contradiction detection:</strong> If a contract states payment terms in clause 4 and contradicts them in an appendix on page 38, a whole-document model finds the conflict. A chunked RAG system only finds it if both chunks happen to be retrieved together.</p>
+        <p><strong>Structural understanding:</strong> A model holding a full 10-K filing can answer questions about how the risk factors section relates to the MD&amp;A section — because both are present simultaneously, not in separate retrieval windows.</p>
+        <p><strong>Coreference resolution at scale:</strong> In long scientific papers, a pronoun in the conclusion may refer to a term defined in the methods section forty pages earlier. Long context preserves that connection.</p>
+        <p><strong>Longitudinal patterns:</strong> Analyzing a year's worth of customer service transcripts in a single pass allows the model to notice that complaints about a specific product increased sharply in Q3 — a pattern invisible when reading transcripts one at a time.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-block">
+          <div class="stat-num">~750</div>
+          <div class="stat-label">words per 1,000 tokens (approximate)</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">200k</div>
+          <div class="stat-label">token window in Claude 3 models (2024)</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">~150k</div>
+          <div class="stat-label">words that fits — roughly 2 novels</div>
+        </div>
+      </div>
+
+      <div class="section-heading">The Attention Caveat</div>
+      <div class="section-body">
+        <p>Longer windows are not uniformly useful. Research published by researchers at UC Berkeley and MIT in 2023 — colloquially called the "lost in the middle" paper — found that transformer models tend to attend more reliably to information at the <em>beginning</em> and <em>end</em> of a long context than to information buried in the middle. This was documented across GPT-3.5-turbo, Claude 1.3, and other models of that era.</p>
+        <p>Model training has since targeted this weakness. Anthropic's needle-in-a-haystack tests for Claude 3 Opus (March 2024) showed near-perfect recall across positions in a 200k window — but practitioners still verify that critical information is either front-loaded or the model is explicitly prompted to treat the entire document with equal attention.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Takeaway</div>
+        <p>Long-context windows transform document analysis from a retrieval problem into a reading problem. The model becomes less like a search engine — returning relevant snippets — and more like a careful reader who has actually read the whole thing before answering your question.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ Q1 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Whole-Document Analysis at Once — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">What is the primary limitation of retrieval-augmented generation (RAG) compared to long-context whole-document analysis?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">RAG cannot handle documents longer than 10 pages.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">RAG only shows the model fragments of a document, so it may miss relationships between distant sections.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">RAG is always more accurate because it filters out irrelevant content.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">RAG requires more tokens than whole-document analysis.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RAG retrieves the most relevant chunks but the model never sees the full document simultaneously — missing cross-document contradictions or long-range references.</div>
+        <div class="quiz-feedback wrong">Not quite. RAG's core limitation is that the model only ever sees fragments — making it impossible to detect contradictions or connections between distant sections of a document.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">The "lost in the middle" research finding (2023) refers to what phenomenon in long-context models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Models forget the beginning of a conversation after about 10 exchanges.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Longer documents always produce lower-quality summaries than shorter ones.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Transformers attend more reliably to information at the beginning and end of a long context than to information buried in the middle.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Models perform better on documents they were trained on than on new documents.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The paper by researchers at UC Berkeley and MIT showed this positional attention bias across multiple models including GPT-3.5-turbo and Claude 1.3.</div>
+        <div class="quiz-feedback wrong">That's not it. The "lost in the middle" finding specifically documents that transformers show weaker attention to information positioned in the middle of a long context compared to the beginning and end.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">Approximately how many words can fit in a 200,000-token context window?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">About 20,000 words — roughly a short novella.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">About 50,000 words — roughly one novel.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">About 150,000 words — roughly two novels.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">About 500,000 words — roughly an entire encyclopedia volume.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. At approximately 750 words per 1,000 tokens, a 200k token window holds roughly 150,000 words.</div>
+        <div class="quiz-feedback wrong">Not quite. The rough conversion is ~750 words per 1,000 tokens, so 200,000 tokens ≈ 150,000 words — about two standard novels.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB1 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1: Document Analysis Strategy</h1>
+      <div class="tagline">Practice designing long-context analysis tasks with your AI assistant.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You're going to consult with the AI about how to approach whole-document analysis with long-context models. Ask about real scenarios, trade-offs between RAG and long-context, or the "lost in the middle" problem and how to mitigate it.</p>
+        <div class="lab-prompt">Suggested opening: "I have a 300-page legal contract I need to analyze for internal contradictions and unusual risk clauses. How should I approach this with a long-context model, and what should I watch out for?"</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Long Context Analysis</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you think through whole-document analysis strategies using long-context models. Ask me about a specific document analysis challenge, the trade-offs between RAG and full-context approaches, or how to structure your prompts when feeding large documents to a model. What would you like to explore?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about document analysis with long-context models…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ L2 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 2</div>
+      <h1>Code Repository Comprehension</h1>
+      <div class="tagline">A model that can hold an entire codebase in context simultaneously changes what software engineering assistance looks like in practice.</div>
+      <div class="lesson-question">What happens when an AI can read your entire codebase — not just the file you have open?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Real Deployment">
+        <p class="story-text">In early 2024, GitHub Copilot introduced workspace-level context — the ability to index and reason across an entire repository rather than just the currently open file. Engineers at organizations like Shopify publicly described the shift: instead of prompting the assistant about isolated functions, they could ask questions like "Where in this repo does the checkout flow validate discount codes, and is that validation consistent across all entry points?"</p>
+      </div>
+
+      <div class="section-heading">What "Reading a Codebase" Actually Requires</div>
+      <div class="section-body">
+        <p>A typical enterprise repository has between <strong>100,000 and 1,000,000 lines of code</strong>. Even at the more tractable end, understanding a codebase requires holding multiple concerns simultaneously: how modules import each other, where shared utilities are defined, which functions are called from multiple contexts, and where business logic is concentrated versus distributed.</p>
+        <p>Short-context models forced engineers into a narrow mode: paste the relevant code, get a relevant answer. The limitation was that "relevant code" was always chosen by the human, who might not know what else was relevant. This is exactly the problem long context solves — the model can determine what's relevant because it has access to everything.</p>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-card-label">Use Case</div>
+          <h4>Cross-File Refactoring</h4>
+          <p>With full repo context, a model can identify every location where a function is called before suggesting a refactor — preventing breakage invisible to file-local analysis.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Use Case</div>
+          <h4>Bug Root Cause</h4>
+          <p>A bug in the payment module may originate in a utility function used by five other modules. Full-context models trace the call chain across files rather than stopping at the current file's boundary.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Use Case</div>
+          <h4>Onboarding Acceleration</h4>
+          <p>New engineers at companies including Stripe and Vercel have described using long-context chat to ask "explain how authentication works in this codebase" — receiving answers grounded in actual repo structure rather than generic documentation.</p>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">Use Case</div>
+          <h4>Test Coverage Gaps</h4>
+          <p>A model with the full test suite and source code can identify which functions or branches lack corresponding test cases — a task that previously required dedicated coverage tooling.</p>
+        </div>
+      </div>
+
+      <div class="section-heading">The Google DeepMind AlphaCode 2 Example</div>
+      <div class="section-body">
+        <p>In November 2023, Google DeepMind released results for AlphaCode 2, which demonstrated performance at the 85th percentile on competitive programming problems. A key architectural decision was the model's ability to reason about problem constraints holistically — holding the full problem statement plus generated candidate solutions simultaneously during a verification step, rather than evaluating solutions one line at a time.</p>
+        <p>While competitive programming is a narrow domain, the principle generalizes: code comprehension improves when the model holds the complete problem context rather than pieces of it.</p>
+      </div>
+
+      <div class="section-heading">Practical Token Budget for Code</div>
+      <div class="section-body">
+        <p>Code is denser than prose. A 1,000-token budget holds roughly <em>75–100 lines of code with comments</em>, or 150–200 lines of compact code without documentation. This means a 200k-token window can hold approximately <strong>15,000–40,000 lines of code</strong> — enough for a substantial microservice or a moderately sized module within a larger system.</p>
+        <p>For very large monorepos, the practical approach combines long context with smart file selection: the most critical files (entry points, shared utilities, the files under active development) get loaded in full, while peripheral modules may be represented by their function signatures and docstrings only — dramatically compressing token usage while preserving structural information.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — Cursor IDE</div>
+        <p>Cursor, the AI-native code editor, introduced "codebase-wide" context indexing in 2023. Early user reports documented in the Cursor community forum showed engineers at YC-backed startups describing the ability to ask questions like "what does this repo's data model look like?" and receive coherent answers synthesized from schema definitions, migration files, and ORM models spread across dozens of files — a task that previously required reading each file individually.</p>
+      </div>
+
+      <div class="section-heading">The Limits</div>
+      <div class="section-body">
+        <p>Long-context code comprehension is not the same as code execution or formal verification. The model can read and reason about code, but it does not run it. Subtle runtime behaviors — race conditions, memory allocation patterns, network latency interactions — are not visible through static reading alone. Engineers at companies that have deployed these tools consistently note that long-context AI is most valuable for <em>navigation and understanding</em>, while execution-based tools remain necessary for performance profiling and correctness verification.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← L1</button>
+      <button class="pnav-btn" onclick="goPage('p-q2')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ Q2 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Code Repository Comprehension — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">When a long-context model analyzes a full codebase, what specific limitation of file-by-file analysis does it overcome?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It can execute the code and report runtime errors.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">It can trace relationships and dependencies across files without requiring the human to manually identify what's relevant.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It eliminates the need for version control systems like Git.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It automatically rewrites code to remove bugs.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The key insight is that the human no longer has to pre-select relevant code — the model can determine relevance itself because everything is present.</div>
+        <div class="quiz-feedback wrong">Not quite. Long-context models read code statically — they don't execute it. The key advantage is discovering cross-file relationships without the human having to pre-select the relevant files.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">Approximately how many lines of code can fit in a 200,000-token window (assuming commented code)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">About 1,000–2,000 lines.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">About 5,000–8,000 lines.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">About 15,000–40,000 lines.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">About 200,000 lines (one line per token).</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Code with comments runs roughly 75–100 lines per 1,000 tokens, giving a range of ~15,000–40,000 lines in a 200k window depending on comment density.</div>
+        <div class="quiz-feedback wrong">Not quite. Code is denser than prose. With comments, expect roughly 75–100 lines per 1,000 tokens — putting a 200k window at approximately 15,000–40,000 lines.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">What does the lesson identify as the primary remaining limitation of long-context code comprehension?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Models cannot understand code written in languages other than Python.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Models lose context when analyzing more than 5 files at once.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Long context is too expensive for practical use at most companies.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Models read code statically and cannot observe runtime behaviors like race conditions or memory allocation patterns.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Static analysis through reading is powerful for navigation and understanding, but execution-based tools remain necessary for performance profiling and runtime correctness.</div>
+        <div class="quiz-feedback wrong">That's not the limitation identified. The key constraint is that models perform static analysis — they read code but don't run it, so runtime behaviors remain opaque.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB2 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2: Code Comprehension Scenarios</h1>
+      <div class="tagline">Work through real code analysis scenarios with your AI assistant.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Explore how long-context models change the way engineers work with large codebases. Ask the AI about specific scenarios: cross-file refactoring, bug tracing, onboarding help, or how to best structure a large codebase for model ingestion.</p>
+        <div class="lab-prompt">Suggested opening: "I'm onboarding to a new 80,000-line Python monolith and I want to use a long-context model to understand the authentication flow. How should I approach feeding the repo to the model, and what questions should I ask it first?"</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Code Comprehension</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to Lab 2. I'm here to help you think through code repository comprehension using long-context models. Ask me about a specific engineering scenario — cross-file refactoring, bug tracing across modules, onboarding to a new codebase, or how to structure your repo context for maximum model usefulness. What are you working on?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about using long-context models with codebases…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ L3 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 3</div>
+      <h1>Multi-Document Synthesis and Research</h1>
+      <div class="tagline">Research has always required holding many sources in mind simultaneously. Long-context models let AI do the same — synthesizing across sources that would previously require hours of manual cross-referencing.</div>
+      <div class="lesson-question">What changes when you can hand an AI fifty research papers and ask it to synthesize them in a single pass?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Real Deployment — 2024">
+        <p class="story-text">In 2024, Elicit — an AI research assistant used by thousands of academics — moved from a chunk-based retrieval model toward longer-context synthesis passes for its "Elicit Notebooks" feature. Users could load entire sets of abstracts, methods sections, and results tables from dozens of papers and ask synthesis questions that previously required a graduate student to spend a week manually cross-referencing. The platform's research team published an internal case study noting that users asked substantively different (and more sophisticated) questions when they knew the model had access to all the papers simultaneously rather than surfacing one at a time.</p>
+      </div>
+
+      <div class="section-heading">The Multi-Document Problem in Research</div>
+      <div class="section-body">
+        <p>Traditional literature review requires a researcher to: read each source, take notes, hold the notes in working memory, identify patterns across sources, write up the synthesis. Each step introduces information loss and time cost. The bottleneck is human working memory — we can actively hold only a few sources in mind simultaneously while writing.</p>
+        <p>Long-context AI shifts this bottleneck. The model's "working memory" is its context window. If that window is large enough to hold thirty research papers simultaneously, the model can identify patterns, contradictions, and gaps across all thirty — not just the two the researcher happens to be comparing at a given moment.</p>
+      </div>
+
+      <div class="section-heading">Documented Applications</div>
+      <div class="section-body">
+        <p><strong>Drug discovery:</strong> Recursion Pharmaceuticals has described using large-context models to synthesize across thousands of biological assay reports, identifying patterns in compound behavior that would require months of manual analysis. Their partnership with Nvidia (announced 2023) included infrastructure specifically designed to support very long biological text contexts.</p>
+        <p><strong>Intelligence analysis:</strong> The U.S. Office of the Director of National Intelligence published an AI strategy in 2023 that explicitly identified multi-document synthesis — holding dozens of intelligence reports simultaneously — as a priority capability for large-language model deployment, noting that the manual process of cross-referencing reports from different agencies was a significant analytical bottleneck.</p>
+        <p><strong>Academic meta-analysis:</strong> Researchers at Stanford's Center for Research on Foundation Models (CRFM) demonstrated in 2024 that long-context models could perform preliminary meta-analysis steps — extracting effect sizes, sample sizes, and methodological details from collections of 50+ papers — with accuracy sufficient to reduce manual extraction time by approximately 60–70% in pilot studies.</p>
+      </div>
+
+      <div class="section-heading">How Synthesis Quality Differs From Summarization</div>
+      <div class="section-body">
+        <p>Summarizing a single document is straightforward for almost any current model. Multi-document synthesis is harder because it requires <em>comparison</em> rather than just compression. The questions synthesis must answer include:</p>
+        <p><em>Where do sources agree?</em> What conclusions appear across multiple independent studies? <em>Where do sources conflict?</em> Which papers reach different conclusions, and what methodological differences might explain the divergence? <em>What is the aggregate picture?</em> If you had to write one paragraph that represented the state of the field, what would it say?</p>
+        <p>These questions require holding all documents present simultaneously. A model that processes one paper at a time cannot compare paper 3's methodology to paper 17's methodology unless both are in context together.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Note</div>
+        <p>When loading multiple documents for synthesis, front-loading the synthesis question (stating it before the documents) consistently outperforms asking the question after all documents are loaded, per practitioners' published workflow guides for Claude and GPT-4 Turbo as of late 2023. This is likely related to the "lost in the middle" attention pattern — the model attends more reliably to the question when it appears before the documents rather than after a massive context block.</p>
+      </div>
+
+      <div class="section-heading">Citation Integrity — An Emerging Challenge</div>
+      <div class="section-body">
+        <p>Multi-document synthesis at scale introduces a new reliability concern: when the model synthesizes across fifty papers, it may blend claims from different sources in ways that are subtly inaccurate. The claim from paper 7 might get attributed to the framing of paper 22. Legal and academic users must verify that synthesized claims map accurately to their cited sources — a step that remains human responsibility. Tools like Elicit have introduced "grounding" features specifically to preserve which synthesis claim came from which source, addressing this limitation directly.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← L2</button>
+      <button class="pnav-btn" onclick="goPage('p-q3')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ Q3 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Multi-Document Synthesis and Research — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">According to the lesson, what is the key difference between summarization and multi-document synthesis?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Summarization is more accurate because it handles fewer tokens.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Synthesis requires comparison across sources — finding agreements, conflicts, and aggregate patterns — while summarization compresses a single source.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Synthesis is just summarization applied to longer documents.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">There is no meaningful difference; synthesis is just multi-document summarization.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Synthesis requires simultaneous comparison — asking where sources agree, where they conflict, and what the aggregate picture is — which is impossible without holding all sources in context together.</div>
+        <div class="quiz-feedback wrong">Not quite. The core difference is that synthesis requires comparison: identifying where sources agree, disagree, and what the overall picture looks like across all of them — which requires all sources to be present simultaneously.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">The Elicit platform observed that users asked different questions when they knew all papers were available simultaneously rather than surfaced one at a time. What does this suggest?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Users are lazy and ask more questions when work is made easier.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">The quality of AI answers declined because of information overload.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">The availability of full context changes not just the AI's behavior but the nature of the questions users think to ask — enabling more sophisticated research tasks.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Simultaneous access makes users less thorough because they trust the AI more.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. This is an important second-order effect: long context doesn't just make existing tasks faster, it enables categories of questions that users wouldn't have thought to ask in a one-paper-at-a-time retrieval paradigm.</div>
+        <div class="quiz-feedback wrong">Not quite. The Elicit observation is that full-context availability enables more sophisticated question-asking — users realize they can ask comparative and synthetic questions they wouldn't have attempted with piecemeal retrieval.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">What practical workflow tip does the lesson recommend for multi-document synthesis prompts, and why?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Front-load the synthesis question before the documents, because models attend more reliably to the beginning of context due to the "lost in the middle" pattern.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Always ask the question after all documents, so the model has full information before the request.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Break documents into equal-length chunks before loading them.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Ask the same question multiple times to average out any variance in synthesis quality.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Placing the synthesis question before the documents takes advantage of the model's stronger attention to early context — mitigating the "lost in the middle" attention pattern.</div>
+        <div class="quiz-feedback wrong">Not quite. Practitioners have found that front-loading the question (stating it before the documents) produces more reliable results because models attend more strongly to the beginning of context — related to the "lost in the middle" finding.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB3 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3: Research Synthesis Design</h1>
+      <div class="tagline">Practice designing multi-document synthesis workflows with your AI assistant.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Work through a research synthesis challenge with the AI. You might ask about how to structure a prompt for synthesizing across conflicting studies, how to preserve citation grounding in AI synthesis, or how to design a workflow for a specific research domain.</p>
+        <div class="lab-prompt">Suggested opening: "I need to synthesize findings from 30 clinical trial papers on a new diabetes drug. Some show conflicting results. How should I structure my prompts to get a reliable synthesis that preserves which claims come from which papers?"</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Research Synthesis</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to Lab 3. I'm here to help you design effective multi-document synthesis workflows using long-context models. Ask me about structuring synthesis prompts, preserving citation grounding, handling conflicting sources, or designing research workflows for a specific domain. What synthesis challenge are you working on?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about multi-document synthesis strategies…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ L4 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 4</div>
+      <h1>Conversational Memory and Extended Reasoning</h1>
+      <div class="tagline">Long context transforms conversations: instead of forgetting what was said three exchanges ago, a model can hold an entire project's history and reason across it coherently.</div>
+      <div class="lesson-question">When a model can remember every message in a months-long conversation, what new categories of work become possible?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="The Shifting Baseline">
+        <p class="story-text">In November 2022, ChatGPT launched with a context window of approximately 4,096 tokens — enough for roughly a 3,000-word conversation. Heavy users regularly hit this limit during extended technical discussions, causing the model to "forget" earlier context and produce inconsistent advice. By early 2024, GPT-4 Turbo offered 128k tokens and Claude 3 offered 200k — roughly a <em>50-fold increase</em> in conversational memory in eighteen months. The practical effect on how people use AI assistants for complex, ongoing work was substantial.</p>
+      </div>
+
+      <div class="section-heading">What Extended Conversational Memory Enables</div>
+      <div class="section-body">
+        <p><strong>Project continuity:</strong> Engineers at companies like Linear and Notion have described multi-hour AI-assisted design sessions where the entire conversation — including earlier rejected approaches, constraints stated at the beginning, and evolving requirements — remains in context throughout. The model can say "this conflicts with the constraint you mentioned two hours ago" rather than being unaware of that constraint.</p>
+        <p><strong>Iterative refinement:</strong> A writer or analyst working on a long document can have an extended conversation about their draft, with the model retaining all previous feedback, all previous versions of key sections, and all stated preferences — without the user having to re-explain context that was established earlier.</p>
+        <p><strong>Complex multi-step reasoning:</strong> Solving difficult technical, mathematical, or strategic problems often requires working through many sub-problems in sequence, each building on previous conclusions. Long context allows the model to maintain the full chain of reasoning across dozens of steps, catching contradictions introduced in later steps.</p>
+      </div>
+
+      <div class="section-heading">The OpenAI o1 and Extended Chain-of-Thought Connection</div>
+      <div class="section-body">
+        <p>OpenAI's o1 model (released September 2024) made explicit what was already implicit in long-context research: <em>more tokens of reasoning directly correlates with better performance on hard problems</em>. The o1 model uses extended internal "thinking" — generating long chains of reasoning tokens before producing a final answer. This is a form of long-context reasoning applied to the model's own thought process rather than to external documents.</p>
+        <p>On the AIME (American Invitational Mathematics Examination) 2024 benchmark, o1 scored 74% — compared to GPT-4o's 12% on the same problems. The primary architectural difference was the extended reasoning chain: more token "budget" for working through the problem step by step before committing to an answer.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-block">
+          <div class="stat-num">74%</div>
+          <div class="stat-label">o1 score on AIME 2024</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">12%</div>
+          <div class="stat-label">GPT-4o score on same benchmark</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num">~50×</div>
+          <div class="stat-label">context window growth in 18 months (2022–2024)</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Persistent Memory vs. Long Context — The Distinction</div>
+      <div class="section-body">
+        <p>Long context and persistent memory are often confused. <em>Long context</em> means a large active window during a single conversation — everything the model can "see" right now. <em>Persistent memory</em> means information saved across conversations and retrieved for future sessions. They are complementary but different capabilities.</p>
+        <p>OpenAI introduced a "memory" feature for ChatGPT in April 2024, allowing the model to save facts across conversations. This is not long context — it is a retrieval mechanism that populates part of the context window with previously saved information. The distinction matters: persistent memory handles long-term personal preferences and facts; long context handles the complexity of the current working session.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — Customer Support at Scale</div>
+        <p>Intercom reported in their 2024 AI product benchmarks that customer support AI agents using longer conversation context (retaining full ticket history across multiple sessions) resolved complex multi-contact issues at significantly higher rates than agents using only the current session context. Complex billing disputes and technical escalations — which might span 5–8 separate contacts over days — were the primary beneficiary, as the agent could reference what had already been tried, agreed, or promised in earlier sessions.</p>
+      </div>
+
+      <div class="section-heading">The Cognitive Offloading Shift</div>
+      <div class="section-body">
+        <p>Psychologists use the term <em>cognitive offloading</em> to describe using external tools — notes, calculators, diagrams — to reduce the burden on working memory. Long-context AI represents a new form of cognitive offloading: the user can externalize not just individual facts but entire reasoning chains, decision histories, and project contexts to the model's memory, freeing human attention for higher-level judgment.</p>
+        <p>Researchers at Carnegie Mellon's Human-Computer Interaction Institute have begun studying how professionals modify their workflows when AI memory becomes reliable and long. Early findings (2024) suggest the most impactful change is not speed but <em>depth of engagement</em>: users take on more complex, longer-horizon problems when they trust the AI will retain the context rather than having to restart every few exchanges.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← L3</button>
+      <button class="pnav-btn" onclick="goPage('p-q4')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ Q4 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Conversational Memory and Extended Reasoning — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">What was the primary architectural difference between OpenAI's o1 and GPT-4o that explained o1's dramatically higher AIME 2024 score?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">o1 was trained on more mathematics textbooks.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">o1 used a larger base model with more parameters.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">o1 used extended internal reasoning chains — more tokens of "thinking" before producing a final answer — giving it more budget to work through hard problems step by step.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">o1 had access to a calculator tool that GPT-4o lacked.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. o1's extended chain-of-thought reasoning — generating long internal reasoning sequences before answering — was the key architectural driver of its performance improvement on hard mathematical problems.</div>
+        <div class="quiz-feedback wrong">Not quite. The key difference was o1's extended chain-of-thought reasoning: generating long internal thinking sequences before producing a final answer, giving the model more token budget to work through complex problems.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">What is the key distinction between "long context" and "persistent memory" as AI capabilities?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">They are the same thing — both describe how much information a model can retain.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Long context is the active window during one session; persistent memory saves information across sessions and retrieves it for future conversations.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Persistent memory is just long context that has been compressed to save costs.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Long context is only useful for documents; persistent memory is only useful for preferences.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Long context handles current-session complexity; persistent memory handles long-term continuity across separate sessions. They are complementary but distinct mechanisms.</div>
+        <div class="quiz-feedback wrong">Not quite. Long context is the live active window — everything visible in the current session. Persistent memory is a separate retrieval mechanism that saves information across sessions and injects it into future contexts.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">What shift in user behavior did Carnegie Mellon researchers begin observing in 2024 when AI memory became reliable?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Users became more dependent on AI and less able to work independently.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Users completed tasks faster but at the same complexity level as before.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Users asked shorter questions because they trusted the AI to fill in context.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Users took on more complex, longer-horizon problems — the most impactful change was depth of engagement, not speed.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The CMU HCI finding was that reliable AI memory changed the nature of tasks users attempted — enabling more ambitious, longer-horizon projects — not just the speed of completing familiar tasks.</div>
+        <div class="quiz-feedback wrong">Not quite. The CMU research found that reliable memory shifted the type of work users attempted: more complex, longer-horizon problems became tractable because users trusted the AI to hold the full context without losing it.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB4 ═══════════════════════════════════════════ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4: Conversational Memory Design</h1>
+      <div class="tagline">Explore how to structure long AI conversations for complex, extended work.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Practice designing workflows that take advantage of long conversational context. Ask about structuring a multi-session project with an AI assistant, how to set up context at the start of a long conversation, the difference between long context and persistent memory, or how extended reasoning chains work in models like o1.</p>
+        <div class="lab-prompt">Suggested opening: "I'm managing a complex product redesign project over several weeks. I want to use a long-context AI assistant throughout — not just for individual tasks but as a continuous collaborator that remembers all decisions and trade-offs. How should I structure this to get the most out of the long context window?"</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Lab Assistant</span>
+          <div class="chat-badge">Conversational Memory</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4. I'm here to help you design workflows that take full advantage of long conversational context. Ask me about structuring extended AI collaborations, setting up context for complex projects, the difference between long context and persistent memory, or how extended reasoning chains affect model performance on hard problems. What project are you thinking about?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Ask about conversational memory and extended reasoning workflows…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ MODULE TEST ═══════════════════════════════════════════ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 5 Test</h1>
+      <div class="tagline">What You Can Do With Long Context — 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. What is the core advantage of whole-document analysis over retrieval-augmented generation (RAG)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">The model can detect relationships and contradictions between any two sections because the entire document is simultaneously present.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Whole-document analysis is always faster than RAG at returning answers.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">RAG cannot handle documents written in technical language.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Whole-document analysis does not require a language model — it uses traditional search.</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Review Lesson 1: the key advantage is simultaneous access to all sections, enabling cross-document relationship detection.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. Morgan Stanley's 2023 deployment of GPT-4 for internal research primarily aimed to solve what problem?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Replacing human financial advisors entirely.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Generating new investment research reports autonomously.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Allowing advisors to query and synthesize across a large library of disconnected research documents more efficiently.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Translating research documents into multiple languages.</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Review Lesson 1: Morgan Stanley used GPT-4 with a 32k window to index and query internal research, enabling advisors to work across the full document rather than disconnected PDF excerpts.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. The "lost in the middle" research (2023) found that transformer models most reliably attend to information at what position in a long context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Only the very last few paragraphs before the query.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">The beginning and end of the context — with weaker attention to information in the middle.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Evenly distributed throughout, with no positional bias.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">The middle sections, because earlier content is treated as preamble.</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Review Lesson 1: the finding was that models attend more strongly to beginning and end, with a "lost in the middle" dip for information positioned centrally in long contexts.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Approximately how many lines of commented code fit in a 200,000-token context window?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">About 2,000–5,000 lines.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">About 15,000–40,000 lines.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">About 100,000–200,000 lines (roughly one line per token).</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">About 500–1,000 lines because code is extremely token-dense.</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Review Lesson 2: at ~75–100 lines of commented code per 1,000 tokens, a 200k window holds approximately 15,000–40,000 lines.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. GitHub Copilot's workspace-level context feature allowed engineers to ask fundamentally different questions. Which of the following is an example of a question that requires repo-wide context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">What does this function return?</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Fix the syntax error on line 42.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Is the discount code validation logic consistent across all entry points in this codebase?</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">What is the purpose of this class?</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cross-entry-point consistency analysis requires knowing every place that validation logic is called — information spread across the entire repo.</div>
+        <div class="quiz-feedback wrong">Review Lesson 2: questions requiring knowledge of the full codebase — like consistency checks across all entry points — are the ones that specifically benefit from whole-repo context.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. What does the lesson identify as the primary limitation of long-context code comprehension that execution-based tools must still handle?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Runtime behaviors like race conditions, memory allocation patterns, and performance characteristics — invisible to static reading.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Understanding variable names and function signatures.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Reading code written in languages other than English comments.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Long-context models cannot handle more than 5 files simultaneously.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Static reading is powerful for navigation and understanding; execution-based tools remain necessary for runtime correctness and performance profiling.</div>
+        <div class="quiz-feedback wrong">Review Lesson 2: the core limitation is that models read statically — they cannot observe what actually happens when code runs, making runtime behaviors opaque.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. Elicit's shift toward longer-context synthesis passes revealed a second-order effect. What was it?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Users stopped reading primary sources and relied entirely on AI summaries.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Users asked substantively more sophisticated questions when they knew the model had access to all papers simultaneously rather than one at a time.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Longer context made synthesis less reliable because the model was confused by more information.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Speed of producing summaries decreased significantly with more papers loaded at once.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Full-context availability changed the nature of users' questions — enabling more ambitious research tasks that weren't attempted in a piecemeal retrieval paradigm.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: the Elicit finding was that users' questions became more sophisticated when they knew all papers were available simultaneously — a behavioral shift, not just a speed improvement.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. Why does multi-document synthesis require all documents to be present simultaneously in the context window?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Because language models cannot process text that has been summarized from multiple sources.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Because comparing methodology in paper 3 with methodology in paper 17 requires both papers to be visible to the model at the same time.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Because individual document summaries are always inaccurate and the full text must be present for quality control.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Because synthesis doesn't actually require comparing documents — it just requires reading each one carefully.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Comparison across documents — the core of synthesis — requires all compared documents to be simultaneously available in the active context.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: synthesis requires comparison, and comparison requires simultaneous access. A model processing one paper at a time cannot compare methodology details from two different papers.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. The Stanford CRFM pilot studies on long-context meta-analysis found that AI assistance reduced manual data extraction time by approximately what percentage?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">About 10–15%.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">About 30–40%.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">About 60–70%.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">About 95% — near-complete automation.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Stanford CRFM's 2024 pilot showed approximately 60–70% reduction in time for extracting effect sizes, sample sizes, and methodological details from collections of 50+ papers.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: the Stanford CRFM pilots showed approximately 60–70% reduction in manual extraction time for meta-analysis tasks.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. What citation integrity risk does long-context multi-document synthesis introduce?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">The model may refuse to synthesize sources it hasn't been trained on.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Longer contexts always produce hallucinated citations that don't exist.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">The model may blend claims from different sources, attributing a claim from one paper to the framing or citation of another.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Models cannot cite documents they were not pre-trained on.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Synthesized claims must be verified against their actual source documents — tools like Elicit have built grounding features specifically to address this blending risk.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: the risk is cross-source blending — a synthesized claim may accurately reflect something said somewhere across the fifty papers, but be attributed to the wrong source.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. How much did context windows grow between ChatGPT's November 2022 launch (4,096 tokens) and Claude 3's 2024 release (200,000 tokens)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Approximately 5×.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Approximately 20×.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Approximately 50×.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Approximately 200×.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. From ~4k to ~200k tokens is roughly a 50-fold increase in eighteen months.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: 200,000 ÷ 4,096 ≈ 49 — roughly 50× growth in approximately eighteen months.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. What was OpenAI o1's score on the AIME 2024 benchmark, versus GPT-4o's score on the same test?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">o1: 95%, GPT-4o: 80%.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">o1: 74%, GPT-4o: 12%.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">o1: 50%, GPT-4o: 45%.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">o1: 30%, GPT-4o: 5%.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. o1 scored 74% versus GPT-4o's 12% on AIME 2024 — a dramatic improvement driven by extended chain-of-thought reasoning.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: o1 scored 74% and GPT-4o scored 12% on AIME 2024 — a 6× performance gap driven by o1's extended internal reasoning chains.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. OpenAI introduced a "memory" feature for ChatGPT in April 2024. According to the lesson, how does this differ from long context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Memory is a larger context window; long context refers to in-session token limits.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Memory saves information across separate sessions and retrieves it into future contexts; long context is the active window during a single conversation.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">They are essentially the same — "memory" is just marketing language for long context.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Memory stores code; long context handles natural language.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Long context = current session active window. Persistent memory = cross-session retrieval that populates part of a future context. Complementary but distinct.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: persistent memory saves facts across sessions; long context is the live working window. They solve different problems and are complementary.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. What practical workflow recommendation does the lesson make for front-loading synthesis questions, and what is the rationale?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Ask the question last so the model has read everything before responding — like a human reading before answering.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Place the question in the middle of the document list to ensure equal weighting.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">State the synthesis question before the documents, because models attend more reliably to information at the beginning of context due to the "lost in the middle" bias.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">The question placement does not matter — models attend equally to all positions in well-trained versions.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Front-loading the question exploits stronger early-context attention and counteracts the "lost in the middle" weakness.</div>
+        <div class="quiz-feedback wrong">Review Lessons 1 and 3: front-loading the question takes advantage of stronger beginning-of-context attention — directly addressing the "lost in the middle" bias documented in transformer models.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. Carnegie Mellon's HCI research found that reliable AI memory most impactfully changed which aspect of user behavior?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Speed of completing routine tasks — users worked faster on familiar work.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Users stopped taking personal notes because the AI remembered everything for them.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Depth of engagement — users took on more complex, longer-horizon problems when they trusted the AI to hold full project context reliably.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Users became more dependent on AI validation before making any decision.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The CMU finding was that reliable AI memory enabled more ambitious work — the shift was in the complexity and horizon of tasks attempted, not just execution speed.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: CMU's early findings showed the most impactful change was depth of engagement — users attempting more complex, longer-horizon projects when AI context was reliable.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">Review from Start</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var COURSE_ID='the-context-window-race';
+var MODULE_ID='the-m5';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var _sc=document.querySelector('.content');
+  if(_sc) _sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var feedbackClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+feedbackClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var feedbackClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+feedbackClass);
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy, specifically for the course "The Context Window Race," Module 5: What You Can Do With Long Context. Stay on topic — help students explore long-context AI applications. If a student goes off-topic, warmly redirect them back to the lesson material. Keep responses focused, practical, and under 200 words.\n\n';
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are an AI lab assistant for AESOP AI Academy — The Context Window Race, Module 5, Lesson 1: Whole-Document Analysis at Once. Help students think through how to use long-context models for document analysis tasks. Topics you should address: the difference between RAG (retrieval-augmented generation) and whole-document analysis, when to use each approach, how to structure prompts for large document analysis, the "lost in the middle" attention problem and how to mitigate it (front-loading critical information, using models with demonstrated needle-in-a-haystack performance like Claude 3), practical applications like legal contract analysis, financial document review, and research report synthesis. Use specific real examples from the lesson: Morgan Stanley\'s GPT-4 deployment, Anthropic\'s Claude 2.1 200k demonstration, the UC Berkeley/MIT "lost in the middle" research. Keep responses practical and under 200 words. Redirect off-topic questions warmly.',
+  l2: 'You are an AI lab assistant for AESOP AI Academy — The Context Window Race, Module 5, Lesson 2: Code Repository Comprehension. Help students think through using long-context models for codebase analysis. Topics: cross-file refactoring with full-repo context, bug tracing across module boundaries, onboarding to unfamiliar codebases, identifying test coverage gaps, structuring repository context for model ingestion (which files to prioritize vs. represent with signatures only), the difference between static analysis (what long-context models do) and dynamic/runtime analysis (what execution tools do). Use real examples: GitHub Copilot workspace context, Cursor IDE codebase indexing, AlphaCode 2 holistic reasoning. Be practical: help students design real workflows for their codebase challenges. Keep responses under 200 words. Stay on topic.',
+  l3: 'You are an AI lab assistant for AESOP AI Academy — The Context Window Race, Module 5, Lesson 3: Multi-Document Synthesis and Research. Help students design effective research synthesis workflows using long-context models. Topics: structuring prompts for synthesizing across conflicting studies, preserving citation grounding (which claim came from which paper), how synthesis differs from summarization (comparison vs. compression), front-loading the synthesis question before documents to counteract "lost in the middle," handling contradictory findings across sources, domain-specific synthesis (clinical trials, biological assays, intelligence reports, academic meta-analysis). Use real examples: Elicit platform shift, Recursion Pharmaceuticals biological synthesis, Stanford CRFM meta-analysis pilots, ODNI AI strategy. Help students design concrete workflows for their specific research challenges. Keep responses under 200 words. Stay on topic.',
+  l4: 'You are an AI lab assistant for AESOP AI Academy — The Context Window Race, Module 5, Lesson 4: Conversational Memory and Extended Reasoning. Help students design workflows for complex, extended AI collaborations. Topics: structuring long project conversations to preserve context (stating constraints and requirements early, maintaining a running "decisions log" in the conversation), the difference between long context (current session) and persistent memory (cross-session, like ChatGPT memory feature), extended chain-of-thought reasoning (how o1-style models use more tokens to reason through hard problems), how to manage context window budget in very long conversations (periodic summarization, priority context injection), cognitive offloading — using AI memory to take on more ambitious projects. Use real examples: o1 AIME 74% vs GPT-4o 12%, OpenAI memory feature April 2024, Carnegie Mellon HCI depth-of-engagement finding, Intercom customer support multi-session context. Help students design practical workflows. Keep responses under 200 words. Stay on topic.'
+};
+
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var _fallbackBanks={
+  l1:[
+    "Great question. For whole-document analysis, the key advantage over RAG is that you don't need to pre-select which sections are relevant — the model sees everything simultaneously. For a 300-page legal contract, I'd recommend: (1) front-load your synthesis question before the document, (2) explicitly ask the model to flag internal contradictions, and (3) use a model with demonstrated 200k-context performance like Claude 3. The 'lost in the middle' attention bias means critical clauses buried on page 150 may get less attention — front-loading your question helps counteract this.",
+    "For contradiction detection in long contracts, structure your prompt like this: 'The following contract may contain internal inconsistencies. As you read, flag any clauses that contradict other clauses, noting the specific sections involved.' This explicit instruction keeps the model attending to cross-section relationships rather than just summarizing each section independently. What type of contract are you analyzing — standard commercial, employment, or something more specialized?",
+    "A practical tip for large document analysis: break your analysis into passes. First pass: 'Read this document and identify the 5 most important structural elements.' Second pass: 'Now check whether element 2 is consistent with element 4.' Multi-pass analysis gives the model focused attention tasks rather than one overwhelming instruction, which tends to produce more reliable results on very long documents."
+  ],
+  l2:[
+    "For onboarding to a large Python monolith, I'd suggest a three-step approach: (1) Load the entry points and main application files first to get structural orientation. Ask 'Describe the overall architecture and main data flows.' (2) Then load the authentication-specific files plus the shared utilities they depend on. Ask 'Trace the authentication flow from request entry to session creation.' (3) Finally, load the test files related to authentication. Ask 'Are there any authentication paths not covered by these tests?' This staged approach manages token budget while building coherent understanding.",
+    "For cross-file refactoring with long context, the key is to load all files that might call the function you're refactoring — not just the function's own file. Ask the model: 'This function [function name] needs to change. Identify every location in the provided files where it's called, what arguments are passed, and what the caller expects from the return value.' This gives you a complete impact analysis before making any changes. What function are you planning to refactor?",
+    "The static vs. dynamic analysis distinction is practically important: use long-context models for navigation, understanding, and planning — 'Where is X in this codebase? How does Y connect to Z? What would need to change if I modified this?' Use execution-based tools for verification — coverage reports, profilers, integration tests. The best engineering workflows combine both: AI for understanding and planning, execution tools for validation."
+  ],
+  l3:[
+    "For synthesizing across conflicting clinical trial papers, structure your prompt in layers: (1) 'Extract from each paper: study size, intervention, primary outcome, and key result.' (2) 'Now identify papers where primary outcomes conflict, and note the methodological differences that might explain the conflict.' (3) 'Write a synthesis paragraph that accurately represents both the consensus and the points of genuine scientific disagreement.' Front-loading all three questions before the papers helps keep the model's attention on comparison throughout rather than just summarizing each paper independently.",
+    "Citation grounding is the most important reliability concern in multi-document synthesis. Elicit addressed this by building explicit 'grounding' features that link each synthesized claim back to its source. You can replicate this manually by asking: 'For each claim in your synthesis, cite the specific paper (by number/title) that supports it.' Then spot-check a sample of the citations against the originals. This won't catch all blending errors but significantly reduces the risk of cross-source attribution mistakes.",
+    "When you have truly conflicting results across studies, the synthesis should make the conflict explicit rather than averaging it away. A good synthesis prompt for conflicting evidence: 'Summarize the findings, explicitly noting where papers disagree and what methodological differences (sample size, population, endpoint definition, follow-up duration) might explain the divergence. Do not resolve conflicts — represent them accurately.' This produces a more scientifically honest synthesis than one that papers over the disagreements."
+  ],
+  l4:[
+    "For a multi-week product redesign project, I'd recommend establishing a 'context preamble' at the start of each session: a concise summary of all previous decisions, constraints, and rejected approaches. Update this preamble at the end of each session. This is different from persistent memory (which saves automatically) — it's a manually maintained project brief that you prepend to each conversation. Include: key constraints, decisions made and their rationale, and options explicitly ruled out. This gives the model full context from the first message even across separate sessions.",
+    "The o1 example is instructive for understanding extended reasoning: the model improves on hard problems not by being larger, but by spending more tokens on thinking before answering. You can partially replicate this with other models using chain-of-thought prompts: 'Before answering, think through all the relevant constraints and trade-offs step by step.' This explicit instruction increases reasoning depth — especially valuable for complex design decisions where you want the model to consider second-order effects, not just obvious first-order answers.",
+    "On the long context vs. persistent memory distinction: think of long context as your working memory during a session — everything you can actively hold and reason about right now. Persistent memory is more like your long-term notes — facts and preferences you've stored that get retrieved and injected into new sessions. For a complex project, you want both: long context to handle the full complexity of the current session, and persistent memory (or your own preamble) to carry forward decisions made in previous sessions. Neither alone is sufficient for genuinely extended project work."
+  ]
+};
+
+function _fallbackReply(labId){
+  var bank=_fallbackBanks[labId]||_fallbackBanks['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=bank[idx%bank.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var welcomes={
+    l1:'Welcome to Lab 1. I\'m here to help you think through whole-document analysis strategies using long-context models. Ask me about a specific document analysis challenge, the trade-offs between RAG and full-context approaches, or how to structure your prompts when feeding large documents to a model. What would you like to explore?',
+    l2:'Welcome to Lab 2. I\'m here to help you think through code repository comprehension using long-context models. Ask me about a specific engineering scenario — cross-file refactoring, bug tracing across modules, onboarding to a new codebase, or how to structure your repo context for maximum model usefulness. What are you working on?',
+    l3:'Welcome to Lab 3. I\'m here to help you design effective multi-document synthesis workflows using long-context models. Ask me about structuring synthesis prompts, preserving citation grounding, handling conflicting sources, or designing research workflows for a specific domain. What synthesis challenge are you working on?',
+    l4:'Welcome to Lab 4. I\'m here to help you design workflows that take full advantage of long conversational context. Ask me about structuring extended AI collaborations, setting up context for complex projects, the difference between long context and persistent memory, or how extended reasoning chains affect model performance on hard problems. What project are you thinking about?'
+  };
+  var welcome=welcomes[labId]||welcomes['l1'];
+  addMsg(labId,'ai',welcome);
+  var btn=document.getElementById('send-'+labId);
+  var inp=document.getElementById('inp-'+labId);
+  if(btn) btn.disabled=false;
+  if(inp) inp.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  inp.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(chatExchanges[labId]===undefined) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    setTimeout(function(){
+      var reply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:reply});
+      addMsg(labId,'ai',reply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.disabled=false;
+      inp.focus();
+    },600);
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:ACADEMY_GUARDRAIL+LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I had trouble generating a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fallbackReply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fallbackReply});
+      addMsg(labId,'ai',fallbackReply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.disabled=false;
+      inp.focus();
+      return;
+    }
+  }
+}
+
+updateTabs();
+</script>
+
+</body>
+</html>

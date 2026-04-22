@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-22 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Context Window Race – M6: Lost in the Middle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-context-window-race-m6 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.data-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.82rem;}
+.data-table th{background:rgba(var(--accent-rgb),0.06);border:1px solid var(--border-dark);padding:0.55rem 0.85rem;text-align:left;color:var(--accent);font-weight:700;letter-spacing:0.05em;font-size:0.75rem;text-transform:uppercase;}
+.data-table td{border:1px solid var(--border-dark);padding:0.55rem 0.85rem;color:#6e6861;line-height:1.55;}
+.data-table tr:hover td{background:rgba(255,255,255,0.01);}
+.data-table td strong{color:#c0b8af;}
+.inline-diagram{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin:1.25rem 0;font-family:'Crimson Pro',Georgia,serif;font-size:0.9rem;}
+.inline-diagram .diag-label{font-size:0.58rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
+.diag-row{display:flex;align-items:center;gap:0.5rem;margin:0.35rem 0;font-size:0.82rem;}
+.diag-seg{padding:0.3rem 0.65rem;border-radius:3px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.seg-hi{background:rgba(var(--accent-rgb),0.12);border:1px solid rgba(var(--accent-rgb),0.25);color:var(--accent);}
+.seg-mid{background:rgba(100,100,100,0.1);border:1px solid rgba(100,100,100,0.2);color:#4a5a6a;}
+.seg-lo{background:rgba(201,160,90,0.08);border:1px solid rgba(201,160,90,0.15);color:var(--gold);}
+.seg-label{color:#4a5a6a;font-size:0.78rem;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 1</div>
+      <h1>The Lost-in-the-Middle Problem</h1>
+      <div class="tagline">Why longer context doesn't mean better recall — and the research that proved it.</div>
+      <div class="lesson-question">When you give an AI model a 100,000-token document, where does it actually pay attention?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Discovery">
+        <p class="story-text">In 2023, researchers at Stanford and UC Berkeley set out to answer a deceptively simple question: does feeding a language model more context actually help it find relevant information? They built a task called <em>multi-document question answering</em> — hide a gold-standard answer inside a set of documents, then ask the model to find it. What they discovered reshaped how engineers think about context windows entirely.</p>
+        <p class="story-text">The paper — <em>"Lost in the Middle: How Language Models Use Long Contexts"</em> — published by Liu et al. in 2023, showed that performance dropped sharply when the relevant information was placed in the middle of a long context. Models consistently retrieved facts from the very beginning and very end of their input with high accuracy. Everything in between degraded.</p>
+      </div>
+
+      <div class="section-heading">What the Study Actually Found</div>
+      <div class="section-body">
+        <p>The researchers tested GPT-3.5-Turbo (16k version), Claude 1.3 (100k version), and several open-source models. They varied where the gold document appeared among 10–30 distractor documents. The findings were consistent across all models tested.</p>
+        <p>When the relevant document was <strong>first or last</strong> in the context, accuracy was high — often above 70%. When it was placed in the <strong>middle positions</strong>, accuracy dropped to near-random performance in some configurations. This U-shaped curve held even when the total number of documents varied and even when models were explicitly told that the answer existed somewhere in the provided documents.</p>
+        <p>The effect scaled with context length. Longer contexts made the middle problem <em>worse</em>, not better. A model with a 100k-token window did not improve middle retrieval compared to a 4k window — it simply had more middle to lose things in.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Liu et al. 2023 Result</div>
+        <p>Across all tested models, performance on the multi-document QA task followed a U-shaped curve relative to where the relevant document appeared in the context. Primary sources: Liu, N. F., Lin, K., Hewitt, J., et al. "Lost in the Middle: How Language Models Use Long Contexts." <em>Transactions of the Association for Computational Linguistics</em>, 2024.</p>
+      </div>
+
+      <div class="section-heading">Why This Happens</div>
+      <div class="section-body">
+        <p>The mechanism is rooted in how transformer attention interacts with positional encoding and training data. During pretraining and fine-tuning, most examples are short enough that every position gets roughly equal attention. When inference extends far beyond training distribution lengths, the model's learned attention patterns over-index on <em>recency</em> (the end of context) and <em>primacy</em> (the beginning, where instructions live).</p>
+        <p>Additionally, instruction-following fine-tuning often places system prompts at the start and desired outputs at the end, reinforcing the model's tendency to anchor on those positions. The middle of a long context, by contrast, is structurally the least reinforced region during training.</p>
+        <p>This is not a bug that can be trivially patched. It reflects the statistical structure of how models are trained, and it persists even in models with purpose-built long-context architectures like Claude's constitutional training or GPT-4's system-level fine-tuning.</p>
+      </div>
+
+      <div class="inline-diagram">
+        <div class="diag-label">Recall Accuracy by Position (U-Curve Illustration)</div>
+        <div class="diag-row"><div class="diag-seg seg-hi">Beginning</div><div class="seg-label">→ High recall (70–80%)</div></div>
+        <div class="diag-row"><div class="diag-seg seg-mid">Middle</div><div class="seg-label">→ Degraded recall (30–50%, approaching chance)</div></div>
+        <div class="diag-row"><div class="diag-seg seg-lo">End</div><div class="seg-label">→ High recall (65–75%)</div></div>
+      </div>
+
+      <div class="section-heading">Key Terms</div>
+      <div class="key-term"><span class="kt-term">Lost-in-the-Middle</span><span class="kt-def">The empirically documented phenomenon where LLMs show degraded retrieval accuracy for information placed in the middle sections of long contexts, even when that information is directly relevant to the query.</span></div>
+      <div class="key-term"><span class="kt-term">U-Shaped Recall Curve</span><span class="kt-def">The pattern where model accuracy is highest for content at the beginning and end of context, with a performance trough for content at intermediate positions.</span></div>
+      <div class="key-term"><span class="kt-term">Positional Bias</span><span class="kt-def">The tendency of transformer models to assign disproportionate attention weight to tokens in certain positional ranges, especially start and end, irrespective of semantic relevance.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Why It Matters for Practice</div>
+        <p>Engineers who paste 50 pages of documentation into a context window and assume the model "read" all of it are making a measurably wrong assumption. The model read the beginning and end. The middle is probabilistically degraded. This has direct implications for RAG design, prompt engineering, and any workflow that feeds large documents to LLMs.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">The Lost-in-the-Middle Problem · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">1. In Liu et al.'s 2023 study, which positional pattern of recall accuracy did they consistently observe across tested models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">High at beginning and end, low in the middle (U-shaped)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Uniformly high across all positions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">High only at the very end (recency effect only)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Declining steadily from beginning to end</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The key finding was a U-shaped curve — strong performance at start and end positions, with degraded retrieval from middle positions.</div>
+        <div class="quiz-feedback wrong">Not quite. The study found a U-shaped pattern: high recall at beginning and end, but degraded performance for information placed in the middle sections of the context.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">2. How did increasing total context length affect the lost-in-the-middle problem?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">It eliminated the problem by giving the model more "room" to attend</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">It made the problem worse, creating a larger middle region of degraded recall</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">It had no measurable effect on positional recall accuracy</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">It improved middle recall while degrading end recall</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Longer contexts made the middle problem worse, not better — there was simply more middle for information to get lost in.</div>
+        <div class="quiz-feedback wrong">Not correct. Longer context windows did not help. They increased the size of the middle "trough," making it easier for relevant information to be missed.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">3. Which training-related explanation best accounts for why models show positional bias toward beginning and end of context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Models are explicitly programmed to ignore middle tokens to save compute</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Tokenization algorithms compress middle tokens more aggressively</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Training data is mostly short sequences, and fine-tuning reinforces attention to instruction positions (start) and outputs (end)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Long-context models use separate attention heads for middle tokens that are undertrained</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The statistical structure of training data (mostly short examples) and instruction fine-tuning (system prompts at start, responses at end) reinforces the primacy and recency bias observed at inference.</div>
+        <div class="quiz-feedback wrong">Not quite. The accepted mechanistic explanation relates to training data distribution and fine-tuning structure — not explicit programming or tokenization differences.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← L1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Mapping the U-Curve</h1>
+      <div class="tagline">Discuss the lost-in-the-middle phenomenon with your AI research assistant</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are designing a retrieval system that must surface facts from long legal documents. Your colleague claims that giving the model a 100k-token context window is sufficient — "it can read the whole contract." Use this chat to explore the lost-in-the-middle problem and develop a counter-argument backed by the Liu et al. findings.</p>
+        <div class="lab-prompt">Starter: Ask the assistant to explain why a large context window doesn't guarantee accurate recall from middle sections, and what the 2023 research showed specifically. Then ask how you'd explain this risk to a non-technical stakeholder.</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Research Assistant</span>
+          <div class="chat-badge">Lost-in-the-Middle Focus</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Ready to explore the lost-in-the-middle problem. Ask me anything about positional recall, the Liu et al. 2023 findings, or how to communicate these limitations to stakeholders. What would you like to dig into first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l2')">L2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ L2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 2</div>
+      <h1>Measuring What Models Actually Remember</h1>
+      <div class="tagline">Benchmarks, needle-in-a-haystack tests, and what real evaluations reveal about long-context performance.</div>
+      <div class="lesson-question">How do researchers actually measure whether a model uses its full context window — and what do those tests expose?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Needle Test">
+        <p class="story-text">In late 2023, developer Greg Kamradt published what became known as the <em>"needle in a haystack"</em> test — a deceptively simple evaluation that exposed long-context limitations in a visually striking way. Kamradt inserted a single unusual fact (the "needle") into a large document of Paul Graham essays (the "haystack") at controlled positions and depths, then asked models to retrieve it. The resulting heatmaps showed exactly where models failed.</p>
+        <p class="story-text">When Anthropic and OpenAI ran similar evaluations on Claude 2.1 and GPT-4 Turbo respectively, they published the results publicly. Claude 2.1 showed degraded retrieval from certain middle-depth positions at 100k tokens. OpenAI's evaluations on GPT-4 Turbo (128k) revealed similar patterns. These weren't hidden results — they appeared in official technical documentation.</p>
+      </div>
+
+      <div class="section-heading">The Needle-in-a-Haystack Methodology</div>
+      <div class="section-body">
+        <p>The standard NIAH (needle in a haystack) protocol varies two dimensions: <strong>context depth</strong> (how far into the total token budget the needle is placed, expressed as a percentage) and <strong>context length</strong> (total tokens in the input). A model is then scored on whether it can reproduce the needle verbatim or answer a question whose answer requires the needle.</p>
+        <p>Results are plotted as a 2D heatmap — context length on one axis, depth percentage on the other, with color indicating accuracy. A perfect model would show uniform high accuracy across the entire grid. Real models show characteristic failure patterns: often darker (worse) in the center-left region of the grid, corresponding to information placed early-middle in medium-to-long contexts.</p>
+        <p>By 2024, NIAH had become a standard evaluation component. Models from Mistral, Cohere, Google, and others all published NIAH heatmaps as part of their technical releases. The benchmark proved so useful precisely because it was simple enough to be reproducible and visually interpretable.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Documented Public Results</div>
+        <p>Anthropic's Claude 2.1 technical documentation (November 2023) noted that "without a prompt that encourages Claude to look for the needle," retrieval rates at certain positions dropped substantially. OpenAI's GPT-4 Turbo system card and independent evaluations by researchers including those at Databricks corroborated similar positional effects across different model families.</p>
+      </div>
+
+      <div class="section-heading">Beyond Needle Tests: SCROLLS and HELMET</div>
+      <div class="section-body">
+        <p>NIAH tests recall of a single planted fact, which is a useful but narrow proxy. Two additional benchmark suites address more realistic long-context tasks:</p>
+        <p><strong>SCROLLS</strong> (Shaham et al., 2022) — Summarize and Complete Long Documents — is a collection of long-document NLP tasks including narrative QA, contract NLI, and long-form summarization. It tests whether models can synthesize and reason across documents, not just retrieve planted facts. Performance on SCROLLS correlates with real-world use cases more directly than NIAH.</p>
+        <p><strong>HELMET</strong> (Yen et al., 2024, published by Princeton researchers) — How to Evaluate Long-context Models Effectively and Thoroughly — introduced a comprehensive suite that tested models at multiple context lengths on citation recall, summarization, re-ranking, and multi-hop reasoning. HELMET specifically found that NIAH scores could be <em>misleading</em>: some models achieved near-perfect NIAH scores while failing on more realistic long-context tasks. The benchmark exposed a gap between synthetic recall and genuine comprehension.</p>
+      </div>
+
+      <div class="section-heading">What the Benchmarks Collectively Show</div>
+      <div class="section-body">
+        <p>Taken together, NIAH, SCROLLS, and HELMET reveal a consistent picture: effective context utilization does not scale linearly with context window size. Models that advertise 128k or 1M token windows routinely underperform on tasks requiring integration of information from middle positions within those windows.</p>
+        <p>The practical ceiling — the token range within which models reliably use their full context — is consistently lower than the advertised maximum. Independent evaluations by Databricks (2024) placed this effective ceiling for most models at roughly 16k–32k tokens for reliable multi-step reasoning, even for models marketed with 100k+ windows.</p>
+      </div>
+
+      <div class="data-table-wrapper" style="overflow-x:auto;margin:1rem 0;">
+        <table class="data-table">
+          <thead><tr><th>Benchmark</th><th>What It Tests</th><th>Key Finding</th></tr></thead>
+          <tbody>
+            <tr><td><strong>NIAH</strong></td><td>Single-fact retrieval at variable depth/length</td><td>U-shaped / positional failure patterns; widely replicated</td></tr>
+            <tr><td><strong>SCROLLS</strong></td><td>Summarization, QA, NLI on real long docs</td><td>Performance degrades on longer-form integration tasks</td></tr>
+            <tr><td><strong>HELMET</strong></td><td>Multi-task suite at multiple context lengths</td><td>NIAH can overestimate real-world long-context capability</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practitioner Takeaway</div>
+        <p>When a vendor claims their model "supports" a given context length, ask which benchmark was used to verify performance at that length. A model can technically process 1M tokens while providing near-random retrieval accuracy for content placed beyond 32k. Context window size and context utilization quality are different measurements.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">NIAH</span><span class="kt-def">Needle in a Haystack — an evaluation methodology that inserts a target fact into a filler document at controlled positions, measuring retrieval accuracy across a 2D grid of context length and depth.</span></div>
+      <div class="key-term"><span class="kt-term">HELMET</span><span class="kt-def">A 2024 benchmark suite from Princeton designed to evaluate long-context models on realistic tasks, revealing that synthetic recall benchmarks can overstate practical capability.</span></div>
+      <div class="key-term"><span class="kt-term">Effective Context Ceiling</span><span class="kt-def">The practical token range within which a model reliably uses its full context for multi-step reasoning, typically lower than the advertised maximum context window.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Measuring What Models Actually Remember · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">1. In Greg Kamradt's needle-in-a-haystack test, what two variables were controlled to produce the accuracy heatmap?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Context depth (position as % of total) and context length (total tokens)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Model temperature and top-p sampling parameters</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Number of distractor documents and semantic similarity to needle</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Prompt length and number of retrieval attempts</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The NIAH methodology varies context depth (where the needle sits as a percentage of total context) and context length (total tokens in the input), producing a 2D accuracy grid.</div>
+        <div class="quiz-feedback wrong">Not quite. The NIAH test controls context depth (position percentage) and context length (total tokens), plotting accuracy as a 2D heatmap across these two axes.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">2. What critical limitation of NIAH did the HELMET benchmark (Yen et al., 2024) expose?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">NIAH requires too many GPU hours to run at scale</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">NIAH results vary too much between different "haystack" document types</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Models can achieve near-perfect NIAH scores while still failing on realistic multi-task long-context evaluations</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">NIAH only works for models with fewer than 32k tokens of context</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HELMET found that high NIAH scores could be misleading — some models aced the synthetic recall task but failed on realistic citation, summarization, and multi-hop reasoning tasks at the same context lengths.</div>
+        <div class="quiz-feedback wrong">Not correct. HELMET's key finding was that strong NIAH performance doesn't guarantee strong performance on realistic long-context tasks — synthetic recall benchmarks can overstate practical capability.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">3. According to independent evaluations (including Databricks 2024), what is the practical effective context ceiling for most models on reliable multi-step reasoning, even those advertised with 100k+ windows?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">The full advertised window — models use all tokens equally</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Approximately 4k tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Approximately 16k–32k tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Approximately 64k tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Databricks and other independent evaluators found that reliable multi-step reasoning typically held up to around 16k–32k tokens for most models, regardless of their advertised maximum context length.</div>
+        <div class="quiz-feedback wrong">Not correct. Independent evaluations placed the effective ceiling for reliable multi-step reasoning at roughly 16k–32k tokens for most models — well below the advertised maximums.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← L2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Interpreting Benchmark Claims</h1>
+      <div class="tagline">Learn to read vendor context-window claims critically</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>A vendor pitches you their new LLM: "200k context window, evaluated on NIAH with 99% accuracy." You need to decide whether this is sufficient for a document-review pipeline that must surface clauses from 80-page contracts.</p>
+        <div class="lab-prompt">Start by asking: what questions should I ask a vendor to test whether their NIAH score translates to real-world contract review capability? Then explore what HELMET or SCROLLS results would tell you that NIAH alone cannot.</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Research Assistant</span>
+          <div class="chat-badge">Benchmark Evaluation Focus</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Let's work through how to evaluate vendor long-context claims critically. I'm here to help you distinguish synthetic benchmark performance from real-world contract review capability. What would you like to explore first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l3')">L3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ L3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 3</div>
+      <h1>Engineering Around the Middle</h1>
+      <div class="tagline">Prompt positioning strategies, RAG architectures, and chunking techniques that compensate for positional recall failures.</div>
+      <div class="lesson-question">If the model can't reliably recall information from the middle of its context, how do you engineer systems that still work?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Engineering Response">
+        <p class="story-text">Once the Liu et al. findings circulated, engineering teams at major AI labs and enterprise deployments started redesigning their retrieval pipelines. The response wasn't to abandon long-context models — it was to stop relying on brute-force context stuffing and to engineer for the model's actual recall geometry. Three patterns emerged as the dominant solutions.</p>
+      </div>
+
+      <div class="section-heading">Strategy 1 — Retrieval-Augmented Generation (RAG)</div>
+      <div class="section-body">
+        <p>Rather than feeding entire documents into the context window, RAG systems retrieve only the most semantically relevant chunks before inference. A vector database stores document embeddings; at query time, the top-k most similar chunks are retrieved and placed in context — typically at the beginning or end, where recall is highest.</p>
+        <p>RAG was described in the original Lewis et al. 2020 paper (Facebook AI Research) and adopted rapidly after long-context limitations became clear. By 2023, RAG had become the de facto pattern for enterprise document QA, explicitly because it avoided the lost-in-the-middle failure mode by keeping retrieved context short and relevance-ranked.</p>
+        <p>The key design decision in RAG is <strong>where retrieved chunks appear in the prompt</strong>. Teams at Databricks and LlamaIndex both published engineering guides in 2023–2024 recommending that the most critical retrieved context be placed either at the very beginning (after the system prompt) or at the very end (immediately before the question), never buried in the middle of multiple retrieved passages.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">RAG Positioning Best Practice</div>
+        <p>LlamaIndex documentation (2024) and Databricks' enterprise LLM engineering guide both explicitly recommend placing the most relevant retrieved passage either first or last among multiple retrieved chunks, citing the lost-in-the-middle finding as the empirical basis for this ordering.</p>
+      </div>
+
+      <div class="section-heading">Strategy 2 — Prompt Reordering and Chunking</div>
+      <div class="section-body">
+        <p>When RAG is not an option and documents must be processed in full, prompt reordering strategies attempt to mitigate positional bias by restructuring what goes where. Common approaches include:</p>
+        <p><strong>Critical-first ordering:</strong> Place the most important document sections at the beginning of the context, before filler material. If you know which clauses are legally significant, surface them first.</p>
+        <p><strong>Map-reduce chunking:</strong> Divide long documents into chunks small enough to fit entirely within the reliable recall zone (typically under 8k tokens per chunk). Run the model over each chunk independently (the "map" phase), then aggregate partial answers (the "reduce" phase). LangChain's MapReduceDocumentsChain implements this pattern and documents it as a direct response to context length limitations.</p>
+        <p><strong>Refine chains:</strong> Process chunks sequentially, each time asking the model to refine a running answer based on the new chunk. This keeps every piece of content in the primacy or recency position at least once during processing.</p>
+      </div>
+
+      <div class="section-heading">Strategy 3 — Lost-in-the-Middle Prompting</div>
+      <div class="section-body">
+        <p>Liu et al. themselves tested a mitigation: explicitly instructing the model to search the entire context carefully before answering. The prompt addition "Search all provided documents thoroughly before answering. The relevant information may appear anywhere in the context" improved middle retrieval in some configurations — but did not eliminate the positional bias entirely. Gains were model-dependent and inconsistent.</p>
+        <p>A more robust prompting approach tested by Anthropic (documented in their 2023 Claude technical guidance) involved adding a meta-instruction: the user explicitly states that the answer exists somewhere in the context and asks the model to scan from beginning to end before responding. Anthropic's public documentation for Claude 2.1 specifically noted that "a system prompt encouraging Claude to search through all documents" improved NIAH performance at long context lengths.</p>
+        <p>Neither prompting fix replaces architectural solutions. They are complementary mitigations, not replacements for RAG or chunking.</p>
+      </div>
+
+      <div class="inline-diagram">
+        <div class="diag-label">Mitigation Strategy Comparison</div>
+        <div class="diag-row"><div class="diag-seg seg-hi">RAG</div><div class="seg-label">→ Best for large document stores; keeps context short and positioned</div></div>
+        <div class="diag-row"><div class="diag-seg seg-lo">Map-Reduce</div><div class="seg-label">→ Best for full-document processing; isolates each chunk in primacy position</div></div>
+        <div class="diag-row"><div class="diag-seg seg-mid">Prompt Reorder</div><div class="seg-label">→ Partial mitigation; helpful but not sufficient alone</div></div>
+      </div>
+
+      <div class="section-heading">The Reranking Layer</div>
+      <div class="section-body">
+        <p>Advanced RAG pipelines add a reranker between the retrieval step and the LLM. A cross-encoder reranker (e.g., Cohere's Rerank API or BGE-reranker from BAAI) scores each retrieved chunk for relevance to the specific query, then reorders them so the highest-relevance chunks appear at the beginning of the LLM's context. This combines semantic search retrieval with positional optimization — ensuring the most relevant material appears where recall is highest.</p>
+        <p>By 2024, reranking had become standard in production RAG deployments at companies including Notion, Salesforce, and enterprise users of Cohere's platform, specifically because it addressed the interaction between retrieval quality and positional recall.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Engineering Principle</div>
+        <p>Design your retrieval and prompt architecture assuming the model will reliably recall content only from the first ~20% and last ~20% of its filled context window. Place your most critical information in those zones. Use chunking or RAG to avoid needing the middle at all.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Map-Reduce Chunking</span><span class="kt-def">A document processing pattern where large documents are split into small chunks processed independently (map phase), with answers aggregated into a final response (reduce phase), keeping each chunk within the reliable recall zone.</span></div>
+      <div class="key-term"><span class="kt-term">Reranker</span><span class="kt-def">A cross-encoder model that re-scores retrieved passages for relevance to a specific query, enabling positional optimization by placing top-scoring passages at beginning of context before LLM inference.</span></div>
+      <div class="key-term"><span class="kt-term">Refine Chain</span><span class="kt-def">A sequential processing pattern that passes each document chunk through the model one at a time, asking it to refine a running answer, ensuring each chunk occupies a high-recall position during its processing step.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Engineering Around the Middle · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">1. According to LlamaIndex and Databricks engineering guidance, when placing multiple retrieved passages in a RAG prompt, where should the most critical passage be positioned?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">In the middle, surrounded by supporting passages for context</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">First or last among retrieved passages, never buried in the middle</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">After the user question, as a post-query reference</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Position doesn't matter if semantic similarity scores are high enough</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Both LlamaIndex documentation and Databricks' enterprise LLM engineering guidance explicitly recommend placing the most relevant retrieved passage first or last, directly citing the lost-in-the-middle finding.</div>
+        <div class="quiz-feedback wrong">Not correct. Engineering guidance from LlamaIndex and Databricks recommends placing critical passages at the beginning or end of the retrieved context — not the middle — based on positional recall research.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">2. In a map-reduce chunking pipeline, what is the key mechanism that mitigates the lost-in-the-middle problem?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It compresses the document to fit within a 4k token window before processing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It randomizes chunk order so positional bias averages out</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Each chunk is processed independently, keeping it within the primacy/recency recall zone during its processing step</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It uses a separate embedding model to pre-summarize the middle of the document</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Map-reduce ensures each chunk occupies a high-recall position (the entire input) during its own processing step, avoiding the middle-degradation problem entirely by never placing content in the middle of a large context.</div>
+        <div class="quiz-feedback wrong">Not quite. The key benefit is that each chunk is the entire input during its processing step — so it's always in the primacy/recency zone, never in the middle of a larger context.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">3. What function does a cross-encoder reranker serve in an advanced RAG pipeline?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It replaces the vector database retrieval step entirely</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">It re-scores retrieved passages for relevance to the specific query, enabling positional optimization before LLM inference</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It compresses retrieved passages to reduce token count</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It generates a summary of all retrieved passages before sending them to the LLM</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A reranker scores each retrieved chunk for query relevance, allowing the pipeline to place the highest-relevance passages at the beginning of LLM context — combining semantic retrieval quality with positional recall optimization.</div>
+        <div class="quiz-feedback wrong">Not correct. A reranker re-scores already-retrieved passages by query relevance, so the most relevant content can be positioned first (in the high-recall zone) before the LLM processes it.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← L3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Designing a Position-Aware Pipeline</h1>
+      <div class="tagline">Architect a document QA system that accounts for positional recall limitations</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are building a contract review tool that must identify risk clauses across 200-page legal agreements. You have access to a vector database, a cross-encoder reranker, and Claude with a 100k token window. Design a pipeline that maximizes recall of clauses regardless of their position in the original document.</p>
+        <div class="lab-prompt">Start by describing the pipeline stages you'd use and where each stage addresses the lost-in-the-middle problem. Then ask for feedback on whether your design has any remaining positional risk, and how you'd test it.</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Research Assistant</span>
+          <div class="chat-badge">Pipeline Design Focus</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Let's design a position-aware contract review pipeline. Describe your approach — what stages you'd include, how you'd structure retrieved passages in the prompt, and how you'd handle documents longer than your retrieval chunk size. I'll give you specific feedback on positional recall risks.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l4')">L4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ L4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 4</div>
+      <h1>Progress, Limits, and the Road Ahead</h1>
+      <div class="tagline">What newer architectures have achieved, where the problem persists, and what the frontier looks like in 2024–2025.</div>
+      <div class="lesson-question">Have newer models solved the lost-in-the-middle problem, or just moved the boundary?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Moving Frontier">
+        <p class="story-text">When Google DeepMind published results for <em>Gemini 1.5 Pro</em> in February 2024, they included NIAH results showing near-perfect retrieval across 1 million tokens — a striking contrast to the degraded heatmaps that had characterized models just a year earlier. The claim was extraordinary: had the lost-in-the-middle problem been solved?</p>
+        <p class="story-text">The answer, as independent researchers quickly established, was: <em>partially, and for specific task types</em>. NIAH performance had genuinely improved for well-defined single-fact retrieval. But on more complex multi-step reasoning tasks — the ones HELMET was designed to measure — significant positional effects persisted even in frontier models. The boundary had moved, but the problem had not disappeared.</p>
+      </div>
+
+      <div class="section-heading">What Gemini 1.5 and Claude 3 Actually Achieved</div>
+      <div class="section-body">
+        <p>Google's Gemini 1.5 Pro technical report (Reid et al., 2024) demonstrated near-perfect NIAH recall across 1M tokens. This was achieved through architectural changes including a mixture-of-experts design and modified positional encoding. The result held across multiple independent validations including those conducted by Artificial Analysis (a model evaluation firm) in March 2024.</p>
+        <p>Anthropic's Claude 3 family (released March 2024) showed substantially improved NIAH performance compared to Claude 2.1, with Anthropic's technical documentation showing high retrieval accuracy at 200k tokens across most depth positions. Claude 3 Opus specifically showed reduced positional degradation in multi-document QA configurations.</p>
+        <p>However, both sets of improvements were most pronounced on <strong>synthetic single-fact retrieval</strong>. When HELMET-style multi-task evaluations were applied at long context lengths, both model families still showed performance degradation relative to their in-context performance at shorter lengths. The gap narrowed significantly; it did not close.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Artificial Analysis Evaluation (March 2024)</div>
+        <p>Independent evaluations by Artificial Analysis confirmed Gemini 1.5 Pro's strong NIAH performance across 1M tokens. However, their analysis noted that "NIAH performance does not directly translate to equivalent gains on complex reasoning tasks at the same context lengths." Gemini 1.5 Pro's multi-step reasoning tasks showed degradation beginning around 256k tokens in some configurations.</p>
+      </div>
+
+      <div class="section-heading">Architectural Innovations Driving Progress</div>
+      <div class="section-body">
+        <p><strong>Rotary Positional Embeddings (RoPE) and extensions:</strong> RoPE (Su et al., 2021) replaced absolute positional embeddings with relative ones that generalize better to lengths beyond training distribution. Extensions including YaRN (Peng et al., 2023) and LongRoPE (Ding et al., 2024) further extended RoPE's effective length. LongRoPE was adopted in Microsoft's Phi-3 models, enabling a claimed 128k effective context with improved middle retrieval.</p>
+        <p><strong>Mixture of Experts (MoE):</strong> MoE architectures (as used in Gemini 1.5) allow different expert networks to specialize in processing different parts of the input. This may partially explain the improved positional recall — different experts may develop specialization for different context regions.</p>
+        <p><strong>Ring attention and distributed context processing:</strong> Techniques including ring attention (Liu et al., 2023, from UC Berkeley) allow attention computation to be distributed across multiple devices, enabling longer sequences without the quadratic memory bottleneck. This is a computational enabler, not a direct fix for positional recall, but it makes longer reliable contexts tractable.</p>
+      </div>
+
+      <div class="section-heading">Where the Problem Persists in 2025</div>
+      <div class="section-body">
+        <p>Despite architectural progress, several persistent limitations remain documented as of 2024–2025:</p>
+        <p><strong>Multi-hop reasoning degradation:</strong> Tasks requiring the model to connect information from multiple non-adjacent positions in long context — e.g., "given the definition in section 2 and the exception in section 47, does the clause in section 83 apply?" — show significant degradation at long context lengths even in frontier models. This was documented in HELMET and in independent work by researchers at CMU and MIT.</p>
+        <p><strong>Hallucination rate increases:</strong> Research by Shi et al. (2023) showed that longer contexts with irrelevant distractors increase hallucination rates, as models increasingly confabulate rather than accurately retrieving from the middle of long inputs. This effect persists in newer models at longer context lengths.</p>
+        <p><strong>Cost and latency:</strong> Even if positional recall improves, processing 1M tokens is expensive and slow. In 2024, a single 1M-token Claude 3 inference cost roughly $15–$60 depending on model tier. Most production systems cannot afford to process full document stores via context stuffing even if recall were perfect.</p>
+      </div>
+
+      <div class="data-table-wrapper" style="overflow-x:auto;margin:1rem 0;">
+        <table class="data-table">
+          <thead><tr><th>Model / Year</th><th>NIAH Status</th><th>Complex Reasoning at Max Context</th></tr></thead>
+          <tbody>
+            <tr><td><strong>GPT-3.5-Turbo (2023)</strong></td><td>Clear U-shaped failure</td><td>Significant degradation</td></tr>
+            <tr><td><strong>Claude 2.1 (2023)</strong></td><td>Partial middle degradation</td><td>Significant degradation</td></tr>
+            <tr><td><strong>Gemini 1.5 Pro (2024)</strong></td><td>Near-perfect at 1M tokens</td><td>Degradation from ~256k tokens</td></tr>
+            <tr><td><strong>Claude 3 Opus (2024)</strong></td><td>Substantially improved</td><td>Reduced but persistent degradation</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section-heading">The Practitioner's Outlook</div>
+      <div class="section-body">
+        <p>The trajectory is clear: models are improving at middle retrieval, and the effective context ceiling is rising. But the gap between advertised context length and reliable complex reasoning at that length will likely persist for the foreseeable future. The architectural fixes that improved NIAH performance have not yet fully translated to multi-hop reasoning gains at the same scale.</p>
+        <p>The practical recommendation for 2024–2025 remains the same as in 2023: use RAG and chunking for production document QA systems, benchmark on task-relevant evaluations (not just NIAH), and treat vendor context window claims with empirical skepticism until you've run your own tests on your own documents.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Bottom Line for 2025</div>
+        <p>Single-fact NIAH retrieval has improved dramatically in frontier models. Multi-step reasoning across very long contexts remains genuinely difficult. RAG and chunking are not legacy patterns — they remain the right engineering choices for production systems that require reliable recall at scale.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">RoPE / YaRN / LongRoPE</span><span class="kt-def">A family of relative positional embedding approaches (and their extensions) that generalize better than absolute embeddings to context lengths beyond those seen during training, enabling improved recall at longer sequences.</span></div>
+      <div class="key-term"><span class="kt-term">Ring Attention</span><span class="kt-def">A distributed attention mechanism enabling long-sequence processing across multiple devices by computing attention in overlapping "rings," removing the memory bottleneck for very long contexts.</span></div>
+      <div class="key-term"><span class="kt-term">Multi-Hop Reasoning Degradation</span><span class="kt-def">The documented performance decline in tasks requiring models to connect information from multiple non-adjacent positions in long contexts, which persists even in frontier models with improved NIAH performance.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Progress, Limits, and the Road Ahead · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">1. What did Gemini 1.5 Pro's technical report (Reid et al., 2024) claim about NIAH performance, and how did independent evaluators qualify this claim?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Near-perfect recall across 1M tokens on all task types including multi-hop reasoning</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Near-perfect single-fact NIAH recall, but complex multi-step reasoning still degraded from around 256k tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Strong recall only below 128k tokens, with major degradation above</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The claims were unverified; no independent evaluation confirmed them</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Gemini 1.5 Pro showed genuine near-perfect NIAH recall at 1M tokens, but Artificial Analysis and other independent evaluators found that complex multi-step reasoning degraded from around 256k tokens — NIAH gains didn't fully transfer to harder tasks.</div>
+        <div class="quiz-feedback wrong">Not correct. Gemini 1.5 Pro genuinely improved NIAH recall, but independent evaluations (including Artificial Analysis) found that multi-step reasoning tasks still degraded at longer contexts, beginning around 256k tokens in some configurations.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">2. Which architectural technique, extended in LongRoPE and adopted in Microsoft's Phi-3 models, improves performance on long sequences by using relative rather than absolute positional encoding?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Ring Attention</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Mixture of Experts (MoE)</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Rotary Positional Embeddings (RoPE)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Flash Attention</button>
+        </div>
+        <div class="quiz-feedback right">Correct. RoPE (Su et al., 2021) and its extensions including YaRN and LongRoPE use relative positional encoding that generalizes better to unseen context lengths. LongRoPE was specifically adopted in Microsoft's Phi-3 family.</div>
+        <div class="quiz-feedback wrong">Not correct. Rotary Positional Embeddings (RoPE) and its extensions (YaRN, LongRoPE) are the approach described — using relative rather than absolute positional encoding to improve length generalization. Ring Attention and MoE serve different functions.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">3. According to Shi et al. (2023), what effect do longer contexts with irrelevant distractor content have on model output quality?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">They improve output quality by providing more context for the model to draw on</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">They have no measurable effect on hallucination rates</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">They increase hallucination rates, as models confabulate rather than accurately retrieve from long inputs with distractors</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">They cause models to refuse to answer rather than risk errors</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Shi et al. (2023) documented that longer contexts with irrelevant distractors increase hallucination rates — models increasingly confabulate rather than accurately retrieve from the middle of long, noisy inputs.</div>
+        <div class="quiz-feedback wrong">Not correct. Shi et al. found the opposite: more irrelevant context increases hallucination rates. Models confabulate rather than retrieving accurately from long inputs that contain distractor content.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← L4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Evaluating Frontier Model Claims</h1>
+      <div class="tagline">Apply what you've learned to critically assess a 2024–2025 model announcement</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>A new frontier model is announced with "perfect 1M-token recall demonstrated on NIAH." Your CTO wants to retire the company's RAG pipeline and switch to context-stuffing the entire document store. Use this lab to develop a technically grounded case for or against this decision.</p>
+        <div class="lab-prompt">Start by asking: what would I need to verify before trusting a 1M-token NIAH result for a production multi-hop reasoning task? Then explore what specific tests you'd run on your own documents before making the infrastructure decision, and what the cost implications look like versus maintaining RAG.</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Research Assistant</span>
+          <div class="chat-badge">Frontier Model Evaluation Focus</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">This is a real decision many engineering teams are facing in 2024–2025. Let's think through what it would actually take to validate a 1M-token context claim for your specific use case — and whether retiring your RAG pipeline makes economic and technical sense. What's your first question?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 6 — Module Test</h1>
+      <div class="tagline">Lost in the Middle · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. The term "lost in the middle" was coined and empirically documented by which research group and in which year?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Liu et al., Stanford/UC Berkeley, 2023</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Vaswani et al., Google Brain, 2017</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Lewis et al., Facebook AI Research, 2020</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Yen et al., Princeton, 2024</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Liu et al. (Stanford/UC Berkeley, 2023) published "Lost in the Middle: How Language Models Use Long Contexts."</div>
+        <div class="quiz-feedback wrong">Not correct. The lost-in-the-middle finding was published by Liu et al. from Stanford and UC Berkeley in 2023.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. Which of the following best describes the shape of the recall accuracy curve documented in the Liu et al. study?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">U-shaped: high at beginning and end, lowest in the middle</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Monotonically decreasing from beginning to end</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Uniform across all positions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Inverted U: low at extremes, high in the middle</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The U-shaped curve — high recall at start and end, degraded in the middle — is the central finding.</div>
+        <div class="quiz-feedback wrong">Not correct. The documented pattern is U-shaped: high at beginning and end, lowest in middle positions.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. Greg Kamradt's needle-in-a-haystack test became a standard evaluation. What document type did he use as the "haystack"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Wikipedia articles</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Paul Graham essays</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Legal contracts</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Scientific papers</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Kamradt used Paul Graham essays as the haystack filler document, a choice that became standard in subsequent replications.</div>
+        <div class="quiz-feedback wrong">Not correct. Kamradt's original NIAH test used Paul Graham essays as the haystack filler content.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. What did Claude 2.1's technical documentation specifically note would improve its NIAH performance at long context lengths?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Increasing the temperature parameter</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Using a longer system prompt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">A system prompt encouraging Claude to search through all provided documents</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Reducing context length to under 50k tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Anthropic's Claude 2.1 documentation specifically noted that adding a system prompt encouraging thorough document search improved retrieval performance at long contexts.</div>
+        <div class="quiz-feedback wrong">Not correct. Anthropic's documentation stated that "a system prompt encouraging Claude to search through all documents" improved long-context NIAH performance.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. The SCROLLS benchmark (Shaham et al., 2022) tests which type of capability that NIAH does not?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Synthesis and reasoning across long documents (summarization, QA, NLI)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Single-fact retrieval at variable positions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Code generation from long specification documents</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Image understanding in multimodal long contexts</button>
+        </div>
+        <div class="quiz-feedback right">Correct. SCROLLS tests summarization, QA, and natural language inference across real long documents — synthesis tasks that require more than single-fact recall.</div>
+        <div class="quiz-feedback wrong">Not correct. SCROLLS tests document-level synthesis: summarization, question answering, and natural language inference — not simple single-fact retrieval.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. HELMET (Yen et al., 2024) was produced by researchers at which institution?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Stanford University</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">MIT</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Princeton University</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">UC Berkeley</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HELMET — How to Evaluate Long-context Models Effectively and Thoroughly — was published by Yen et al. at Princeton in 2024.</div>
+        <div class="quiz-feedback wrong">Not correct. HELMET was produced by Yen et al. at Princeton University in 2024.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. In a RAG pipeline, what is the purpose of a cross-encoder reranker placed between retrieval and LLM inference?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">To generate embeddings for the vector database</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">To re-score retrieved passages by query relevance, enabling the most relevant content to be placed in high-recall positions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">To summarize all retrieved passages before LLM processing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">To translate retrieved passages into the query language</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A reranker scores each retrieved passage for relevance to the specific query, enabling positional optimization by placing top-scoring passages at the beginning of the LLM's context.</div>
+        <div class="quiz-feedback wrong">Not correct. A cross-encoder reranker re-scores retrieved passages for relevance, allowing the system to place the most relevant content in high-recall positions (beginning or end of context).</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. According to Databricks' 2024 enterprise LLM engineering evaluation, what is the approximate effective context ceiling for reliable multi-step reasoning in most models?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">4k–8k tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">16k–32k tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">64k–128k tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">The full advertised context window</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Databricks' evaluations placed the practical effective ceiling for reliable multi-step reasoning at approximately 16k–32k tokens, regardless of advertised maximum context length.</div>
+        <div class="quiz-feedback wrong">Not correct. Databricks found the practical effective ceiling for reliable multi-step reasoning at approximately 16k–32k tokens for most models evaluated.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. LangChain's MapReduceDocumentsChain implements the map-reduce pattern explicitly as a response to what limitation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The high cost of long-context API calls</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The inability of models to process multiple document formats</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Context length limitations and positional recall degradation in long-context processing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The lack of multilingual support in most LLMs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LangChain's MapReduceDocumentsChain is documented as a direct response to context length limitations and the positional recall degradation associated with very long contexts.</div>
+        <div class="quiz-feedback wrong">Not correct. The map-reduce pattern in LangChain is a direct response to context length limits and positional recall degradation — by processing each chunk independently, it keeps content in the high-recall zone.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. What did Shi et al. (2023) find about the relationship between longer contexts with distractors and model hallucination rates?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Longer contexts with irrelevant distractors increase hallucination rates</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Longer contexts reduce hallucinations by providing more grounding material</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Distractor content has no measurable effect on hallucination rates</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Only distractors in the first half of context affect hallucination rates</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Shi et al. (2023) found that longer contexts containing irrelevant distractor content significantly increase hallucination rates — models confabulate rather than accurately retrieve from long, noisy inputs.</div>
+        <div class="quiz-feedback wrong">Not correct. Shi et al. found that irrelevant distractor content in long contexts increases hallucination rates — a counter-intuitive finding that more context is not always better.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. Ring attention (Liu et al., 2023, UC Berkeley) is best described as which type of advancement?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">A new positional embedding scheme that improves middle retrieval</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">A distributed attention mechanism that removes memory bottlenecks for very long sequences across multiple devices</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">A retrieval augmentation technique that replaces vector database search</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">A fine-tuning method that trains models specifically on long-context examples</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Ring attention is a computational technique that distributes attention across multiple devices in overlapping rings, removing the memory bottleneck for very long sequences — it enables long contexts but doesn't directly fix positional recall.</div>
+        <div class="quiz-feedback wrong">Not correct. Ring attention is a distributed computing technique that removes memory bottlenecks for long sequences — it's an enabler of longer contexts, not a direct positional recall fix.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Which model family specifically adopted LongRoPE to achieve a claimed 128k effective context with improved middle retrieval?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Google Gemini 1.5</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Anthropic Claude 3</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Microsoft Phi-3</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Meta Llama 3</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LongRoPE (Ding et al., 2024) was specifically adopted in Microsoft's Phi-3 model family to extend the effective context length to 128k tokens.</div>
+        <div class="quiz-feedback wrong">Not correct. LongRoPE was adopted by Microsoft's Phi-3 family. Gemini 1.5 used a mixture-of-experts architecture; Claude 3 used different architectural approaches.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. The original RAG paper by Lewis et al. (2020) came from which organization?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Facebook AI Research (FAIR)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Google DeepMind</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">OpenAI</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Stanford HAI</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Lewis et al. (2020) published the original RAG paper from Facebook AI Research, establishing the retrieval-augmented generation paradigm.</div>
+        <div class="quiz-feedback wrong">Not correct. The original RAG paper — Lewis et al. 2020 — came from Facebook AI Research (FAIR).</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. Gemini 1.5 Pro's improved long-context recall was achieved in part through which architectural design?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">RoPE positional embeddings extended with YaRN</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Ring attention distributed across 512 TPUs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Mixture of Experts (MoE) architecture with modified positional encoding</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">A dedicated "memory" module separate from the main transformer</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Gemini 1.5 Pro's technical report describes a mixture-of-experts design combined with modified positional encoding as key architectural contributors to its improved long-context performance.</div>
+        <div class="quiz-feedback wrong">Not correct. Gemini 1.5 Pro's technical report attributed improved long-context recall to a mixture-of-experts architecture combined with modified positional encoding.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. Which of the following is the most accurate characterization of the state of the lost-in-the-middle problem as of 2024–2025?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Fully solved — frontier models show uniform recall across all context positions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Unchanged — no progress has been made since the 2023 Liu et al. paper</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Partially improved — NIAH recall has improved substantially but multi-hop reasoning at max context lengths still degrades</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Only solved for models above 500k token context windows</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The nuanced 2024–2025 picture is exactly this: significant progress on synthetic NIAH retrieval, but persistent degradation on complex multi-step reasoning at maximum context lengths across all frontier models evaluated.</div>
+        <div class="quiz-feedback wrong">Not correct. The most accurate characterization is partial improvement: NIAH recall has improved dramatically in frontier models, but multi-step reasoning at maximum context lengths still shows degradation — the boundary moved, but the problem persists.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">Restart Module</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end content-area -->
+
+<script>
+var COURSE_ID='the-context-window-race';
+var MODULE_ID='the-m6';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — specifically the course "The Context Window Race," Module 6: Lost in the Middle. Stay strictly on topic: long-context LLM limitations, positional recall, the lost-in-the-middle phenomenon, benchmarks (NIAH, SCROLLS, HELMET), RAG design, chunking strategies, and frontier model progress. If asked about unrelated topics, warmly redirect back to the module content. Be specific, cite real research where relevant, and help the student develop practical understanding. Keep responses concise (under 200 words) and clear.\n\n';
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are helping a student understand the lost-in-the-middle phenomenon documented by Liu et al. (2023). Focus on: (1) explaining why large context windows don\'t guarantee accurate recall from middle positions, (2) the U-shaped recall curve finding, (3) the training-based mechanistic explanation, and (4) how to communicate this to non-technical stakeholders. Help students build a concrete, evidence-based argument. Reference the Liu et al. 2023 Transactions of the ACL paper specifically.',
+  l2: 'You are helping a student critically evaluate vendor long-context claims using benchmark knowledge. Focus on: (1) the difference between NIAH synthetic recall and realistic task performance, (2) what HELMET (Yen et al. 2024, Princeton) reveals that NIAH cannot, (3) what questions to ask vendors about their evaluation methodology, (4) how to run your own task-relevant evaluation before making infrastructure decisions. Help the student identify the gap between benchmark performance and production suitability.',
+  l3: 'You are helping a student design a position-aware document processing pipeline for contract review. Focus on: (1) RAG architecture with positional optimization — where to place retrieved chunks, (2) reranking with cross-encoders and why it helps, (3) map-reduce chunking for full-document processing, (4) refine chains as an alternative, (5) how to test that the pipeline handles middle-document clauses correctly. Be specific about where in the prompt architecture each retrieved passage should appear and why.',
+  l4: 'You are helping a student evaluate whether to retire a RAG pipeline in favor of context-stuffing with a frontier model that claims near-perfect 1M-token NIAH recall. Focus on: (1) what Gemini 1.5 Pro and Claude 3\'s actual benchmark results show (NIAH vs. multi-hop reasoning), (2) what task-specific evaluation the student should run before deciding, (3) cost/latency implications of 1M-token inference vs. RAG, (4) what Artificial Analysis\'s 2024 evaluation found about the gap between NIAH and complex reasoning at long contexts. Help the student make a technically grounded, defensible recommendation.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "The Liu et al. (2023) finding is striking: even when models like GPT-3.5-Turbo and Claude 1.3 were told the answer exists in the provided documents, accuracy dropped sharply for content in middle positions. The U-shaped curve held consistently. For a non-technical stakeholder, I'd use this analogy: imagine reading a 500-page report but only clearly remembering the introduction and the conclusion — that's roughly what's happening inside the model. What aspect would you like to explore further?",
+    "The mechanistic explanation centers on training data distribution. Most pretraining examples are short enough that every token gets meaningful attention. When you extend to 100k tokens at inference, the model's learned patterns over-index on the start (where instructions live) and end (where outputs are expected). The middle is the region least reinforced during fine-tuning. This isn't a simple bug — it reflects the statistical structure of how the model was trained.",
+    "For your legal document use case, the practical implication is this: if you paste a 100-page contract into a 100k-token context window and ask about a clause on page 47, the model is operating in its degraded recall zone. It may hallucinate an answer rather than accurately retrieve the clause. This is the core risk your RAG pipeline should be designed to avoid. Would you like to discuss specific mitigation strategies?"
+  ],
+  l2:[
+    "When a vendor shows you a NIAH heatmap with 99% accuracy, ask three things: (1) What was the haystack document? (2) Was the needle a single planted sentence or a multi-step reasoning chain? (3) Have you run HELMET-style multi-task evaluation at the same context length? A model can ace NIAH by developing a pattern-matching shortcut for planted sentences while failing entirely on realistic document tasks.",
+    "HELMET (Yen et al., Princeton 2024) specifically found that some models achieved near-perfect NIAH scores while scoring significantly lower on citation recall and multi-hop reasoning at the same context lengths. This is the key gap NIAH cannot expose. For your contract review pipeline, the relevant test isn't 'can it find a planted sentence' but 'can it correctly apply a definition from clause 3 to an exception in clause 47.'",
+    "Before trusting any vendor benchmark for production use, run your own evaluation on 10–20 representative documents from your actual corpus. Insert known facts at beginning, middle, and end positions. Measure retrieval accuracy across positions. Compare cost-per-query for context-stuffing vs. your current RAG pipeline. This task-specific evaluation will tell you more than any published benchmark."
+  ],
+  l3:[
+    "A strong position-aware pipeline for contract review would look like this: (1) Chunk contracts into 512-token overlapping segments, store in a vector database with metadata (section number, page, clause type). (2) At query time, retrieve top-20 chunks using semantic search. (3) Rerank with a cross-encoder (Cohere Rerank or BGE-reranker) to get top-5 by actual query relevance. (4) Place the top-ranked chunk first in the LLM prompt, second-ranked last, remaining chunks in between. The most critical content occupies the high-recall zones.",
+    "The map-reduce pattern is worth considering for clauses that require reading entire sections. Split the contract by section, run each section through the model independently asking 'does this section contain a risk clause related to [topic]? If yes, summarize it.' Collect all positive responses, then run a final synthesis pass. Every section gets primacy attention in its own pass — none are buried in the middle of a large context.",
+    "To test your pipeline's coverage of middle-document clauses specifically: take 5 contracts where you know which clauses are material (from manual review). Insert those clauses at different positions. Measure whether your pipeline surfaces them regardless of their original position in the document. If middle-position clauses are consistently missed, your chunk size or retrieval k may need adjustment."
+  ],
+  l4:[
+    "Here's the honest assessment of retiring your RAG pipeline for a 1M-token context-stuffing approach in 2024: Gemini 1.5 Pro genuinely improved NIAH recall at 1M tokens — Artificial Analysis confirmed this. But the same evaluators found multi-step reasoning degradation beginning around 256k tokens in some configurations. For multi-hop contract reasoning (apply clause 3's definition to clause 47's exception), you're in the degraded zone at typical contract lengths.",
+    "The cost math also matters. A single 1M-token Claude 3 Opus inference costs roughly $15–$60 depending on tier. For a document corpus of 10,000 contracts at 50 pages each, context-stuffing each query is economically prohibitive. A well-designed RAG pipeline with reranking retrieves 2k–5k relevant tokens per query — cost difference is roughly 100x–200x. That economic gap justifies maintaining RAG even if recall were equivalent.",
+    "My recommendation: keep your RAG pipeline as the production system. Run a side-by-side evaluation on 50 real contracts using both approaches. Measure recall of known material clauses, hallucination rate, cost per query, and latency. If the frontier model shows genuine improvements on your specific multi-hop tasks AND the cost is acceptable, you can consider a hybrid — use context-stuffing only for high-stakes queries where completeness matters more than cost."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId]||_fallbackReplies['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(container){
+    container.innerHTML='';
+    var greetings={
+      l1:'Ready to explore the lost-in-the-middle problem. Ask me anything about positional recall, the Liu et al. 2023 findings, or how to communicate these limitations to stakeholders. What would you like to dig into first?',
+      l2:"Let's work through how to evaluate vendor long-context claims critically. I'm here to help you distinguish synthetic benchmark performance from real-world contract review capability. What would you like to explore first?",
+      l3:"Let's design a position-aware contract review pipeline. Describe your approach — what stages you'd include, how you'd structure retrieved passages in the prompt, and how you'd handle documents longer than your retrieval chunk size. I'll give you specific feedback on positional recall risks.",
+      l4:"This is a real decision many engineering teams are facing in 2024–2025. Let's think through what it would actually take to validate a 1M-token context claim for your specific use case — and whether retiring your RAG pipeline makes economic and technical sense. What's your first question?"
+    };
+    addMsg(labId,'ai',greetings[labId]||'Ready to help. What would you like to explore?');
+  }
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(inp){inp.value='';inp.disabled=false;}
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  inp.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    inp.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+  var success=false;
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var sysPrompt=ACADEMY_GUARDRAIL+(LAB_SYSTEM_PROMPTS[labId]||'');
+      var response=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:sysPrompt,
+          messages:chatHistories[labId]
+        })
+      });
+      if(!response.ok) throw new Error('HTTP '+response.status);
+      var data=await response.json();
+      var aiText=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an issue. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:aiText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',aiText);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      success=true;
+      break;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      success=true;
+    }
+  }
+
+  btn.disabled=false;
+  inp.disabled=false;
+  inp.focus();
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({
+      type:'labComplete',
+      courseId:COURSE_ID,
+      moduleId:MODULE_ID,
+      lessonId:labId,
+      exchangeCount:chatExchanges[labId]
+    },'*');
+  }
+}
+
+// Auto-resize textareas
+document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){
+  ta.addEventListener('input',function(){
+    this.style.height='auto';
+    this.style.height=Math.min(this.scrollHeight,100)+'px';
+  });
+});
+
+updateTabs();
+</script>
+</body>
+</html>

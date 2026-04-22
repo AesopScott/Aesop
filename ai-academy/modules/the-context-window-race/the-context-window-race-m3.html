@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-22 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Context Window Race — M3: Attention Complexity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-context-window-race-m3 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+.complexity-table{width:100%;border-collapse:collapse;margin:1.25rem 0;font-size:0.82rem;}
+.complexity-table th{background:rgba(var(--accent-rgb),0.06);border:1px solid var(--border-dark);padding:0.6rem 0.85rem;text-align:left;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.complexity-table td{border:1px solid var(--border-dark);padding:0.6rem 0.85rem;color:#a89f93;line-height:1.55;}
+.complexity-table tr:nth-child(even) td{background:rgba(255,255,255,0.015);}
+.complexity-table td:first-child{color:#e8e3db;font-weight:600;}
+.formula-block{background:rgba(201,160,90,0.04);border:1px solid rgba(201,160,90,0.12);border-radius:6px;padding:1rem 1.25rem;margin:1.25rem 0;text-align:center;}
+.formula-block .formula{font-family:'Crimson Pro',Georgia,serif;font-size:1.3rem;color:var(--gold);letter-spacing:0.04em;margin-bottom:0.4rem;}
+.formula-block .formula-note{font-size:0.75rem;color:var(--muted);line-height:1.5;}
+.stat-row{display:flex;gap:1rem;margin:1.25rem 0;flex-wrap:wrap;}
+.stat-card{flex:1;min-width:140px;background:rgba(var(--accent-rgb),0.03);border:1px solid var(--border-dark);border-radius:6px;padding:0.85rem 1rem;text-align:center;}
+.stat-num{font-family:'Crimson Pro',Georgia,serif;font-size:1.6rem;color:var(--accent);font-weight:600;line-height:1;}
+.stat-label{font-size:0.68rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:0.35rem;}
+.stat-sub{font-size:0.72rem;color:#4a5568;margin-top:0.2rem;line-height:1.4;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.stat-row{flex-direction:column;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ============================================================ L1 ============================================================ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 1</div>
+      <h1>The Quadratic Wall</h1>
+      <div class="tagline">Why attention doesn't scale the way you'd hope — and what the numbers actually mean.</div>
+      <div class="lesson-question">If doubling a context window costs four times the compute, what happens at 1 million tokens?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context — 2023">
+        <p class="story-text">When Google's <em>PaLM 2</em> team benchmarked long-context performance in early 2023, engineers discovered something uncomfortable: inference costs for their longest prompts weren't growing linearly with length. They were <em>growing quadratically</em>. A 32K-token prompt cost roughly sixteen times more attention compute than an 8K prompt — not four times. The wall was real, and it was coming for everyone.</p>
+      </div>
+
+      <h2 class="section-heading">What Scaled Dot-Product Attention Actually Computes</h2>
+      <div class="section-body">
+        <p>The transformer attention mechanism, introduced by Vaswani et al. in the 2017 paper <em>"Attention Is All You Need,"</em> computes a weighted average over every token in the context for every query token. Formally, for a sequence of length <strong>n</strong>, each of the <strong>n</strong> queries attends to all <strong>n</strong> keys. That means the attention matrix has <strong>n²</strong> entries.</p>
+        <p>This is not a theoretical concern. It is a direct consequence of the arithmetic: if your context doubles, your attention matrix quadruples. If your context grows ten-fold, attention compute grows one-hundred-fold. Every layer of a transformer performs this operation independently.</p>
+      </div>
+
+      <div class="formula-block">
+        <div class="formula">Attention(Q, K, V) = softmax(QKᵀ / √d) · V</div>
+        <div class="formula-note">The QKᵀ matrix multiplication produces an n×n matrix — quadratic in sequence length n. This is the heart of the scaling problem.</div>
+      </div>
+
+      <h2 class="section-heading">The Memory Dimension</h2>
+      <div class="section-body">
+        <p>Compute isn't the only casualty. Storing the attention matrix requires <strong>O(n²) memory</strong> in standard implementations. For a 128K-token context with 32-bit floats across a model with 96 attention heads, the raw attention matrices alone can exceed hundreds of gigabytes — before accounting for KV caches, activations, or model weights.</p>
+        <p>This is why early long-context models like Anthropic's Claude 1 (released March 2023, with a 100K window) required specialized infrastructure rather than simply spinning up a larger instance of existing hardware. The memory footprint was architecturally novel.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num">O(n²)</div>
+          <div class="stat-label">Attention Complexity</div>
+          <div class="stat-sub">Time and memory for standard full attention</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">4×</div>
+          <div class="stat-label">Cost Multiplier</div>
+          <div class="stat-sub">When sequence length doubles</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">100×</div>
+          <div class="stat-label">Cost Multiplier</div>
+          <div class="stat-sub">When sequence length grows 10×</div>
+        </div>
+      </div>
+
+      <h2 class="section-heading">Why This Constrained Context Windows for Years</h2>
+      <div class="section-body">
+        <p>The original GPT-3 (June 2020) supported 2,048 tokens. GPT-3.5 (November 2022) expanded to 4,096. Each doubling was expensive not just in engineering effort but in real inference cost per query. At 2,048 tokens, quadratic attention was manageable. At 32,768 tokens, it required fundamental rethinking of memory management, batching strategies, and hardware allocation.</p>
+        <p>The quadratic wall explains why the race to longer context windows was not simply a matter of training on more data or buying more GPUs. It required either accepting enormous per-query costs (feasible for some enterprise use cases), or developing new attention mechanisms that break the quadratic scaling — which became the defining engineering challenge of 2023 and 2024.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Key Insight</div>
+        <p>The O(n²) attention complexity is not a bug or a temporary implementation detail. It is a fundamental property of how transformers compute relationships between tokens. Every technique discussed in this module — sparse attention, linear attention, sliding windows — is an attempt to approximate the full attention matrix while breaking the quadratic scaling.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">O(n²)</span>
+        <span class="kt-def">Big-O notation for quadratic complexity: doubling input size quadruples cost. For transformers, n is sequence length.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Attention Matrix</span>
+        <span class="kt-def">The n×n matrix produced by QKᵀ, where each entry represents how much attention one token pays to another.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">KV Cache</span>
+        <span class="kt-def">Stored key and value vectors from prior tokens, enabling efficient autoregressive generation but growing linearly with context length and consuming significant GPU memory.</span>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ Q1 ============================================================ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Quiz — The Quadratic Wall</h1>
+      <div class="tagline">Three questions · select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq1">
+        <div class="quiz-q">1. If a model processes a 16K-token context at cost X using full attention, what is the approximate attention cost for a 64K-token context?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">4X — the context is 4× longer</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq1')">16X — quadratic scaling means 4² = 16</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">8X — linear scaling with a constant overhead</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">64X — every token pair is computed twice</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Quadratic scaling means cost grows as the square of the length ratio. Going from 16K to 64K is a 4× length increase, so cost increases 4² = 16×.</div>
+        <div class="quiz-feedback wrong">Not quite. With O(n²) complexity, cost scales with the square of the length ratio. 64K ÷ 16K = 4, so cost multiplier is 4² = 16×.</div>
+      </div>
+
+      <div class="quiz-box" id="qq2">
+        <div class="quiz-q">2. What does the expression QKᵀ produce in the attention mechanism?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">A vector of length d representing the weighted context</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">A scalar score for the entire sequence</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq2')">An n×n matrix of raw attention scores between all token pairs</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">A compressed n×d matrix after positional encoding</button>
+        </div>
+        <div class="quiz-feedback right">Correct. QKᵀ multiplies the n×d query matrix by the d×n key matrix transpose, producing an n×n matrix — every token against every other token.</div>
+        <div class="quiz-feedback wrong">Not quite. QKᵀ produces an n×n matrix because Q is n×d and Kᵀ is d×n. This is the root source of quadratic memory and compute.</div>
+      </div>
+
+      <div class="quiz-box" id="qq3">
+        <div class="quiz-q">3. Why did GPT-3 launch with only a 2,048-token context window in 2020?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">Training data was limited to documents of that length</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">OpenAI chose it arbitrarily as a round number</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">Transformer architectures are fundamentally limited to 2K tokens</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq3')">Longer windows impose quadratic memory and compute costs that were prohibitive at 2020 hardware and cost levels</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The O(n²) memory and compute wall made longer contexts extremely expensive in 2020. Hardware efficiency and algorithmic innovations were needed before windows could expand substantially.</div>
+        <div class="quiz-feedback wrong">Not quite. The constraint was economic and technical: quadratic attention costs made longer windows prohibitively expensive given 2020 hardware capabilities and inference costs.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ LAB 1 ============================================================ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Quadratic Arithmetic</h1>
+      <div class="tagline">Explore attention complexity with a live AI tutor · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>Work through the math of quadratic attention scaling with the AI tutor. Ask it to calculate real cost multipliers for different context length jumps, explore why each transformer layer multiplies the problem, or challenge it on the KV cache memory implications for specific model sizes.</p>
+        <div class="lab-prompt">Suggested start: "If GPT-4 Turbo processes 128K tokens, how much more attention compute does that require compared to 8K, and what does that mean for inference pricing?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Tutor — Attention Complexity</span>
+          <div class="chat-badge">Lab 1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you work through the arithmetic of quadratic attention complexity — the O(n²) scaling wall that shaped the entire context window race. Ask me to calculate cost multipliers, explain why each attention layer compounds the problem, or dig into KV cache memory requirements for any model configuration you're curious about.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about quadratic attention costs…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ L2 ============================================================ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 2</div>
+      <h1>Sparse and Sliding-Window Attention</h1>
+      <div class="tagline">How researchers broke the quadratic barrier without discarding the transformer architecture entirely.</div>
+      <div class="lesson-question">Can a model understand a 1-million-token document if it never reads all of it at once?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Breakthrough — 2020">
+        <p class="story-text">In December 2020, the Allen Institute for AI released <em>Longformer</em>, a paper demonstrating that sparse attention patterns — specifically sliding-window local attention combined with a handful of global tokens — could process documents up to <em>4,096 tokens</em> with complexity that scaled linearly rather than quadratically. The key insight: most tokens don't need to attend to every other token. Locality matters.</p>
+      </div>
+
+      <h2 class="section-heading">The Core Idea: Not Every Token Needs Every Token</h2>
+      <div class="section-body">
+        <p>Full attention assumes that every token in a sequence is potentially relevant to every other token. This is theoretically true but practically wasteful. In a 100,000-word novel, the word "the" on page 1 rarely needs a direct attention connection to the word "the" on page 247. Nearby context is almost always more relevant than distant context.</p>
+        <p>Sparse attention exploits this observation by restricting which token pairs compute attention scores. Instead of an n×n matrix, sparse methods compute only a fraction of entries — reducing complexity toward O(n log n) or even O(n) depending on the pattern.</p>
+      </div>
+
+      <h2 class="section-heading">Three Canonical Sparse Attention Patterns</h2>
+      <div class="section-body">
+        <p>Research in 2020–2022 converged on several practical approaches, each with distinct trade-offs:</p>
+      </div>
+
+      <table class="complexity-table">
+        <thead>
+          <tr>
+            <th>Pattern</th>
+            <th>Complexity</th>
+            <th>Key Property</th>
+            <th>Real Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sliding Window</td>
+            <td>O(n · w)</td>
+            <td>Each token attends only to w neighbors</td>
+            <td>Longformer (Beltagy et al., 2020)</td>
+          </tr>
+          <tr>
+            <td>Strided / Dilated</td>
+            <td>O(n · w)</td>
+            <td>Attends to every k-th token across full range</td>
+            <td>BigBird (Zaheer et al., 2020)</td>
+          </tr>
+          <tr>
+            <td>Global + Local</td>
+            <td>O(n · g + n · w)</td>
+            <td>Designated global tokens attend to all; others attend locally</td>
+            <td>Longformer, BigBird CLS token</td>
+          </tr>
+          <tr>
+            <td>Axial</td>
+            <td>O(n^1.5)</td>
+            <td>Decomposes 2D attention into row+column passes</td>
+            <td>Image Transformer (Parmar et al., 2018)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-heading">Mistral's Sliding Window in Production</h2>
+      <div class="section-body">
+        <p>Mistral AI's <strong>Mistral 7B</strong> model (released September 2023) used grouped-query attention paired with a sliding window of 4,096 tokens, enabling a theoretical attention span of 128K tokens through a technique called "rolling buffer cache." Each token attends only to its local window, but information propagates through layers — similar to how humans read: we don't remember every word, but meaning accumulates across paragraphs.</p>
+        <p>The practical implication: Mistral 7B could handle far longer contexts than same-sized models using full attention, at a fraction of the memory cost. This made it one of the most commercially deployed open-weight models of 2023 and demonstrated that sparse attention wasn't just a research curiosity — it was production-viable.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Trade-off</div>
+        <p>Sparse attention improves efficiency but may miss long-range dependencies — information that is genuinely far away in the token sequence but semantically critical. A contract's definitions clause on page 1 may directly control interpretation of a clause on page 50. Pure sliding-window attention may fail to connect them. This is why most production systems combine sparse local attention with some form of global or retrieval-augmented connectivity.</p>
+      </div>
+
+      <h2 class="section-heading">Flash Attention: Efficient Full Attention Through IO Optimization</h2>
+      <div class="section-body">
+        <p>Separately from sparse attention, Stanford's Tri Dao published <strong>FlashAttention</strong> in June 2022 — not a new attention pattern, but a dramatically more efficient implementation of full attention. By restructuring computation to minimize data movement between GPU high-bandwidth memory (HBM) and SRAM, FlashAttention reduced memory reads/writes by an order of magnitude while computing the same result as standard attention.</p>
+        <p>FlashAttention 2 (August 2023) and FlashAttention 3 (2024) extended these gains further. GPT-4, Claude 2, and most production-scale models adopted FlashAttention-style optimizations, enabling longer contexts not by approximating attention but by making exact attention far more hardware-efficient. This distinguished FlashAttention from sparse methods: it preserved the full O(n²) computation but reduced the wall-clock time and memory needed to perform it.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Sliding Window</span>
+        <span class="kt-def">Attention pattern where each token attends only to a fixed-size neighborhood of w tokens, yielding O(n·w) complexity.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">FlashAttention</span>
+        <span class="kt-def">An IO-aware implementation of exact full attention by Tri Dao et al. (2022) that reduces memory bandwidth requirements through tiled computation, enabling longer contexts without approximation.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Global Token</span>
+        <span class="kt-def">In hybrid sparse attention, a small set of designated tokens (e.g., [CLS]) that attend to and from all other tokens, propagating long-range information despite local attention elsewhere.</span>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn" onclick="goPage('p-q2')">Quiz 2 →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ Q2 ============================================================ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Quiz — Sparse & Sliding-Window Attention</h1>
+      <div class="tagline">Three questions · select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq4">
+        <div class="quiz-q">1. What is the complexity of sliding-window attention with window size w and sequence length n?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">O(n²)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">O(n log n)</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq4')">O(n · w)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">O(w²)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Each of the n tokens attends to w neighbors, giving O(n·w). Since w is a fixed constant (e.g., 4096), this is effectively linear in n.</div>
+        <div class="quiz-feedback wrong">Not quite. Sliding-window attention has each token attend to w neighbors. That's n tokens × w computations each = O(n·w), which is linear in n when w is fixed.</div>
+      </div>
+
+      <div class="quiz-box" id="qq5">
+        <div class="quiz-q">2. FlashAttention (Tri Dao, 2022) improves attention efficiency primarily by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Approximating the attention matrix with a sparse pattern</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Reducing the number of attention heads</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq5')">Restructuring memory access to minimize GPU HBM reads/writes while computing exact attention</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">Replacing softmax with a linear approximation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. FlashAttention is an IO-aware algorithm that tiles computation to stay within fast SRAM, drastically reducing the expensive HBM memory traffic — without approximating the result.</div>
+        <div class="quiz-feedback wrong">Not quite. FlashAttention does not approximate attention. It computes the exact same result as standard attention but restructures data access patterns to minimize slow GPU memory traffic.</div>
+      </div>
+
+      <div class="quiz-box" id="qq6">
+        <div class="quiz-q">3. Longformer's "global token" mechanism solves which fundamental limitation of pure sliding-window attention?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">It eliminates the need for positional encoding</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq6')">It allows certain tokens to connect across the full sequence, preserving long-range dependency capture</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">It reduces the window size needed for accurate predictions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">It enables processing sequences longer than GPU memory allows</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Pure local attention can miss information that is far away in the sequence but semantically critical. Global tokens attend to and from all positions, acting as information highways across the full context.</div>
+        <div class="quiz-feedback wrong">Not quite. The global token mechanism addresses long-range dependencies. Without it, a [CLS] token in local-only attention would only see its immediate neighbors — useless for sentence classification.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ LAB 2 ============================================================ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Sparse Patterns in Practice</h1>
+      <div class="tagline">Explore trade-offs between sparse attention methods · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>Engage the AI tutor on the practical trade-offs of sparse attention patterns. Ask about specific failure cases for sliding-window attention, how FlashAttention and sparse attention differ as solutions, or why Mistral 7B's rolling buffer approach was an engineering breakthrough for production deployment.</p>
+        <div class="lab-prompt">Suggested start: "What kind of document or task would cause sliding-window attention to fail where full attention would succeed? Give me a concrete example."</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Tutor — Sparse Attention Patterns</span>
+          <div class="chat-badge">Lab 2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Ready to explore sparse attention patterns. I can walk you through concrete failure cases for sliding-window attention, explain how Longformer's global tokens work in practice, compare FlashAttention's IO optimization to sparse approximation approaches, or analyze why certain production models chose specific sparse patterns. What aspect would you like to dig into?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about sparse attention trade-offs…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ L3 ============================================================ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 3</div>
+      <h1>Linear Attention and State Space Models</h1>
+      <div class="tagline">The quest to achieve O(n) scaling — and the architectural trade-offs that come with it.</div>
+      <div class="lesson-question">What if you could process an arbitrarily long sequence in fixed memory — and what would you have to give up?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="2023 — Mamba's Emergence">
+        <p class="story-text">In December 2023, Albert Gu and Tri Dao released <em>Mamba</em>, a state space model (SSM) architecture that processed sequences in <em>O(n) time and O(1) memory per token</em> during inference. Unlike transformers, Mamba maintained no growing KV cache. Instead, it compressed the entire prior context into a fixed-size hidden state — updated recurrently. Benchmarks showed it matching transformer quality on language tasks up to sequence lengths of 1 million tokens, while running <em>five times faster</em> than a transformer of equivalent parameter count at those lengths.</p>
+      </div>
+
+      <h2 class="section-heading">Linear Attention: Rewriting the Kernel</h2>
+      <div class="section-body">
+        <p>Standard attention uses a softmax over the full n×n matrix, which cannot be decomposed. Linear attention (Katharopoulos et al., 2020) replaces softmax with a kernel function φ, rewriting:</p>
+      </div>
+
+      <div class="formula-block">
+        <div class="formula">Attention(Q,K,V) ≈ φ(Q) · (φ(K)ᵀ · V)</div>
+        <div class="formula-note">By computing (φ(K)ᵀ · V) first — an associativity trick — the n×n matrix is never materialized. Complexity drops from O(n²d) to O(nd²). When d ≪ n, this is effectively linear.</div>
+      </div>
+
+      <div class="section-body">
+        <p>Linear attention was an important theoretical breakthrough, but in practice it underperformed softmax attention significantly on language tasks. The softmax normalization captures something important about selective attention — the ability to focus sharply on a small number of highly relevant tokens — that smooth kernel functions approximate poorly.</p>
+      </div>
+
+      <h2 class="section-heading">State Space Models: A Different Computational Paradigm</h2>
+      <div class="section-body">
+        <p>State Space Models approach the sequence modeling problem from a completely different direction, rooted in control theory and signal processing. An SSM maintains a hidden state h that summarizes all prior inputs and updates it recurrently:</p>
+      </div>
+
+      <div class="formula-block">
+        <div class="formula">hₜ = A·hₜ₋₁ + B·xₜ &nbsp;&nbsp;&nbsp; yₜ = C·hₜ + D·xₜ</div>
+        <div class="formula-note">A, B, C, D are learned matrices. The hidden state hₜ summarizes the entire prior sequence in fixed memory — O(1) per step regardless of sequence length.</div>
+      </div>
+
+      <div class="section-body">
+        <p><strong>S4</strong> (Gu et al., 2021) was the first SSM to match transformer performance on long-range dependency benchmarks. It used carefully structured A matrices (diagonal plus low-rank) to enable stable training and efficient parallel training despite the recurrent structure.</p>
+        <p><strong>Mamba</strong> (2023) extended S4 with <em>selective state spaces</em> — input-dependent A, B, C matrices, letting the model decide how much of the hidden state to retain or overwrite based on current input. This selectivity was the key innovation that brought SSMs to transformer parity on language tasks.</p>
+      </div>
+
+      <table class="complexity-table">
+        <thead>
+          <tr>
+            <th>Architecture</th>
+            <th>Training</th>
+            <th>Inference</th>
+            <th>Memory (Inference)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Full Attention</td>
+            <td>O(n²)</td>
+            <td>O(n²)</td>
+            <td>O(n) KV cache grows with context</td>
+          </tr>
+          <tr>
+            <td>Sparse Attention</td>
+            <td>O(n·w)</td>
+            <td>O(n·w)</td>
+            <td>O(w) per layer</td>
+          </tr>
+          <tr>
+            <td>Linear Attention</td>
+            <td>O(n·d²)</td>
+            <td>O(n·d²)</td>
+            <td>O(d²) fixed state</td>
+          </tr>
+          <tr>
+            <td>SSM (Mamba)</td>
+            <td>O(n·d) parallel</td>
+            <td>O(n) recurrent</td>
+            <td>O(d) fixed hidden state</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-heading">The Retrieval Trade-off</h2>
+      <div class="section-body">
+        <p>SSMs' fixed-memory inference comes with a cost: they cannot perfectly retrieve arbitrary facts from a long prior context the way attention can. Attention has random access — it can compute exactly which earlier token is most relevant to the current query. An SSM's compressed hidden state is a lossy summary; information that wasn't encoded strongly when it passed through may not be recoverable later.</p>
+        <p>This is not a theoretical objection — it appears in benchmarks. On "needle-in-a-haystack" retrieval tasks (finding a specific fact buried in a long document), pure SSMs underperform transformers. This observation drove research into <strong>hybrid architectures</strong> in 2024: models like Jamba (AI21 Labs, March 2024) interleaved attention layers with SSM layers, attempting to capture SSM efficiency for most processing while preserving attention's precise retrieval capability at key layers.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">2024 Industry Direction</div>
+        <p>Neither pure SSMs nor pure transformers "won" the efficiency debate. The emerging consensus in 2024 is hybrid: use SSM layers for efficient long-range context compression, interleaved with sparse or full attention layers for precise retrieval when needed. This architectural pattern appears in Jamba, Zamba, and research prototypes from Google DeepMind and Microsoft Research.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Mamba</span>
+        <span class="kt-def">A selective state space model (Gu & Dao, 2023) with input-dependent state transitions, achieving O(n) inference complexity and fixed memory while matching transformer quality on language tasks.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Selective SSM</span>
+        <span class="kt-def">SSM variant where A, B, C matrices are functions of the input, giving the model learned control over what to retain in its compressed hidden state.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Hybrid Architecture</span>
+        <span class="kt-def">Models (e.g., Jamba) that interleave SSM and attention layers to combine SSM efficiency with attention's precise retrieval capability.</span>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn" onclick="goPage('p-q3')">Quiz 3 →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ Q3 ============================================================ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Quiz — Linear Attention & SSMs</h1>
+      <div class="tagline">Three questions · select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq7">
+        <div class="quiz-q">1. What is the key inference advantage of Mamba (SSM) over a transformer with full attention?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Mamba uses a larger vocabulary, reducing token count</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq7')">Mamba maintains a fixed-size hidden state that does not grow with context length, enabling O(1) memory per step</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Mamba skips every other token during inference</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Mamba uses sparse attention with a window of 512 tokens</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Unlike transformers whose KV cache grows linearly with context, Mamba's hidden state h is a fixed-size vector updated recurrently — the same memory regardless of sequence length.</div>
+        <div class="quiz-feedback wrong">Not quite. Mamba's advantage is its fixed-size hidden state: no growing KV cache, no quadratic attention. Processing token 1,000,000 requires the same memory as token 1.</div>
+      </div>
+
+      <div class="quiz-box" id="qq8">
+        <div class="quiz-q">2. Linear attention's core trick for achieving sub-quadratic complexity is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Replacing the V matrix with a lower-rank approximation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Caching Q matrices from previous forward passes</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq8')">Using associativity to compute (φ(K)ᵀ·V) before multiplying by φ(Q), avoiding materialization of the n×n matrix</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Reducing sequence length via token merging before attention</button>
+        </div>
+        <div class="quiz-feedback right">Correct. By computing the d×d matrix (φ(K)ᵀ·V) first — which doesn't depend on n queries — and then multiplying each query by that result, the n×n matrix is never formed.</div>
+        <div class="quiz-feedback wrong">Not quite. Linear attention uses the associativity of matrix multiplication: instead of (φ(Q)·φ(K)ᵀ)·V (which forms n×n), it computes φ(Q)·(φ(K)ᵀ·V) — a d×d intermediate that never depends on n².</div>
+      </div>
+
+      <div class="quiz-box" id="qq9">
+        <div class="quiz-q">3. On "needle-in-a-haystack" benchmarks, pure SSMs like Mamba tend to underperform transformers because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">SSMs process tokens in reverse order</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">SSMs have too few parameters to store factual knowledge</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq9')">The fixed hidden state is a lossy compression — specific facts may not be recoverable if not strongly encoded when they passed through</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">SSMs cannot process sequences longer than their hidden state dimension</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Transformers can directly attend to any prior token (random access). SSMs compress prior context into a fixed state — precise retrieval of arbitrary buried facts is fundamentally harder.</div>
+        <div class="quiz-feedback wrong">Not quite. The issue is retrieval precision: attention gives random access to any prior token. SSMs' hidden state is a learned compression where specific details may be lost if they weren't strongly weighted during compression.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ LAB 3 ============================================================ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — SSMs vs. Transformers</h1>
+      <div class="tagline">Probe the limits of state space models with a live AI tutor · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>Stress-test your understanding of SSM trade-offs. Ask the tutor to compare Mamba and a transformer on specific tasks, explore why hybrid architectures like Jamba emerged in 2024, or dig into how selective state spaces differ from standard S4 in terms of what the model can "choose to remember."</p>
+        <div class="lab-prompt">Suggested start: "Design a task where Mamba would clearly outperform a transformer — and then design a task where the transformer would win. Explain the architectural reason in each case."</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Tutor — State Space Models</span>
+          <div class="chat-badge">Lab 3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Let's explore the SSM vs. transformer trade-space. I can help you design benchmark tasks that expose each architecture's strengths and weaknesses, explain Mamba's selective state space mechanism, analyze why Jamba (AI21 Labs, 2024) interleaves attention and SSM layers, or walk through the mathematical reason SSMs struggle with precise retrieval. What would you like to investigate?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about Mamba, SSMs, or hybrid architectures…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ L4 ============================================================ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 4</div>
+      <h1>The KV Cache Economy</h1>
+      <div class="tagline">Why memory bandwidth — not raw compute — became the binding constraint in long-context inference.</div>
+      <div class="lesson-question">When a 1M-token context costs more to store than to compute, what does deployment economics look like?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Production Reality — 2024">
+        <p class="story-text">By mid-2024, Anthropic's Claude 3 models supported a 200K-token context window in production. Inside the inference cluster, the binding constraint was no longer FLOP throughput — it was <em>KV cache memory bandwidth</em>. Loading the cached keys and values for a 200K-token prompt from GPU HBM took more time than the actual attention computation on that data. The bottleneck had shifted from arithmetic to memory.</p>
+      </div>
+
+      <h2 class="section-heading">What the KV Cache Is and Why It Grows</h2>
+      <div class="section-body">
+        <p>In autoregressive generation, a transformer generates one token at a time. Each new token needs to attend to all prior tokens. To avoid recomputing the key and value vectors for every prior token at each step, models cache them — the KV cache.</p>
+        <p>For a model with L layers, H attention heads, head dimension d, and sequence length n, the KV cache contains:</p>
+      </div>
+
+      <div class="formula-block">
+        <div class="formula">KV Cache Size = 2 · L · H · d · n · bytes_per_param</div>
+        <div class="formula-note">The factor of 2 is for keys and values. For GPT-4 scale (assuming ~96 layers, 128 heads, d=128) at 16-bit precision: roughly 0.5 GB per 1K tokens — or 500 GB for a 1M-token context.</div>
+      </div>
+
+      <div class="section-body">
+        <p>This creates a structural problem for long-context inference: the KV cache for a single long conversation can exceed the total VRAM of a high-end GPU, forcing expensive offloading to CPU RAM or requiring multi-GPU deployments even for a single inference call.</p>
+      </div>
+
+      <h2 class="section-heading">Three Engineering Responses to the KV Cache Problem</h2>
+      <div class="section-body">
+        <p><strong>1. Grouped-Query Attention (GQA).</strong> Instead of one K/V head per Q head, multiple Q heads share a single K/V head. Google introduced GQA in a 2023 paper showing it achieved near-identical quality to multi-head attention while reducing KV cache size by a factor equal to the grouping ratio. Llama 2 70B, Mistral 7B, and Gemini all adopted GQA. A grouping ratio of 8 reduces KV cache memory 8-fold with minimal quality loss.</p>
+        <p><strong>2. Multi-Query Attention (MQA).</strong> The extreme case: all Q heads share a single K/V pair per layer. Noam Shazeer proposed MQA in 2019; it was adopted by PaLM (2022) and Falcon (2023). It reduces KV cache to O(L·d·n) — independent of head count — at some quality cost, particularly on tasks requiring fine-grained attention diversity.</p>
+        <p><strong>3. KV Cache Quantization.</strong> Storing KV cache in 8-bit or 4-bit integers rather than 16-bit floats halves or quarters memory requirements. Research in 2023–2024 from MIT, together with production implementations in vLLM and TensorRT-LLM, demonstrated that aggressive KV quantization causes minimal perplexity degradation while doubling effective context capacity on fixed hardware.</p>
+      </div>
+
+      <table class="complexity-table">
+        <thead>
+          <tr>
+            <th>Technique</th>
+            <th>KV Memory Reduction</th>
+            <th>Quality Impact</th>
+            <th>Adopted By</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Multi-Head Attention (baseline)</td>
+            <td>1× (no reduction)</td>
+            <td>None</td>
+            <td>Original GPT, BERT</td>
+          </tr>
+          <tr>
+            <td>Multi-Query Attention</td>
+            <td>H× (= # of heads)</td>
+            <td>Moderate on diverse tasks</td>
+            <td>PaLM, Falcon, Gemini Ultra</td>
+          </tr>
+          <tr>
+            <td>Grouped-Query Attention</td>
+            <td>G× (grouping ratio)</td>
+            <td>Minimal</td>
+            <td>Llama 2 70B, Mistral, Gemini</td>
+          </tr>
+          <tr>
+            <td>KV Quantization (INT8)</td>
+            <td>2×</td>
+            <td>Negligible (&lt;0.5 PPL)</td>
+            <td>vLLM, TensorRT-LLM</td>
+          </tr>
+          <tr>
+            <td>KV Quantization (INT4)</td>
+            <td>4×</td>
+            <td>Small (task-dependent)</td>
+            <td>Research + enterprise deployments</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-heading">PagedAttention and Virtual Memory for KV Caches</h2>
+      <div class="section-body">
+        <p>In 2023, UC Berkeley's <strong>vLLM project</strong> introduced PagedAttention — borrowing the virtual memory paging concept from operating systems to manage KV caches across many concurrent inference requests. Instead of allocating a contiguous block of GPU memory for each request's KV cache (which wastes memory due to variable sequence lengths and unpredictable generation length), PagedAttention allocated non-contiguous fixed-size pages and maintained a page table.</p>
+        <p>The practical impact was dramatic: vLLM demonstrated 24× higher throughput than HuggingFace's naive implementation on the same hardware, primarily by eliminating KV cache memory fragmentation. PagedAttention became the dominant inference serving paradigm for open-weight models by late 2023, and commercial inference providers adopted similar techniques to serve long-context requests at scale.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Deployment Insight</div>
+        <p>By 2024, the economics of long-context inference were dominated not by training compute but by KV cache management: how efficiently you can store, retrieve, and serve cached attention states across thousands of concurrent requests. The winners in the inference efficiency race were teams that treated the KV cache as a first-class resource management problem — applying techniques from databases and operating systems, not just deep learning research.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Grouped-Query Attention</span>
+        <span class="kt-def">Attention variant where G query heads share one K/V head, reducing KV cache size by factor G with minimal quality degradation. Adopted in Llama 2, Mistral, Gemini.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">PagedAttention</span>
+        <span class="kt-def">vLLM's OS-inspired technique for KV cache management using non-contiguous memory pages and a page table, eliminating fragmentation and enabling ~24× higher inference throughput.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Memory Bandwidth Bound</span>
+        <span class="kt-def">An inference regime where the bottleneck is reading data from GPU HBM, not performing arithmetic — characteristic of long-context generation where KV cache loading dominates compute time.</span>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn" onclick="goPage('p-q4')">Quiz 4 →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ Q4 ============================================================ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Quiz — The KV Cache Economy</h1>
+      <div class="tagline">Three questions · select the best answer</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="qq10">
+        <div class="quiz-q">1. Grouped-Query Attention reduces KV cache memory by factor G because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">It eliminates the value matrix entirely for G layers</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq10')">G query heads share one K/V head, so K/V storage scales with H/G instead of H</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">It compresses K/V vectors to 1/G of their original dimensionality</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">It only caches every G-th token's K/V pairs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. With G query heads per K/V head, you need H/G K/V heads total instead of H, directly reducing KV cache size by factor G.</div>
+        <div class="quiz-feedback wrong">Not quite. GQA groups query heads to share K/V heads. If you have 64 Q heads and group size 8, you only need 8 K/V heads — a direct 8× KV memory reduction.</div>
+      </div>
+
+      <div class="quiz-box" id="qq11">
+        <div class="quiz-q">2. PagedAttention (vLLM, 2023) achieved its ~24× throughput improvement primarily by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Using a faster attention kernel than PyTorch's default</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Batching requests at the model weight level rather than activations</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq11')">Eliminating KV cache memory fragmentation by using non-contiguous pages with a page table, allowing much higher concurrent request batching</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">Quantizing all model weights to 4-bit precision</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Contiguous KV cache allocation wastes memory due to length variability. PagedAttention's paging eliminates this waste, allowing far more concurrent requests on the same GPU memory — hence the throughput gain.</div>
+        <div class="quiz-feedback wrong">Not quite. The key innovation was memory management. Naive implementations pre-allocate a contiguous maximum-length KV block per request, wasting memory. PagedAttention uses pages, dramatically reducing waste and enabling more concurrent requests.</div>
+      </div>
+
+      <div class="quiz-box" id="qq12">
+        <div class="quiz-q">3. When inference is described as "memory bandwidth bound" rather than "compute bound," it means:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">The model is running out of CPU RAM and must swap to disk</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">The network connection to the inference server is too slow</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','qq12')">The GPU spends more time waiting for data transfers from HBM than performing floating-point operations — memory read speed is the bottleneck</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">The context is too long to fit in the model's context window</button>
+        </div>
+        <div class="quiz-feedback right">Correct. In memory-bandwidth-bound regimes, the GPU's arithmetic units are idle waiting for data to arrive from HBM. This is common in long-context generation where loading a large KV cache dominates over the actual attention computation.</div>
+        <div class="quiz-feedback wrong">Not quite. Memory bandwidth bound means the GPU is starved for data — it finishes computations faster than HBM can supply the next batch. For long-context inference, reading the KV cache is often slower than computing attention over it.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ LAB 4 ============================================================ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — KV Cache Engineering</h1>
+      <div class="tagline">Explore inference memory economics with a live AI tutor · 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Mission</h4>
+        <p>Work through real KV cache sizing calculations and deployment economics. Ask the tutor to estimate KV cache memory for specific model configurations, compare GQA and MQA trade-offs for a hypothetical deployment, or analyze how PagedAttention changes the economics of serving 1,000 concurrent long-context sessions.</p>
+        <div class="lab-prompt">Suggested start: "Calculate the KV cache memory needed to serve Llama 2 70B with a 32K-token context per request for 100 concurrent users — and tell me how GQA changes that number."</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Tutor — KV Cache Economics</span>
+          <div class="chat-badge">Lab 4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4. I can help you work through KV cache sizing calculations for real model architectures, analyze the deployment economics of GQA versus MQA at scale, explain how PagedAttention changes concurrent request capacity, or explore why KV quantization has become standard in production serving. What would you like to calculate or explore?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Ask about KV cache sizing, GQA, or inference economics…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ MODULE TEST ============================================================ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 3 — Test</h1>
+      <div class="tagline">15 questions · 80% to pass · covers all four lessons</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt1">
+        <div class="quiz-q">1. The attention mechanism in standard transformers scales as O(n²) in both time and memory because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">Each of n query tokens computes a score against all n key tokens, producing an n×n attention matrix</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The softmax function requires n passes over the full sequence</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Positional embeddings grow quadratically with sequence length</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">Weights are squared during the forward pass for numerical stability</button>
+        </div>
+        <div class="quiz-feedback right">Correct. QKᵀ produces an n×n matrix — the defining quadratic operation.</div>
+        <div class="quiz-feedback wrong">The quadratic scaling comes from the n×n matrix in QKᵀ — all n queries against all n keys.</div>
+      </div>
+
+      <div class="quiz-box" id="mt2">
+        <div class="quiz-q">2. If a 4K-token context costs 1 unit of attention compute, a 32K-token context costs approximately:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">8 units</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">32 units</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">64 units</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">256 units</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 32K ÷ 4K = 8× length increase. Quadratic: 8² = 64× cost.</div>
+        <div class="quiz-feedback wrong">Quadratic scaling: length ratio is 8, so cost ratio is 8² = 64.</div>
+      </div>
+
+      <div class="quiz-box" id="mt3">
+        <div class="quiz-q">3. Anthropic's Claude 1 required specialized infrastructure for its 100K context window (2023) primarily because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">100K tokens exceeded the vocabulary size of the tokenizer</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">Full attention at 100K tokens produced memory requirements that exceeded standard GPU configurations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Anthropic needed to retrain the model from scratch on 100K-length documents</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Regulatory requirements mandated isolated compute for long documents</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The O(n²) memory growth at 100K tokens required novel infrastructure, not just more of the same hardware.</div>
+        <div class="quiz-feedback wrong">The O(n²) attention matrix at 100K tokens overwhelms standard GPU memory — specialized infrastructure was needed to manage this.</div>
+      </div>
+
+      <div class="quiz-box" id="mt4">
+        <div class="quiz-q">4. Longformer (Allen Institute, 2020) reduced attention complexity to approximately O(n) by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Using a recurrent hidden state instead of an attention matrix</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">Combining local sliding-window attention with a small set of global tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Replacing softmax with a linear function that avoids the n×n computation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Caching attention matrices from prior passes and reusing them</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Longformer's sliding window gives O(n·w) local attention, plus O(n·g) for g global tokens — effectively O(n) when w and g are constants.</div>
+        <div class="quiz-feedback wrong">Longformer used sliding-window local attention (each token attends to w neighbors) plus global tokens that attend to all positions.</div>
+      </div>
+
+      <div class="quiz-box" id="mt5">
+        <div class="quiz-q">5. FlashAttention differs from sparse attention methods in that:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">FlashAttention computes only a subset of attention scores, like sparse methods</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">FlashAttention eliminates the need for the Q, K, V matrices entirely</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">FlashAttention computes exact full attention but reorganizes memory access to minimize HBM traffic, without approximating the result</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">FlashAttention uses INT8 arithmetic instead of FP16 to reduce memory bandwidth</button>
+        </div>
+        <div class="quiz-feedback right">Correct. FlashAttention is an IO-aware algorithm — same mathematical result, different execution order that stays within fast SRAM rather than repeatedly reading from HBM.</div>
+        <div class="quiz-feedback wrong">FlashAttention computes the exact same attention as standard attention. Its innovation is IO efficiency, not mathematical approximation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt6">
+        <div class="quiz-q">6. Mistral 7B's rolling buffer KV cache (September 2023) enables long-context processing by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">Using a fixed-size sliding-window cache that overwrites old entries, allowing information to propagate through layers despite fixed memory</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Storing the full KV cache in CPU RAM and streaming it to GPU as needed</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Compressing old KV pairs with an autoencoder before caching them</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Discarding KV pairs older than 4096 tokens and relying on attention to skip them</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The rolling buffer maintains a fixed-size cache where old entries are overwritten, while information propagates forward through layer-by-layer processing.</div>
+        <div class="quiz-feedback wrong">Mistral's rolling buffer is a fixed-size circular cache — new tokens overwrite old ones, keeping memory constant while allowing context to propagate through deep layers.</div>
+      </div>
+
+      <div class="quiz-box" id="mt7">
+        <div class="quiz-q">7. The mathematical trick that gives linear attention its sub-quadratic complexity is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Approximating K with a random projection to d/2 dimensions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">Using associativity to compute φ(K)ᵀ·V (a d×d matrix) before multiplying by φ(Q), so the n×n matrix is never formed</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Replacing V with a diagonal matrix to reduce the matrix multiplication cost</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Computing attention in blocks of size √n to reduce memory allocation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. This associativity trick is the core insight: (AB)C vs A(BC) — same mathematical result, but one path forms an n×n intermediate and the other doesn't.</div>
+        <div class="quiz-feedback wrong">The trick is matrix multiplication associativity: compute the d×d matrix (φ(K)ᵀ·V) first, then multiply each of n queries by that result — no n×n intermediate needed.</div>
+      </div>
+
+      <div class="quiz-box" id="mt8">
+        <div class="quiz-q">8. Mamba's "selective" state spaces differ from standard S4 in that:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Mamba uses multiple parallel hidden states instead of one</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Mamba's hidden state resets to zero at every attention layer boundary</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">A, B, C matrices are functions of the input token, allowing the model to learn what to retain or overwrite in the hidden state based on content</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Mamba uses a separate attention head on top of the SSM to handle retrieval tasks</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Input-dependent A, B, C matrices are what make Mamba "selective" — the model can decide, based on content, how much to gate the hidden state update.</div>
+        <div class="quiz-feedback wrong">Mamba's selectivity comes from input-dependent SSM parameters — A, B, C change per token, giving the model learned control over its memory update.</div>
+      </div>
+
+      <div class="quiz-box" id="mt9">
+        <div class="quiz-q">9. On needle-in-a-haystack benchmarks, pure SSMs like Mamba underperform transformers because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">SSMs process tokens faster and therefore spend less time on each one</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">The fixed compressed hidden state may lose specific facts that weren't strongly weighted during encoding, while transformers retain direct access to all tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">SSMs cannot process text containing proper nouns</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">The recurrent computation prevents SSMs from reading the needle before the surrounding haystack</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Transformers have random access via attention. SSMs compress prior context into a fixed state — precise retrieval of specific buried details is inherently harder.</div>
+        <div class="quiz-feedback wrong">The retrieval gap is architectural: transformers attend directly to any prior token; SSM hidden states are lossy compressions where specific facts can be difficult to recover.</div>
+      </div>
+
+      <div class="quiz-box" id="mt10">
+        <div class="quiz-q">10. Jamba (AI21 Labs, March 2024) is significant because it:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Was the first model to achieve a 1-million-token context window</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Replaced all attention layers with SSM layers, achieving pure O(n) inference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">Demonstrated a hybrid architecture interleaving attention and SSM layers, combining SSM efficiency with attention's precise retrieval capability</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">Used KV quantization to reduce attention memory by 16× without quality loss</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Jamba validated the hybrid SSM-attention paradigm in production, showing neither architecture alone was optimal for all tasks.</div>
+        <div class="quiz-feedback wrong">Jamba's innovation was hybridization — interleaving Mamba SSM layers with transformer attention layers to get the benefits of both.</div>
+      </div>
+
+      <div class="quiz-box" id="mt11">
+        <div class="quiz-q">11. The KV cache size formula includes a factor of 2 because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Forward and backward passes both require a cache copy</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Both keys and values must be cached separately for each layer and token</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Half-precision floats take two bytes each</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Bidirectional models cache each token in both directions</button>
+        </div>
+        <div class="quiz-feedback right">Correct. KV cache stores both the key vector and value vector per token per layer — hence 2 × L × H × d × n.</div>
+        <div class="quiz-feedback wrong">The factor of 2 is because attention needs both K and V cached. K is used to compute attention scores; V is used to compute the weighted sum.</div>
+      </div>
+
+      <div class="quiz-box" id="mt12">
+        <div class="quiz-q">12. Grouped-Query Attention (GQA) was adopted by Llama 2 70B primarily to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Improve accuracy on multi-step reasoning benchmarks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">Reduce KV cache memory footprint during long-context inference with minimal quality loss</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Enable training on sequences longer than 4096 tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Replace FlashAttention for faster kernel-level computation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GQA's primary motivation was inference efficiency — reducing KV cache memory while preserving the quality advantages of multi-head attention.</div>
+        <div class="quiz-feedback wrong">GQA's adoption was driven by KV cache economics: sharing K/V heads across query heads reduces cache memory by the grouping ratio with negligible accuracy cost.</div>
+      </div>
+
+      <div class="quiz-box" id="mt13">
+        <div class="quiz-q">13. PagedAttention (vLLM) addresses which specific problem in production inference serving?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Arithmetic throughput for large batch attention computation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Gradient checkpointing during fine-tuning of long-context models</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">Memory fragmentation from contiguous KV cache allocation, which wastes GPU memory and limits concurrent request capacity</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">Slow tokenization of very long documents before inference begins</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Contiguous allocation wastes memory because you must reserve worst-case space per request. Pages eliminate this waste, allowing far more concurrent long-context sessions.</div>
+        <div class="quiz-feedback wrong">PagedAttention solves memory fragmentation: naive contiguous KV allocation wastes GPU memory proportional to (max_length - actual_length) per request. Pages fix this.</div>
+      </div>
+
+      <div class="quiz-box" id="mt14">
+        <div class="quiz-q">14. When long-context inference is "memory bandwidth bound," the most effective optimization is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">Reducing data movement (e.g., KV quantization, GQA, or tiled computation) so less data must be transferred from HBM per inference step</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Adding more GPU cores to increase arithmetic throughput</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Using a larger batch size to amortize model weight loading costs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Switching from float16 to float32 to reduce numerical errors slowing convergence</button>
+        </div>
+        <div class="quiz-feedback right">Correct. If you're memory-bandwidth bound, more compute units are idle — the bottleneck is data transfer. Reducing data size or movement (quantization, GQA, tiling) directly addresses the constraint.</div>
+        <div class="quiz-feedback wrong">In a memory-bandwidth-bound regime, adding arithmetic compute doesn't help — the GPU is already starved for data. The fix is to reduce data volume or improve access patterns.</div>
+      </div>
+
+      <div class="quiz-box" id="mt15">
+        <div class="quiz-q">15. Which combination of techniques best describes how modern production models (GPT-4, Claude 3, Gemini 1.5) handle million-token-range contexts?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Pure full attention with no modifications, on sufficiently large GPU clusters</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Pure SSM architecture with no attention layers, for O(n) scaling</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Sparse attention only, with strict 4096-token windows and no global tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Combinations of FlashAttention-style IO optimization, grouped-query or multi-query attention, KV quantization, and efficient serving via paged memory management</button>
+        </div>
+        <div class="quiz-feedback right">Correct. No single technique is sufficient. Production long-context systems stack FlashAttention (IO efficiency), GQA/MQA (KV cache size), KV quantization (further memory reduction), and paged serving infrastructure.</div>
+        <div class="quiz-feedback wrong">Production long-context systems combine many techniques: IO-efficient exact attention (FlashAttention), reduced KV cache (GQA/MQA), KV quantization, and paged memory management for serving.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">Review from L1 →</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .content-area -->
+
+<script>
+var COURSE_ID='the-context-window-race';
+var MODULE_ID='the-m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var target=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(target) target.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  if(box.dataset.answered) return;
+  box.dataset.answered='1';
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var target=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(target) target.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI tutor for the AESOP AI Academy course "The Context Window Race," specifically Module 3 Lesson 1 on quadratic attention complexity. Help students understand O(n²) scaling in transformer attention: the QKᵀ matrix multiplication that produces an n×n attention matrix, why doubling sequence length quadruples compute cost, KV cache memory growth formulas, and why this constrained early LLMs like GPT-3 to 2048 tokens. Work through specific numerical examples when asked. Use real documented facts about GPT-3 (2020), PaLM 2, and Claude 1\'s 100K context. Keep responses focused, educational, and under 250 words. Warmly redirect off-topic questions back to attention complexity.',
+  l2:'You are an expert AI tutor for the AESOP AI Academy course "The Context Window Race," Module 3 Lesson 2 on sparse and sliding-window attention. Help students understand: Longformer (Allen Institute, 2020) and its local+global attention, BigBird\'s strided attention, how sparse patterns reduce O(n²) to O(n·w), FlashAttention (Tri Dao, 2022) as an IO-aware exact attention implementation, and Mistral 7B\'s rolling buffer KV cache (Sept 2023). Discuss trade-offs: what sparse attention misses (long-range dependencies), and why FlashAttention differs from approximation methods. Use real numbers and documented cases. Keep responses under 250 words. Redirect off-topic questions warmly.',
+  l3:'You are an expert AI tutor for the AESOP AI Academy course "The Context Window Race," Module 3 Lesson 3 on linear attention and state space models. Help students understand: linear attention\'s associativity trick (φ(Q)·(φ(K)ᵀ·V)) avoiding the n×n matrix, S4 (Gu et al. 2021) as structured SSM, Mamba (Gu & Dao, Dec 2023) with selective input-dependent state transitions, O(1) inference memory vs transformer\'s growing KV cache, SSM limitations on needle-in-haystack retrieval, and hybrid architectures like Jamba (AI21 Labs, March 2024). Compare architectures with specific task examples. Keep responses under 250 words. Warmly redirect off-topic questions.',
+  l4:'You are an expert AI tutor for the AESOP AI Academy course "The Context Window Race," Module 3 Lesson 4 on KV cache economics. Help students calculate KV cache sizes using the formula 2·L·H·d·n·bytes, understand how Grouped-Query Attention (GQA) and Multi-Query Attention (MQA) reduce cache size, explain PagedAttention (vLLM, 2023) and its ~24× throughput improvement via eliminating memory fragmentation, discuss KV quantization (INT8/INT4), and analyze production deployment economics at scale. Work through specific numerical examples for real models (Llama 2 70B, Mistral 7B, GPT-4 scale estimates). Keep responses under 250 words. Warmly redirect off-topic questions back to KV cache topics.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Great question. Let's work through the quadratic arithmetic. For a 128K-token context versus 8K: the length ratio is 128÷8 = 16. Since attention complexity is O(n²), the cost ratio is 16² = 256×. That's why GPT-4 Turbo's 128K context inference costs dramatically more per token than an 8K query — the attention matrix alone is 256 times larger. Each transformer layer multiplies this: a 96-layer model computes that n×n matrix 96 times per forward pass.",
+    "The KV cache memory formula is: 2 × L × H × d × n × bytes_per_param. For a GPT-3 scale model (96 layers, 96 heads, d=128, fp16): 2×96×96×128×n×2 bytes = ~4.7MB per 1K tokens. At 128K tokens, that's ~600MB per request — before model weights. This is why long-context inference requires careful memory management beyond just having a larger GPU.",
+    "The key insight about O(n²) scaling is that it makes long-context inference qualitatively different from short-context. At 2K tokens, attention is fast enough to be a minor cost. At 128K tokens, it becomes the dominant cost — which is why every technique in this module (sparse attention, SSMs, GQA, FlashAttention) exists. The quadratic wall forced the entire field to innovate."
+  ],
+  l2:[
+    "Sliding-window attention would fail precisely where the critical information is far apart in the sequence. Example: a legal contract where the definition of 'Material Adverse Effect' appears on page 2, but a clause invoking that definition appears on page 47. With a 512-token window, those sections never directly attend to each other. A transformer with full attention would connect them; Longformer without a global token on the definition clause would miss it.",
+    "FlashAttention and sparse attention solve different problems. Sparse attention approximates the attention matrix — it's mathematically different from full attention. FlashAttention computes the exact same result as standard attention but reorganizes GPU memory access: instead of materializing the n×n matrix in slow HBM, it tiles computation to stay in fast SRAM. One is an approximation; one is an implementation optimization. You can combine them: sparse FlashAttention applies IO-efficient kernels to sparse patterns.",
+    "Mistral 7B's rolling buffer was ingenious for its simplicity. Standard inference caches all KV pairs indefinitely, growing linearly. Mistral's buffer has fixed size W: when full, new tokens overwrite the oldest. The model doesn't 'see' old tokens directly — but information propagates through layers. Token 1's information is baked into token 2's representation, which is in token 3's, and so on. It's lossy but efficient, enabling effective long-context at fixed memory cost."
+  ],
+  l3:[
+    "Great comparison task. Mamba would win at: (1) continuous long-document summarization — streaming thousands of pages through a fixed hidden state is memory-efficient and fast. (2) Time-series prediction over long historical windows. Transformer would win at: (1) needle-in-haystack retrieval — finding a specific date buried in 100K tokens requires random-access attention that SSMs can't match. (2) Multi-hop reasoning where connecting specific facts from different positions is essential. The architectural reason: Mamba compresses history; transformers preserve it queryably.",
+    "Mamba's selectivity is the key innovation over S4. In S4, A, B, C are fixed learned matrices — the same state update rule regardless of input. In Mamba, A, B, C are functions of the current input token. This means the model can learn to 'pay attention' (update state strongly) for important tokens and 'let pass' unimportant ones. It's analogous to an LSTM's gates, but more principled. This selectivity is what brought SSMs to transformer-level quality on language tasks.",
+    "Jamba's hybrid insight: you don't need attention everywhere. Most token processing can use efficient SSM layers — local context compression, pattern recognition. But periodically, an attention layer provides precise retrieval capability across the full context. AI21 Labs found that a ratio of roughly 1 attention layer per 7 SSM layers preserved retrieval quality while dramatically reducing KV cache size compared to a pure transformer. This architectural pattern will likely dominate long-context design through 2025."
+  ],
+  l4:[
+    "Let's calculate Llama 2 70B KV cache for your scenario. Llama 2 70B has 80 layers, 64 Q-heads, and uses GQA with 8 KV heads (grouping ratio 8), head dimension 128, fp16. Formula: 2 × 80 × 8 × 128 × 32000 × 2 bytes = ~2.62 GB per request at 32K tokens. For 100 concurrent users: 262 GB of KV cache alone — requiring ~4-5 H100 GPUs just for cache. Without GQA (64 KV heads): ~2.1 TB. GQA reduces it 8× to 262 GB. PagedAttention would further improve this by eliminating fragmentation waste.",
+    "MQA vs GQA trade-off: MQA (one K/V pair for all Q heads) gives maximum memory reduction — scales with L×d×n, independent of head count. For Llama 70B at 32K tokens fp16: 2×80×1×128×32000×2 ≈ 327 MB per request — vs 2.62 GB with GQA-8. But MQA degrades quality on tasks requiring diverse attention patterns. GQA is the industry consensus: 8 KV heads per 64 Q heads gives 94% of MQA's memory savings with quality close to full MHA. Falcon used MQA; Llama 2/3 chose GQA as the better trade-off.",
+    "KV quantization math: a standard fp16 KV cache at 32K tokens for Llama 70B with GQA is ~2.62 GB per request. INT8 halves that to 1.31 GB; INT4 to 0.65 GB. For 100 concurrent requests: fp16=262 GB, INT8=131 GB, INT4=65 GB. INT4 fits on 2 H100s instead of 5. Research from 2023 (MIT, together with vLLM) showed INT8 KV causes <0.3 perplexity increase on standard benchmarks — essentially free. INT4 adds ~1-2 PPL depending on task. This is why INT8 KV quantization became standard in production by late 2023."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId];
+  if(!replies) return "I'm in offline practice mode. Try asking about the key concepts from this lesson.";
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  while(container.firstChild) container.removeChild(container.firstChild);
+  var welcomes={
+    l1:'Welcome to Lab 1. I\'m here to help you work through the arithmetic of quadratic attention complexity — the O(n²) scaling wall that shaped the entire context window race. Ask me to calculate cost multipliers, explain why each attention layer compounds the problem, or dig into KV cache memory requirements for any model configuration you\'re curious about.',
+    l2:'Ready to explore sparse attention patterns. I can walk you through concrete failure cases for sliding-window attention, explain how Longformer\'s global tokens work in practice, compare FlashAttention\'s IO optimization to sparse approximation approaches, or analyze why certain production models chose specific sparse patterns. What aspect would you like to dig into?',
+    l3:'Let\'s explore the SSM vs. transformer trade-space. I can help you design benchmark tasks that expose each architecture\'s strengths and weaknesses, explain Mamba\'s selective state space mechanism, analyze why Jamba (AI21 Labs, 2024) interleaves attention and SSM layers, or walk through the mathematical reason SSMs struggle with precise retrieval. What would you like to investigate?',
+    l4:'Welcome to Lab 4. I can help you work through KV cache sizing calculations for real model architectures, analyze the deployment economics of GQA versus MQA at scale, explain how PagedAttention changes concurrent request capacity, or explore why KV quantization has become standard in production serving. What would you like to calculate or explore?'
+  };
+  var div=document.createElement('div');
+  div.className='chat-msg ai';
+  div.textContent=welcomes[labId]||'Lab reset. Ask me anything about this lesson.';
+  container.appendChild(div);
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinkingEl=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an issue. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinkingEl) thinkingEl.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinkingEl) thinkingEl.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+updateTabs();
+</script>
+
+</body>
+</html>

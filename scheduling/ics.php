@@ -121,7 +121,7 @@ function windowsToIana(string $tz): string {
         'West Pacific Standard Time'      => 'Pacific/Port_Moresby',
         'Yakutsk Standard Time'           => 'Asia/Yakutsk',
     ];
-    return $map[$tz] ?? $tz;
+    return $map[ucwords(strtolower($tz))] ?? $map[$tz] ?? $tz;
 }
 
 // Get a simple property value from a VEVENT block

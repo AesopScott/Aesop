@@ -271,6 +271,21 @@
         });
       });
     }
+
+    // Mark the active nav pill based on current URL pathname.
+    (function () {
+      var cur = location.pathname;
+      document.querySelectorAll('.tb-pills a:not(.tb-brand):not(.tb-report)').forEach(function (a) {
+        var href = a.getAttribute('href') || '';
+        if (/^https?:\/\//.test(href)) return;       // skip external links
+        var linkPath = href.split('#')[0];            // strip hash fragment
+        var isDir = linkPath.slice(-1) === '/';
+        var active = isDir
+          ? cur.indexOf(linkPath) === 0              // prefix match for /ai-news/
+          : cur === linkPath;                        // exact match for /page.html
+        if (active) a.classList.add('is-active');
+      });
+    })();
   }
 
   // Run now if DOM is already interactive, else after it parses.

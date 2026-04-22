@@ -14,24 +14,25 @@ function getDB(): PDO {
     return $pdo;
 }
 
-function getStoredTokens(): ?array {
+function getStoredTokens(int $accountId = 1): ?array {
     try {
-        $stmt = getDB()->query('SELECT * FROM oauth_tokens WHERE id = 1');
-        $row  = $stmt->fetch();
+        $stmt = getDB()->prepare('SELECT * FROM oauth_tokens WHERE id = ?');
+        $stmt->execute([$accountId]);
+        $row = $stmt->fetch();
         return $row ?: null;
     } catch (Exception $e) {
         return null;
     }
 }
 
-function storeTokens(string $accessToken, string $refreshToken, int $expiresAt): void {
+function storeTokens(string $accessToken, string $refreshToken, int $expiresAt, int $accountId = 1): void {
     $db   = getDB();
     $stmt = $db->prepare(
         'INSERT INTO oauth_tokens (id, access_token, refresh_token, expires_at)
-         VALUES (1, :a, :r, :e)
+         VALUES (:id, :a, :r, :e)
          ON DUPLICATE KEY UPDATE access_token = :a, refresh_token = :r, expires_at = :e'
     );
-    $stmt->execute([':a' => $accessToken, ':r' => $refreshToken, ':e' => $expiresAt]);
+    $stmt->execute([':id' => $accountId, ':a' => $accessToken, ':r' => $refreshToken, ':e' => $expiresAt]);
 }
 
 function logBooking(string $eventId, string $name, string $email, string $start, string $end): void {

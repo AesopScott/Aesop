@@ -8,15 +8,20 @@ if (!isset($_GET['code'])) {
     die('Missing authorization code.');
 }
 
+$accountId = (int)($_GET['state'] ?? 1);
+if (!in_array($accountId, [1, 2], true)) $accountId = 1;
+
+$tenantEndpoint = $accountId === 1 ? AZURE_TENANT_ID : 'common';
+
 $data = httpPost(
-    'https://login.microsoftonline.com/' . AZURE_TENANT_ID . '/oauth2/v2.0/token',
+    "https://login.microsoftonline.com/$tenantEndpoint/oauth2/v2.0/token",
     [
         'client_id'     => AZURE_CLIENT_ID,
         'client_secret' => AZURE_CLIENT_SECRET,
         'code'          => $_GET['code'],
         'redirect_uri'  => AZURE_REDIRECT_URI,
         'grant_type'    => 'authorization_code',
-        'scope'         => 'Calendars.ReadWrite offline_access',
+        'scope'         => $accountId === 1 ? 'Calendars.ReadWrite offline_access' : 'Calendars.Read offline_access',
     ]
 );
 
@@ -25,7 +30,8 @@ if (!isset($data['access_token'])) {
     die("Authorization failed: $msg");
 }
 
-storeTokens($data['access_token'], $data['refresh_token'], time() + (int)$data['expires_in']);
+storeTokens($data['access_token'], $data['refresh_token'], time() + (int)$data['expires_in'], $accountId);
+$label = $accountId === 2 ? 'Second calendar' : 'Your Outlook calendar';
 
 ?><!DOCTYPE html>
 <html lang="en">
@@ -46,7 +52,7 @@ storeTokens($data['access_token'], $data['refresh_token'], time() + (int)$data['
 <body>
 <div class="card">
   <h1>&#10003; Connected!</h1>
-  <p>Your Outlook calendar is now linked.<br>
+  <p><?= htmlspecialchars($label) ?> is now linked.<br>
      Your booking page is live and ready to share.</p>
   <p><strong>Important:</strong> delete or protect <code>setup.php</code> and <code>auth.php</code> now.</p>
   <a href="index.html">View booking page &rarr;</a>

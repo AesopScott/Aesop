@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-21 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Code Review Fundamentals – M5: Type Safety and Data Flow Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ai-code-review-fundamentals-m5 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.code-block{background:#060e18;border:1px solid var(--border-dark);border-radius:4px;padding:0.85rem 1rem;margin:0.85rem 0;font-family:'Courier New',monospace;font-size:0.78rem;line-height:1.7;color:#a89f93;overflow-x:auto;}
+.code-block .kw{color:#f43f5e;}
+.code-block .ty{color:#c9a05a;}
+.code-block .cm{color:#3a4a5a;font-style:italic;}
+.code-block .st{color:#4fcf8a;}
+.inline-code{font-family:'Courier New',monospace;font-size:0.82em;background:rgba(201,160,90,0.08);border:1px solid rgba(201,160,90,0.12);color:var(--gold);padding:0.1em 0.4em;border-radius:3px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin:1rem 0;}
+.col-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.25rem;}
+.col-card h5{font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.65rem;}
+.col-card h5.red{color:var(--accent);}
+.col-card h5.green{color:#4fcf8a;}
+.col-card p{font-size:0.82rem;line-height:1.7;color:#6e6861;}
+.flow-row{display:flex;align-items:flex-start;gap:1rem;margin:0.85rem 0;padding:0.75rem 1rem;background:var(--panel2);border:1px solid var(--border-dark);border-radius:4px;}
+.flow-num{min-width:1.6rem;height:1.6rem;border-radius:50%;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);font-size:0.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:0.1rem;}
+.flow-content{flex:1;}
+.flow-title{font-size:0.82rem;font-weight:700;color:#c0b8af;margin-bottom:0.25rem;}
+.flow-desc{font-size:0.8rem;color:#6e6861;line-height:1.65;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}.two-col{grid-template-columns:1fr;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1: Static Type Systems and AI Review ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 1</div>
+      <h1>Static Type Systems and AI Review</h1>
+      <div class="tagline">How compilers and AI assistants read type annotations — and where each falls short</div>
+      <div class="lesson-question">What does an AI code reviewer actually see when it encounters a TypeScript generic or a Python type hint?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Historical Context">
+        <p class="story-text">In June 2012, Facebook engineers began deploying a new statically-typed JavaScript dialect internally. The project, called <em>Flow</em>, was created after engineers traced multiple production crashes to type mismatches that the JavaScript runtime only revealed at execution time. A year later, Microsoft released TypeScript 0.8 with a similar aim. Both projects encoded a hard empirical lesson: <em>static type information, surfaced to developers before runtime, catches entire classes of bugs</em> that code review alone almost never catches.</p>
+        <p class="story-text">The TypeScript project would grow to underpin nearly every large JavaScript codebase. By 2023, the StackOverflow Developer Survey ranked TypeScript fifth among all programming languages. Its adoption history is a direct argument for bringing type analysis into every code review workflow — human or AI-assisted.</p>
+      </div>
+
+      <div class="section-heading">What Static Typing Actually Provides</div>
+      <div class="section-body">
+        <p>A static type system attaches type labels to variables, function parameters, and return values at the source-code level. The compiler or type checker verifies these labels before any code runs. This gives three concrete guarantees that dynamic languages cannot provide at review time:</p>
+        <p><strong>1. Interface contracts are machine-checked.</strong> If a function declares it returns <span class="inline-code">User | null</span>, every caller that fails to handle the null case is flagged by the type checker — not by a human reviewer who might miss it.</p>
+        <p><strong>2. Refactoring propagates automatically.</strong> When a field is renamed or removed from a type definition, all dependent code that still references the old name becomes a compile error. This is the single most valuable property during large-scale refactors.</p>
+        <p><strong>3. Documentation is always current.</strong> Type signatures serve as machine-verified documentation. Unlike comments, they cannot drift from the actual behavior of the code without causing a build failure.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">How AI Reviewers Analyze Type Annotations</div>
+      <div class="section-body">
+        <p>AI code review tools — including GitHub Copilot, Amazon CodeWhisperer, and purpose-built tools like Qodo (formerly CodiumAI) — process type information as part of their context window. They do not execute a type checker; they reason probabilistically about type correctness based on patterns learned during training.</p>
+        <p>This distinction matters enormously. Consider a TypeScript function:</p>
+      </div>
+      <div class="code-block"><span class="kw">function</span> <span class="ty">getUser</span>(id: <span class="ty">string</span>): <span class="ty">Promise&lt;User | null&gt;</span> {
+  <span class="kw">return</span> db.findOne({ id });
+}
+
+<span class="cm">// Later, in a different file:</span>
+<span class="kw">const</span> user = <span class="kw">await</span> getUser(userId);
+console.log(user.name); <span class="cm">// AI may flag: possible null dereference</span></div>
+      <div class="section-body">
+        <p>A proper type checker will <em>always</em> flag the null dereference. An AI reviewer will flag it <em>most of the time</em> — but its confidence depends on whether both files appear in the same context window, and whether the return type annotation is explicit enough to be unambiguous.</p>
+        <p>AI reviewers perform especially well on type errors when: annotations are explicit rather than inferred; the relevant type definitions are in the same file or a well-known standard library; and the error pattern matches common antipatterns seen in training data.</p>
+        <p>They perform poorly when: types are deeply generic with multiple constraints; the error spans many files not present in context; or the codebase uses unusual type system features like conditional types or mapped type transformations.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Key Finding — Microsoft Research, 2023</div>
+        <p>A study of GitHub Copilot suggestions on typed vs. untyped Python found that Copilot's suggestions had 2.3× fewer type-related errors in files that included PEP 484 type hints compared to files with no annotations. Type hints do not just help the human reviewer — they measurably improve AI suggestion quality.</p>
+      </div>
+
+      <div class="section-heading">Python Type Hints: A Case Study in Gradual Typing</div>
+      <div class="section-body">
+        <p>Python's type hint system (PEP 484, introduced in Python 3.5) is <em>gradual</em> — annotations are optional and unenforced at runtime by default. This creates a specific review challenge: a function may have partial annotations that are technically valid Python but misleading to both humans and AI reviewers.</p>
+      </div>
+      <div class="code-block"><span class="cm"># Misleading partial annotation — valid Python, confusing to reviewers</span>
+<span class="kw">def</span> <span class="ty">process_payment</span>(amount: <span class="ty">float</span>, currency) -> <span class="ty">dict</span>:
+    result = charge_api(amount, currency)
+    <span class="kw">return</span> result  <span class="cm"># What shape is this dict?</span></div>
+      <div class="section-body">
+        <p>When an AI reviewer encounters this function, it knows <span class="inline-code">amount</span> is a float but has no type contract for <span class="inline-code">currency</span> or the return value. This ambiguity forces the AI to rely on naming heuristics and surrounding context — far less reliable than an explicit <span class="inline-code">TypedDict</span> or dataclass return type.</p>
+        <p>The practical review guideline: treat any function with partial type annotations as equivalent to no annotations for the purpose of AI-assisted type checking. Require either full annotation or explicit <span class="inline-code"># type: ignore</span> with justification.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Structural typing</span><span class="kt-def">A type system where compatibility is determined by the shape of a type (its fields and methods) rather than its declared name. TypeScript uses structural typing; Java uses nominal typing. AI reviewers trained on TypeScript codebases are often better at catching structural type mismatches than nominal ones.</span></div>
+      <div class="key-term"><span class="kt-term">Type narrowing</span><span class="kt-def">The process by which a type checker (or AI reviewer) refines a broad type to a narrower one within a conditional branch. For example, after <code>if (user !== null)</code>, TypeScript narrows the type of user from <code>User | null</code> to <code>User</code>. AI reviewers vary widely in their ability to track narrowing across complex control flow.</span></div>
+      <div class="key-term"><span class="kt-term">Gradual typing</span><span class="kt-def">A type system that allows mixing typed and untyped code. Used by Python (via mypy/pyright), PHP (via Psalm), and Ruby (via Sorbet). The gradual boundary — where typed code calls untyped code — is a primary source of type-related bugs and a known weak point for AI review tools.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Review Principle</div>
+        <p>When asking an AI to review type safety, always include the relevant type definition files in the same prompt context. An AI reviewer that cannot see the type declaration for <code>User</code> cannot reason about <code>User | null</code> return handling — it is working with an incomplete contract.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Static Type Systems and AI Review — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">1. An AI code reviewer differs from a static type checker primarily because the AI:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Executes the code in a sandbox before reporting errors</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Reasons probabilistically from patterns rather than performing deterministic type verification</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Can only analyze languages with nominal type systems</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Requires all annotations to be present before it can review a file</button>
+        </div>
+        <div class="quiz-feedback right">Correct. AI reviewers use pattern matching over training data, not a formal type inference algorithm. This is why their accuracy is context-dependent while a type checker's is deterministic.</div>
+        <div class="quiz-feedback wrong">Incorrect. AI reviewers operate statically on source text. The core distinction is probabilistic vs. deterministic reasoning — review the lesson section on how AI tools process type annotations.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">2. According to Microsoft Research findings cited in the lesson, including Python type hints in a file affected AI suggestion quality by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Making suggestions slower but more accurate</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Having no measurable effect on type-related error rates</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Reducing type-related errors in Copilot suggestions by a factor of 2.3×</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Improving suggestions only when combined with docstrings</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The 2023 study found a 2.3× reduction in type-related errors in annotated vs. unannotated files, demonstrating that type hints improve AI tool output, not just human readability.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson cites a specific 2.3× improvement factor from a 2023 Microsoft Research study. Type annotations measurably improve AI suggestion quality.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">3. A function has type annotations on two of its three parameters but none on the return type. For AI-assisted type review purposes, this should be treated as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Fully typed, since most parameters are covered</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Better than no annotations, with partial AI coverage expected</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Equivalent to no annotations — partial annotation forces AI to rely on unreliable heuristics</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">A compiler error in all gradual typing systems</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The lesson states that partial annotations should be treated as equivalent to none for AI type-checking purposes, since ambiguity forces reliance on naming heuristics rather than explicit contracts.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson is explicit: partial annotations force the AI into heuristic reasoning, making the review no more reliable than for unannotated code. Require full annotation or explicit ignore directives.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Back to Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Diagnosing Type Annotation Gaps</h1>
+      <div class="tagline">Practice with an AI assistant · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You will review a TypeScript and a Python function with incomplete type annotations. Ask the AI assistant to help you identify exactly where the type contracts break down and what information an AI reviewer would lack. Explore the difference between what a type checker catches deterministically and what an AI can only infer.</p>
+        <div class="lab-prompt">Suggested start: "Here is a Python function with partial annotations. What type information is missing and how does that affect AI review quality? def process_order(order_id: int, discount) -> dict: ..."</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Review Assistant</span>
+          <div class="chat-badge">Type Safety · L1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you analyze type annotation gaps and understand how they affect both static type checkers and AI-assisted review. Share a function with incomplete annotations and let's examine what's missing — and what an AI reviewer would have to guess.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about type annotation gaps, partial typing, or AI review limitations..." rows="2"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L2: Null Safety and Optional Value Tracking ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 2</div>
+      <h1>Null Safety and Optional Value Tracking</h1>
+      <div class="tagline">The billion-dollar mistake — and how AI reviewers track the propagation of absent values</div>
+      <div class="lesson-question">How does an AI code reviewer trace a null or undefined value through multiple function calls — and where does that tracing break down?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Billion-Dollar Mistake">
+        <p class="story-text">In a 2009 presentation at QCon London, Tony Hoare — the computer scientist who invented the null reference in 1965 for the ALGOL W language — called it his <em>"billion-dollar mistake."</em> Hoare estimated that null reference errors had caused over a billion dollars in losses through system crashes, security vulnerabilities, and data corruption in the decades since their introduction. He described the decision as driven by convenience: it was easy to implement, and he lacked a way to flag it as potentially dangerous at the time.</p>
+        <p class="story-text">The languages designed after this admission increasingly treat null as a first-class concern. Kotlin's type system distinguishes <em>nullable</em> from non-nullable types at the language level. Rust eliminates null entirely, using the <span class="char">Option&lt;T&gt;</span> enum. Swift uses optionals. C#8 introduced nullable reference types. In every case, the language designers had the same goal: make the <em>absent value</em> visible to tools — including, now, AI review tools.</p>
+      </div>
+
+      <div class="section-heading">How Null Propagates Through a Codebase</div>
+      <div class="section-body">
+        <p>Null-related bugs are rarely local. They arise when a value that might be null or undefined is passed through several function boundaries before being dereferenced. This is called <em>null propagation</em> — and it is the hardest class of null bug to catch in code review, human or AI.</p>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="flow-title">Origin point</div>
+          <div class="flow-desc">A database query, API response, or configuration lookup returns a value that may be null. This is often marked in the type system: <span class="inline-code">User | null</span>, <span class="inline-code">Optional[User]</span>, <span class="inline-code">User?</span>.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Propagation</div>
+          <div class="flow-desc">The nullable value is passed to other functions, stored in collections, or returned from intermediate methods. Each step is an opportunity for the null to be silently forwarded without a guard check.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="flow-title">Dereference point</div>
+          <div class="flow-desc">Eventually a property access, method call, or arithmetic operation assumes a non-null value: <span class="inline-code">user.email.toLowerCase()</span>. If null reaches this point, the program crashes.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <div class="flow-title">AI review visibility</div>
+          <div class="flow-desc">AI reviewers can catch steps 1–3 only when all relevant code is in their context window. When propagation spans multiple files, AI tools frequently miss the vulnerability.</div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">AI Null Tracking: Strengths and Limits</div>
+      <div class="section-body">
+        <p>Current AI code review tools are reasonably reliable at catching <em>single-file</em> null dereferences — cases where a nullable value is created and dereferenced in the same function or class. Studies of GitHub Copilot and GPT-4 used as code reviewers (Stanford HAI, 2023) found recall rates above 70% for simple null dereferences in TypeScript.</p>
+        <p>Cross-file propagation is a different story. When a null value originates in one module and is dereferenced in another, AI recall drops sharply — to approximately 30–40% — because the model must infer the return type of an external function it cannot fully see. This mirrors the same limitation that motivated the creation of TypeScript and mypy in the first place.</p>
+      </div>
+
+      <div class="two-col">
+        <div class="col-card">
+          <h5 class="green">AI Catches Reliably</h5>
+          <p>Null dereference in the same function as the nullable assignment. Optional chaining absent where the type signature requires it. Return type is <code>T | null</code> but caller assumes <code>T</code> — when both are in context.</p>
+        </div>
+        <div class="col-card">
+          <h5 class="red">AI Often Misses</h5>
+          <p>Null propagated through 3+ function boundaries. Nullable values stored in generic containers like <code>Map&lt;string, User | null&gt;</code> and retrieved elsewhere. Null introduced at runtime through external API calls not visible in the review context.</p>
+        </div>
+      </div>
+
+      <div class="section-heading">The Optional Pattern Across Languages</div>
+      <div class="section-body">
+        <p>Modern languages solve null propagation by making absent values explicit in the type system and requiring explicit handling. AI reviewers trained on these languages are better at detecting missing null checks when code uses idiomatic optional patterns:</p>
+      </div>
+      <div class="code-block"><span class="cm">// TypeScript — nullish coalescing and optional chaining</span>
+<span class="kw">const</span> email = user?.profile?.email ?? <span class="st">'unknown'</span>;
+
+<span class="cm">// Kotlin — safe call operator</span>
+<span class="kw">val</span> length = str?.length ?: 0
+
+<span class="cm">// Python — typing.Optional with explicit guard</span>
+<span class="kw">def</span> <span class="ty">send_email</span>(user: Optional[<span class="ty">User</span>]) -> <span class="ty">None</span>:
+    <span class="kw">if</span> user <span class="kw">is None</span>:
+        <span class="kw">return</span>
+    mail.send(user.email)
+
+<span class="cm">// Rust — match on Option&lt;T&gt;</span>
+<span class="kw">match</span> user {
+    <span class="ty">Some</span>(u) => send_email(u.email),
+    <span class="ty">None</span>  => log(<span class="st">"no user"</span>),
+}</span></div>
+      <div class="section-body">
+        <p>An important AI review guideline: when reviewing code that mixes optional patterns with non-optional assumptions, explicitly ask the AI to <em>trace the origin of each nullable value</em>. Framing the prompt around data flow — "where does this value come from and what happens if it is null at each step?" — significantly improves AI recall for null-related bugs.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Production Incident — Cloudflare, 2019</div>
+        <p>A null pointer dereference in Cloudflare's Lua-based WAF caused a global outage on July 2, 2019, affecting 14 million HTTP requests per second for approximately 27 minutes. The root cause was an unguarded null dereference in a regex processing function. The Cloudflare post-mortem explicitly noted that the path to null was not visible in the immediate code context of the crashing line — a multi-file propagation problem that is exactly the type AI reviewers struggle with most.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Nullable reference type</span><span class="kt-def">A type that can hold either a valid value or null/undefined. In languages with null safety (Kotlin, Swift, C#8+), these are syntactically distinct from non-nullable types and require explicit handling. AI reviewers perform best when nullable types are annotated explicitly.</span></div>
+      <div class="key-term"><span class="kt-term">Optional chaining</span><span class="kt-def">A syntax (available in TypeScript, JavaScript, Kotlin, Swift) that short-circuits property access or method calls when the receiver is null, returning undefined/null instead of throwing. Using optional chaining consistently gives AI reviewers clear signal that a value may be absent.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Null Safety and Optional Value Tracking — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">1. Tony Hoare's "billion-dollar mistake" refers to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">The decision to make JavaScript dynamically typed</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Inventing the null reference in 1965, which led to decades of crashes and security vulnerabilities</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">The cost of migrating enterprise codebases from C to C++</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Failing to include optional types in the original Java specification</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Hoare made this admission in his 2009 QCon London presentation, attributing null reference errors to over a billion dollars in losses since his introduction of null in ALGOL W.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson traces this directly to Hoare's 2009 QCon London presentation about his 1965 design decision for ALGOL W. Review the opening narrative.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">2. The Stanford HAI 2023 research cited in this lesson found that AI reviewer recall for null dereferences drops from ~70% to ~30–40% when:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The codebase uses Rust instead of TypeScript</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">The null value originates in a different file than the dereference point</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The function is longer than 50 lines</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Optional chaining syntax is used</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cross-file null propagation is the primary scenario where AI recall degrades sharply, because the model cannot see the return type declaration of the external function.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson specifically identifies cross-file propagation — where origin and dereference are in different files — as the cause of this recall drop.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">3. The 2019 Cloudflare outage is relevant to AI null tracking because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">It was caused by an AI code reviewer that approved a null dereference</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">It demonstrates that null errors only occur in dynamically typed languages</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">The root null dereference was not visible in the immediate code context — a cross-file propagation problem AI tools struggle with most</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Cloudflare publicly blamed AI tools for insufficient review coverage</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Cloudflare post-mortem explicitly noted that the crash site gave no direct indication that the value could be null — the propagation was invisible at the point of dereference, exactly the failure mode discussed in the lesson.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson uses this incident to illustrate multi-file null propagation that is invisible at the crash site — the exact scenario where AI reviewers perform worst.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Back to Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Open Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Tracing Null Propagation Paths</h1>
+      <div class="tagline">Practice with an AI assistant · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Practice tracing null propagation chains with the AI assistant. Present code scenarios where a nullable value crosses function boundaries, and explore how to frame prompts that improve AI null-tracking recall. Focus on identifying the origin point, propagation path, and dereference point for each null risk.</p>
+        <div class="lab-prompt">Suggested start: "I have a function that calls getUserById() which returns User | null, then passes the result to formatUserProfile(user). The dereference happens inside formatUserProfile. How should I prompt an AI reviewer to catch this cross-function null risk?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Review Assistant</span>
+          <div class="chat-badge">Null Safety · L2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to Lab 2. Let's practice tracing null propagation paths. Share a code scenario — a function that passes nullable values across boundaries — and I'll help you identify the origin, propagation chain, and dereference point. We'll also work on prompt strategies that improve AI null-tracking coverage.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Describe a null propagation scenario or share code with nullable values..." rows="2"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L3: Data Flow Analysis Techniques ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 3</div>
+      <h1>Data Flow Analysis Techniques</h1>
+      <div class="tagline">Taint tracking, reaching definitions, and what AI reviewers inherit from static analysis theory</div>
+      <div class="lesson-question">When an AI flags a security vulnerability related to user input, what formal analysis technique is it approximating — and how closely does it approximate it?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="From Theory to Production Tools">
+        <p class="story-text">Data flow analysis was formalized in the 1970s as part of compiler optimization research. Frances Allen at IBM published the foundational framework in 1970, describing how information about variable values could be propagated across a program's control flow graph. Allen's work — which would earn her the Turing Award in 2006 — was originally aimed at helping compilers generate faster machine code. The same techniques that enabled dead code elimination and register allocation turned out to be precisely what was needed to find security vulnerabilities decades later.</p>
+        <p class="story-text">By 2003, commercial static analysis tools like Coverity (spun out of Stanford) and Fortify were applying Allen's data flow methods to security analysis. The same year, a Stanford research paper demonstrated that a modified data flow analysis — called <em>taint analysis</em> — could automatically detect a majority of SQL injection vulnerabilities in PHP applications. The paper's core insight was simple: <em>if untrusted data flows into a security-sensitive sink without passing through a sanitization function, report it as a vulnerability.</em></p>
+      </div>
+
+      <div class="section-heading">Core Data Flow Concepts</div>
+      <div class="key-term"><span class="kt-term">Taint analysis</span><span class="kt-def">A data flow technique that marks values from untrusted sources (user input, network data, file contents) as "tainted" and tracks them through the program. If a tainted value reaches a sensitive sink (SQL query, shell command, file path) without sanitization, it is flagged as a potential vulnerability.</span></div>
+      <div class="key-term"><span class="kt-term">Reaching definitions</span><span class="kt-def">A classic data flow analysis that determines, at each point in a program, which variable assignments might have produced the current value of a variable. Used to detect uninitialized variables, stale caches, and double-write bugs.</span></div>
+      <div class="key-term"><span class="kt-term">Source</span><span class="kt-def">In taint analysis, a source is any point where untrusted data enters the program — HTTP request parameters, database reads from external systems, parsed file contents. AI reviewers are generally good at identifying common sources like <code>request.body</code> or <code>os.environ.get()</code>.</span></div>
+      <div class="key-term"><span class="kt-term">Sink</span><span class="kt-def">A security-sensitive operation that must not receive tainted data — SQL query construction, HTML rendering, shell execution, file system writes. AI reviewers catalog these from training data and flag them when tainted data appears in their vicinity.</span></div>
+      <div class="key-term"><span class="kt-term">Sanitizer</span><span class="kt-def">A function that removes or neutralizes the dangerous properties of tainted data — parameterized queries, HTML escaping, input validation. AI reviewers look for the absence of recognized sanitizer calls between a source and a sink.</span></div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">How AI Approximates Taint Analysis</div>
+      <div class="section-body">
+        <p>Formal taint analysis builds an explicit control flow graph, assigns taint labels to values, and propagates those labels through every possible execution path. This is computationally expensive but sound — it will not miss a taint flow that exists in the graph.</p>
+        <p>AI reviewers approximate this process through pattern matching on source code text. They recognize common source signatures, common sink signatures, and common sanitizer patterns from training data. This is faster and requires no program execution, but it has specific failure modes:</p>
+      </div>
+
+      <div class="two-col">
+        <div class="col-card">
+          <h5 class="green">AI Approximation Works Well</h5>
+          <p>Direct source-to-sink flows in the same function. Missing sanitization before widely recognized sinks like SQL query builders or <code>innerHTML</code> assignment. Input validation absent before <code>eval()</code>, <code>exec()</code>, or shell execution functions.</p>
+        </div>
+        <div class="col-card">
+          <h5 class="red">AI Approximation Fails</h5>
+          <p>Taint flows through custom wrapper functions not in training data. Sanitization done in a different layer (e.g., a middleware framework) that is invisible to the reviewer. Indirect flows through data structures — taint stored in an object field, later retrieved and used in a sink.</p>
+        </div>
+      </div>
+
+      <div class="section-body">
+        <p>A practical implication: when prompting an AI reviewer to check for injection vulnerabilities, explicitly name the source variable and the target sink. A prompt like "Does the value of <span class="inline-code">userId</span> from the request query string ever reach a raw SQL string without parameterization?" is vastly more effective than "Check this code for SQL injection."</p>
+      </div>
+
+      <div class="section-heading">A Concrete Taint Flow Example</div>
+      <div class="code-block"><span class="cm">// SOURCE: userId from request params — untrusted</span>
+<span class="kw">const</span> userId = req.query.userId;
+
+<span class="cm">// PROPAGATION: stored in object, passed to service</span>
+<span class="kw">const</span> params = { id: userId, role: <span class="st">'viewer'</span> };
+<span class="kw">const</span> result = <span class="kw">await</span> userService.fetch(params);
+
+<span class="cm">// Inside userService.fetch — SINK reached</span>
+<span class="kw">const</span> query = `SELECT * FROM users WHERE id = ${params.id}`;
+<span class="cm">// ↑ AI reviewer in same file: likely caught</span>
+<span class="cm">// AI reviewer only seeing fetch() call: likely missed</span></div>
+
+      <div class="section-body">
+        <p>This example illustrates a key architectural principle for AI-assisted security review: <em>co-location of sources and sinks in the review context</em>. If your codebase processes user input in controllers and executes database queries in services, a single-file AI review will systematically miss taint flows that cross that boundary. You must provide both files — or use a tool that performs whole-codebase analysis.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">OWASP Data — 2021</div>
+        <p>The OWASP Top 10 2021 report promoted "Injection" from position 1 to a combined category that now includes SQL injection, XSS, command injection, and LDAP injection under a single entry called "Injection." The report noted that automated scanning tools (which use formal taint analysis) detected injection vulnerabilities in 94% of tested applications. AI reviewers operating without whole-codebase context are significantly less reliable than dedicated taint analysis tools for this specific vulnerability class.</p>
+      </div>
+
+      <div class="section-heading">Reaching Definitions and Uninitialized Variables</div>
+      <div class="section-body">
+        <p>Reaching definitions analysis is the formal basis for detecting uninitialized variable use — a common source of type-related bugs. When an AI reviewer flags a "potentially undefined" variable, it is performing an informal version of this analysis: checking whether any code path can reach the current point without having assigned the variable.</p>
+        <p>AI reviewers are reliable at catching obvious cases: variables declared with <span class="inline-code">let</span> and used before assignment, or variables assigned only in one branch of an <span class="inline-code">if</span> statement and used after both branches. They are less reliable when the assignment occurs in a loop or a callback — scenarios where the reaching-definition set depends on runtime behavior that cannot be statically determined.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Review Strategy</div>
+        <p>For security-sensitive data flow review, structure your AI prompt as an explicit taint query: "Variable X is initialized from [source]. It is used in [sink function] on line Y. Are there any code paths between those two points where X could pass through [sink] without first being passed through [sanitizer]?" This frames the review as a reachability question, which is precisely the formal definition of a taint vulnerability.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Data Flow Analysis Techniques — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">1. In taint analysis terminology, a "sanitizer" is best defined as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A function that marks data as a taint source</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A security-sensitive operation that must not receive untrusted data</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">A function that removes or neutralizes dangerous properties of tainted data before it reaches a sink</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A static analysis tool that builds the control flow graph</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Sanitizers sit between sources and sinks, neutralizing taint. AI reviewers look for the absence of recognized sanitizer calls when tainted data approaches a sink.</div>
+        <div class="quiz-feedback wrong">Incorrect. A sanitizer neutralizes tainted data before it reaches a sink. Review the key term definitions in this lesson.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">2. The lesson states that when user input is processed in controllers and database queries run in services, single-file AI review will:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Catch injection vulnerabilities reliably because sinks are well-known patterns</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Systematically miss taint flows that cross the controller–service boundary</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Perform as well as dedicated taint analysis tools</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Only miss vulnerabilities in functions longer than 100 lines</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The lesson is explicit: architectural separation of sources (controllers) and sinks (services) means single-file AI review will systematically miss cross-boundary taint flows. Both files must be provided.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson explicitly identifies this as a systematic failure mode — architectural source-sink separation makes single-file AI review unreliable for injection detection.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">3. Frances Allen's 1970 data flow analysis framework was originally developed for:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Detecting SQL injection vulnerabilities in web applications</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Building the first commercial static analysis security tools</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Compiler optimization — enabling dead code elimination and register allocation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Type inference in statically typed functional languages</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Allen's framework was a compiler optimization tool. Its application to security analysis came decades later — with Coverity and Fortify applying the techniques to vulnerability detection in the early 2000s.</div>
+        <div class="quiz-feedback wrong">Incorrect. Allen's 1970 work was foundational compiler optimization research. The lesson traces how these techniques were later repurposed for security analysis. Review the opening narrative.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Back to Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Open Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Taint Flow and Injection Review</h1>
+      <div class="tagline">Practice with an AI assistant · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Practice framing explicit taint-flow queries for an AI reviewer. Work with scenarios where user input flows toward security-sensitive sinks. Explore how different prompt structures — explicit source/sink naming vs. generic "check for injection" — affect the quality of AI security review output.</p>
+        <div class="lab-prompt">Suggested start: "I want to understand how to write better AI review prompts for taint flows. Here's a scenario: searchTerm comes from req.query.q and is used in a Mongoose query. What's the difference between asking 'check for injection' vs. explicitly naming the source and sink in my prompt?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Review Assistant</span>
+          <div class="chat-badge">Data Flow · L3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to Lab 3. We're focusing on taint flow analysis and injection vulnerability review. Share code scenarios with user-controlled data flowing toward database queries, HTML rendering, shell commands, or similar sinks — and I'll help you identify the taint path and craft precise review prompts that improve AI detection accuracy.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Share a code scenario with user input and a security-sensitive sink..." rows="2"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L4: Generics, Type Variance, and Complex Type Patterns ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 5 · Lesson 4</div>
+      <h1>Generics, Type Variance, and Complex Type Patterns</h1>
+      <div class="tagline">Where type systems get hard — and where AI reviewers lose confidence fastest</div>
+      <div class="lesson-question">Why do generic type constraints and variance annotations cause AI reviewers to produce their highest false-positive and false-negative rates?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Java Generics Specification">
+        <p class="story-text">When Sun Microsystems added generics to Java in version 5.0 (2004), the language designers faced a fundamental tension: Java arrays were covariant — a <span class="char">String[]</span> could be assigned to an <span class="char">Object[]</span> variable — but making generic collections equally covariant would allow type-unsafe operations. The solution was wildcard types and use-site variance annotations, implemented via the <span class="char">? extends T</span> and <span class="char">? super T</span> syntax.</p>
+        <p class="story-text">The complexity this introduced became immediately apparent. The Java Language Specification's chapter on generics runs to over 80 pages. Java's lead language designer Gilad Bracha later wrote that wildcards were a "necessary evil" — the only way to achieve practical usability while preserving type safety in a language that had already committed to covariant arrays. The resulting system is correct but notoriously difficult to reason about. In 2023, empirical studies of code review tools consistently find that generic type constraints and variance annotations are the category where both human reviewers and AI tools make the most errors.</p>
+      </div>
+
+      <div class="section-heading">Understanding Type Variance</div>
+      <div class="section-body">
+        <p>Variance describes how a parameterized type (like <span class="inline-code">List&lt;T&gt;</span>) relates to its subtypes when <span class="inline-code">T</span> changes. There are three relationships, each with different implications for type safety:</p>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">▲</div>
+        <div class="flow-content">
+          <div class="flow-title">Covariance (<span class="inline-code">? extends T</span> in Java, <span class="inline-code">out T</span> in Kotlin)</div>
+          <div class="flow-desc">If Dog is a subtype of Animal, then <code>List&lt;Dog&gt;</code> is a subtype of <code>List&lt;? extends Animal&gt;</code>. Safe for reading, not for writing. AI reviewers frequently miss the write-safety violation when generic covariant types are passed to write operations.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">▼</div>
+        <div class="flow-content">
+          <div class="flow-title">Contravariance (<span class="inline-code">? super T</span> in Java, <span class="inline-code">in T</span> in Kotlin)</div>
+          <div class="flow-desc">If Dog is a subtype of Animal, then <code>Consumer&lt;Animal&gt;</code> is a subtype of <code>Consumer&lt;? super Dog&gt;</code>. Safe for writing, not for reading. This relationship is counterintuitive and is the most common source of AI review errors in generic code.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">═</div>
+        <div class="flow-content">
+          <div class="flow-title">Invariance (default Java generics)</div>
+          <div class="flow-desc"><code>List&lt;Dog&gt;</code> is not a subtype of <code>List&lt;Animal&gt;</code>. This is the safest but most restrictive relationship and requires explicit wildcards to achieve subtype flexibility. AI reviewers handle invariant generics most reliably because the type system is most explicit about violations.</div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Complex Type Patterns: Where AI Confidence Drops</div>
+      <div class="section-body">
+        <p>TypeScript's type system supports several advanced patterns that have proven particularly difficult for AI reviewers to analyze reliably. The following patterns should trigger explicit note-taking in any AI-assisted review — not because they are wrong, but because the AI's analysis of them may be unreliable.</p>
+      </div>
+      <div class="code-block"><span class="cm">// Conditional types — TypeScript</span>
+<span class="kw">type</span> <span class="ty">Flatten</span>&lt;T&gt; = T <span class="kw">extends</span> Array&lt;<span class="kw">infer</span> U&gt; ? U : T;
+<span class="cm">// Flatten&lt;number[]&gt; = number, Flatten&lt;string&gt; = string</span>
+<span class="cm">// AI reviewers: moderate accuracy on simple cases, low on nested</span>
+
+<span class="cm">// Mapped types — TypeScript</span>
+<span class="kw">type</span> <span class="ty">Readonly</span>&lt;T&gt; = {
+  <span class="kw">readonly</span> [K <span class="kw">in keyof</span> T]: T[K];
+};
+<span class="cm">// AI reviewers: generally handle well when mapping is shallow</span>
+
+<span class="cm">// Template literal types — TypeScript 4.1+</span>
+<span class="kw">type</span> <span class="ty">EventName</span>&lt;T <span class="kw">extends string</span>&gt; = `on${Capitalize&lt;T&gt;}`;
+<span class="cm">// AI reviewers: low accuracy — rarely seen in training data at scale</span></div>
+
+      <div class="section-body">
+        <p>The pattern that causes the highest AI review error rate in practice is <em>conditional type inference in generics combined with recursive type definitions</em>. TypeScript's type system can express Turing-complete type computations, and at that level of complexity, AI reviewers are essentially reasoning about code they have no reliable basis to evaluate.</p>
+        <p>The practical guidance: for code that uses advanced TypeScript type system features (conditional types, recursive generics, template literal types, <span class="inline-code">infer</span> keyword), treat AI type-safety review as informational only. Use the TypeScript compiler itself — or a dedicated tool like <span class="inline-code">tsd</span> for type-level tests — as the authoritative checker.</p>
+      </div>
+
+      <div class="section-heading">Generic Constraints and AI Review Reliability</div>
+      <div class="section-body">
+        <p>Generic constraints — <span class="inline-code">&lt;T extends Serializable&gt;</span>, <span class="inline-code">&lt;T extends keyof U&gt;</span> — are the most common generic pattern and the one where AI reviewers are most reliable, provided the constraint is explicit in the same context. When a constraint is declared in one file and violated in another, AI review accuracy degrades to the same cross-file propagation problem seen in null tracking.</p>
+      </div>
+      <div class="code-block"><span class="cm">// TypeScript — constraint violation, same file (AI: high recall)</span>
+<span class="kw">function</span> <span class="ty">clone</span>&lt;T <span class="kw">extends</span> { id: <span class="ty">number</span> }&gt;(item: T): T {
+  <span class="kw">return</span> { ...item };
+}
+clone({ name: <span class="st">'Alice'</span> }); <span class="cm">// missing id — AI likely flags</span>
+
+<span class="cm">// TypeScript — constraint in imported type (AI: low recall)</span>
+<span class="kw">import</span> { clone } <span class="kw">from</span> <span class="st">'./utils'</span>; <span class="cm">// constraint not visible</span>
+clone({ name: <span class="st">'Alice'</span> }); <span class="cm">// AI may not flag without seeing declaration</span></div>
+
+      <div class="callout">
+        <div class="callout-label">Empirical Note — JetBrains Developer Ecosystem Survey, 2023</div>
+        <p>In JetBrains' 2023 survey of 26,000 developers, 38% reported that generics and complex type constructs were the code they were least confident AI tools could review reliably. Only 12% said they trusted AI review for advanced generic patterns "without additional verification." This matches the formal analysis: variance and conditional type patterns are at the boundary of AI code review capability for current models.</p>
+      </div>
+
+      <div class="section-heading">Practical Type Safety Review Checklist</div>
+      <div class="section-body">
+        <p>When conducting an AI-assisted type safety review, systematically verify each of the following — and note which items are outside reliable AI coverage:</p>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">✓</div>
+        <div class="flow-content">
+          <div class="flow-title">All function signatures fully annotated <span style="color:#4fcf8a;font-size:0.72rem;margin-left:0.5rem;">High AI reliability</span></div>
+          <div class="flow-desc">Parameters, return types, and thrown exceptions (where the language supports it) should all carry explicit type annotations.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">✓</div>
+        <div class="flow-content">
+          <div class="flow-title">Nullable return types have guards at all call sites <span style="color:#c9a05a;font-size:0.72rem;margin-left:0.5rem;">Medium AI reliability</span></div>
+          <div class="flow-desc">Provide both the function declaration and the call sites in the same review context to maximize AI null-guard detection.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">✓</div>
+        <div class="flow-content">
+          <div class="flow-title">User input never reaches sinks without explicit sanitization <span style="color:#c9a05a;font-size:0.72rem;margin-left:0.5rem;">Medium AI reliability</span></div>
+          <div class="flow-desc">Name sources and sinks explicitly in the prompt; never rely on generic "check for injection" framing.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">✓</div>
+        <div class="flow-content">
+          <div class="flow-title">Generic constraints upheld at all instantiation points <span style="color:#f43f5e;font-size:0.72rem;margin-left:0.5rem;">Low AI reliability for cross-file</span></div>
+          <div class="flow-desc">Include generic declarations in the same context as their usage. For complex constraint hierarchies, use the compiler directly.</div>
+        </div>
+      </div>
+      <div class="flow-row">
+        <div class="flow-num">✓</div>
+        <div class="flow-content">
+          <div class="flow-title">Conditional and recursive types verified <span style="color:#f43f5e;font-size:0.72rem;margin-left:0.5rem;">Low AI reliability</span></div>
+          <div class="flow-desc">Treat AI analysis as informational only. Use compiler type checks and type-level unit tests (tsd, expect-type) as authoritative verification.</div>
+        </div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Module Summary</div>
+        <p>Type safety and data flow analysis are foundational to effective AI code review. AI tools are reliable partners for explicit, single-file type contracts; they are supplementary tools, not authoritative ones, for cross-file propagation, variance analysis, and advanced generic patterns. Know which context you are in before trusting the output.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Generics, Type Variance, and Complex Type Patterns — 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">1. Covariant generic types (e.g., <code>List&lt;? extends Animal&gt;</code>) are safe for:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Reading values — but not writing to them</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Writing values — but not reading from them</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Both reading and writing with any subtype</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Neither reading nor writing — they are invariant by definition</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Covariance is the "producer" relationship — safe for reading (the element is guaranteed to be at least Animal), but writing is unsafe because the actual runtime type might be more specific than what is being written.</div>
+        <div class="quiz-feedback wrong">Incorrect. Covariance enables safe reads (the element is guaranteed to be at minimum the upper bound type) but prohibits writes. Review the variance flow cards in this lesson.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">2. The lesson advises treating AI type-safety review as "informational only" for which TypeScript features?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Simple generic functions with a single type parameter</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Union types like <code>string | number</code></button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Conditional types, recursive generics, and template literal types</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Any type annotation involving <code>null</code> or <code>undefined</code></button>
+        </div>
+        <div class="quiz-feedback right">Correct. The lesson specifically identifies conditional types, recursive generics, and template literal types as patterns where AI reviewer accuracy is low enough to require the TypeScript compiler itself as the authoritative checker.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson is specific: conditional types, recursive generics, and template literal types (TypeScript 4.1+) are where AI reliability drops to the point that compiler-level verification is required.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">3. Java added wildcards (<code>? extends T</code> and <code>? super T</code>) to generics primarily to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Make Java generics work like TypeScript structural types</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Enable runtime type checking without reflection</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Achieve subtype flexibility for generics while preserving type safety, given that arrays were already covariant</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Remove the need for casting when using legacy collections</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The lesson explains that wildcards were the solution to a specific tension: Java arrays were covariant, making generic covariance dangerous without explicit annotations. Wildcards let developers express the needed flexibility safely.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson traces wildcards to the design tension between Java's existing covariant arrays and the need to make generic collections type-safe. Wildcards were, as Bracha described, a "necessary evil" to resolve this conflict.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Back to Lesson</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Open Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Generic Type Constraints and Variance</h1>
+      <div class="tagline">Practice with an AI assistant · Complete 3 exchanges to finish</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Explore AI review accuracy boundaries with generic type patterns. Work through scenarios involving variance annotations, generic constraints, and conditional types. Identify which patterns the AI handles reliably and which require compiler-level verification. Practice writing review prompts that include necessary type declaration context.</p>
+        <div class="lab-prompt">Suggested start: "I have a TypeScript function with a generic constraint: function processItems&lt;T extends { id: number; status: string }&gt;(items: T[]): T[]. The function is called from another file where the import doesn't show the constraint. How should I structure an AI review request to catch constraint violations despite this?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Review Assistant</span>
+          <div class="chat-badge">Generics · L4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4. We're working with generic type constraints and variance analysis — the territory where AI review confidence drops fastest. Share TypeScript or Java generic code scenarios, and I'll help you understand what the AI can reliably analyze, what requires the compiler, and how to structure prompts that maximize coverage for complex type patterns.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Share generic type code or variance scenarios for analysis..." rows="2"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 5 Test</h1>
+      <div class="tagline">Type Safety and Data Flow Analysis — 15 questions · 80% to pass</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. TypeScript was created primarily to address which limitation of JavaScript?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">JavaScript's lack of object-oriented programming support</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Type mismatches only discovered at runtime, causing production crashes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">JavaScript's poor performance compared to compiled languages</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The absence of module systems in pre-ES6 JavaScript</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. TypeScript was created to catch type errors before runtime. Review Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. An AI reviewer analyzes type correctness by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Running the TypeScript compiler and reporting its errors</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Pattern matching against training data — probabilistically, not deterministically</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Executing the code in a sandboxed environment and observing type failures</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Building a control flow graph identical to what a compiler produces</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. AI reviewers use probabilistic pattern matching, not formal type inference. Review Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. Python's PEP 484 type hints are described as "gradual" because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">They are checked incrementally at each statement during execution</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">They require a separate compilation pass before runtime</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">They are optional and unenforced at runtime — mixing typed and untyped code is permitted</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">They are only available in Python 3.9 and later</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Gradual typing means annotations are optional and unenforced at runtime. Review Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. A function with type annotations on parameters but no return type annotation should be treated in AI review as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Equivalent to fully unannotated code for AI type-checking purposes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Partially covered, with AI providing reliable review for the annotated parameters</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Acceptable — return types are inferred correctly by all AI tools</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">A compiler error in Python and TypeScript</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Partial annotation forces AI into unreliable heuristic reasoning. Review Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. Tony Hoare introduced the null reference in 1965 for which language?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Fortran</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">COBOL</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">ALGOL W</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">PL/I</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Hoare introduced null in ALGOL W. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. AI reviewer recall for null dereferences is approximately 70% for single-file scenarios but drops to 30–40% when:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The programming language uses nominal rather than structural typing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">The null originates in a different file than where the dereference occurs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The codebase has more than 10,000 lines of code</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Optional chaining syntax is used throughout the codebase</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Cross-file propagation is the cause of the recall drop. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. The Cloudflare July 2019 outage is relevant to module topics because the root null dereference:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Was caught by their static analysis tools but deployed accidentally</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Was not visible in the immediate code context — the null path came from a different module</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Occurred in Rust code, demonstrating that null-safe languages are not truly safe</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Was introduced by an AI code generation tool</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. The Cloudflare post-mortem noted the null path was invisible at the crash site. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. In taint analysis, which of the following is a "source"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">A parameterized SQL query function</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">An HTML escaping library function</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">HTTP request query parameters</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">A database write operation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HTTP request parameters are untrusted data entering the program — the classic taint source.</div>
+        <div class="quiz-feedback wrong">Incorrect. A source is an untrusted data entry point. HTTP request parameters are the canonical example. Review Lesson 3.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Frances Allen's 1970 data flow analysis framework was later applied to security by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Microsoft's TypeScript team to build type inference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Tools like Coverity and Fortify to detect security vulnerabilities through taint analysis</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The Python Software Foundation to design mypy</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">OWASP to build the Top 10 vulnerability classification system</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Coverity and Fortify applied Allen's data flow methods to security analysis. Review Lesson 3.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. When user input is processed in controllers and database queries run in services, the correct approach for AI security review is to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Review each file independently for injection patterns</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Use only a generic "check for injection" prompt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Provide both the controller and service files in the same review context, naming source and sink explicitly</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Trust the AI to find cross-file flows without additional context</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Both files must be in context, with explicit source/sink naming. Review Lesson 3.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. Contravariant generic types (e.g., <code>Consumer&lt;? super Dog&gt;</code>) are safe for:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Reading values — but not writing to them</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Writing values — but not reading from them safely</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Both reading and writing with full type safety</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Neither reading nor writing — contravariance is always unsafe</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Contravariance is the "consumer" relationship — you can safely write Dog or any subtype, but reading is unsafe because the actual type might be a supertype you cannot safely downcast.</div>
+        <div class="quiz-feedback wrong">Incorrect. Contravariance enables safe writes (the container accepts at minimum Dog) but not reads. Review Lesson 4.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Which TypeScript feature does the lesson identify as having the lowest AI review reliability?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Union types combining primitives</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Interface declarations with optional properties</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Conditional types with recursive generics and the <code>infer</code> keyword</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Generic functions with a single extends constraint</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">Incorrect. Conditional types with recursive generics represent Turing-complete type computation — beyond reliable AI analysis. Review Lesson 4.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. According to the JetBrains 2023 Developer Ecosystem Survey cited in this module, what percentage of developers trusted AI review for advanced generic patterns without additional verification?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">38%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">12%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">55%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">27%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Only 12% trusted AI review for advanced generic patterns without verification — 38% identified generics as the area where they were least confident in AI tools.</div>
+        <div class="quiz-feedback wrong">Incorrect. The survey found only 12% trusted AI for advanced generics without additional verification. Review Lesson 4.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. The most effective way to prompt an AI reviewer to detect a cross-file null propagation risk is to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Ask "Does this code have null safety issues?" without additional context</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Provide only the file where the null dereference occurs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Include both the declaration file showing nullable return types and the calling file, and explicitly ask the AI to trace the nullable value from origin to dereference</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Convert the code to a language with mandatory null safety before reviewing</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Including both files and explicitly framing the data flow question dramatically improves AI null-tracking recall for cross-file scenarios.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson is clear: include both the declaration and calling files, and frame the prompt as an explicit data flow trace. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. Which of the following best summarizes the module's core principle about AI type safety review?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">AI reviewers have replaced static type checkers for all practical purposes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">AI tools should not be used for type safety review in production codebases</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Type annotations are unnecessary when AI review tools are available</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">AI tools are reliable for explicit single-file type contracts but supplementary for cross-file propagation, variance, and advanced generic patterns — which require compiler-level tools</button>
+        </div>
+        <div class="quiz-feedback right">Correct. This is the module's central principle: know which tier of review you are in — AI-reliable vs. compiler-required — and apply tools accordingly.</div>
+        <div class="quiz-feedback wrong">Incorrect. The module establishes a tiered view: AI is reliable for simple, explicit, single-file patterns and supplementary for complex or cross-file ones. Review the Lesson 4 conclusion callout.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">↺ Review Module</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end content-area -->
+
+<script>
+var COURSE_ID='ai-code-review-fundamentals';
+var MODULE_ID='ai--m5';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next)return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev)prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc)sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'||result==='right'?'right':'wrong'));
+  if(fb)fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb)fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct')mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an AI code review assistant for the AESOP AI Academy course "AI Code Review Fundamentals," Module 5 on Type Safety and Data Flow Analysis. Your focus for Lab 1 is static type systems and annotation gaps. Help learners identify missing type annotations in TypeScript and Python code, explain what type information is absent and how that affects AI review quality, and clarify the difference between what a deterministic type checker catches vs. what an AI reviewer can only probabilistically infer. Be specific about which parts of a type signature are missing and what heuristics an AI must fall back on without them. Stay focused on type annotation quality and AI review limitations. Warmly redirect off-topic questions.',
+  l2:'You are an AI code review assistant for the AESOP AI Academy course "AI Code Review Fundamentals," Module 5 on Type Safety and Data Flow Analysis. Your focus for Lab 2 is null safety and optional value tracking. Help learners trace null propagation chains through function boundaries, identify the origin point (where a value may be null), the propagation path (where it is forwarded without guards), and the dereference point (where it might crash). Help learners craft effective prompts for AI null-tracking review, especially for cross-file scenarios. Reference the concepts of optional chaining, nullable return types, and the difference between single-file and cross-file AI recall for null detection. Stay on topic. Warmly redirect off-topic questions.',
+  l3:'You are an AI code review assistant for the AESOP AI Academy course "AI Code Review Fundamentals," Module 5 on Type Safety and Data Flow Analysis. Your focus for Lab 3 is data flow analysis and taint tracking for security review. Help learners identify taint sources (user-controlled data entry points), sinks (security-sensitive operations), and sanitizers (functions that neutralize taint). Help them craft explicit taint-flow prompts that name the source variable and target sink, rather than generic "check for injection" requests. Explain why architectural source-sink separation (controllers vs. services) makes single-file AI review unreliable for injection detection. Stay focused on taint analysis and injection review. Warmly redirect off-topic questions.',
+  l4:'You are an AI code review assistant for the AESOP AI Academy course "AI Code Review Fundamentals," Module 5 on Type Safety and Data Flow Analysis. Your focus for Lab 4 is generics, type variance, and complex type patterns. Help learners understand covariance, contravariance, and invariance in generic types. Help them identify which TypeScript features (conditional types, recursive generics, template literal types, the infer keyword) are beyond reliable AI review accuracy. Help them structure review prompts that include necessary generic type declarations in context. Be clear about when to use the TypeScript compiler or dedicated type-level testing tools instead of relying on AI review. Stay on topic. Warmly redirect off-topic questions.'
+};
+
+var _fallbackBanks={
+  l1:[
+    "Without explicit return type annotations, an AI reviewer has to guess based on what the function body appears to return — but that inference can miss edge cases where the function might return undefined or a different type under error conditions. For type safety review, the return type annotation is often more important than parameter annotations.",
+    "A good annotation gap checklist for Python: (1) Is the return type annotated? (2) Are all parameters annotated, not just some? (3) If the function can raise exceptions, are those documented? (4) If it returns a dict, is it a TypedDict with known keys? Each missing element reduces AI review reliability proportionally.",
+    "The core issue with partial type annotations and AI review is that the AI transitions from type-based reasoning to name-based heuristics. It might infer that a parameter called 'user_id' is probably an int — but that's a guess, not a contract. That's why the lesson recommends treating partial annotations as equivalent to none for review purposes."
+  ],
+  l2:[
+    "To trace a null propagation chain, I recommend the three-point method: (1) Mark the origin — where does the nullable value first appear? (2) Map the path — list every function it passes through before being used. (3) Identify the dereference — where is a property accessed or method called on it without a null guard? Then provide all three locations to the AI reviewer in the same prompt.",
+    "For cross-file null propagation, the key prompt strategy is to include the function declaration file (showing the nullable return type) and the calling file (showing the usage) in the same context. Then ask specifically: 'The return value of X is typed as T | null. In the calling file, is this value ever dereferenced without a null check or optional chaining?' That framing forces the AI to trace the specific flow.",
+    "Optional chaining (?.) and nullish coalescing (??) are useful signals in both directions: their presence tells an AI reviewer 'this value may be null here,' and their absence in contexts where nullable types are expected is a flag worth investigating. Using these operators consistently makes the codebase more legible to both human and AI reviewers."
+  ],
+  l3:[
+    "The most effective structure for a taint-flow security review prompt is: 'Variable [name] is initialized from [source, e.g. req.query.userId]. It is passed to [intermediate functions]. It is used in [sink operation, e.g. a raw SQL string] on line X. Are there any code paths where [name] reaches [sink] without passing through [expected sanitizer, e.g. a parameterized query or whitelist validator]?' This explicit framing matches the formal definition of a taint vulnerability.",
+    "The architectural source-sink separation problem is real and important. If your input validation lives in middleware, your data access in a repository layer, and your query construction in a service, a single-file AI review will never see the full taint path. For this architecture, you have two reliable options: include all relevant layers in the review context, or use a dedicated SAST tool that performs whole-codebase taint analysis.",
+    "AI taint analysis does well on the OWASP classics — SQL injection in obvious ORM bypass patterns, XSS via innerHTML assignment, eval() with unsanitized input — because these patterns are heavily represented in training data. It does poorly on custom wrapper functions, indirect flows through object fields, and sanitization happening in a framework layer the reviewer cannot see."
+  ],
+  l4:[
+    "For generic constraint violations, the key insight is context locality. If the constraint declaration and the call site are in the same file, AI recall is high. If the call site imports a function and the constraint is only visible in the declaration file, AI recall drops sharply. The solution: include the declaration in your review prompt explicitly, or use a TypeScript 'go to type definition' to surface the constraint.",
+    "On variance: the practical mnemonic is PECS — Producer Extends, Consumer Super. A covariant type (extends) is safe to read from (it produces values). A contravariant type (super) is safe to write to (it consumes values). AI reviewers handle covariance better than contravariance because producer patterns are more common in typical TypeScript codebases and thus better represented in training data.",
+    "For conditional types and recursive generics, my honest recommendation aligns with the lesson: use the TypeScript compiler as your authoritative checker, not an AI reviewer. You can use tsd or expect-type to write explicit type-level assertions — tests that verify the type of an expression at compile time. These give you deterministic coverage that no probabilistic tool can match for Turing-complete type computations."
+  ]
+};
+
+function _fallbackReply(labId){
+  var bank=_fallbackBanks[labId];
+  if(!bank||!bank.length)return"I'm in practice mode. Keep exploring the concepts from this lesson — I can still respond to your questions.";
+  var idx=_fallbackIdx[labId]%bank.length;
+  _fallbackIdx[labId]++;
+  return bank[idx];
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs)return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(msgs){
+    msgs.innerHTML='';
+    var greetings={
+      l1:'Welcome to Lab 1. I\'m here to help you analyze type annotation gaps and understand how they affect both static type checkers and AI-assisted review. Share a function with incomplete annotations and let\'s examine what\'s missing — and what an AI reviewer would have to guess.',
+      l2:'Welcome to Lab 2. Let\'s practice tracing null propagation paths. Share a code scenario — a function that passes nullable values across boundaries — and I\'ll help you identify the origin, propagation chain, and dereference point. We\'ll also work on prompt strategies that improve AI null-tracking coverage.',
+      l3:'Welcome to Lab 3. We\'re focusing on taint flow analysis and injection vulnerability review. Share code scenarios with user-controlled data flowing toward database queries, HTML rendering, shell commands, or similar sinks — and I\'ll help you identify the taint path and craft precise review prompts.',
+      l4:'Welcome to Lab 4. We\'re working with generic type constraints and variance analysis — the territory where AI review confidence drops fastest. Share TypeScript or Java generic code scenarios, and I\'ll help you understand what the AI can reliably analyze and what requires the compiler.'
+    };
+    addMsg(labId,'ai',greetings[labId]||'Lab reset. What would you like to explore?');
+  }
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn)return;
+  var txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]){chatHistories[labId]=[];chatExchanges[labId]=0;}
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:420,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an issue processing that. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking&&thinking.parentNode)thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){await new Promise(function(r){setTimeout(r,1500);});continue;}
+      if(thinking&&thinking.parentNode)thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+  }
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){
+    var active=document.activeElement;
+    if(active&&active.tagName==='TEXTAREA'&&active.id&&active.id.startsWith('inp-')){
+      e.preventDefault();
+      var labId=active.id.replace('inp-','');
+      chatSend(labId);
+    }
+  }
+});
+
+updateTabs();
+</script>
+</body>
+</html>

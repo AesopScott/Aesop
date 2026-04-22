@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-21 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI Code Review Fundamentals — M4: Logic Errors and Silent Failures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- ai-code-review-fundamentals-m4 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.04);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;font-style:italic;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.code-block{background:#060e18;border:1px solid var(--border-dark);border-radius:4px;padding:0.85rem 1rem;margin:0.85rem 0;font-family:'Courier New',monospace;font-size:0.78rem;line-height:1.7;color:#8ba0b4;overflow-x:auto;}
+.code-block .c-kw{color:#c9a05a;}
+.code-block .c-fn{color:#7ec8e3;}
+.code-block .c-str{color:#a8d08d;}
+.code-block .c-cm{color:#4a5a6a;font-style:italic;}
+.code-block .c-bad{color:#f07070;text-decoration:underline wavy rgba(240,112,112,0.5);}
+.code-block .c-good{color:#4fcf8a;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+.two-col-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.two-col-label.bad{color:rgba(240,112,112,0.6);}
+.two-col-label.good{color:rgba(79,207,138,0.6);}
+@media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════ L1 ═══════════════════════════════════════ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 1</div>
+    <h1>What Is a Logic Error?</h1>
+    <div class="tagline">Code that compiles, runs, and lies to you.</div>
+    <div class="lesson-question">Why do AI code generators produce logic errors that no linter will ever catch?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Documented Case — NASA Mars Climate Orbiter, 1999">
+      <p class="story-text">On September 23, 1999, after a 286-day journey, the Mars Climate Orbiter was lost. The spacecraft entered the Martian atmosphere at the wrong angle and disintegrated. The root cause was a single unit mismatch: Lockheed Martin's navigation software output force data in <em>pound-force seconds</em>; NASA's receiving system expected <em>newton-seconds</em>. Every component of the system compiled and ran without error. Telemetry was transmitted and received. Only the planet's gravity revealed the failure.</p>
+      <p class="story-text">Total mission cost: $327.6 million. The bug was a logic error — a wrong assumption baked silently into a computation.</p>
+    </div>
+
+    <div class="section-heading">The Taxonomy of Code Errors</div>
+    <div class="section-body">
+      <p>Software errors are conventionally divided into three categories, and understanding where logic errors sit within that taxonomy is the foundation of this module.</p>
+      <p><em>Syntax errors</em> are violations of a language's grammar rules. The compiler or interpreter rejects them before execution begins. They are the easiest class of bug to detect — and the class AI code generators almost never produce, because they have been trained on vast corpora of syntactically correct code.</p>
+      <p><em>Runtime errors</em> occur during execution: a null pointer dereference, a division by zero, an out-of-bounds array access. They produce exceptions, crashes, or observable error messages. They are more dangerous than syntax errors but still tend to surface during testing.</p>
+      <p><em>Logic errors</em> are the most dangerous class. The program runs to completion and produces output — but the output is wrong, or wrong only in certain conditions, or subtly wrong in a way that accumulates over time. No exception is raised. No linter fires. The code is semantically valid and structurally sound. It simply does the wrong thing.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Core Definition</div>
+      <p>A <strong>logic error</strong> is a defect in which a program executes without crashing but produces incorrect results because of a flaw in the algorithm, a wrong assumption about data, an incorrect operator, a boundary condition mistake, or a misunderstood specification.</p>
+    </div>
+
+    <div class="section-heading">Why AI Generators Are Logic-Error Prone</div>
+    <div class="section-body">
+      <p>Large language models generate code by predicting statistically plausible token sequences given a prompt. They have learned patterns — common function signatures, idiomatic loops, standard library calls. What they have <em>not</em> learned, in any reliable sense, is the specific semantics of your problem.</p>
+      <p>When you ask an AI to write a function that "calculates compound interest," it will produce code that looks like compound interest code. The variable names will be correct. The structure will be familiar. But if the compounding frequency is wrong, or if the formula uses addition where it should use multiplication, the code will silently produce wrong numbers for every input — and nothing in the execution environment will tell you so.</p>
+      <p>This is the fundamental asymmetry of logic errors in AI-generated code: <em>the generator optimizes for plausibility, not correctness.</em> The reviewer's job is to supply what the model cannot: domain knowledge, specification awareness, and adversarial testing.</p>
+    </div>
+
+    <div class="section-heading">The Four Principal Categories</div>
+    <div class="section-body">
+      <p>This module organizes logic errors into four categories that appear with high frequency in AI-generated code:</p>
+    </div>
+
+    <div class="key-term">
+      <span class="kt-term">Off-by-one</span>
+      <span class="kt-def">Boundary conditions where indices, ranges, or loop counts are displaced by exactly one — the most common logic error class in generated code.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Wrong operator / precedence</span>
+      <span class="kt-def">Logical or arithmetic operators that are plausible replacements for the correct one — e.g., <code>&gt;</code> vs. <code>&gt;=</code>, or <code>&&</code> vs. <code>||</code>.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Silent failure paths</span>
+      <span class="kt-def">Code branches that return default, zero, or empty values when an error condition occurs, masking the failure from the caller.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Accumulation errors</span>
+      <span class="kt-def">Mistakes in loops, aggregations, or stateful computations that compound over time — correct on simple inputs, wrong on realistic ones.</span>
+    </div>
+
+    <div class="section-heading">A Minimal Illustration</div>
+    <div class="section-body">
+      <p>Consider this AI-generated function meant to check whether a user's age makes them eligible for a service that requires users to be <strong>over</strong> 18 (not 18 or older):</p>
+    </div>
+    <div class="code-block">
+<span class="c-cm">// AI-generated — appears correct at a glance</span>
+<span class="c-kw">function</span> <span class="c-fn">isEligible</span>(age) {
+  <span class="c-kw">return</span> age <span class="c-bad">&gt;=</span> 18;  <span class="c-cm">// should be: age &gt; 18</span>
+}
+    </div>
+    <div class="section-body">
+      <p>Every linter will approve this code. Every type checker will pass it. An 18-year-old will be admitted when they should not be. The error is invisible to automated tooling and surfaces only when you compare the code against the specification. This is the discipline this module teaches.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Reviewer's Principle</div>
+      <p>For every AI-generated function, ask: <strong>"What is this code actually computing, and is that the same thing I asked for?"</strong> Run the logic in your head on at least three inputs: a typical case, a boundary case, and a case that should fail.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ Q1 ═══════════════════════════════════════ -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">What Is a Logic Error? — Check your understanding before the lab.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-1">
+      <div class="quiz-q">Which class of error does a standard linter or compiler reliably detect?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Syntax errors</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Logic errors</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Accumulation errors</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Off-by-one errors</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Syntax errors violate grammar rules that compilers and linters check directly. Logic errors, by contrast, are semantically valid code that does the wrong thing — no automated tool catches them reliably.</div>
+      <div class="quiz-feedback wrong">Not quite. Linters and compilers check structural grammar rules, catching syntax errors. Logic errors produce valid, running code — just with wrong results — which automated static tools cannot detect.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-2">
+      <div class="quiz-q">The 1999 Mars Climate Orbiter was lost because of a unit mismatch between pound-force seconds and newton-seconds. What type of bug was this?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A runtime exception</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">A logic error</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A syntax error</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A compile-time error</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The software compiled, ran, and transmitted data flawlessly. The unit assumption was wrong — a logic error — and no part of the execution environment flagged it.</div>
+      <div class="quiz-feedback wrong">Not quite. The Orbiter software ran without crashing. The failure was a wrong assumption baked into a computation — the definition of a logic error.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-3">
+      <div class="quiz-q">Why does an AI code generator optimize for "plausibility" rather than correctness?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Because it has no access to a compiler</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Because correctness is impossible to define</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Because it predicts statistically likely token sequences, not semantic truth</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Because it ignores the prompt's domain requirements</button>
+      </div>
+      <div class="quiz-feedback right">Correct. LLMs generate code by learning what token sequences commonly follow other token sequences in training data. They have no mechanism to verify that the output is semantically correct for your specific problem.</div>
+      <div class="quiz-feedback wrong">Not quite. LLMs have access to compilers (via tool-use in some systems), and correctness is definable — the issue is that the model's training objective is next-token prediction, not semantic verification.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-4">
+      <div class="quiz-q">A function returns <code>age >= 18</code> when the specification says "strictly older than 18." The minimum number of test inputs that would catch this is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Any single input above 18</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">An input of exactly 18</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">An input of 0</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Any negative input</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The off-by-one is exposed precisely at the boundary value. An input of 18 returns true when it should return false, which no input above 18 would reveal.</div>
+      <div class="quiz-feedback wrong">Not quite. The error is a boundary condition: the function diverges from the specification exactly at age = 18. Inputs above 18 produce the same result under both the wrong and correct code.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ LAB 1 ═══════════════════════════════════════ -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1 — Identifying Logic Errors</h1>
+    <div class="tagline">Practice spotting logic errors in AI-generated snippets with your AI reviewer.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>Below is an AI-generated Python function that is meant to return the <strong>average</strong> of a list of numbers, but only for values strictly greater than zero. Read the code, identify the logic error(s), and discuss them with the AI assistant. Explain what the bug is, what input would reveal it, and how you would fix it.</p>
+      <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">positive_average</span>(nums):
+    total = 0
+    count = 0
+    <span class="c-kw">for</span> n <span class="c-kw">in</span> nums:
+        <span class="c-kw">if</span> n <span class="c-bad">&gt;=</span> 0:   <span class="c-cm"># should exclude zero</span>
+            total += n
+            count += 1
+    <span class="c-kw">if</span> count == 0:
+        <span class="c-kw">return</span> <span class="c-bad">0</span>   <span class="c-cm"># silent failure — should raise or return None</span>
+    <span class="c-kw">return</span> total / count
+      </div>
+      <div class="lab-prompt">Start by telling the AI what logic error(s) you see in this function, then ask it to help you construct a test case that reveals the bug and discuss the right fix.</div>
+    </div>
+    <div class="lab-chat" id="chat-l1">
+      <div class="lab-chat-header">
+        <span>AI Code Reviewer</span>
+        <div class="chat-badge">Logic Errors · Lab 1</div>
+        <button class="chat-reset-btn" onclick="resetChat('l1')" style="margin-left:auto;">Reset</button>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Ready to review. I have the <code>positive_average</code> function in front of me. Tell me what logic error(s) you spot — then we'll build a test case together and talk through the fix.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Describe the logic error you see…" rows="2" onkeydown="handleKey(event,'l1')"></textarea>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ L2 ═══════════════════════════════════════ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 2</div>
+    <h1>Off-by-One Errors</h1>
+    <div class="tagline">The most common logic error in generated code — and the most reliably invisible.</div>
+    <div class="lesson-question">Why do off-by-one errors appear so frequently in AI-generated loops, and how do you build a systematic check for them?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Documented Case — Therac-25 Radiation Therapy Machine, 1985–1987">
+      <p class="story-text">Between 1985 and 1987, at least six patients received massive radiation overdoses from the Therac-25 medical linear accelerator, three of whom died. One contributing factor was a race condition in the control software, but a separate and independently investigated class of defect was boundary logic: the machine's beam-on confirmation code used incorrect range checks on operator-entered values, accepting parameters that should have been rejected. The code had been adapted from the Therac-20, where hardware interlocks had silently compensated for these off-by-one boundary conditions. When the hardware interlocks were removed in the Therac-25 to reduce cost, the latent boundary errors in the software became lethal.</p>
+    </div>
+
+    <div class="section-heading">Anatomy of an Off-by-One Error</div>
+    <div class="section-body">
+      <p>An off-by-one error (OBOE) occurs when an index, a loop bound, or a comparison operator is displaced by one from the correct value. They cluster at three sites in code: loop initialization (<code>i = 0</code> vs. <code>i = 1</code>), loop termination (<code>i &lt; n</code> vs. <code>i &lt;= n</code>), and conditional comparisons (<code>&gt;</code> vs. <code>&gt;=</code>).</p>
+      <p>AI generators are particularly prone to OBOEs because the training corpus contains both 0-indexed and 1-indexed conventions, both inclusive and exclusive upper bounds, and both strict and non-strict comparisons — often in syntactically identical contexts. The model cannot distinguish them by structure alone; only the specification determines which is correct.</p>
+    </div>
+
+    <div class="section-heading">The Three OBOE Sites in AI Code</div>
+    <div class="section-body">
+      <p><em>Site 1: Loop bounds.</em> The most frequent OBOE in generated iteration code. Consider a function asked to process "the first N items" of a list:</p>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="two-col-label bad">AI-Generated (wrong)</div>
+        <div class="code-block">
+<span class="c-kw">for</span> i <span class="c-kw">in</span> range(<span class="c-bad">1</span>, n+1):
+    process(items[i])
+        </div>
+      </div>
+      <div>
+        <div class="two-col-label good">Correct</div>
+        <div class="code-block">
+<span class="c-kw">for</span> i <span class="c-kw">in</span> range(<span class="c-good">0</span>, n):
+    process(items[i])
+        </div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p><em>Site 2: Slice / substring extraction.</em> Python slice semantics use exclusive upper bounds; many AI-generated slices are off by one when the prompt uses language like "up to and including position N."</p>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="two-col-label bad">AI-Generated (wrong — misses last char)</div>
+        <div class="code-block">
+<span class="c-cm"># "extract first 5 characters"</span>
+result = s[0:<span class="c-bad">4</span>]
+        </div>
+      </div>
+      <div>
+        <div class="two-col-label good">Correct</div>
+        <div class="code-block">
+<span class="c-cm"># Python slice: end is exclusive</span>
+result = s[0:<span class="c-good">5</span>]
+        </div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p><em>Site 3: Conditional boundary comparisons.</em> Seen in the Lesson 1 example with <code>age</code>. The operator family <code>&lt;</code> / <code>&lt;=</code> / <code>&gt;</code> / <code>&gt;=</code> is the most frequent source of one-position logical displacement.</p>
+    </div>
+
+    <div class="section-heading">The OBOE Review Checklist</div>
+    <div class="section-body">
+      <p>When reviewing any AI-generated loop or conditional for OBOEs, apply this four-question checklist:</p>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">1. First element</span>
+      <span class="kt-def">Is the loop's or slice's first element included or excluded? Does the initialization match the specification?</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">2. Last element</span>
+      <span class="kt-def">Is the final element included or excluded? Does the termination condition match?</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">3. Count</span>
+      <span class="kt-def">For a range meant to process N items, does the loop execute exactly N times? Verify with a small concrete N (e.g., N=3).</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">4. Boundary literal</span>
+      <span class="kt-def">For every comparison operator, substitute the boundary value and confirm the truth value matches the specification.</span>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">AI Review Prompt Template</div>
+      <p>"Check this loop for off-by-one errors. For each loop bound and each comparison operator, tell me what value is included or excluded, and verify that matches the specification: [paste spec here]."</p>
+    </div>
+
+    <div class="section-heading">Fence-Post Problems</div>
+    <div class="section-body">
+      <p>The classic formulation of OBOEs is the <em>fence-post problem</em>: to build a fence 10 meters long with posts every meter, how many posts do you need? The answer is 11, not 10 — there is always one more post than there are gaps. AI generators make this mistake frequently in pagination logic, page-count calculations, and any code that enumerates boundaries rather than intervals.</p>
+    </div>
+    <div class="code-block">
+<span class="c-cm"># AI-generated pagination: "how many pages for N items at K per page?"</span>
+pages = N <span class="c-bad">//</span> K   <span class="c-cm"># WRONG: drops the partial last page</span>
+
+<span class="c-cm"># Correct:</span>
+pages = (N + K - 1) // K   <span class="c-cm"># or: math.ceil(N / K)</span>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Reviewer's Principle</div>
+      <p>Always test the exact boundary value. If a function processes "items 1 through N," test it with N=1 and N=0. If it loops "while index &lt; length," trace the last iteration manually. The error will be there or nowhere.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+    <button class="pnav-btn" onclick="goPage('p-q2')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ Q2 ═══════════════════════════════════════ -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">Off-by-One Errors — Boundary knowledge check.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q2-1">
+      <div class="quiz-q">A Python slice <code>s[0:4]</code> on the string <code>"Hello"</code> returns how many characters?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">5</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">4</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">3</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">All 5 characters</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Python slice notation is exclusive at the upper bound. <code>s[0:4]</code> returns indices 0, 1, 2, 3 — four characters: "Hell".</div>
+      <div class="quiz-feedback wrong">Not quite. Python slices use an exclusive upper bound: <code>s[0:4]</code> covers indices 0 through 3 — four characters, not five.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-2">
+      <div class="quiz-q">To paginate 17 items with 5 items per page using correct integer arithmetic, how many pages are needed?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">3</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">4</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">2</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">5</button>
+      </div>
+      <div class="quiz-feedback right">Correct. 17 // 5 = 3, but that drops the partial page of 2 items. The correct formula is ceil(17/5) = 4. AI-generated code using only integer division produces the common OBOE of returning 3.</div>
+      <div class="quiz-feedback wrong">Not quite. Integer division 17 // 5 = 3, but this is the off-by-one error. The last 2 items require a fourth page. The correct formula is ceil(N/K) or (N + K - 1) // K.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-3">
+      <div class="quiz-q">In the Therac-25 case, what made latent off-by-one boundary errors in the software safe in the Therac-20 but lethal in the Therac-25?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">The Therac-20 used a different programming language</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Hardware interlocks in the Therac-20 compensated for the software boundary errors; they were removed in the Therac-25</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">The Therac-25 had more radiation power</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">The Therac-25 software was written by a different team</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Hardware interlocks acted as a compensating control that masked the software's boundary errors in the Therac-20. When those interlocks were removed for cost reasons, the software defects became directly dangerous.</div>
+      <div class="quiz-feedback wrong">Not quite. The key factor was that hardware interlocks in the Therac-20 silently compensated for the software's range-check errors. The Therac-25 removed those interlocks, exposing the latent defects.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-4">
+      <div class="quiz-q">Which of the following is the most reliable technique for catching an OBOE in a loop during code review?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Running a linter on the file</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Checking that all variable names are descriptive</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Manually tracing the first and last iteration with a concrete small input</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Confirming the function compiles without warnings</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Manually tracing boundary iterations — especially the first (n=0 or n=1) and last — is the most reliable way to expose OBOEs that automated tooling cannot see.</div>
+      <div class="quiz-feedback wrong">Not quite. Linters, variable names, and compilation checks are all blind to OBOEs because the code is syntactically valid. The only reliable check is manual execution tracing at boundary values.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ LAB 2 ═══════════════════════════════════════ -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2 — Off-by-One Error Drills</h1>
+    <div class="tagline">Trace boundary conditions in AI-generated loops with your AI reviewer.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>The following AI-generated function is meant to return <strong>every other element</strong> starting from the first, for a list of exactly N items — meaning it should return elements at indices 0, 2, 4, … up to and including the last valid even index. Identify the OBOE, state what boundary input reveals it, and confirm the fix.</p>
+      <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">every_other</span>(items):
+    result = []
+    <span class="c-kw">for</span> i <span class="c-kw">in</span> range(<span class="c-bad">1</span>, len(items), 2):
+        result.append(items[i])
+    <span class="c-kw">return</span> result
+      </div>
+      <div class="lab-prompt">Tell the AI what the OBOE is: which site does it occur at, what input demonstrates it, and what is the one-character fix? Then ask it to check whether there are any secondary boundary issues.</div>
+    </div>
+    <div class="lab-chat" id="chat-l2">
+      <div class="lab-chat-header">
+        <span>AI Code Reviewer</span>
+        <div class="chat-badge">Off-by-One Errors · Lab 2</div>
+        <button class="chat-reset-btn" onclick="resetChat('l2')" style="margin-left:auto;">Reset</button>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">I have the <code>every_other</code> function. Walk me through the OBOE you see — where in the code does it occur, and what input would expose it?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Describe the off-by-one error…" rows="2" onkeydown="handleKey(event,'l2')"></textarea>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ L3 ═══════════════════════════════════════ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 3</div>
+    <h1>Silent Failure Paths</h1>
+    <div class="tagline">Code that swallows errors and returns plausible-looking lies.</div>
+    <div class="lesson-question">How do AI generators create silent failure paths, and why are they more dangerous than exceptions?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Documented Case — Knight Capital Group Trading Failure, August 1, 2012">
+      <p class="story-text">On August 1, 2012, Knight Capital Group deployed new trading software to production. A deployment error activated a dormant code path — a "Power Peg" algorithm that had been decommissioned — which began executing millions of unintended trades. The system had no circuit breaker. Error conditions were swallowed by exception handlers that logged messages but continued execution. Within 45 minutes, Knight had accumulated $7 billion in unwanted stock positions and lost $440 million. The company was effectively destroyed.</p>
+      <p class="story-text">A post-mortem found that error handling code consistently <em>returned silently</em> rather than halting. The failure paths were present and executed — they simply never surfaced to the level where a human or automated monitor could act on them.</p>
+    </div>
+
+    <div class="section-heading">The Anatomy of a Silent Failure</div>
+    <div class="section-body">
+      <p>A silent failure occurs when a function or code block encounters an error condition — invalid input, a failed operation, an unexpected state — and responds by returning a default value, an empty result, or zero, instead of raising an exception or returning a typed error signal.</p>
+      <p>AI generators produce silent failures with high regularity because training data contains countless examples of defensive programming patterns where returning a safe default is idiomatic. The model has learned these patterns without learning the critical distinction: <em>when a default return masks a real problem versus when it is a legitimate fallback.</em></p>
+    </div>
+
+    <div class="section-heading">Three Common Silent Failure Patterns</div>
+    <div class="section-body"><p><em>Pattern 1: Return zero or empty on error.</em></p></div>
+    <div class="two-col">
+      <div>
+        <div class="two-col-label bad">Silent Failure</div>
+        <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">get_price</span>(item_id):
+    <span class="c-kw">try</span>:
+        <span class="c-kw">return</span> db.lookup(item_id)
+    <span class="c-kw">except</span> Exception:
+        <span class="c-kw">return</span> <span class="c-bad">0</span>   <span class="c-cm"># silently prices items at $0</span>
+        </div>
+      </div>
+      <div>
+        <div class="two-col-label good">Correct</div>
+        <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">get_price</span>(item_id):
+    <span class="c-kw">try</span>:
+        <span class="c-kw">return</span> db.lookup(item_id)
+    <span class="c-kw">except</span> Exception <span class="c-kw">as</span> e:
+        <span class="c-kw">raise</span> PriceLookupError(item_id) <span class="c-kw">from</span> e
+        </div>
+      </div>
+    </div>
+    <div class="section-body"><p><em>Pattern 2: Bare except that logs and continues.</em></p></div>
+    <div class="code-block">
+<span class="c-cm"># AI-generated pattern — extremely common in generated code</span>
+<span class="c-kw">try</span>:
+    result = process(data)
+<span class="c-kw">except</span>:                         <span class="c-cm"># catches EVERYTHING including KeyboardInterrupt</span>
+    <span class="c-fn">print</span>(<span class="c-str">"An error occurred"</span>)   <span class="c-cm"># logs, then falls through to wrong state</span>
+    </div>
+    <div class="section-body"><p><em>Pattern 3: None propagation.</em> A function returns None on failure; callers assume a valid object and use it without checking, producing an AttributeError or NullPointerException deep in unrelated code, far from the original failure site.</p></div>
+    <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">find_user</span>(uid):
+    user = db.get(uid)
+    <span class="c-kw">if not</span> user:
+        <span class="c-kw">return</span> <span class="c-bad">None</span>   <span class="c-cm"># caller does: find_user(id).email — crashes later</span>
+    <span class="c-kw">return</span> user
+    </div>
+
+    <div class="section-heading">Why Silent Failures Are Worse Than Exceptions</div>
+    <div class="section-body">
+      <p>An unhandled exception halts execution at the point of failure and produces a stack trace that identifies the problem precisely. A silent failure allows execution to continue with corrupted or default state. The corruption propagates through subsequent computation, and by the time a symptom becomes visible — a wrong report, an incorrect transaction, a crashed downstream system — the causal connection to the original failure is obscured or lost.</p>
+      <p>In financial, medical, or safety-critical systems, this propagation window is the difference between a recoverable incident and a catastrophic one. Knight Capital's $440 million loss was caused not by software that crashed, but by software that kept running when it should have stopped.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Red Flags in AI-Generated Code</div>
+      <p>Immediately scrutinize any function that: (1) catches a broad <code>Exception</code> or bare <code>except</code> and returns a value; (2) returns 0, empty string, empty list, or <code>None</code> without a comment explaining that this is intentional and safe; (3) has a try/except that does not re-raise and does not set an error flag visible to the caller.</p>
+    </div>
+
+    <div class="section-heading">The Review Question for Every Error Handler</div>
+    <div class="section-body">
+      <p>For every exception handler in AI-generated code, ask: <em>"If this exception fires, what does the caller receive, and does the caller have enough information to know that an error occurred?"</em> If the caller receives a value that looks like a valid result but is actually a default substituted for a failure, that is a silent failure path that must be corrected.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Reviewer's Principle</div>
+      <p>Prefer <strong>fail-fast</strong> over <strong>fail-silent</strong>. An exception that halts a transaction is recoverable. A transaction that completes on wrong data may not be. When reviewing AI code, flag every place where the code could lie to its caller.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+    <button class="pnav-btn" onclick="goPage('p-q3')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ Q3 ═══════════════════════════════════════ -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">Silent Failure Paths — Identify and classify.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q3-1">
+      <div class="quiz-q">In the Knight Capital Group incident, what property of the error handling code turned a deployment mistake into a $440 million loss?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">The error handlers raised too many exceptions</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Error conditions were swallowed by handlers that returned silently and continued execution</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">The system had no exception handling at all</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">The deployment server had insufficient logging</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The post-mortem found that error handlers consistently returned without halting or surfacing the problem, allowing the erroneous algorithm to continue executing trades for 45 minutes.</div>
+      <div class="quiz-feedback wrong">Not quite. The problem was the opposite of too many exceptions — error conditions were silently swallowed, allowing a runaway algorithm to continue executing without any visible failure signal.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-2">
+      <div class="quiz-q">A function <code>get_price(item_id)</code> catches all exceptions and returns <code>0</code>. What is the primary danger of this pattern?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It makes the function slower</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Items whose price lookup fails are silently priced at $0, which may go undetected through subsequent transactions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It catches too few error types</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It prevents the caller from caching the result</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The caller receives a value that looks valid (0 is a legal number) and has no way to distinguish "price is zero" from "price lookup failed." This is the defining characteristic of a silent failure.</div>
+      <div class="quiz-feedback wrong">Not quite. The danger is semantic: returning 0 on failure makes a pricing error indistinguishable from a legitimately zero-priced item. The caller proceeds as if nothing went wrong.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-3">
+      <div class="quiz-q">Which Python exception handling pattern is the most dangerous silent-failure antipattern?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')"><code>except ValueError as e: raise</code></button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">A bare <code>except:</code> block that prints a message and continues</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')"><code>except Exception as e: raise RuntimeError from e</code></button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')"><code>except KeyError: return None</code> with the caller checking for None</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A bare <code>except:</code> catches everything — including SystemExit and KeyboardInterrupt — and printing a message then continuing means execution proceeds in an unknown state. The caller has no signal that anything failed.</div>
+      <div class="quiz-feedback wrong">Not quite. Re-raising is correct behavior. The most dangerous pattern is the bare <code>except:</code> that swallows the error and allows execution to continue — the caller never knows the failure occurred.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-4">
+      <div class="quiz-q">When reviewing AI-generated code, which of the following return statements in an exception handler requires the most immediate scrutiny?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')"><code>raise ValueError("invalid input")</code></button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-4')"><code>return []</code></button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')"><code>raise</code></button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')"><code>raise RuntimeError("lookup failed") from e</code></code></button>
+      </div>
+      <div class="quiz-feedback right">Correct. Returning an empty list from an exception handler is a classic silent failure: the caller sees a valid return value (an empty list is a legal result) and has no indication that the operation failed rather than simply finding no results.</div>
+      <div class="quiz-feedback wrong">Not quite. Raise statements preserve error information and propagate it to the caller. The dangerous pattern is returning a value that looks valid — like an empty list — which gives the caller no signal that an error occurred.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ LAB 3 ═══════════════════════════════════════ -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3 — Exposing Silent Failures</h1>
+    <div class="tagline">Diagnose and fix silent failure paths in AI-generated error handling.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>This AI-generated function fetches a configuration value from a remote source. It has two silent failure paths. Identify both, explain what downstream damage each could cause in a production system, and propose a fix that makes failures visible to the caller.</p>
+      <div class="code-block">
+<span class="c-kw">import</span> requests
+
+<span class="c-kw">def</span> <span class="c-fn">get_config</span>(key, default=<span class="c-bad">None</span>):
+    <span class="c-kw">try</span>:
+        resp = requests.get(<span class="c-str">f"https://config-service/get/{key}"</span>, timeout=2)
+        data = resp.json()
+        <span class="c-kw">return</span> data.get(key, default)   <span class="c-cm"># silent: key absent returns None</span>
+    <span class="c-kw">except</span> Exception:
+        <span class="c-kw">return</span> <span class="c-bad">default</span>   <span class="c-cm"># silent: network failure returns None</span>
+      </div>
+      <div class="lab-prompt">Tell the AI what the two silent failure paths are and trace one concrete scenario where each path causes incorrect downstream behavior in a payment or access-control system.</div>
+    </div>
+    <div class="lab-chat" id="chat-l3">
+      <div class="lab-chat-header">
+        <span>AI Code Reviewer</span>
+        <div class="chat-badge">Silent Failures · Lab 3</div>
+        <button class="chat-reset-btn" onclick="resetChat('l3')" style="margin-left:auto;">Reset</button>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">I have the <code>get_config</code> function. There are two silent failure paths here. Walk me through them — and then let's trace what goes wrong in a real system when each one fires.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Describe the first silent failure path…" rows="2" onkeydown="handleKey(event,'l3')"></textarea>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ L4 ═══════════════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 4</div>
+    <h1>Accumulation Errors and Wrong Operators</h1>
+    <div class="tagline">When the error is invisible on one row but catastrophic across a million.</div>
+    <div class="lesson-question">How do you detect logic errors that only manifest at scale or over time — the class AI reviewers most consistently miss?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Documented Case — Vancouver Stock Exchange Index, 1982–1983">
+      <p class="story-text">In 1983, observers noticed that the Vancouver Stock Exchange index, launched in January 1982 at a value of 1000, had drifted to approximately 520 — despite rising stock prices. An investigation revealed that the index calculation software truncated rather than rounded the index value to three decimal places with each transaction. With approximately 3,000 transactions per day, the truncation bias accumulated to nearly 480 points over 22 months. The fix — switching from truncation to rounding — restored the index to 1098.892 within minutes of correction.</p>
+      <p class="story-text">The software was syntactically correct. Each individual calculation was close to right. The error existed only in aggregate — invisible to any review of a single calculation, devastating in the total.</p>
+    </div>
+
+    <div class="section-heading">Accumulation Errors in AI-Generated Code</div>
+    <div class="section-body">
+      <p>An accumulation error is a logic defect in which each individual operation introduces a small error, and those errors compound over repeated execution. The most common sources in AI-generated code are:</p>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Floating-point truncation</span>
+      <span class="kt-def">Using integer division or truncation where rounding is required; the Vancouver Stock Exchange case is the canonical example.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Wrong aggregation operator</span>
+      <span class="kt-def">Using addition where multiplication is required (or vice versa) in compound calculations — most visible in compound interest, growth rate, and probability accumulation code.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">State mutation in loops</span>
+      <span class="kt-def">Modifying a variable inside a loop incorrectly — e.g., resetting a running total that should persist across iterations.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Initialization errors</span>
+      <span class="kt-def">Starting an accumulator at the wrong value — a sum initialized to 1 instead of 0 will be off by exactly 1 for every input size.</span>
+    </div>
+
+    <div class="section-heading">The Wrong Operator Problem</div>
+    <div class="section-body">
+      <p>Wrong operators are distinct from OBOEs — they involve choosing a fundamentally incorrect operation rather than displacing a correct one by one. In AI-generated financial and scientific code, the most common wrong operator errors involve:</p>
+      <p><em>Addition vs. multiplication in compounding.</em> Compound growth requires multiplying by (1 + rate) at each period; a naive AI implementation often adds the rate instead, producing linear rather than exponential growth.</p>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="two-col-label bad">Wrong Operator (linear growth)</div>
+        <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">compound</span>(principal, rate, years):
+    total = principal
+    <span class="c-kw">for</span> _ <span class="c-kw">in</span> range(years):
+        total <span class="c-bad">+=</span> principal * rate  <span class="c-cm"># adds flat amount</span>
+    <span class="c-kw">return</span> total
+        </div>
+      </div>
+      <div>
+        <div class="two-col-label good">Correct (exponential growth)</div>
+        <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">compound</span>(principal, rate, years):
+    total = principal
+    <span class="c-kw">for</span> _ <span class="c-kw">in</span> range(years):
+        total <span class="c-good">*=</span> (1 + rate)  <span class="c-cm"># grows the running total</span>
+    <span class="c-kw">return</span> total
+        </div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p>The wrong version produces the right answer for year 1 (principal × rate is the same as principal × rate in both). It diverges from year 2 onward. A reviewer who tests only a single-period case will miss the error entirely.</p>
+    </div>
+
+    <div class="section-heading">Logical Operator Confusion</div>
+    <div class="section-body">
+      <p>The <code>&&</code> / <code>||</code> (or <code>and</code> / <code>or</code>) confusion is particularly dangerous in validation and access-control code. Consider a function that should permit access only if the user has both a valid session <em>and</em> the required role:</p>
+    </div>
+    <div class="code-block">
+<span class="c-cm"># AI-generated access control — wrong operator</span>
+<span class="c-kw">def</span> <span class="c-fn">can_access</span>(user):
+    <span class="c-kw">return</span> user.has_session <span class="c-bad">or</span> user.has_role  <span class="c-cm"># should be: and</span>
+    </div>
+    <div class="section-body">
+      <p>A user with an expired session but the correct role will be admitted. A user with no role but an active session will also be admitted. The function is logically inverted, and in an access-control context it creates a security vulnerability, not merely a functional bug.</p>
+    </div>
+
+    <div class="section-heading">Review Strategy for Accumulation and Operator Errors</div>
+    <div class="section-body">
+      <p>These errors require a different review approach from OBOEs and silent failures. Because they manifest at scale or over time, the review strategy must be mathematical rather than execution-based:</p>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Multi-period testing</span>
+      <span class="kt-def">For any loop that accumulates a value, test with at least 3 iterations manually and check whether the growth pattern is correct (linear? exponential? constant?).</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Truth table for logical operators</span>
+      <span class="kt-def">For every boolean expression in a conditional, enumerate all combinations of true/false inputs and verify each outcome against the specification.</span>
+    </div>
+    <div class="key-term">
+      <span class="kt-term">Unit analysis</span>
+      <span class="kt-def">For numerical code, annotate each variable with its unit and verify that the operations are dimensionally consistent — the Mars Orbiter method.</span>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">AI Review Prompt Template</div>
+      <p>"For this accumulation loop, trace the value of the accumulator after iterations 1, 2, and 3, and confirm whether the growth pattern (linear/exponential/other) matches the specification. Flag any use of truncation where rounding might be required."</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Reviewer's Principle</div>
+      <p>Logic errors that manifest at scale are the hardest to catch in code review and the most expensive in production. For every loop that aggregates or compounds a value, derive what the output should be algebraically for N iterations, then verify the code implements that formula exactly.</p>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+    <button class="pnav-btn" onclick="goPage('p-q4')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ Q4 ═══════════════════════════════════════ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Lesson 4 Quiz</h1>
+    <div class="tagline">Accumulation Errors and Wrong Operators — Verify your analytical technique.</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q4-1">
+      <div class="quiz-q">The Vancouver Stock Exchange index lost ~480 points over 22 months due to accumulation of truncation errors. What was the approximate rate of loss per day?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">About 0.7 points per day (480 / ~675 trading days)</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">About 48 points per day</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">About 0.07 points per transaction</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">About 22 points per month</button>
+      </div>
+      <div class="quiz-feedback right">Correct. 22 months × ~30 trading days ≈ 660–680 days. 480 / 675 ≈ 0.71 points per day — individually imperceptible, collectively catastrophic. This is the defining characteristic of accumulation errors.</div>
+      <div class="quiz-feedback wrong">Not quite. 480 points over ~675 trading days works out to roughly 0.7 points per day — small enough to be invisible in daily monitoring, large enough to distort the index by nearly 50% over two years.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-2">
+      <div class="quiz-q">An AI-generated compound interest function adds <code>principal * rate</code> each year instead of multiplying <code>total *= (1 + rate)</code>. For a 10% rate on $1000 over 5 years, what is the error in the final output?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">The outputs are identical</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Wrong: $1500; Correct: $1610.51 — a $110.51 understatement</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Wrong: $1610.51; Correct: $1500 — an overstatement</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Wrong: $1100; Correct: $1610.51 — a $510.51 understatement</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The wrong version: 1000 + 5 × (1000 × 0.1) = $1500. The correct compound formula: 1000 × 1.1^5 = $1610.51. The divergence grows with each period.</div>
+      <div class="quiz-feedback wrong">Not quite. The wrong version produces: 1000 + (5 × 100) = $1500 (simple interest). The correct compound result: 1000 × (1.1)^5 = $1610.51. A $110.51 understatement that grows larger with more periods.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-3">
+      <div class="quiz-q">An access control function reads: <code>return user.has_session or user.has_role</code>. The specification requires BOTH. Which combination of user states would the wrong operator incorrectly admit?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">has_session=False, has_role=False</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">has_session=True, has_role=False</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">has_session=True, has_role=True</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">has_session=False (only)</button>
+      </div>
+      <div class="quiz-feedback right">Correct. With <code>or</code>, a user with a valid session but no required role passes the check. The correct <code>and</code> operator would return False here. This is a security vulnerability in access-control code.</div>
+      <div class="quiz-feedback wrong">Not quite. The <code>or</code> operator returns True if either condition is true. A user with has_session=True and has_role=False would be incorrectly admitted — they have a session but lack the required role.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-4">
+      <div class="quiz-q">What is the most reliable method to verify a loop-based accumulation function during code review?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Check that the variable names match the domain</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Run a linter to check for common patterns</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">Manually trace the accumulator value after 3+ iterations and derive the expected algebraic formula</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Test with a single representative input</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Accumulation errors are invisible at N=1 and often invisible at N=2. Tracing 3+ iterations and comparing to the algebraic formula is the standard review technique — it is how the Vancouver Stock Exchange error was eventually caught.</div>
+      <div class="quiz-feedback wrong">Not quite. Linters, names, and single-input tests all miss accumulation errors because each individual operation may look correct. The required technique is multi-iteration tracing and algebraic verification.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ LAB 4 ═══════════════════════════════════════ -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4 — Accumulation and Operator Errors</h1>
+    <div class="tagline">Trace multi-iteration bugs and wrong logical operators in AI-generated code.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Task</h4>
+      <p>This AI-generated function is meant to compute a running probability: given a list of independent probabilities, it should return the probability that <strong>all events occur</strong> (i.e., the joint probability — a product). It has two logic errors. Identify both and trace what output the wrong version produces for a concrete input.</p>
+      <div class="code-block">
+<span class="c-kw">def</span> <span class="c-fn">joint_probability</span>(probs):
+    <span class="c-cm"># Returns P(all events occur) for list of independent probabilities</span>
+    total = <span class="c-bad">0</span>         <span class="c-cm"># Error 1: wrong initialization</span>
+    <span class="c-kw">for</span> p <span class="c-kw">in</span> probs:
+        total <span class="c-bad">+=</span> p    <span class="c-cm"># Error 2: wrong operator — should multiply</span>
+    <span class="c-kw">return</span> total
+      </div>
+      <div class="lab-prompt">Tell the AI what both errors are. Then trace what <code>joint_probability([0.5, 0.5, 0.5])</code> returns under the wrong code, and what it should return. Discuss why initializing to 0 vs. 1 matters for products, and why this error class is dangerous in risk-modeling systems.</div>
+    </div>
+    <div class="lab-chat" id="chat-l4">
+      <div class="lab-chat-header">
+        <span>AI Code Reviewer</span>
+        <div class="chat-badge">Accumulation Errors · Lab 4</div>
+        <button class="chat-reset-btn" onclick="resetChat('l4')" style="margin-left:auto;">Reset</button>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">I have the <code>joint_probability</code> function. Walk me through both logic errors — then let's trace the output for <code>[0.5, 0.5, 0.5]</code> under the wrong code versus the correct code.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Describe error 1 (initialization) and error 2 (operator)…" rows="2" onkeydown="handleKey(event,'l4')"></textarea>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ MODULE TEST ═══════════════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 4 Test</h1>
+    <div class="tagline">Logic Errors and Silent Failures — 15 questions, 80% to pass.</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt-1">
+      <div class="quiz-q">1. A program compiles and runs to completion but produces a wrong answer on a specific class of inputs. What type of error is this?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Logic error</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Syntax error</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Runtime exception</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Compilation warning</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A logic error produces valid, running code with incorrect results — no crash, no exception, no linter flag.</div>
+      <div class="quiz-feedback wrong">Not quite. A syntax error would prevent compilation. A runtime exception would halt execution. Code that runs silently to a wrong answer is a logic error.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-2">
+      <div class="quiz-q">2. What was the direct cause of the loss of the Mars Climate Orbiter in 1999?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A runtime exception in navigation software</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">A unit mismatch between pound-force seconds (Lockheed) and newton-seconds (NASA)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A syntax error in the flight computer</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A memory overflow in the telemetry system</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The navigation software output force data in pound-force seconds; the receiving system expected newton-seconds. The code ran perfectly; the assumption was wrong.</div>
+      <div class="quiz-feedback wrong">Not quite. The software had no crash — it operated normally. The unit mismatch was a logic error in an implicit assumption about what unit system was being used.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-3">
+      <div class="quiz-q">3. Why do AI code generators produce logic errors more frequently than syntax errors?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Because they have no access to language specifications</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Because training optimizes for statistically plausible token sequences, not semantic correctness for a specific problem</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Because they are trained only on buggy open-source code</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Because syntax checking is not part of their inference process</button>
+      </div>
+      <div class="quiz-feedback right">Correct. LLMs predict likely continuations. Syntax correctness is strongly correlated with likelihood in training data; semantic correctness for your specific domain is not.</div>
+      <div class="quiz-feedback wrong">Not quite. The asymmetry is due to the training objective: next-token prediction strongly enforces syntactic patterns but cannot enforce semantic correctness for a domain-specific problem the model has never seen.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-4">
+      <div class="quiz-q">4. A loop is written as <code>for i in range(1, n)</code> when the specification requires processing all n items starting from the first. What is wrong?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Two off-by-one errors: starts at index 1 (skips first item) and stops before n-1 (missing the last)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Nothing — range(1, n) processes n items</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">One OBOE: it starts at 1 but the upper bound is correct</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">A syntax error — range requires three arguments</button>
+      </div>
+      <div class="quiz-feedback right">Correct. range(1, n) starts at index 1 (missing index 0, the first item) and ends at index n-1 (missing index n-1 if items are 0-indexed to n-1). Should be range(0, n).</div>
+      <div class="quiz-feedback wrong">Not quite. range(1, n) skips index 0 (the first element) and iterates through index n-1, processing n-1 items, not n. The start should be 0.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-5">
+      <div class="quiz-q">5. In Python, what does <code>s[2:5]</code> return from the string <code>"abcdefg"</code>?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">"bcdef" (5 characters)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">"cde" (indices 2, 3, 4 — exclusive upper bound)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">"cdef" (indices 2, 3, 4, 5)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">"bcd" (indices 1, 2, 3)</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Python slices are [inclusive_start : exclusive_end]. s[2:5] returns characters at indices 2, 3, 4 — "cde".</div>
+      <div class="quiz-feedback wrong">Not quite. Python slice notation: s[start:end] includes start, excludes end. s[2:5] on "abcdefg" gives indices 2, 3, 4 → "c", "d", "e" → "cde".</div>
+    </div>
+
+    <div class="quiz-box" id="mt-6">
+      <div class="quiz-q">6. The fence-post problem states that a 10-meter fence with posts every meter requires how many posts?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">10</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">11</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">9</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">12</button>
+      </div>
+      <div class="quiz-feedback right">Correct. 10 sections require 11 posts — one at each end plus one between each pair of sections. N gaps require N+1 boundaries. AI generators frequently make this error in pagination and enumeration code.</div>
+      <div class="quiz-feedback wrong">Not quite. The fence-post insight: N intervals require N+1 boundary markers. 10 meter-sections require 11 posts. AI generators commonly return N when N+1 is correct.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-7">
+      <div class="quiz-q">7. A function catches all exceptions and returns <code>0</code> as a price. What category of error is this?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Off-by-one error</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Silent failure path</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Accumulation error</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Wrong operator error</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Returning a default value (0) when an error occurs is the canonical silent failure pattern — the caller cannot distinguish "price is legitimately 0" from "price lookup failed."</div>
+      <div class="quiz-feedback wrong">Not quite. This is a silent failure: an error condition is masked by returning a plausible-looking default value, giving the caller no signal that something went wrong.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-8">
+      <div class="quiz-q">8. What made the Knight Capital Group's $440M loss preventable at the software level?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Better syntax checking in the code review</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Fail-fast error handling that halted execution when the dormant algorithm activated, rather than logging and continuing</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">More aggressive type annotations</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">A faster deployment pipeline</button>
+      </div>
+      <div class="quiz-feedback right">Correct. If error handlers had halted the system when the unexpected code path activated, the loss would have been contained. Fail-fast over fail-silent is the core principle for safety-critical systems.</div>
+      <div class="quiz-feedback wrong">Not quite. The defining problem was fail-silent error handling. If the system had halted rather than continued executing on an error signal, the window for loss would have been minutes, not 45 minutes of continuous trading.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-9">
+      <div class="quiz-q">9. A bare <code>except:</code> block in Python is dangerous primarily because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">It is a syntax error in Python 3</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">It catches all exceptions including SystemExit and KeyboardInterrupt, masking every possible failure mode</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">It is slower than a specific except clause</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">It cannot access the exception object</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A bare except catches the entire exception hierarchy in Python, including control-flow exceptions. This is the widest possible silent failure surface.</div>
+      <div class="quiz-feedback wrong">Not quite. The primary danger is scope: a bare except catches SystemExit, KeyboardInterrupt, and GeneratorExit — exceptions that should not be caught — in addition to all application exceptions.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-10">
+      <div class="quiz-q">10. The Vancouver Stock Exchange index lost ~480 points over 22 months due to:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">A rounding error that added 0.001 to each transaction</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Truncation (instead of rounding) that accumulated a small negative bias across ~3,000 daily transactions</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">An off-by-one error in the loop counting transactions</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">A wrong operator in the index calculation formula</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Truncating to 3 decimal places (rather than rounding) introduced a consistent downward bias. Multiplied by ~3,000 transactions/day over 22 months, the small error compounded to nearly a 50% index drop.</div>
+      <div class="quiz-feedback wrong">Not quite. The error was truncation vs. rounding — systematically discarding fractional amounts rather than rounding to nearest. Over thousands of daily transactions, this created a consistent downward bias.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-11">
+      <div class="quiz-q">11. An AI-generated compound interest loop uses <code>total += principal * rate</code> each year. For a $1000 principal at 10% for 3 years, what does it return?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">$1300 (simple interest — wrong)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">$1331 (correct compound result)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">$1100 (only one period applied)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">$1000 (no change applied)</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Adding principal × rate each year = 1000 + (100 × 3) = $1300. Correct compound: 1000 × 1.1^3 = $1331. The error is adding a flat amount rather than multiplying the growing total.</div>
+      <div class="quiz-feedback wrong">Not quite. The wrong version: each year adds 1000 × 0.1 = 100. After 3 years: 1000 + 300 = $1300. The correct compound formula: 1000 × (1.1)^3 = $1331.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-12">
+      <div class="quiz-q">12. An access-control function reads <code>return user.active and user.is_admin or user.is_superuser</code>. Due to Python operator precedence, this evaluates as:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">(user.active and user.is_admin) or user.is_superuser — any superuser passes regardless of active status</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">user.active and (user.is_admin or user.is_superuser)</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">(user.active or user.is_superuser) and user.is_admin</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">All three must be true simultaneously</button>
+      </div>
+      <div class="quiz-feedback right">Correct. In Python, <code>and</code> binds tighter than <code>or</code>. This evaluates as (active AND admin) OR superuser — meaning any superuser passes the check regardless of their active status, which is likely a security defect.</div>
+      <div class="quiz-feedback wrong">Not quite. Python operator precedence: <code>and</code> binds before <code>or</code>. The expression groups as (active AND admin) OR superuser. This means a deactivated superuser is still admitted — a likely security defect.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-13">
+      <div class="quiz-q">13. The most reliable technique to detect an accumulation error in a loop during code review is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Running a type checker on the accumulator variable</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Testing with a single large N value</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Manually tracing the accumulator value after 3+ iterations and deriving the expected algebraic formula</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Checking that the loop variable is named descriptively</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Accumulation errors are invisible at N=1 and often at N=2. Multi-iteration tracing plus algebraic verification is the standard technique for catching them in review.</div>
+      <div class="quiz-feedback wrong">Not quite. Type checkers and naming conventions are blind to accumulation errors. A single large N may not distinguish wrong-formula from right-formula results. Trace 3+ iterations and compare to the algebraic formula.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-14">
+      <div class="quiz-q">14. For the <code>joint_probability</code> function, why does initializing the accumulator to <code>0</code> instead of <code>1</code> cause a critical error even if the operator were corrected to multiplication?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Multiplying anything by 0 gives 0 — the function would always return 0 regardless of input</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">It would cause a ZeroDivisionError on the first iteration</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Floating-point representation of 0 differs from integer 0 in Python</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">It would produce an off-by-one error in the count of probabilities</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The multiplicative identity is 1, not 0. Initializing a product accumulator to 0 means 0 × p₁ × p₂ × … = 0 for every possible input. The initialization error alone destroys the function's output entirely.</div>
+      <div class="quiz-feedback wrong">Not quite. Multiplying 0 by any number gives 0. If the accumulator starts at 0 and each step multiplies, the result is always 0 — completely independent of the actual probabilities.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-15">
+      <div class="quiz-q">15. Which of the following review actions addresses the broadest range of logic error types covered in this module?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Running the code through a linter before approving</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Verifying that all function names match the domain vocabulary</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">For every function: trace 3 inputs (typical, boundary, failure), verify all comparison operators against the spec, and check that error paths do not return plausible-looking defaults</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Confirming the code compiles without warnings on the target platform</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This three-part approach catches OBOEs (boundary inputs), wrong operators (spec comparison), and silent failures (error path inspection) — covering all four logic error categories from this module.</div>
+      <div class="quiz-feedback wrong">Not quite. Linters, naming, and compilation all miss logic errors entirely. The comprehensive review technique is: trace boundary/typical/failure inputs, verify operators against the spec, and inspect every error return path.</div>
+    </div>
+
+    <div id="mt-score" class="mt-score"></div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+    <button class="pnav-btn" onclick="goPage('p-l1')">Restart Module</button>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='ai-code-review-fundamentals';
+var MODULE_ID='ai--m4';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are a focused AI code review instructor for AESOP AI Academy, AI Code Review Fundamentals, Module 4, Lesson 1. The student is reviewing a Python function called positive_average(nums) that has two logic errors: (1) it uses >= 0 instead of > 0, so zero is incorrectly included in the average; (2) it returns 0 when no positive numbers are found (a silent failure) instead of raising an exception or returning None. Help the student identify and articulate both errors. Ask them what input would expose each bug. Guide them to construct a specific test case like positive_average([0, 1, 2]) and trace the output. Discuss whether returning 0 on empty results is safe or dangerous. Be specific, concise, and educational. If the student goes off-topic, warmly redirect them to the code review task.',
+  l2: 'You are a focused AI code review instructor for AESOP AI Academy, AI Code Review Fundamentals, Module 4, Lesson 2. The student is reviewing a Python function called every_other(items) that has an off-by-one error: it uses range(1, len(items), 2) starting at index 1 instead of range(0, len(items), 2) starting at index 0, so it returns elements at odd indices instead of even indices. Help the student identify the OBOE precisely: which site (initialization), what the wrong value is (1 instead of 0), what input demonstrates the bug (e.g., items=[\'a\',\'b\',\'c\',\'d\'] — wrong returns [\'b\',\'d\'], correct returns [\'a\',\'c\']). Ask them to confirm the fix and check whether there are any secondary boundary issues with empty lists. Stay on topic. If the student goes off-topic, warmly redirect them.',
+  l3: 'You are a focused AI code review instructor for AESOP AI Academy, AI Code Review Fundamentals, Module 4, Lesson 3. The student is reviewing a Python function called get_config(key, default=None) that has two silent failure paths: (1) when the network/HTTP request raises any exception, the function returns the default value (None) with no indication of failure; (2) when the JSON response does not contain the key, data.get(key, default) also returns default/None silently. Help the student trace concrete scenarios: for example, if get_config("payment_limit") returns None because the network is down, and the caller uses the result as a numeric limit, what happens? Guide the student to articulate why returning a default is dangerous in access-control or payment systems, and to propose a fix involving explicit error raising. Stay on topic. If the student goes off-topic, warmly redirect them.',
+  l4: 'You are a focused AI code review instructor for AESOP AI Academy, AI Code Review Fundamentals, Module 4, Lesson 4. The student is reviewing a Python function called joint_probability(probs) that has two logic errors: (1) the accumulator is initialized to 0 instead of 1 — multiplying from 0 always gives 0; (2) the operator is += (addition) instead of *= (multiplication) — probabilities must be multiplied for joint probability. Help the student trace joint_probability([0.5, 0.5, 0.5]): wrong version returns 0+0.5+0.5+0.5=1.5 (nonsensical, exceeds 1); correct version returns 1*0.5*0.5*0.5=0.125. Discuss why initializing a product accumulator to 0 vs 1 matters. Explain why this error is dangerous in risk-modeling, insurance, and financial systems where probabilities compound. Stay on topic. If the student goes off-topic, warmly redirect them.'
+};
+
+var _fallbackResponses={
+  l1:[
+    "Good observation. The first error is the >= 0 operator — it includes zero in the average when the spec says strictly greater than zero. Can you write a test case using [0, 2, 4] to show what the wrong output is versus what it should be?",
+    "Exactly right. For [0, 2, 4], the wrong code includes 0 and computes (0+2+4)/3 = 2.0, while the correct version computes (2+4)/2 = 3.0. Now let's look at the second error — what happens when you call positive_average([-1, -2]) under the current code?",
+    "Correct — it returns 0, which looks like a valid average but is actually a failure signal. That's a silent failure. The fix is to return None or raise a ValueError('no positive numbers') so the caller knows the computation was impossible. Well done on both errors."
+  ],
+  l2:[
+    "Good start. The error is at the initialization site of range() — it starts at 1 instead of 0. Can you trace what every_other(['a','b','c','d']) returns with range(1, 4, 2) versus range(0, 4, 2)?",
+    "Exactly. range(1,4,2) gives indices 1,3 → ['b','d']. range(0,4,2) gives indices 0,2 → ['a','c']. The fix is to change 1 to 0. Now check the boundary: what does the wrong code return for an empty list []?",
+    "Right — both versions return [] for an empty list, so there's no secondary OBOE there. The single-character fix (1→0 in range start) is all that's needed. You've correctly applied the first-element check from the OBOE checklist."
+  ],
+  l3:[
+    "Good. The first silent failure path is the except block — any network error, timeout, or connection failure causes the function to return None silently. In a payment system, if the caller does: limit = get_config('max_charge') and then checks if amount <= limit, what happens when limit is None?",
+    "Exactly — comparing a number to None raises a TypeError, or if the caller doesn't check, None might be used as a falsy value that passes all comparisons. The second silent failure: data.get(key, default) returns None when the key is missing from the JSON response — indistinguishable from 'config not found' vs 'network failed'. The fix is to raise a ConfigError in both branches.",
+    "Correct analysis. Both paths should raise a typed exception — ConfigNotFoundError for missing key, ConfigServiceError for network failure — so callers can distinguish and handle each case explicitly. This is the fail-fast principle applied to configuration access."
+  ],
+  l4:[
+    "Good. Error 1: initializing total to 0. If we corrected the operator to *= but kept total=0, then 0 × 0.5 × 0.5 × 0.5 = 0 always. Error 2: using += instead of *= — addition gives 0.5+0.5+0.5=1.5, which is greater than 1 and meaningless as a probability. Can you state what the correct output of joint_probability([0.5, 0.5, 0.5]) should be?",
+    "Correct — 0.5 × 0.5 × 0.5 = 0.125. The wrong version returns 1.5 (addition from 0), which immediately signals something is wrong since probabilities must be in [0,1]. Now: why is this error particularly dangerous in an insurance or risk system that uses joint_probability to decide whether to issue a policy?",
+    "Exactly right. A risk model returning 1.5 (>1) might be capped or clipped downstream to 1.0 — 100% probability of all bad events occurring, which would incorrectly reject all policies. Or it might cause a silent float comparison failure. Initializing product accumulators to 1 (the multiplicative identity) and using *= is the correct pattern. Well done."
+  ]
+};
+
+function _fallbackReply(labId){
+  var responses=_fallbackResponses[labId];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=responses[Math.min(idx,responses.length-1)];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function handleKey(e,labId){
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    chatSend(labId);
+  }
+}
+
+function resetChat(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var openings={
+    l1:"Ready to review. I have the <code>positive_average</code> function in front of me. Tell me what logic error(s) you spot — then we'll build a test case together and talk through the fix.",
+    l2:"I have the <code>every_other</code> function. Walk me through the OBOE you see — where in the code does it occur, and what input would expose it?",
+    l3:"I have the <code>get_config</code> function. There are two silent failure paths here. Walk me through them — and then let's trace what goes wrong in a real system when each one fires.",
+    l4:"I have the <code>joint_probability</code> function. Walk me through both logic errors — then let's trace the output for <code>[0.5, 0.5, 0.5]</code> under the wrong code versus the correct code."
+  };
+  var div=document.createElement('div');
+  div.className='chat-msg ai';
+  div.innerHTML=openings[labId]||'Ready. Tell me what you observe.';
+  container.appendChild(div);
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:420,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I encountered an issue. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({
+      type:'labComplete',
+      courseId:COURSE_ID,
+      moduleId:MODULE_ID,
+      labId:labId,
+      exchangeCount:chatExchanges[labId]
+    },'*');
+  }
+}
+
+updateTabs();
+</script>
+</body>
+</html>

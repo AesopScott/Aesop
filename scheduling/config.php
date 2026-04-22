@@ -29,6 +29,9 @@ define('OWNER_TIMEZONE', 'America/Denver');   // your timezone (MDT)
 // Days available: 1=Mon … 7=Sun
 define('BUSINESS_DAYS', serialize([1, 2, 3, 4, 5]));
 
+// ─── Second Calendar (ICS feed) ───────────────────────────────────────────────
+define('SECOND_CALENDAR_ICS', 'https://outlook.office365.com/owa/calendar/23653500630244bb8810c0b33111b45c@cmcenters.org/c3bd715e8cfe42ccbec9d329fffe01c715526923705813942715/calendar.ics');
+
 // ─── Teams Meeting ────────────────────────────────────────────────────────────
 define('CREATE_TEAMS_MEETING', true);         // set false if you don't use Teams
 

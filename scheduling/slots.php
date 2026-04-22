@@ -55,15 +55,11 @@ $resp1 = graphPost('/me/calendar/getSchedule', [
 ], 1);
 $busyBlocks = fetchBusyBlocks($resp1);
 
-// Account 2 — secondary calendar (if connected)
-if (getValidAccessToken(2)) {
-    $resp2 = graphPost('/me/calendar/getSchedule', [
-        'schedules'                => ['me'],
-        'startTime'                => ['dateTime' => $startUtc, 'timeZone' => 'UTC'],
-        'endTime'                  => ['dateTime' => $endUtc,   'timeZone' => 'UTC'],
-        'availabilityViewInterval' => MEETING_DURATION,
-    ], 2);
-    $busyBlocks = array_merge($busyBlocks, fetchBusyBlocks($resp2));
+// Account 2 — secondary calendar via ICS feed
+if (defined('SECOND_CALENDAR_ICS') && SECOND_CALENDAR_ICS) {
+    require_once __DIR__ . '/ics.php';
+    $icsBlocks  = fetchIcsBusyBlocks(SECOND_CALENDAR_ICS, $start->getTimestamp(), $end->getTimestamp());
+    $busyBlocks = array_merge($busyBlocks, $icsBlocks);
 }
 
 // Walk day by day and generate slots

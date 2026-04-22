@@ -159,7 +159,9 @@
     '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home">AESOP<em>AI Academy</em></a>' +
     '    <a href="/ai-academy/courses.html#courses"><span class="ico" aria-hidden="true">\uD83D\uDCDA</span>Courses</a>' +
     '    <a href="/ai-news/"><span class="ico" aria-hidden="true">\uD83D\uDCF0</span>AI News</a>' +
-    '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83C\uDF4E</span>Teachers / Parents</a>' +
+    '    <a href="/ai-academy/students.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Students</a>' +
+    '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83C\uDF4E</span>Teachers</a>' +
+    '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83D\uDC68\u200D\uD83D\uDC67</span>Parents</a>' +
     '    <a class="tb-pill-right-start" href="/about/mission.html"><span class="ico" aria-hidden="true">\u2726</span>Our Mission</a>' +
     '    <a href="/about/advisory-board.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Advisory Board</a>' +
     '    <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">\uD83D\uDCAC</span>Forums \u00B7 Discord</a>' +

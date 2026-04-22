@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<!-- v1.0.1 | 2026-04-22 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Hub — AESOP AI Academy</title>
+  <meta name="description" content="Your AESOP AI Academy student hub. Find your Learning ID, track your progress, and continue learning.">
+  <link rel="stylesheet" href="/academy-theme.css?v=2">
+  <link rel="stylesheet" href="/academy-dark-mode.css?v=2">
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getFirestore, doc, getDoc, setDoc }
+      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU",
+      authDomain: "playagame-f733d.firebaseapp.com",
+      projectId: "playagame-f733d",
+      storageBucket: "playagame-f733d.appspot.com",
+      messagingSenderId: "610508714644",
+      appId: "1:610508714644:web:63ca4374e5d5be1c81ba81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    const LS_ID     = 'aesop-learner-id';
+    const LS_STREAK = 'aesop-streak';
+
+    const COURSES = [
+      { id:'ai-foundations',    title:'AI Foundations',              icon:'🤖', modules:10, url:'/ai-academy/' },
+      { id:'ai-governance',     title:'AI Governance',               icon:'🏛️', modules:6,  url:'/ai-academy/ai-governance.html' },
+      { id:'ai-in-society',     title:'AI in Society',               icon:'🌐', modules:8,  url:'/ai-academy/ai-in-society.html' },
+      { id:'ai-and-creativity', title:'AI & Creativity',             icon:'🎨', modules:8,  url:'/ai-academy/ai-and-creativity.html' },
+      { id:'ai-ethics',         title:'AI Ethics & Decision-Making', icon:'⚖️', modules:6,  url:'/ai-academy/ai-ethics.html' },
+      { id:'building-with-ai',  title:'Building with AI',            icon:'🛠️', modules:8,  url:'/ai-academy/building-with-ai.html' },
+      { id:'ai-careers',        title:'AI Careers & Research',       icon:'🚀', modules:6,  url:'/ai-academy/ai-careers.html' },
+    ];
+
+    // Daily challenge pool — rotates by day-of-year
+    const CHALLENGES = [
+      { q: 'What does "LLM" stand for?',                           a: 'Large Language Model' },
+      { q: 'Which company makes Claude?',                           a: 'Anthropic' },
+      { q: 'What year did ChatGPT launch publicly?',               a: '2022' },
+      { q: 'What is a neural network loosely inspired by?',        a: 'The human brain' },
+      { q: 'What does "AI hallucination" mean?',                   a: 'When AI confidently states something false' },
+      { q: 'What type of AI can generate images from text?',       a: 'Diffusion model (e.g. DALL-E, Midjourney)' },
+      { q: 'What is "prompt engineering"?',                        a: 'Crafting inputs to get better AI outputs' },
+      { q: 'What does GPT stand for?',                             a: 'Generative Pre-trained Transformer' },
+      { q: 'Name one way AI is used in healthcare.',               a: 'Medical imaging / drug discovery / diagnosis' },
+      { q: 'What is "bias" in an AI model?',                       a: 'Unfair patterns learned from training data' },
+      { q: 'What does "training data" mean for an AI?',            a: 'The text/images the model learned from' },
+      { q: 'What is a "transformer" in AI?',                       a: 'A neural network architecture used in LLMs' },
+      { q: 'What is "fine-tuning" an AI model?',                   a: 'Further training on specific data to specialise it' },
+      { q: 'What does "open source" AI mean?',                     a: 'The model weights and code are publicly available' },
+    ];
+
+    // ── Streak logic ──────────────────────────────────────────────
+    function updateStreak() {
+      const today = new Date().toISOString().slice(0, 10);
+      let streak = JSON.parse(localStorage.getItem(LS_STREAK) || '{"count":0,"last":""}');
+      const diff = (new Date(today) - new Date(streak.last)) / 86400000;
+      if (diff < 1) { /* same day — no change */ }
+      else if (diff < 2) { streak.count += 1; streak.last = today; }
+      else { streak.count = 1; streak.last = today; }
+      localStorage.setItem(LS_STREAK, JSON.stringify(streak));
+      return streak.count;
+    }
+
+    // ── ID generation ─────────────────────────────────────────────
+    function generateLearnerId() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return 'AESOP-' + code;
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    async function init() {
+      const stored = localStorage.getItem(LS_ID);
+      if (stored) {
+        await loadStudent(stored);
+      } else {
+        document.getElementById('welcomeGate').style.display = 'flex';
+        document.getElementById('hubBody').style.display     = 'none';
+      }
+    }
+
+    // ── Create new learner ────────────────────────────────────────
+    window._startNew = async () => {
+      const id = generateLearnerId();
+      localStorage.setItem(LS_ID, id);
+      try {
+        await setDoc(doc(db, 'learners', id), {
+          learnerId: id,
+          createdAt: new Date().toISOString(),
+          courseProgress: {}
+        });
+      } catch(e) { console.warn('Firestore write error:', e); }
+      await loadStudent(id);
+    };
+
+    window._lookupId = async () => {
+      const input = document.getElementById('returnIdInput').value.trim().toUpperCase();
+      const err   = document.getElementById('lookupErr');
+      err.textContent = '';
+      if (!input || !input.startsWith('AESOP-') || input.length < 8) {
+        err.textContent = 'Please enter a valid Learner ID (e.g. AESOP-7K3X).';
+        return;
+      }
+      try {
+        const snap = await getDoc(doc(db, 'learners', input));
+        if (!snap.exists()) { err.textContent = 'No record found. Check your ID and try again.'; return; }
+        localStorage.setItem(LS_ID, input);
+        await loadStudent(input);
+      } catch(e) { err.textContent = 'Could not look up your ID. Please try again.'; }
+    };
+
+    window._signOut = () => {
+      localStorage.removeItem(LS_ID);
+      location.reload();
+    };
+
+    // ── Load student hub ──────────────────────────────────────────
+    async function loadStudent(id) {
+      document.getElementById('welcomeGate').style.display = 'none';
+      document.getElementById('hubBody').style.display     = 'block';
+      document.getElementById('displayLearnerId').textContent = id;
+
+      const streak = updateStreak();
+      document.getElementById('streakCount').textContent = streak;
+      document.getElementById('streakLabel').textContent = streak === 1 ? 'day streak' : 'day streak';
+
+      // Daily challenge
+      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+      const ch = CHALLENGES[dayOfYear % CHALLENGES.length];
+      document.getElementById('challengeQ').textContent = ch.q;
+      document.getElementById('challengeA').textContent = ch.a;
+
+      // Progress from Firestore
+      let progress = {};
+      try {
+        const snap = await getDoc(doc(db, 'learners', id));
+        if (snap.exists()) progress = snap.data().courseProgress || {};
+      } catch(e) { console.warn('Progress load error:', e); }
+
+      // Find course to continue (latest started, not 100%)
+      let continueUrl = '/ai-academy/courses.html';
+      let continueTitle = 'Browse Courses';
+      let continueIcon = '📚';
+      let bestMods = -1;
+      COURSES.forEach(c => {
+        const cp = progress[c.id];
+        if (!cp) return;
+        const done = Object.keys(cp).length;
+        if (done > bestMods && done < c.modules) {
+          bestMods = done; continueUrl = c.url; continueTitle = c.title; continueIcon = c.icon;
+        }
+      });
+      document.getElementById('continueIcon').textContent  = continueIcon;
+      document.getElementById('continueTitle').textContent = continueTitle;
+      document.getElementById('continueLink').href = continueUrl;
+
+      // Progress bars
+      const progressEl = document.getElementById('progressList');
+      const started = COURSES.filter(c => progress[c.id]);
+      if (!started.length) {
+        progressEl.innerHTML = '<p class="sh-empty">No courses started yet. <a href="/ai-academy/courses.html">Browse courses →</a></p>';
+      } else {
+        progressEl.innerHTML = started.map(c => {
+          const done = Object.keys(progress[c.id] || {}).length;
+          const pct  = Math.round((done / c.modules) * 100);
+          return `<div class="sh-prog-item">
+            <div class="sh-prog-top">
+              <span>${c.icon} ${c.title}</span>
+              <span class="sh-prog-pct">${pct}%</span>
+            </div>
+            <div class="sh-prog-bar-wrap"><div class="sh-prog-bar" style="width:${pct}%"></div></div>
+            <div class="sh-prog-sub">${done} of ${c.modules} modules</div>
+          </div>`;
+        }).join('');
+      }
+
+      // Total stats
+      let totalDone = 0, totalMods = 0;
+      COURSES.forEach(c => {
+        totalMods += c.modules;
+        totalDone += Math.min(Object.keys(progress[c.id] || {}).length, c.modules);
+      });
+      document.getElementById('statModules').textContent = totalDone;
+      document.getElementById('statPct').textContent     = Math.round((totalDone / totalMods) * 100) + '%';
+    }
+
+    window._copyId = () => {
+      const id = document.getElementById('displayLearnerId').textContent;
+      navigator.clipboard.writeText(id).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    };
+
+    window._toggleAnswer = () => {
+      const el = document.getElementById('challengeA');
+      const btn = document.getElementById('revealBtn');
+      const hidden = el.style.visibility === 'hidden' || !el.style.visibility;
+      el.style.visibility = hidden ? 'visible' : 'hidden';
+      btn.textContent = hidden ? 'Hide' : 'Reveal answer';
+    };
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+
+  <style>
+    /* ── Page layout ── */
+    .sh-hero {
+      background: linear-gradient(135deg, var(--navy-mid, #16293d) 0%, var(--navy, #0f1923) 100%);
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(201,160,90,0.2);
+    }
+    .sh-hero-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--gold, #c9a05a); margin-bottom: 0.5rem;
+    }
+    .sh-hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.5rem); font-weight: 800;
+      color: #fff; margin-bottom: 0.4rem;
+    }
+    .sh-hero-sub { color: rgba(255,255,255,0.6); font-size: 1rem; }
+
+    /* ── Content grid ── */
+    .sh-content {
+      max-width: 900px; margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 640px) { .sh-content { grid-template-columns: 1fr; } }
+
+    .sh-card {
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, rgba(0,0,0,0.08));
+      border-radius: 12px;
+      padding: 1.4rem 1.5rem;
+    }
+    [data-theme="dark"] .sh-card {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.08);
+    }
+    .sh-card-label {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--gold, #c9a05a); margin-bottom: 0.75rem;
+    }
+
+    /* ── Learning ID card ── */
+    .sh-id-card { grid-column: 1 / -1; }
+    .sh-id-display {
+      font-family: var(--font-display, Georgia, serif);
+      font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 800;
+      color: var(--gold, #c9a05a); letter-spacing: 0.06em;
+      margin: 0.25rem 0 0.75rem;
+    }
+    .sh-id-hint { font-size: 0.85rem; color: var(--ink-muted, #666); margin-bottom: 1rem; }
+    .sh-id-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+    .sh-btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--gold, #c9a05a); color: var(--navy, #0f1923);
+      font-weight: 700; font-size: 0.85rem; padding: 0.5rem 1.1rem;
+      border-radius: 2rem; border: none; cursor: pointer;
+      text-decoration: none; transition: opacity 0.15s;
+    }
+    .sh-btn:hover { opacity: 0.85; }
+    .sh-btn--ghost {
+      background: transparent;
+      border: 1.5px solid var(--border, rgba(0,0,0,0.15));
+      color: var(--ink, #222);
+    }
+    [data-theme="dark"] .sh-btn--ghost { border-color: rgba(255,255,255,0.15); color: #fff; }
+
+    /* ── Continue / Streak / Challenge ── */
+    .sh-continue-link {
+      display: flex; align-items: center; gap: 0.75rem;
+      text-decoration: none; margin-top: 0.25rem;
+    }
+    .sh-continue-icon { font-size: 2rem; }
+    .sh-continue-title { font-weight: 700; font-size: 1.05rem; color: var(--ink, #222); }
+    [data-theme="dark"] .sh-continue-title { color: #fff; }
+    .sh-continue-cta { font-size: 0.78rem; color: var(--gold, #c9a05a); font-weight: 600; }
+
+    .sh-streak-num {
+      font-size: 3rem; font-weight: 800; color: var(--gold, #c9a05a);
+      font-family: var(--font-display, Georgia, serif); line-height: 1;
+    }
+    .sh-streak-lbl { font-size: 0.8rem; color: var(--ink-muted, #666); margin-top: 0.15rem; }
+    .sh-streak-emoji { font-size: 1.5rem; }
+
+    .sh-challenge-q { font-weight: 600; font-size: 0.95rem; color: var(--ink, #222); margin-bottom: 0.75rem; }
+    [data-theme="dark"] .sh-challenge-q { color: #fff; }
+    .sh-challenge-a {
+      font-size: 0.9rem; color: var(--teal, #2ba898); font-weight: 600;
+      visibility: hidden; min-height: 1.4rem;
+    }
+    .sh-reveal-btn {
+      background: none; border: none; color: var(--gold, #c9a05a);
+      font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0;
+      margin-top: 0.5rem; display: block;
+    }
+
+    /* ── Progress ── */
+    .sh-progress-card { grid-column: 1 / -1; }
+    .sh-prog-item { margin-bottom: 1rem; }
+    .sh-prog-item:last-child { margin-bottom: 0; }
+    .sh-prog-top { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; }
+    .sh-prog-pct { color: var(--gold, #c9a05a); }
+    .sh-prog-bar-wrap { height: 6px; background: var(--border, rgba(0,0,0,0.08)); border-radius: 3px; overflow: hidden; }
+    [data-theme="dark"] .sh-prog-bar-wrap { background: rgba(255,255,255,0.08); }
+    .sh-prog-bar { height: 100%; background: var(--gold, #c9a05a); border-radius: 3px; transition: width 0.6s; }
+    .sh-prog-sub { font-size: 0.72rem; color: var(--ink-muted, #666); margin-top: 0.25rem; }
+    .sh-empty { font-size: 0.9rem; color: var(--ink-muted, #666); }
+    .sh-empty a { color: var(--gold, #c9a05a); }
+
+    /* ── Stats row ── */
+    .sh-stats { display: flex; gap: 1.5rem; margin-top: 0.5rem; }
+    .sh-stat-num { font-size: 1.6rem; font-weight: 800; color: var(--gold, #c9a05a); font-family: var(--font-display, Georgia, serif); }
+    .sh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted, #666); }
+
+    /* ── Quick links ── */
+    .sh-links { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; }
+    .sh-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--surface, #f5f5f5); border: 1px solid var(--border, rgba(0,0,0,0.08));
+      color: var(--ink, #222); font-size: 0.82rem; font-weight: 600;
+      padding: 0.45rem 0.9rem; border-radius: 2rem; text-decoration: none;
+      transition: background 0.15s;
+    }
+    .sh-link:hover { background: var(--gold, #c9a05a); color: var(--navy, #0f1923); border-color: var(--gold, #c9a05a); }
+    [data-theme="dark"] .sh-link { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); color: #fff; }
+
+    /* ── Welcome gate ── */
+    .sh-welcome {
+      min-height: 70vh; display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1.25rem;
+    }
+    .sh-welcome-box {
+      max-width: 480px; width: 100%; text-align: center;
+      background: var(--surface, #fff); border: 1px solid var(--border, rgba(0,0,0,0.08));
+      border-radius: 16px; padding: 2.5rem 2rem;
+    }
+    [data-theme="dark"] .sh-welcome-box { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+    .sh-welcome-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .sh-welcome-box h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .sh-welcome-box p { color: var(--ink-muted, #666); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .sh-divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; color: var(--ink-muted, #666); font-size: 0.8rem; }
+    .sh-divider::before, .sh-divider::after { content: ''; flex: 1; height: 1px; background: var(--border, rgba(0,0,0,0.1)); }
+    .sh-return { display: flex; gap: 0.5rem; }
+    .sh-return input {
+      flex: 1; padding: 0.55rem 0.9rem; border-radius: 2rem;
+      border: 1.5px solid var(--border, rgba(0,0,0,0.15));
+      font-size: 0.85rem; background: var(--surface, #fff);
+      color: var(--ink, #222); font-family: var(--font-display, Georgia, serif);
+      font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    [data-theme="dark"] .sh-return input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #fff; }
+    .sh-err { color: #e53e3e; font-size: 0.8rem; margin-top: 0.5rem; min-height: 1.1rem; }
+  </style>
+</head>
+<body>
+<script src="/assets/top-banner.js"></script>
+
+<!-- ── Welcome gate ────────────────────────────────────────── -->
+<div id="welcomeGate" class="sh-welcome" style="display:none">
+  <div class="sh-welcome-box">
+    <div class="sh-welcome-icon">🎓</div>
+    <h2>Student Hub</h2>
+    <p>Your Learning ID tracks your progress across all courses and lets your teacher or parent connect to your account.</p>
+    <button class="sh-btn" onclick="_startNew()" style="width:100%;justify-content:center;font-size:1rem;padding:0.75rem;">
+      ✨ I'm new — create my Learning ID
+    </button>
+    <div class="sh-divider">already have an ID?</div>
+    <div class="sh-return">
+      <input id="returnIdInput" placeholder="AESOP-XXXX" maxlength="10" />
+      <button class="sh-btn" onclick="_lookupId()">Go</button>
+    </div>
+    <div class="sh-err" id="lookupErr"></div>
+  </div>
+</div>
+
+<!-- ── Hub body ─────────────────────────────────────────────── -->
+<div id="hubBody" style="display:none">
+
+  <div class="sh-hero">
+    <div class="sh-hero-label">🎓 Student Hub</div>
+    <h1>Welcome back, Learner</h1>
+    <p class="sh-hero-sub">Track your progress, share your ID, and keep building your AI skills.</p>
+  </div>
+
+  <div class="sh-content">
+
+    <!-- Learning ID -->
+    <div class="sh-card sh-id-card">
+      <div class="sh-card-label">🪪 Your Learning ID</div>
+      <div class="sh-id-display" id="displayLearnerId">—</div>
+      <p class="sh-id-hint">Share this ID with your teacher or parent so they can track your progress in their dashboard.</p>
+      <div class="sh-id-actions">
+        <button class="sh-btn" id="copyBtn" onclick="_copyId()">Copy</button>
+        <a class="sh-btn sh-btn--ghost" href="/ai-academy/transcript.html">My Transcript →</a>
+        <button class="sh-btn sh-btn--ghost" onclick="_signOut()" style="margin-left:auto;opacity:0.5;font-size:0.75rem;">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Continue Learning -->
+    <div class="sh-card">
+      <div class="sh-card-label">▶ Continue Learning</div>
+      <a class="sh-continue-link" id="continueLink" href="/ai-academy/courses.html">
+        <span class="sh-continue-icon" id="continueIcon">📚</span>
+        <div>
+          <div class="sh-continue-title" id="continueTitle">Browse Courses</div>
+          <div class="sh-continue-cta">Pick up where you left off →</div>
+        </div>
+      </a>
+      <div class="sh-stats" style="margin-top:1.25rem">
+        <div>
+          <div class="sh-stat-num" id="statModules">—</div>
+          <div class="sh-stat-lbl">Modules done</div>
+        </div>
+        <div>
+          <div class="sh-stat-num" id="statPct">—</div>
+          <div class="sh-stat-lbl">Overall progress</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Streak -->
+    <div class="sh-card">
+      <div class="sh-card-label">🔥 Study Streak</div>
+      <div style="display:flex;align-items:baseline;gap:0.5rem;margin-top:0.25rem">
+        <div class="sh-streak-num" id="streakCount">0</div>
+        <div class="sh-streak-lbl" id="streakLabel">day streak</div>
+        <span class="sh-streak-emoji">🔥</span>
+      </div>
+      <p style="font-size:0.8rem;color:var(--ink-muted,#666);margin-top:0.6rem">Visit every day to keep your streak alive.</p>
+      <div class="sh-links" style="margin-top:0.75rem">
+        <a class="sh-link" href="/ai-academy/courses.html"><span>📚</span>Courses</a>
+        <a class="sh-link" href="/ai-news/"><span>📰</span>AI News</a>
+        <a class="sh-link" href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span>💬</span>Forums</a>
+      </div>
+    </div>
+
+    <!-- Daily Challenge -->
+    <div class="sh-card sh-progress-card">
+      <div class="sh-card-label">⚡ Daily Challenge</div>
+      <div class="sh-challenge-q" id="challengeQ">Loading…</div>
+      <div class="sh-challenge-a" id="challengeA"></div>
+      <button class="sh-reveal-btn" id="revealBtn" onclick="_toggleAnswer()">Reveal answer</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="sh-card sh-progress-card">
+      <div class="sh-card-label">📊 My Progress</div>
+      <div id="progressList"><p class="sh-empty">Loading…</p></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/assets/top-banner.js" onerror=""></script>
+</body>
+</html>

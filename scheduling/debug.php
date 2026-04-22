@@ -1,7 +1,10 @@
 <?php
-// TEMPORARY DEBUG — delete this file after troubleshooting
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+ini_set('pcre.backtrack_limit', 10000000);
+ini_set('memory_limit', '256M');
+
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/ics.php';
 
 header('Content-Type: text/plain');
 
@@ -9,59 +12,88 @@ $ctx = stream_context_create(['http' => ['timeout' => 15, 'header' => 'User-Agen
 $raw = @file_get_contents(SECOND_CALENDAR_ICS, false, $ctx);
 if (!$raw) die("FAILED TO FETCH ICS URL");
 
-$raw = preg_replace("/\r\n[ \t]/", '', $raw);
-$raw = str_replace("\r\n", "\n", $raw);
+echo "File size: " . strlen($raw) . " bytes\n\n";
 
-preg_match_all('/BEGIN:VEVENT\n(.*?)END:VEVENT/s', $raw, $events);
+// Parse line by line
+$raw   = str_replace("\r\n", "\n", $raw);
+$raw   = preg_replace("/\n[ \t]/", '', $raw); // unfold
+$lines = explode("\n", $raw);
 
-$year2026   = [];
-$parseFails = [];
-$pastCount  = 0;
+$inEvent  = false;
+$event    = [];
+$events   = [];
 
-foreach ($events[1] as $i => $evt) {
-    $dtstart = icsDate($evt, 'DTSTART');
-    $dtend   = icsDate($evt, 'DTEND');
-    $summary = icsProp($evt, 'SUMMARY');
-    $rrule   = icsProp($evt, 'RRULE');
-    $status  = icsProp($evt, 'STATUS');
+foreach ($lines as $line) {
+    if ($line === 'BEGIN:VEVENT') {
+        $inEvent = true;
+        $event   = [];
+    } elseif ($line === 'END:VEVENT') {
+        $inEvent = false;
+        $events[] = $event;
+    } elseif ($inEvent) {
+        $pos = strpos($line, ':');
+        if ($pos !== false) {
+            $key = strtoupper(substr($line, 0, $pos));
+            $val = substr($line, $pos + 1);
+            $event[$key] = $val;
+            // Also store with params stripped for easier lookup
+            $bareKey = explode(';', $key)[0];
+            if ($bareKey !== $key) $event[$bareKey . '__LINE'] = $line;
+        }
+    }
+}
+
+echo "Total events parsed: " . count($events) . "\n\n";
+
+// Show DTSTART sample formats
+echo "=== SAMPLE DTSTART FORMATS (first 10) ===\n";
+$shown = 0;
+foreach ($events as $e) {
+    foreach ($e as $k => $v) {
+        if (str_starts_with($k, 'DTSTART')) {
+            echo "$k:$v\n";
+            $shown++;
+            break;
+        }
+    }
+    if ($shown >= 10) break;
+}
+
+echo "\n=== 2026 EVENTS ===\n";
+$count2026 = 0;
+$countPast = 0;
+$countFail = 0;
+
+foreach ($events as $e) {
+    // Find DTSTART line
+    $dtRaw = null;
+    foreach ($e as $k => $v) {
+        if (str_starts_with($k, 'DTSTART')) { $dtRaw = $v; break; }
+    }
+
+    if (!$dtRaw) { $countFail++; continue; }
+
+    // Quick year check without full parsing
+    $year = (int)substr(preg_replace('/.*:/', '', $dtRaw), 0, 4);
+
+    $summary = $e['SUMMARY'] ?? '(no title)';
+    $rrule   = $e['RRULE']   ?? '';
+    $status  = $e['STATUS']  ?? '';
 
     if ($status === 'CANCELLED') continue;
 
-    if ($dtstart === null) {
-        $parseFails[] = $summary ?: "(no title)";
-        continue;
+    if ($year === 2026) {
+        $count2026++;
+        $dtStr = preg_replace('/.*:/', '', $dtRaw);
+        echo "$dtStr | $summary";
+        if ($rrule) echo " [RECUR]";
+        echo "\n";
+    } elseif ($year < 2026) {
+        $countPast++;
     }
-
-    if (date('Y', $dtstart) === '2026') {
-        $year2026[] = compact('summary','dtstart','dtend','rrule');
-    } elseif ($dtstart < mktime(0,0,0,4,22,2026)) {
-        $pastCount++;
-    }
 }
 
-echo "=== SUMMARY ===\n";
-echo "Total events: " . count($events[1]) . "\n";
-echo "Past events (before Apr 22 2026): $pastCount\n";
-echo "Events with 2026 start dates: " . count($year2026) . "\n";
-echo "Parse failures: " . count($parseFails) . "\n\n";
-
-if ($parseFails) {
-    echo "=== PARSE FAILURES ===\n";
-    foreach ($parseFails as $f) echo "  - $f\n";
-    echo "\n";
-}
-
-echo "=== 2026 EVENTS ===\n";
-usort($year2026, fn($a,$b) => $a['dtstart'] <=> $b['dtstart']);
-foreach ($year2026 as $e) {
-    echo date('D M j H:i T', $e['dtstart']) . " → " . ($e['dtend'] ? date('H:i', $e['dtend']) : '?');
-    echo "  |  " . ($e['summary'] ?: '(no title)');
-    if ($e['rrule']) echo "  [RECURRING: " . $e['rrule'] . "]";
-    echo "\n";
-}
-
-echo "\n=== SAMPLE DTSTART LINES (first 20 events) ===\n";
-preg_match_all('/DTSTART[^\n]+/m', $raw, $dtstarts);
-foreach (array_slice($dtstarts[0], 0, 20) as $line) {
-    echo $line . "\n";
-}
+echo "\n=== SUMMARY ===\n";
+echo "Past events:   $countPast\n";
+echo "2026 events:   $count2026\n";
+echo "No DTSTART:    $countFail\n";

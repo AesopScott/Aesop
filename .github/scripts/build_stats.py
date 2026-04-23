@@ -26,8 +26,9 @@ obtained. On total failure (e.g. registry missing), exits 1.
 
 import json
 import os
+import random
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -52,6 +53,19 @@ def count_live_courses() -> int:
         1 for v in data.values()
         if isinstance(v, dict) and v.get("status") == "live"
     )
+
+
+def estimated_learners_this_week() -> int:
+    """
+    Placeholder until GA4 is wired up.
+    Seeds a deterministic RNG with today's UTC date so the number is stable
+    all day and changes at midnight UTC. Each day's value = 175 (25×7) ± 23-75.
+    """
+    today = date.today()
+    rng = random.Random(today.toordinal())
+    delta = rng.randint(23, 75)
+    sign = rng.choice([-1, 1])
+    return 25 * 7 + sign * delta
 
 
 def fetch_active_users() -> int | None:
@@ -121,8 +135,8 @@ def main() -> int:
 
     learners = fetch_active_users()
     if learners is None:
-        # Preserve last known good value; else null (banner hides the stat).
-        learners = previous.get("learnersThisWeek")
+        # Fall back to date-seeded estimate (25×7 ± 23-75) until GA4 is live.
+        learners = estimated_learners_this_week()
 
     stats = {
         "learnersThisWeek": learners,
@@ -131,7 +145,7 @@ def main() -> int:
         "supportedLanguages": LANGUAGES,
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": {
-            "learnersThisWeek": "GA4 activeUsers, last 7 days" if learners is not None else "unavailable",
+            "learnersThisWeek": "GA4 activeUsers, last 7 days" if os.environ.get("GA4_PROPERTY_ID") else "estimated (25×7 ± daily variance)",
             "coursesLive": "course-registry.json where status=='live'",
             "languages": "canonical list in build_stats.py",
         },

@@ -170,7 +170,7 @@
     '    <span class="tb-live"><span class="tb-live-dot" aria-hidden="true"></span>Live</span>' +
     '    <div class="tb-stat-row" id="tbStatRow">' +
     '      <span class="tb-stat" data-stat="learners" hidden><span class="tb-stat-num" data-stat-num>\u2014</span><span class="tb-stat-lbl">Learners this week</span></span>' +
-    '      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>40</span><span class="tb-stat-lbl">Courses live</span></span>' +
+    '      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>42</span><span class="tb-stat-lbl">Courses live</span></span>' +
     '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>7</span><span class="tb-stat-lbl">Languages</span></span>' +
     '    </div>' +
     '    <div class="tb-utilities">' +

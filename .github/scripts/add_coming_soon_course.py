@@ -9,12 +9,13 @@ Usage:
 You will be prompted for:
   - Course name
   - Short description (1-2 sentences)
-  - Category  (Development / Core / Elective)
+  - Category  (Development / Core / Elective / etc.)
   - Icon emoji
   - Number of modules (default 8)
   - Module titles and subtitles (one per line, or press Enter to skip subtitles)
 
-The script assigns the next available dv-XX panel ID automatically.
+The script assigns the next available dv-XX panel ID automatically and
+inserts a Coming Soon entry into the correct mega-menu section.
 """
 
 import json
@@ -25,6 +26,17 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent.parent
 COURSES_HTML = REPO / "ai-academy" / "courses.html"
 COURSES_DATA = REPO / "ai-academy" / "modules" / "courses-data.json"
+
+# Maps the category prompt value to the mega-cat label text in courses.html
+CATEGORY_TO_MEGA_CAT = {
+    "development": "⚙️ Development",
+    "core":        "📚 Core Courses",
+    "art":         "🎨 Art",
+    "business":    "💼 Business",
+    "models":      "📡 AI Models",
+    "progress":    "🔭 AI Progress",
+    "start here":  "🤖 Start Here",
+}
 
 
 def slugify(name: str) -> str:
@@ -46,7 +58,17 @@ def prompt(label: str, default: str = "") -> str:
 
 def build_panel(dv: int, slug: str, name: str, desc: str, category: str,
                 icon: str, n_mods: int, modules: list, total_dv: int) -> str:
-    badges = f'<span class="core-badge-cs">Coming Soon</span>\n            <span class="core-badge-mods">{n_mods} Modules</span>'
+    """Build the HTML for a Coming Soon course panel.
+
+    Fixes vs. old version:
+      1. Uses core-panel--cs class so the panel is visually faded/grayed.
+      2. Includes the ghost CTA so clicking the panel shows a 'Coming Soon'
+         button instead of a blank action area.
+    """
+    badges = (
+        f'<span class="core-badge-cs">Coming Soon</span>\n'
+        f'            <span class="core-badge-mods">{n_mods} Modules</span>'
+    )
     mod_rows = ""
     for m in modules:
         title = m["title"]
@@ -58,8 +80,10 @@ def build_panel(dv: int, slug: str, name: str, desc: str, category: str,
             f'{sub_html}</div></div>\n'
         )
 
+    # FIX 1: core-panel--cs added to div class
+    # FIX 2: ghost CTA added after modules grid
     return f"""
-      <div class="core-panel" id="dv-{dv}">
+      <div class="core-panel core-panel--cs" id="dv-{dv}">
         <div class="core-panel__header">
           <span class="core-panel__icon">{icon}</span>
           <div class="core-panel__meta">
@@ -75,8 +99,71 @@ def build_panel(dv: int, slug: str, name: str, desc: str, category: str,
         <div class="core-modules-grid">
 {mod_rows.rstrip()}
         </div>
+        <span class="core-panel__cta core-panel__cta--ghost">Coming Soon</span>
       </div>
 """
+
+
+def insert_mega_menu_entry(html: str, dv: int, name: str, category: str) -> str:
+    """Insert a mega-link--soon button into the correct mega-menu section,
+    in alphabetical order among existing buttons in that section.
+
+    FIX 3: the old script never added a mega-menu entry, leaving new courses
+    invisible in the dropdown navigation.
+    """
+    cat_key = category.lower()
+    mega_cat_label = CATEGORY_TO_MEGA_CAT.get(cat_key)
+
+    if not mega_cat_label:
+        print(f"  ⚠  No mega-menu section mapped for category '{category}'. "
+              f"Add the entry manually under the correct <div class=\"mega-cat\">.")
+        return html
+
+    # Find the position of the mega-cat header for this category
+    cat_marker = f'<div class="mega-cat">{mega_cat_label}</div>'
+    cat_pos = html.find(cat_marker)
+    if cat_pos == -1:
+        print(f"  ⚠  Could not find mega-cat '{mega_cat_label}' in courses.html. "
+              f"Add the mega-menu entry manually.")
+        return html
+
+    # Find the end of this section (next mega-cat or end of mega-menu)
+    next_cat_pos = html.find('<div class="mega-cat">', cat_pos + len(cat_marker))
+    section_end = next_cat_pos if next_cat_pos != -1 else html.find('</div>', cat_pos + len(cat_marker))
+
+    section = html[cat_pos:section_end]
+
+    # Collect existing buttons and their positions in the section
+    btn_pat = re.compile(r'        <button class="mega-link[^"]*"[^>]*>([^<]+)</button>')
+    buttons = list(btn_pat.finditer(section))
+
+    new_btn = (
+        f'        <button class="mega-link mega-link--soon" '
+        f'data-panel="dv-{dv}" onclick="megaSelect(this,\'dv-{dv}\')">'
+        f'{name}</button>'
+    )
+
+    # Find insertion point: first existing button whose label sorts after name
+    insert_offset = None
+    for btn in buttons:
+        if btn.group(1).lower() > name.lower():
+            insert_offset = btn.start()
+            break
+
+    if insert_offset is None:
+        # Append after the last button in the section
+        if buttons:
+            last = buttons[-1]
+            insert_offset = last.end() + 1  # after the newline
+        else:
+            # No buttons yet — insert right after the mega-cat header
+            insert_offset = len(cat_marker)
+
+    # Translate offset from section-relative to full-html absolute
+    abs_insert = cat_pos + insert_offset
+    html = html[:abs_insert] + new_btn + "\n" + html[abs_insert:]
+
+    return html
 
 
 def main():
@@ -112,9 +199,7 @@ def main():
 
     panel = build_panel(dv, slug, name, desc, category, icon, n_mods, modules, total_dv)
 
-    # Insert before the closing </div> of the dev courses grid
-    insert_marker = "    </div>"  # the closing tag after the last dv panel
-    # Find last occurrence of the dv panel section closing
+    # Insert panel before the closing </div> of the dv panel section
     last_dv = max(m.start() for m in re.finditer(r'id="dv-\d+"', html))
     close_pos = html.find("    </div>", last_dv)
     if close_pos == -1:
@@ -122,8 +207,13 @@ def main():
         sys.exit(1)
 
     html = html[:close_pos] + panel + html[close_pos:]
+
+    # FIX 3: Add mega-menu entry
+    html = insert_mega_menu_entry(html, dv, name, category)
+
     COURSES_HTML.write_text(html, encoding="utf-8")
     print(f"\n✓ Added panel dv-{dv} to courses.html")
+    print(f"✓ Added mega-menu entry for dv-{dv} under '{category}'")
 
     # --- courses-data.json ---
     raw = COURSES_DATA.read_text(encoding="utf-8-sig")

@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-23 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Hardware Race – M5: The Memory Bandwidth Bottleneck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-hardware-race-m5 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+.data-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.82rem;}
+.data-table th{background:rgba(var(--accent-rgb),0.06);color:var(--accent);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;font-size:0.68rem;padding:0.6rem 0.85rem;text-align:left;border-bottom:1px solid var(--border-dark);}
+.data-table td{padding:0.55rem 0.85rem;border-bottom:1px solid rgba(26,39,56,0.6);color:#a89f93;line-height:1.5;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table td:first-child{color:#c0b8af;font-weight:600;}
+.bw-bar-wrap{margin:1.25rem 0;}
+.bw-bar-row{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.55rem;font-size:0.78rem;}
+.bw-bar-label{width:110px;color:#a89f93;text-align:right;flex-shrink:0;}
+.bw-bar-track{flex:1;background:rgba(255,255,255,0.04);border-radius:2px;height:10px;overflow:hidden;}
+.bw-bar-fill{height:100%;border-radius:2px;background:var(--accent);}
+.bw-bar-val{width:60px;color:var(--gold);font-weight:700;font-size:0.75rem;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1.25rem;}.bw-bar-label{width:80px;font-size:0.7rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1: What Is Memory Bandwidth? ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Lesson 1 · Module 5</div>
+      <h1>What Is Memory Bandwidth?</h1>
+      <div class="tagline">The highway between memory and processor — and why AI traffic jams it instantly.</div>
+      <div class="lesson-question">Why does a GPU with a trillion operations per second still sit idle waiting for data?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Bottleneck in Plain Sight">
+        <p class="story-text">In 2017, researchers at Google published a paper called <em>Attention Is All You Need</em>, introducing the Transformer architecture. What they did not headline — but what every hardware engineer noticed — was that the attention mechanism was <em>extraordinarily memory-hungry</em>. The operations themselves were simple multiplications and additions. The problem was getting the numbers to the arithmetic units fast enough. The GPU's compute cores sat idle a significant fraction of the time, waiting. The bottleneck was not processing power. It was memory bandwidth.</p>
+      </div>
+
+      <h2 class="section-heading">Defining Memory Bandwidth</h2>
+      <div class="section-body">
+        <p><em>Memory bandwidth</em> is the rate at which data can be transferred between a processor's compute units and its memory pool. It is measured in <strong>gigabytes per second (GB/s)</strong> or, for high-end AI hardware, <strong>terabytes per second (TB/s)</strong>. Think of it as the width of the road connecting a warehouse (memory) to a factory floor (compute cores): the number of workers on the factory floor matters less if the loading dock can only deliver goods so fast.</p>
+        <p>A modern NVIDIA H100 GPU can execute roughly <strong>2,000 trillion floating-point operations per second</strong> (2 petaFLOPS) in FP8 precision. Its HBM3 memory subsystem delivers roughly <strong>3.35 TB/s</strong> of bandwidth. At 1 byte per FP8 value, the GPU could theoretically read 3.35 × 10¹² values per second — but it needs two operands and one result per multiply-add. The arithmetic unit is capable of processing far more data than the memory system can deliver. This gap is called <strong>arithmetic intensity</strong> imbalance.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Key Concept — Arithmetic Intensity</div>
+        <p><strong>Arithmetic intensity</strong> = FLOP ÷ bytes read/written. Operations with low arithmetic intensity (reading lots of data, doing little math per byte) are <em>memory-bandwidth-bound</em>. High-intensity operations are compute-bound. Most AI inference and attention layers are bandwidth-bound.</p>
+      </div>
+
+      <h2 class="section-heading">The Memory Hierarchy</h2>
+      <div class="section-body">
+        <p>Modern processors operate across multiple tiers of memory, each with a different speed, capacity, and cost. The tiers closest to the compute cores (registers, SRAM cache) are fast but tiny. The tiers furthest away (DRAM, storage) are large but slow. Every time a compute unit needs data that is not in the fast tier, it stalls and waits.</p>
+      </div>
+
+      <div class="bw-bar-wrap">
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">Register File</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:100%;background:#4fcf8a;"></div></div>
+          <div class="bw-bar-val">~100 TB/s</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">L1/Shared SRAM</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:70%;background:#a0d080;"></div></div>
+          <div class="bw-bar-val">~30 TB/s</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">L2 Cache</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:28%;background:var(--gold);"></div></div>
+          <div class="bw-bar-val">~9 TB/s</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">HBM3 (H100)</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:11%;"></div></div>
+          <div class="bw-bar-val">3.35 TB/s</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">PCIe 5.0 x16</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:2.5%;background:#a89f93;"></div></div>
+          <div class="bw-bar-val">~128 GB/s</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">NVLink 4.0</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:5.5%;background:#c080a0;"></div></div>
+          <div class="bw-bar-val">~900 GB/s</div>
+        </div>
+      </div>
+      <div class="section-body"><p style="font-size:0.75rem;color:var(--muted);">Approximate peak bandwidths, H100 SXM5 class hardware (2023). Values vary by precision and access pattern.</p></div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">Key Terms</h2>
+      <div class="key-term"><span class="kt-term">Memory Bandwidth</span><span class="kt-def">Rate of data transfer between memory and compute, in GB/s or TB/s. The throughput ceiling for memory-bound workloads.</span></div>
+      <div class="key-term"><span class="kt-term">Arithmetic Intensity</span><span class="kt-def">FLOP per byte accessed. Low values indicate memory-bound operations; high values indicate compute-bound.</span></div>
+      <div class="key-term"><span class="kt-term">HBM (High Bandwidth Memory)</span><span class="kt-def">Stacked DRAM architecture using a wide parallel bus and 3D packaging to deliver very high bandwidth at lower power than conventional GDDR.</span></div>
+      <div class="key-term"><span class="kt-term">Roofline Model</span><span class="kt-def">A visual performance model plotting achievable FLOP/s against arithmetic intensity, with a "roofline" set by either peak compute or peak bandwidth.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Historical Anchor</div>
+        <p>The term "memory wall" was coined by William Wulf and Sally McKee in a 1994 paper in ACM SIGARCH. They showed that DRAM bandwidth was growing at roughly 7% per year while processor performance grew at 54% per year — predicting that memory would eventually become the dominant bottleneck. They were correct, and the arrival of large neural networks three decades later made the wall impossible to ignore.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Memory bandwidth fundamentals · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1a">
+        <div class="quiz-q">1. A GPU operation that reads 8 bytes of data and performs only 2 floating-point operations has an arithmetic intensity of 0.25 FLOP/byte. This operation is most likely:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q1a')">Memory-bandwidth-bound — it spends more time fetching data than computing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1a')">Compute-bound — the GPU arithmetic units are the limiting factor</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1a')">Cache-bound — L1 SRAM is the bottleneck</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1a')">Latency-bound — instruction scheduling is the problem</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Low arithmetic intensity (FLOP/byte) means the operation consumes bandwidth faster than it consumes compute. The GPU cores sit idle waiting for data, placing the workload on the bandwidth-bound side of the Roofline model.</div>
+        <div class="quiz-feedback wrong">Not quite. The arithmetic intensity of 0.25 FLOP/byte is far below the ridge point of any modern GPU, placing this firmly in the memory-bandwidth-bound region. The compute units have idle capacity; the memory bus is the constraint.</div>
+      </div>
+
+      <div class="quiz-box" id="q1b">
+        <div class="quiz-q">2. The NVIDIA H100 SXM5 uses HBM3 memory rather than GDDR6X. The primary reason is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1b')">HBM3 offers much higher storage capacity per die</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1b')">HBM3's wide, stacked bus delivers far higher bandwidth at lower power density than GDDR</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1b')">HBM3 operates at a lower latency than GDDR6X in all access patterns</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1b')">HBM3 is cheaper to manufacture than GDDR6X per gigabyte</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HBM stacks DRAM dies with a silicon interposer and uses a very wide bus (1024-bit or wider) to move data in parallel, achieving 3+ TB/s versus ~1 TB/s for GDDR6X, while consuming less power per GB/s. Cost per GB is actually higher for HBM.</div>
+        <div class="quiz-feedback wrong">Not quite. HBM's advantage is bandwidth, not raw capacity or latency (GDDR6X can have comparable random-access latency). HBM is also more expensive per gigabyte to manufacture. The wide parallel bus and 3D stacking give it superior bandwidth per watt.</div>
+      </div>
+
+      <div class="quiz-box" id="q1c">
+        <div class="quiz-q">3. William Wulf and Sally McKee's 1994 "memory wall" paper argued that:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1c')">DRAM capacity would run out before processor clock speeds could increase</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1c')">Cache hierarchies would eliminate the need for high-bandwidth DRAM entirely</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1c')">DRAM bandwidth was growing far slower than processor performance, eventually making memory the dominant bottleneck</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1c')">Network latency, not memory bandwidth, would dominate future computing constraints</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Wulf and McKee showed processor performance grew at ~54% per year while DRAM bandwidth grew at ~7% per year — a compounding gap that would eventually make memory, not compute, the binding constraint on system performance.</div>
+        <div class="quiz-feedback wrong">Not quite. The paper's central thesis was the compounding performance gap between DRAM bandwidth growth (~7%/yr) and processor speed growth (~54%/yr), leading to a "wall" where memory access time would dominate total execution time.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Mapping the Roofline</h1>
+      <div class="tagline">Discuss arithmetic intensity and bandwidth-bound AI workloads with your AI tutor</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You will explore the Roofline performance model and how it reveals whether an AI operation is limited by compute or memory bandwidth. Discuss specific examples, ask about real GPU specs, or challenge the AI tutor with edge cases.</p>
+        <div class="lab-prompt">Starter: "Walk me through how to plot an attention layer's arithmetic intensity on a Roofline model for an H100 GPU. Is it compute-bound or bandwidth-bound?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Memory Bandwidth · L1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you understand memory bandwidth, arithmetic intensity, and the Roofline model as they apply to AI hardware. Ask me about specific GPU specs, why attention layers are bandwidth-bound, or how to calculate whether your workload hits the compute or bandwidth ceiling. Where would you like to start?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about bandwidth, Roofline, arithmetic intensity…" rows="1" onkeydown="handleKey(event,'l1')"></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L2: HBM — The Stack That Changed Everything ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Lesson 2 · Module 5</div>
+      <h1>HBM — The Stack That Changed Everything</h1>
+      <div class="tagline">How AMD and SK Hynix created a new memory architecture that became mandatory for AI accelerators.</div>
+      <div class="lesson-question">Why did the entire AI chip industry converge on a memory technology that costs ten times more per gigabyte than conventional DRAM?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Fiji Problem — 2015">
+        <p class="story-text">By 2014, AMD's graphics cards faced a hard ceiling. Their Hawaii GPU had 512 GB/s of memory bandwidth using a 512-bit GDDR5 bus — wide by any standard, but already constraining. To go wider with GDDR on a conventional PCB was impractical: more pins, more signal integrity problems, more power. AMD partnered with SK Hynix on something radical. Rather than connecting memory chips across a circuit board, they would <em>stack DRAM dies vertically</em> on a silicon interposer next to the GPU die itself. The resulting product, Fiji (launched as the Radeon R9 Fury X in June 2015), was the <em>world's first consumer GPU with High Bandwidth Memory</em>. Bandwidth: 512 GB/s from just four HBM stacks, each using a 1,024-bit bus. The interposer-connected approach would define AI accelerator design for the next decade.</p>
+      </div>
+
+      <h2 class="section-heading">HBM Architecture: How It Works</h2>
+      <div class="section-body">
+        <p>Conventional GDDR memory chips sit on a PCB and connect to the GPU through copper traces that carry signals at high frequencies but through a narrow interface (typically 32 bits per chip). <em>HBM takes the opposite approach</em>: multiple DRAM dies are stacked vertically using through-silicon vias (TSVs), with the stack placed on a silicon interposer in the same package as the GPU. The interposer carries a very wide bus — 1,024 bits per stack in HBM1/HBM2, 1,024 bits in HBM2e and HBM3 but at higher speeds.</p>
+        <p>Because the bus is so wide and the electrical path so short (millimeters on silicon rather than centimeters on PCB), HBM can achieve high bandwidth at <strong>lower signal frequencies and lower power per GB/s</strong> than GDDR. The tradeoff: HBM is expensive to manufacture and package, and capacity per stack is limited by the number of dies that can be stacked (currently 12 dies per stack in HBM3e).</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">HBM Generation Comparison</div>
+        <p>
+        <table class="data-table" style="margin-top:0.5rem;">
+          <tr><th>Generation</th><th>Year</th><th>Bandwidth/Stack</th><th>Capacity/Stack</th><th>Used In</th></tr>
+          <tr><td>HBM1</td><td>2015</td><td>128 GB/s</td><td>1–4 GB</td><td>AMD Fiji (R9 Fury X)</td></tr>
+          <tr><td>HBM2</td><td>2016</td><td>256 GB/s</td><td>4–8 GB</td><td>NVIDIA V100, AMD Vega</td></tr>
+          <tr><td>HBM2e</td><td>2020</td><td>307–460 GB/s</td><td>8–16 GB</td><td>NVIDIA A100, AMD MI250</td></tr>
+          <tr><td>HBM3</td><td>2022</td><td>~819 GB/s</td><td>16–24 GB</td><td>NVIDIA H100</td></tr>
+          <tr><td>HBM3e</td><td>2024</td><td>~1,200 GB/s</td><td>24–36 GB</td><td>NVIDIA H200, AMD MI300X</td></tr>
+        </table>
+        </p>
+      </div>
+
+      <h2 class="section-heading">The V100 Inflection Point — 2017</h2>
+      <div class="section-body">
+        <p>When NVIDIA launched the Volta-architecture V100 in May 2017 — the first GPU explicitly designed for deep learning — it came with <strong>HBM2 providing 900 GB/s</strong> of bandwidth. For comparison, the contemporary GDDR5X-based GTX 1080 Ti provided 484 GB/s. That bandwidth difference, combined with Tensor Cores for matrix multiplication, made the V100 the dominant training accelerator almost overnight. Cloud providers — Amazon AWS (P3 instances, October 2017), Google, and Microsoft Azure — built entire product lines around it. The message was clear: <em>HBM bandwidth was not a premium option, it was a prerequisite for serious AI work</em>.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">The SK Hynix Monopoly and Supply Crunch</h2>
+      <div class="section-body">
+        <p>HBM is manufactured by only three companies: <strong>SK Hynix, Samsung, and Micron</strong>. SK Hynix has held roughly 50% of HBM market share and was the first to qualify HBM3 for NVIDIA's H100 in volume. In 2023 and 2024, demand from AI accelerator orders — led by NVIDIA and AMD — outstripped HBM supply capacity by a wide margin. Reports from NVIDIA's quarterly earnings calls in 2023 explicitly named HBM supply as a constraint on H100 shipment volumes. The situation forced customers onto multi-year HBM allocation agreements and contributed to H100 spot-market prices exceeding $40,000 per card. A memory architecture that began as a graphics curiosity had become a <em>geopolitical supply-chain chokepoint</em>.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Why Not Just Use More GDDR?</div>
+        <p>A theoretical GDDR6X design achieving 1 TB/s would require roughly a 256-chip interface at 32 bits per chip — physically impossible on a GPU package, and catastrophic for power consumption. HBM achieves 3+ TB/s with 5–6 stacks. The silicon interposer is expensive, but it is the only practical path to the bandwidth AI workloads require.</p>
+      </div>
+
+      <h2 class="section-heading">Key Terms</h2>
+      <div class="key-term"><span class="kt-term">Through-Silicon Via (TSV)</span><span class="kt-def">Vertical electrical connection through a silicon die, enabling DRAM layers in an HBM stack to communicate with near-zero RC delay.</span></div>
+      <div class="key-term"><span class="kt-term">Silicon Interposer</span><span class="kt-def">A layer of silicon placed between package and dies, carrying the wide HBM bus and enabling precise, low-power, short-distance connections between GPU and memory.</span></div>
+      <div class="key-term"><span class="kt-term">HBM Stack</span><span class="kt-def">A vertical assembly of DRAM dies connected by TSVs, placed alongside the GPU on an interposer. Each H100 has six HBM3 stacks totaling 80 GB and 3.35 TB/s.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">HBM architecture and history · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2a">
+        <div class="quiz-q">1. AMD's Fiji GPU (Radeon R9 Fury X, 2015) was significant because it:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q2a')">Was the first consumer GPU to ship with HBM, demonstrating the silicon interposer approach</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2a')">Was the first GPU designed specifically for deep learning training workloads</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2a')">Introduced GDDR6 as a replacement for slower GDDR5 memory</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2a')">Was the first GPU to break the 1 TB/s memory bandwidth barrier</button>
+        </div>
+        <div class="quiz-feedback right">Correct. AMD Fiji, launched June 2015 in partnership with SK Hynix, was the world's first GPU to use HBM. It placed four HBM1 stacks on a silicon interposer alongside the GPU die, achieving 512 GB/s bandwidth — a preview of what would become the standard architecture for AI accelerators.</div>
+        <div class="quiz-feedback wrong">Not quite. Fiji was the first consumer GPU with HBM (High Bandwidth Memory), not the first deep-learning-focused GPU (that was NVIDIA's V100 in 2017) and it used HBM1, not GDDR6. It also did not break 1 TB/s — HBM3 on the H100 first approached that level.</div>
+      </div>
+
+      <div class="quiz-box" id="q2b">
+        <div class="quiz-q">2. HBM achieves high bandwidth at lower power per GB/s compared to GDDR primarily because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2b')">HBM uses a faster clock frequency than GDDR to move more data per cycle</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2b')">The very wide bus (1,024+ bits) and short interposer traces reduce the signal frequency needed to achieve high throughput</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2b')">HBM uses a different voltage domain than GDDR that inherently consumes less energy</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2b')">HBM operates at colder temperatures, reducing resistive losses in the interconnect</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HBM's efficiency comes from width, not speed. A 1,024-bit bus running at moderate frequency delivers the same throughput as a narrow bus running at extreme frequency — but the shorter, fatter path requires far less energy per bit transferred. Power per GB/s is substantially lower than GDDR6X.</div>
+        <div class="quiz-feedback wrong">Not quite. HBM actually runs at lower frequencies than GDDR. Its advantage is the width of the bus (1,024+ bits per stack) combined with the very short electrical paths on the silicon interposer. This lets it achieve high throughput without the power penalty of high-frequency signaling over long PCB traces.</div>
+      </div>
+
+      <div class="quiz-box" id="q2c">
+        <div class="quiz-q">3. In 2023, HBM supply became a public bottleneck for AI hardware primarily because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2c')">A manufacturing defect at Samsung caused widespread HBM3 yield failures</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2c')">US export controls banned HBM sales to non-allied nations</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2c')">AI accelerator demand from NVIDIA H100 and similar chips far exceeded the production capacity of the three HBM manufacturers</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2c')">The transition from HBM2e to HBM3 required completely new fab equipment that had not yet been installed</button>
+        </div>
+        <div class="quiz-feedback right">Correct. NVIDIA's own earnings calls in 2023 named HBM supply as a constraint on H100 shipments. Only SK Hynix, Samsung, and Micron make HBM. The explosive demand from AI training infrastructure orders — particularly for H100s — outran what those three suppliers could manufacture, driving H100 spot prices above $40,000.</div>
+        <div class="quiz-feedback wrong">Not quite. The 2023 HBM crunch was a demand shock, not a supply-side disaster or regulatory event. AI accelerator orders — dominated by demand for NVIDIA H100 GPUs — exceeded the manufacturing capacity of the three HBM producers (SK Hynix, Samsung, Micron), creating multi-quarter allocation queues and extremely high spot prices.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — HBM Deep Dive</h1>
+      <div class="tagline">Explore HBM architecture, supply chain, and generational tradeoffs with your AI tutor</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>Investigate HBM technology: how stacking and interposers work, why it costs so much more than GDDR, how different generations compare, and why supply became a chokepoint. Push for specifics and tradeoffs.</p>
+        <div class="lab-prompt">Starter: "Explain the through-silicon via process in HBM stacking — what are the yield challenges that make HBM so expensive per gigabyte compared to GDDR6X?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">HBM Architecture · L2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to Lab 2. Let's dig into High Bandwidth Memory — the stacking process, interposer economics, generational improvements from HBM1 through HBM3e, and the supply-chain dynamics that made HBM a geopolitical commodity in 2023. What aspect would you like to explore first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Ask about HBM stacking, TSVs, interposers, supply chain…" rows="1" onkeydown="handleKey(event,'l2')"></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L3: Attention Is Memory-Hungry ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Lesson 3 · Module 5</div>
+      <h1>Attention Is Memory-Hungry</h1>
+      <div class="tagline">Why Transformer attention scales quadratically with sequence length — and the engineering war to fix it.</div>
+      <div class="lesson-question">Why does doubling the context length of a language model quadruple its memory bandwidth demand during inference?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="FlashAttention — 2022">
+        <p class="story-text">In May 2022, PhD student Tri Dao at Stanford published a preprint titled <em>FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</em>. The key insight was deceptively simple: standard attention implementations move data between HBM and SRAM on the GPU far more times than necessary. By restructuring the computation to keep data in fast SRAM as long as possible — tiling the attention matrix — Dao reduced the number of HBM reads and writes by a factor proportional to the sequence length. The result: <em>2–4× faster attention on real hardware</em>, not through more compute, but through smarter memory access patterns. FlashAttention was rapidly adopted by every major lab. GPT-4, Claude, Gemini — all use variants of it. The paper won the ICML 2022 Outstanding Paper Award.</p>
+      </div>
+
+      <h2 class="section-heading">Standard Attention: The Quadratic Memory Problem</h2>
+      <div class="section-body">
+        <p>The self-attention mechanism at the heart of every Transformer model computes, for a sequence of N tokens, an N×N matrix of attention scores. For each query token, the model measures similarity against every key token, weights every value token accordingly, and produces an output. The problem: the full attention matrix has <strong>N² elements</strong>. At N=2,048 (GPT-3's training context), that is 4 million elements per layer per head. At N=128,000 (GPT-4's reported context window), it is over 16 billion elements — far too large to fit in GPU SRAM. Every element must be read from and written to HBM.</p>
+        <p>Standard PyTorch attention (before FlashAttention) materialized this full N×N matrix in HBM memory, requiring <strong>O(N²) memory reads and writes</strong>. Since HBM bandwidth is finite, longer sequences hit the bandwidth wall hard. A sequence 4× longer requires 16× the HBM bandwidth for attention — a brutal scaling law that made long-context models impractical on 2020-era hardware.</p>
+      </div>
+
+      <div class="bw-bar-wrap">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;letter-spacing:0.06em;text-transform:uppercase;">HBM reads/writes — standard attention vs FlashAttention (relative, N=4096)</div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">Standard Attn</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:100%;background:var(--accent);"></div></div>
+          <div class="bw-bar-val">100% (baseline)</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">FlashAttn v1</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:30%;background:var(--gold);"></div></div>
+          <div class="bw-bar-val">~30%</div>
+        </div>
+        <div class="bw-bar-row">
+          <div class="bw-bar-label">FlashAttn v2</div>
+          <div class="bw-bar-track"><div class="bw-bar-fill" style="width:18%;background:#4fcf8a;"></div></div>
+          <div class="bw-bar-val">~18%</div>
+        </div>
+      </div>
+      <div class="section-body"><p style="font-size:0.75rem;color:var(--muted);">Approximate HBM access reduction from Dao et al. (2022, 2023). Actual gains depend on sequence length and hardware.</p></div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">The KV Cache: Trading Memory for Speed</h2>
+      <div class="section-body">
+        <p>During autoregressive inference — where a language model generates tokens one at a time — recomputing the key and value matrices from scratch for every new token is wasteful: the context from previous tokens doesn't change. The solution, universally implemented since 2020, is the <strong>KV cache</strong>: store all previous key and value tensors in HBM and read them on each new token generation step.</p>
+        <p>The bandwidth implication is severe. For a 70-billion-parameter model like Meta's Llama 2 70B, with 80 transformer layers, 64 key-value heads each of dimension 128, running at FP16: the KV cache for a 4,096-token context requires roughly <strong>20 GB of HBM</strong>. The H100 has 80 GB total. At batch size 1, this is manageable. At batch size 8 (eight simultaneous user requests), the KV cache alone consumes the full HBM capacity, leaving no room for model weights. This is why memory bandwidth and capacity together constrain LLM serving throughput, and why multi-query attention (MQA) and grouped-query attention (GQA) — introduced in papers by Noam Shazeer (2019) and Ainslie et al. (2023) — reduce the number of KV heads to cut cache size.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Case — Llama 2 70B KV Cache Calculation</div>
+        <p>80 layers × 64 KV heads × 128 head dimension × 2 (K+V) × 2 bytes (FP16) × 4,096 tokens = <strong>~20.5 GB</strong> per batch item. Eight concurrent users fill the H100's 80 GB HBM entirely with KV cache, requiring weight offloading or quantization. This calculation explains why H100 clusters are sized as multi-GPU configurations for production LLM serving.</p>
+      </div>
+
+      <h2 class="section-heading">FlashAttention and Its Successors</h2>
+      <div class="section-body">
+        <p>FlashAttention v1 (Dao et al., 2022) introduced IO-aware tiled attention. FlashAttention v2 (Dao, 2023) further improved GPU utilization by better partitioning work across thread blocks and reducing non-matmul FLOPs. FlashAttention-3 (Shah et al., 2024) was designed specifically for H100, exploiting asynchronous pipeline stages and the WGMMA instruction set to achieve ~75% of H100's theoretical FP16 throughput on attention. All versions achieve the same mathematical result as standard attention; only the memory access pattern changes. This class of optimization — reorganizing computation to minimize HBM round-trips without changing outputs — is called <em>IO-aware algorithm design</em>.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Broader Principle</div>
+        <p>FlashAttention demonstrates a general principle that will recur throughout AI hardware evolution: <strong>algorithmic optimization and hardware specification co-design</strong>. The best AI systems are built by teams who understand both the mathematical structure of the computation and the physical constraints of the memory hierarchy. Neither hardware nor algorithms alone are sufficient.</p>
+      </div>
+
+      <h2 class="section-heading">Key Terms</h2>
+      <div class="key-term"><span class="kt-term">KV Cache</span><span class="kt-def">Stored key and value tensors from previous context tokens, enabling autoregressive inference without recomputation. Major consumer of HBM during LLM serving.</span></div>
+      <div class="key-term"><span class="kt-term">IO-Aware Algorithm</span><span class="kt-def">An algorithm designed to minimize data movement between memory tiers, exploiting the hierarchy (registers → SRAM → HBM) rather than treating memory as uniform.</span></div>
+      <div class="key-term"><span class="kt-term">Grouped-Query Attention (GQA)</span><span class="kt-def">A variant of multi-head attention that shares key-value heads across groups of query heads, reducing KV cache size. Used in Llama 2 70B and later models.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Attention, KV cache, and bandwidth-aware algorithms · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3a">
+        <div class="quiz-q">1. Standard scaled dot-product attention has O(N²) memory complexity with respect to sequence length. The primary consequence for hardware is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3a')">Longer sequences require exponentially more compute FLOPS per layer</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3a')">Longer sequences require quadratically more HBM reads and writes, making bandwidth the binding constraint</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3a')">Longer sequences cause GPU register file overflow, reducing arithmetic throughput</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3a')">Longer sequences increase PCIe transfer overhead between CPU and GPU</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The N×N attention matrix must be materialized in HBM for standard implementations. Doubling N quadruples the matrix size and the HBM bandwidth consumed per layer per head. This quadratic scaling made long-context models impractical on pre-FlashAttention hardware despite sufficient compute capacity.</div>
+        <div class="quiz-feedback wrong">Not quite. The memory complexity is O(N²) — quadratic — meaning HBM reads and writes scale quadratically with sequence length. While FLOP count also increases with N², the binding constraint on real hardware is bandwidth: the attention layer runs far below peak FLOP throughput because HBM cannot supply data fast enough.</div>
+      </div>
+
+      <div class="quiz-box" id="q3b">
+        <div class="quiz-q">2. FlashAttention achieves 2–4× speedup over standard attention without changing the mathematical output. The key technique is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3b')">Approximating the attention scores using locality-sensitive hashing to reduce computation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3b')">Quantizing key and value tensors to INT8 to halve bandwidth consumption</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3b')">Tiling the computation to keep intermediate results in fast SRAM, minimizing the number of HBM reads and writes</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3b')">Distributing the attention matrix across multiple GPUs to increase aggregate bandwidth</button>
+        </div>
+        <div class="quiz-feedback right">Correct. FlashAttention tiles the attention computation into blocks that fit in GPU SRAM (shared memory). By fusing the softmax and matrix multiplications and keeping intermediates on-chip, it avoids materializing the full N×N matrix in HBM. The result is exact attention with far fewer HBM accesses — and consequently, far higher throughput on bandwidth-bound hardware.</div>
+        <div class="quiz-feedback wrong">Not quite. FlashAttention is an exact attention algorithm — it produces identical outputs to standard attention, not approximations. It does not quantize tensors or use multiple GPUs for this purpose. The speedup comes entirely from tiling the computation to fit in SRAM, avoiding repeated round-trips to HBM for intermediate softmax and attention score values.</div>
+      </div>
+
+      <div class="quiz-box" id="q3c">
+        <div class="quiz-q">3. A Llama 2 70B model serving 8 simultaneous user requests at 4,096-token context requires approximately 160 GB of HBM just for KV cache. What does this imply?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3c')">A single H100 (80 GB HBM) can handle this workload if model weights are compressed to INT4</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3c')">A single H100 cannot hold both the model weights and the KV cache for this scenario; multi-GPU deployment or KV cache reduction (GQA, quantization) is required</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3c')">The KV cache can be stored in CPU RAM and streamed over PCIe without significant throughput impact</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3c')">Batch size 8 is not meaningful for bandwidth analysis; only total tokens processed matters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 160 GB of KV cache far exceeds the H100's 80 GB HBM, even before accounting for the 70B model's weights (~140 GB in FP16 or ~70 GB in INT8). This forces multi-GPU deployment (e.g., 4× H100), or use of techniques like grouped-query attention (which reduces KV heads 4–8×) and KV cache quantization to fit within a single GPU's memory budget.</div>
+        <div class="quiz-feedback wrong">Not quite. INT4 model weights for 70B parameters require ~35 GB — but 160 GB of KV cache still exceeds the remaining 45 GB on an 80 GB H100. PCIe streaming of KV cache from CPU RAM would create a massive bandwidth bottleneck (PCIe 5.0 ≈ 128 GB/s vs H100 HBM ≈ 3.35 TB/s). Multi-GPU or cache reduction techniques are the practical solutions.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — KV Cache & FlashAttention Analysis</h1>
+      <div class="tagline">Work through attention bandwidth problems with your AI tutor</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You'll analyze how KV cache sizes scale with model architecture and context length, and explore how FlashAttention and grouped-query attention address the bandwidth bottleneck. Try computing KV cache sizes for specific models or asking about algorithm design tradeoffs.</p>
+        <div class="lab-prompt">Starter: "Walk me through calculating the KV cache size for Mistral 7B at 32K context length, and compare it to how GQA reduces that requirement."</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Attention Bandwidth · L3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to Lab 3. Let's analyze attention memory bandwidth in depth — KV cache sizing, FlashAttention's tiling strategy, grouped-query vs multi-head attention tradeoffs, and how these interact with real GPU memory capacity. Want to work through a calculation, or explore a specific model's memory profile?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Ask about KV cache, FlashAttention, attention scaling…" rows="1" onkeydown="handleKey(event,'l3')"></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ L4: Beyond HBM — The Next Frontiers ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Lesson 4 · Module 5</div>
+      <h1>Beyond HBM — The Next Frontiers</h1>
+      <div class="tagline">Processing-in-memory, chiplet interconnects, optical bandwidth, and the architectural bets being placed for the post-HBM era.</div>
+      <div class="lesson-question">If HBM is already the best conventional DRAM architecture, what comes next — and who is betting on which successor?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="The Fundamental Problem">
+        <p class="story-text">Every approach to memory bandwidth ultimately confronts the same physics: moving electrical signals between chips consumes energy proportional to distance and bus capacitance. HBM attacked this by shortening the distance (interposer packaging) and widening the bus. But the data still crosses a chip boundary twice per memory access — once from DRAM to interposer, once from interposer to logic die. Some engineers believe the only escape from this constraint is to bring computation to the data, not data to computation. Others are betting that photonics — using light rather than electricity — can remove the energy-per-bit constraint at chip boundaries entirely.</p>
+      </div>
+
+      <h2 class="section-heading">Processing-In-Memory (PIM)</h2>
+      <div class="section-body">
+        <p>Processing-in-memory places simple arithmetic units <em>inside the DRAM stack itself</em>, executing operations on data without it ever crossing to the logic chip. Samsung demonstrated its HBM-PIM product in 2021, integrating programmable compute units between DRAM layers. Each HBM2 stack contained a bank of SIMD processing engines capable of executing FP16 MAC operations. Samsung reported that HBM-PIM reduced power consumption by 70% and improved AI inference performance by 2.5× on their Aquabolt-XL platform for neural network workloads.</p>
+        <p>SK Hynix has pursued a similar concept under the name <strong>AiM (Accelerator-in-Memory)</strong>, targeting transformer inference. The challenge for PIM is programmability: the compute units inside DRAM must be simple enough to fit in the memory die's transistor budget, but complex enough to handle the diversity of modern AI operations. Current PIM products handle limited operation sets — primarily vector dot products and activation functions — and require software adaptation to use effectively.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Samsung HBM-PIM — Documented Results (2021)</div>
+        <p>Samsung's HBM2-PIM product (Aquabolt-XL) was described in an IEEE paper at ISSCC 2021. It integrated 2 GFLOPS of FP16 compute per HBM die, adding ~0.5% die area. In GEMM-heavy AI inference benchmarks, the company reported <strong>2.5× throughput improvement and 70% power reduction</strong> compared to standard HBM2 by eliminating inter-chip data transfer for computation that fits within the PIM engine's capability.</p>
+      </div>
+
+      <h2 class="section-heading">Chiplet Interconnects: NVLink, UCIe, and UALink</h2>
+      <div class="section-body">
+        <p>When a model is too large for one chip's HBM, data must travel between chips. The bandwidth of these inter-chip links directly constrains parallelism efficiency. NVIDIA's NVLink 4.0 (H100) provides <strong>900 GB/s total bidirectional bandwidth</strong> across NVSwitch-connected configurations, enabling 8-GPU NVL8 systems to share a 640 GB aggregate HBM pool at GPU-like speeds. This is what makes tensor parallelism viable: splitting a model's weight matrices across 8 GPUs and communicating partial sums via NVLink fast enough that the bandwidth overhead doesn't dominate.</p>
+        <p>In 2023, the industry launched two standardization efforts targeting future chiplet-to-chiplet and accelerator-to-memory connectivity. <strong>UCIe (Universal Chiplet Interconnect Express)</strong>, supported by Intel, AMD, ARM, Qualcomm, and others, defines a standard die-to-die interface that can achieve up to ~1.3 TB/s per millimeter of die edge in the advanced fabric variant. <strong>UALink (Ultra Accelerator Link)</strong>, announced in May 2024 by AMD, Intel, Broadcom, Cisco, Google, Meta, Microsoft, and HPE, targets scale-out communication between AI accelerators at data-center scale, positioning itself as an alternative to NVIDIA's proprietary NVLink for multi-chip AI clusters.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">Optical Interconnects and Co-Packaged Optics</h2>
+      <div class="section-body">
+        <p>Electrical interconnects, even on-package, consume energy proportional to the capacitance they must charge and discharge. At scale — 100,000-GPU AI clusters — interconnect power becomes a meaningful fraction of total system power. Optical signals do not share this fundamental property: a photon traveling through a waveguide consumes energy only at the modulator and detector, not along the transmission path. <strong>Co-packaged optics (CPO)</strong> integrates optical transceivers directly into the switch or accelerator package, eliminating the electrical-to-optical conversion loss at a separate module.</p>
+        <p>NVIDIA announced co-packaged optical technology in 2024 for future Spectrum-X and NVLink platforms, with the expectation that CPO will become standard for data-center switch bandwidth by 2025–2026. Intel has invested heavily in silicon photonics through its acquisition of Habana and its own photonics research. Ayar Labs, a startup backed by Intel and others, demonstrated a chiplet-scale optical I/O die (<strong>TeraPHY</strong>) that achieves 2 Tb/s of bandwidth per chiplet at roughly 5 pJ/bit — competitive with advanced electrical interconnects but with far better scaling potential at distance.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The Long View</div>
+        <p>No single technology will replace HBM by 2026. The most likely trajectory: HBM4 (targeting ~4–6 TB/s per stack) arrives in 2025–2026 as the conventional path; PIM becomes a niche optimization for memory-intensive inference; UCIe and UALink standardize chiplet bandwidth in high-end AI SoCs; co-packaged optics begins to replace electrical interconnects at the node-to-node level in large clusters. The memory bandwidth bottleneck does not disappear — it migrates to the next hierarchy level where the next generation of models inevitably runs out of bandwidth again.</p>
+      </div>
+
+      <h2 class="section-heading">Key Terms</h2>
+      <div class="key-term"><span class="kt-term">Processing-In-Memory (PIM)</span><span class="kt-def">Architecture placing compute units inside the DRAM stack, executing operations without transferring data to the logic chip. Reduces bandwidth demand and power for compatible operations.</span></div>
+      <div class="key-term"><span class="kt-term">UCIe (Universal Chiplet Interconnect Express)</span><span class="kt-def">An open industry standard for die-to-die interconnect, enabling chips from different manufacturers to communicate at near-monolithic speeds within a package.</span></div>
+      <div class="key-term"><span class="kt-term">UALink</span><span class="kt-def">Ultra Accelerator Link — an open consortium standard (2024) targeting scale-out AI accelerator interconnects, positioned as an alternative to NVIDIA's proprietary NVLink at cluster scale.</span></div>
+      <div class="key-term"><span class="kt-term">Co-Packaged Optics (CPO)</span><span class="kt-def">Integration of optical transceivers directly into the chip package, reducing electrical-to-optical conversion loss and enabling higher bandwidth at longer distances with lower energy per bit.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">PIM, chiplet interconnects, and optical bandwidth · 3 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4a">
+        <div class="quiz-q">1. Samsung's HBM-PIM (Aquabolt-XL) reported 70% power reduction in AI inference benchmarks compared to standard HBM2. The most accurate explanation for this improvement is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4a')">The PIM units use a more efficient floating-point standard than the host GPU</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4a')">Computation happens inside the DRAM stack, eliminating the energy cost of transferring data across the chip boundary to the logic die</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4a')">PIM reduces the memory clock speed, lowering dynamic power consumption</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4a')">PIM uses SRAM instead of DRAM for frequently accessed parameters, reducing refresh power</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Every data byte transferred from DRAM to a logic chip consumes energy to charge and discharge bus capacitance. PIM eliminates this transfer for operations it can handle internally. Samsung's reported 70% power reduction comes primarily from eliminating the HBM→GPU data movement energy cost for applicable compute operations like FP16 SIMD dot products.</div>
+        <div class="quiz-feedback wrong">Not quite. PIM's power efficiency comes from eliminating the energy cost of transferring data across the chip boundary. Moving electrical signals between chips requires charging and discharging bus capacitance — a significant energy cost at the bandwidth levels HBM operates at. If computation can happen inside the memory stack, that transfer energy is avoided entirely.</div>
+      </div>
+
+      <div class="quiz-box" id="q4b">
+        <div class="quiz-q">2. UALink, announced in May 2024, is best described as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4b')">A new DRAM standard developed by Samsung to succeed HBM3e</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4b')">An optical interconnect standard for intra-package GPU-to-HBM communication</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4b')">An open consortium standard for scale-out AI accelerator interconnects, positioned as an alternative to NVIDIA's proprietary NVLink</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4b')">AMD's proprietary chiplet bus for connecting GPU compute dies to I/O dies</button>
+        </div>
+        <div class="quiz-feedback right">Correct. UALink was announced in May 2024 by a consortium including AMD, Intel, Broadcom, Cisco, Google, Meta, Microsoft, and HPE. It targets scale-out communication between AI accelerators in data-center clusters — the same market as NVIDIA's NVLink — offering an open standard alternative.</div>
+        <div class="quiz-feedback wrong">Not quite. UALink is an open industry consortium standard for accelerator-to-accelerator communication at scale, announced May 2024 by AMD, Intel, Broadcom, Cisco, Google, Meta, Microsoft, and HPE. It is not a DRAM standard, not an optical standard, and not AMD's internal chiplet bus (that is Infinity Fabric).</div>
+      </div>
+
+      <div class="quiz-box" id="q4c">
+        <div class="quiz-q">3. Co-packaged optics (CPO) offers a fundamental advantage over electrical interconnects at data-center scale because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4c')">Optical signals travel faster than electrical signals, reducing network latency by 30–40%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4c')">Optical waveguides can carry unlimited bandwidth without any energy cost</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4c')">Optical transmission energy does not scale with distance the way electrical bus capacitance does, enabling high bandwidth over longer distances with lower energy per bit</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4c')">Photons cannot be blocked by electromagnetic interference from nearby GPU power rails</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Electrical interconnect energy consumption scales with bus capacitance, which increases with trace length. Optical signals require energy only at the modulator and detector — the waveguide propagation itself is nearly free. This makes optical interconnects fundamentally more efficient at distance, which is why CPO is attractive for connecting nodes in large AI clusters where cable runs span meters to tens of meters.</div>
+        <div class="quiz-feedback wrong">Not quite. While EMI immunity and speed are minor benefits, the fundamental advantage of optical interconnects is energy efficiency at distance. Electrical signals must charge and discharge capacitance along the entire trace length. Optical signals lose energy only at modulation and detection, not during propagation. At data-center cable distances, this difference compounds into meaningful power savings for high-bandwidth links.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Future Bandwidth Technologies</h1>
+      <div class="tagline">Explore PIM, chiplet interconnects, and photonics with your AI tutor</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You'll examine the technologies positioned to succeed or supplement HBM: processing-in-memory, open chiplet standards (UCIe, UALink), and co-packaged optical interconnects. Ask about technical tradeoffs, industry dynamics, and what the next generation of AI clusters might look like.</p>
+        <div class="lab-prompt">Starter: "Compare the practical limitations of processing-in-memory (PIM) versus co-packaged optics as strategies for addressing the memory bandwidth bottleneck. Which is more likely to matter for LLM training by 2027?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Future Bandwidth · L4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4. Let's explore the technologies competing to push past HBM's limits — processing-in-memory, chiplet interconnect standards like UCIe and UALink, co-packaged optics, and how these fit into the trajectory of AI accelerator design. What would you like to examine first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Ask about PIM, UCIe, UALink, co-packaged optics, HBM4…" rows="1" onkeydown="handleKey(event,'l4')"></textarea>
+          <button class="chat-reset-btn" onclick="resetChat('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 5 — Final Test</h1>
+      <div class="tagline">The Memory Bandwidth Bottleneck · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt1">
+        <div class="quiz-q">1. Memory bandwidth is measured in GB/s or TB/s. For AI workloads, it represents:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">The maximum rate at which data can move between compute units and memory, setting the throughput ceiling for bandwidth-bound operations</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The total storage capacity available to the GPU across all memory tiers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The speed at which GPU cores execute floating-point instructions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The rate at which data is written to persistent storage during checkpointing</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Bandwidth is a throughput measure — bytes per second — not a capacity or latency measure. For memory-bound operations like attention, it caps achievable performance.</div>
+        <div class="quiz-feedback wrong">Memory bandwidth is a rate (bytes per second), not a capacity or compute speed measure. It sets the ceiling on how fast data can reach the arithmetic units.</div>
+      </div>
+
+      <div class="quiz-box" id="mt2">
+        <div class="quiz-q">2. A workload with arithmetic intensity of 50 FLOP/byte running on a GPU with a "ridge point" (peak FLOP/s ÷ peak bandwidth) of 100 FLOP/byte is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">Memory-bandwidth-bound — the workload's arithmetic intensity is below the ridge point</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Compute-bound — it performs 50 operations per byte, saturating the arithmetic units</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Balanced — 50 FLOP/byte is close enough to the ridge point to be considered compute-bound</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Latency-bound — the ridge point comparison is irrelevant for AI workloads</button>
+        </div>
+        <div class="quiz-feedback right">Correct. In the Roofline model, workloads to the left of the ridge point (lower arithmetic intensity) are memory-bound. 50 FLOP/byte < 100 FLOP/byte ridge = memory-bound.</div>
+        <div class="quiz-feedback wrong">The Roofline model places workloads below the ridge point in the memory-bound region. With a ridge at 100 FLOP/byte and arithmetic intensity of 50, this workload cannot saturate the compute units — bandwidth is the constraint.</div>
+      </div>
+
+      <div class="quiz-box" id="mt3">
+        <div class="quiz-q">3. The "memory wall" concept, introduced by Wulf and McKee in 1994, predicted that:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">DRAM latency would eventually exceed 1 microsecond, making caches mandatory</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">The gap between processor speed growth (~54%/yr) and DRAM bandwidth growth (~7%/yr) would make memory the dominant performance bottleneck</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">DRAM manufacturing costs would rise faster than processor costs, making memory the budget-dominant component</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">Network bandwidth would become a bottleneck before memory bandwidth in distributed computing systems</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Wulf and McKee's key argument was the compounding performance gap between CPU speed (~54%/yr) and DRAM bandwidth (~7%/yr), eventually making memory access time dominant.</div>
+        <div class="quiz-feedback wrong">The memory wall paper argued that DRAM bandwidth grew much slower than processor performance, not that latency or cost were the primary issues. The compounding gap meant memory would eventually dominate total execution time.</div>
+      </div>
+
+      <div class="quiz-box" id="mt4">
+        <div class="quiz-q">4. The world's first consumer GPU to ship with HBM was:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">NVIDIA GeForce GTX 980 Ti (Maxwell, 2015)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">NVIDIA Titan X (Pascal, 2016)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">AMD Radeon R9 Fury X (Fiji, 2015)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">AMD Radeon RX 480 (Polaris, 2016)</button>
+        </div>
+        <div class="quiz-feedback right">Correct. AMD's Fiji-based Radeon R9 Fury X, launched June 2015, was the first consumer GPU with HBM, using four HBM1 stacks on a silicon interposer to achieve 512 GB/s.</div>
+        <div class="quiz-feedback wrong">The first consumer GPU with HBM was AMD's Radeon R9 Fury X (Fiji GPU), launched June 2015 in partnership with SK Hynix. NVIDIA continued using GDDR5 and later GDDR5X on consumer cards until much later.</div>
+      </div>
+
+      <div class="quiz-box" id="mt5">
+        <div class="quiz-q">5. HBM achieves higher bandwidth at lower power than GDDR primarily due to:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Higher clock frequencies enabled by colder operating temperatures on the interposer</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">A very wide bus (1,024+ bits per stack) on a short interposer path, reducing the signal frequency needed for high throughput</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Use of a different DRAM cell technology (LPDDR) that consumes less energy per refresh cycle</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Elimination of the ECC overhead that consumes bandwidth on conventional GDDR</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Width, not speed, is HBM's core advantage. A 1,024-bit bus achieves high throughput at moderate frequencies; shorter electrical paths on the interposer reduce energy per bit.</div>
+        <div class="quiz-feedback wrong">HBM's advantage comes from its wide bus (1,024 bits per stack) combined with the short electrical path on the silicon interposer. It actually runs at lower frequencies than GDDR and uses standard DRAM cell technology.</div>
+      </div>
+
+      <div class="quiz-box" id="mt6">
+        <div class="quiz-q">6. NVIDIA's V100 GPU (2017) was the first to use HBM2 in an AI-focused accelerator. Its HBM2 bandwidth of 900 GB/s compared to the consumer GTX 1080 Ti's 484 GB/s meant:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">The V100 could run larger models but not faster than the 1080 Ti for bandwidth-bound workloads</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">The V100 could sustain nearly 2× the data throughput for bandwidth-bound training operations, alongside its Tensor Core compute advantage</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">The bandwidth gap was secondary to the V100's larger L2 cache as a training performance differentiator</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">HBM2 on the V100 provided a latency advantage but similar effective bandwidth to GDDR5X at typical AI batch sizes</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The V100's 900 GB/s HBM2 versus the 1080 Ti's 484 GB/s GDDR5X provided nearly 2× the memory throughput for bandwidth-bound operations — a decisive advantage for attention layers and other LLM workloads, compounded by Tensor Cores for matrix math.</div>
+        <div class="quiz-feedback wrong">The bandwidth ratio is approximately 900/484 ≈ 1.86×. For bandwidth-bound operations (which most attention layers are), this is nearly a 2× throughput difference before even accounting for Tensor Cores. It made the V100 the dominant training card of 2017–2020.</div>
+      </div>
+
+      <div class="quiz-box" id="mt7">
+        <div class="quiz-q">7. HBM3e (used in NVIDIA H200 and AMD MI300X, 2024) improves upon HBM3 primarily by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">Increasing per-stack bandwidth to ~1,200 GB/s and capacity to 24–36 GB per stack through higher data rates and more DRAM die layers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Switching from TSV connections to direct laser-bonded optical links between DRAM dies</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Integrating SRAM buffers between DRAM layers to reduce access latency for frequently used weights</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Reducing the interposer area by 50% through a new chiplet packaging approach</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HBM3e pushes per-stack bandwidth to approximately 1.2 TB/s (up from ~819 GB/s for HBM3) and increases stack capacity to 24–36 GB by adding more DRAM die layers and increasing the I/O data rate per TSV.</div>
+        <div class="quiz-feedback wrong">HBM3e improves on HBM3 through higher electrical data rates per TSV and additional DRAM layers per stack, increasing bandwidth (~1.2 TB/s vs ~819 GB/s) and capacity (up to 36 GB/stack). Optical links and SRAM layers are not part of HBM3e's design.</div>
+      </div>
+
+      <div class="quiz-box" id="mt8">
+        <div class="quiz-q">8. Standard scaled dot-product self-attention is O(N²) in both compute and memory with respect to sequence length N. For an AI accelerator that is memory-bandwidth-bound for this operation, doubling N will approximately:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Double attention layer execution time (linear scaling)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">Quadruple attention layer execution time on a bandwidth-bound system (quadratic scaling)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Increase execution time by 8× due to cubic scaling of the softmax normalization</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">Have no effect on execution time if the sequence fits within L2 cache</button>
+        </div>
+        <div class="quiz-feedback right">Correct. O(N²) memory complexity means the amount of HBM data read/written scales as N². Doubling N → 4× the data → 4× the time on a bandwidth-bound system. This quadratic wall is why long-context models required FlashAttention to become practical.</div>
+        <div class="quiz-feedback wrong">For a bandwidth-bound operation with O(N²) memory complexity, doubling N quadruples the HBM data accessed and therefore quadruples execution time. This is the core reason why long-context inference was impractical before FlashAttention.</div>
+      </div>
+
+      <div class="quiz-box" id="mt9">
+        <div class="quiz-q">9. FlashAttention's approach to reducing HBM bandwidth consumption is best described as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Approximating the attention matrix using a sparse subset of key-value pairs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Quantizing the attention scores to INT8 before softmax computation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">Tiling the attention computation into blocks that fit in SRAM, fusing softmax and matrix multiply to avoid materializing the full attention matrix in HBM</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Prefetching attention matrices from HBM into L2 cache using hardware-managed prefetch units</button>
+        </div>
+        <div class="quiz-feedback right">Correct. FlashAttention uses tiling and kernel fusion: the N×N attention matrix is computed in SRAM-sized blocks, and the softmax normalization is handled with an online algorithm that never writes the full matrix to HBM. The output is identical to standard attention.</div>
+        <div class="quiz-feedback wrong">FlashAttention is an exact algorithm — not approximate. It works by tiling the computation into SRAM-resident blocks and fusing operations (Q@K^T, softmax, @V) into a single kernel, avoiding HBM writes of the full N×N intermediate matrix. No quantization or prefetch hardware is required.</div>
+      </div>
+
+      <div class="quiz-box" id="mt10">
+        <div class="quiz-q">10. The KV cache for a 70B-parameter LLM with 80 layers, 64 KV heads, 128 head dimension, FP16 precision, and 4,096-token context is approximately:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">~5 GB per batch item</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">~20 GB per batch item</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">~80 GB per batch item</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">~2 GB per batch item</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 80 layers × 64 KV heads × 128 dims × 2 (K+V) × 2 bytes (FP16) × 4,096 tokens = 80 × 64 × 128 × 2 × 2 × 4096 = ~20.5 GB per batch item. At batch size 4, this fills the H100's 80 GB HBM even before model weights.</div>
+        <div class="quiz-feedback wrong">The calculation: 80 layers × 64 KV heads × 128 head_dim × 2 (keys + values) × 2 bytes (FP16) × 4,096 tokens = 80 × 64 × 128 × 2 × 2 × 4096 ≈ 20.5 GB. This is the standard KV cache calculation for Llama 2 70B at this context length.</div>
+      </div>
+
+      <div class="quiz-box" id="mt11">
+        <div class="quiz-q">11. Grouped-Query Attention (GQA), used in Llama 2 70B, reduces KV cache size by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Sharing key-value heads across groups of query heads, so fewer K and V tensors need to be stored and retrieved</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Compressing the key-value tensors using a learned low-rank approximation during generation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Discarding the oldest context tokens when the cache reaches capacity (sliding window)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Storing the KV cache in INT4 precision by default, halving memory compared to FP16</button>
+        </div>
+        <div class="quiz-feedback right">Correct. GQA (Ainslie et al., 2023) reduces the number of distinct KV heads. If 64 query heads share 8 KV heads (groups of 8), the KV cache is 8× smaller than standard multi-head attention with 64 KV heads, dramatically reducing HBM requirements for long-context inference.</div>
+        <div class="quiz-feedback wrong">GQA reduces KV cache by having multiple query heads share the same key-value heads. Rather than 64 unique K and V tensors (one per head), you might have 8 — each shared by 8 query heads. This directly reduces KV cache memory by the grouping factor.</div>
+      </div>
+
+      <div class="quiz-box" id="mt12">
+        <div class="quiz-q">12. Samsung's HBM-PIM product integrated compute units inside the DRAM stack. The fundamental limitation of current PIM designs for general AI workloads is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">PIM units operate at room temperature and cannot be cooled adequately within the DRAM stack</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">PIM compute units must be simple enough to fit within the DRAM die's transistor budget, limiting them to specific operations rather than general-purpose AI compute</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">PIM requires a completely new programming model incompatible with existing AI frameworks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">PIM cannot access the full memory capacity of the HBM stack during computation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. DRAM dies have a limited transistor budget — the primary die area is DRAM cells. PIM compute units must be simple SIMD engines (handling FP16 dot products, activation functions) rather than the complex, flexible compute engines in a GPU. This limits which AI operations can run on PIM without software adaptation.</div>
+        <div class="quiz-feedback wrong">The core PIM challenge is the transistor budget: DRAM dies are designed for storage, not computation. The compute units that fit alongside DRAM cells must be simple — limiting PIM to specific, regular operations like vector dot products rather than the full diversity of AI layer types.</div>
+      </div>
+
+      <div class="quiz-box" id="mt13">
+        <div class="quiz-q">13. UCIe (Universal Chiplet Interconnect Express) is significant for AI hardware because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It replaces HBM with a standardized optical memory interface for chiplet packages</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">It provides an open standard for high-bandwidth die-to-die connections, enabling chips from different manufacturers to communicate at near-monolithic speeds within a package</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It defines the PCIe 7.0 protocol, doubling host-to-GPU bandwidth in future AI servers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">It standardizes the HBM interposer dimensions so memory stacks are interchangeable between GPU vendors</button>
+        </div>
+        <div class="quiz-feedback right">Correct. UCIe defines electrical and protocol specifications for die-to-die interconnect, allowing chiplets from Intel, AMD, ARM, Qualcomm, and others to be combined in a single package with high-bandwidth, low-latency connections — critical for disaggregated AI accelerator designs.</div>
+        <div class="quiz-feedback wrong">UCIe is a die-to-die interconnect standard for chiplet integration, backed by Intel, AMD, ARM, Qualcomm, and others. It is not an optical standard, not PCIe, and not an HBM packaging standard. Its importance for AI is enabling multi-vendor chiplet compositions at near-on-chip bandwidth.</div>
+      </div>
+
+      <div class="quiz-box" id="mt14">
+        <div class="quiz-q">14. NVLink 4.0 on the H100 provides ~900 GB/s total bidirectional bandwidth. This is critical for LLM training because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">It allows the H100 to bypass its HBM and access system DRAM directly at high speed</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">It enables tensor and pipeline parallelism across multiple GPUs by providing sufficient bandwidth to communicate weight gradients and activations without NVLink becoming the dominant bottleneck</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">It provides a direct GPU-to-storage interface, enabling in-place checkpointing during training</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">NVLink bandwidth is irrelevant for training; it is only used during inference serving</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tensor parallelism splits weight matrices across GPUs and requires all-reduce communication of partial sums each forward pass. Pipeline parallelism passes activations between stages. Both require high inter-GPU bandwidth. NVLink 4.0's ~900 GB/s makes these viable for large models without communication becoming the primary bottleneck.</div>
+        <div class="quiz-feedback wrong">NVLink is the inter-GPU interconnect that enables multi-GPU training strategies (tensor parallelism, pipeline parallelism) by providing sufficient bandwidth for gradient and activation communication. Without high NVLink bandwidth, models too large for a single GPU's HBM would be severely communication-bottlenecked.</div>
+      </div>
+
+      <div class="quiz-box" id="mt15">
+        <div class="quiz-q">15. Co-packaged optics (CPO) is most likely to impact AI infrastructure first in which application?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Replacing HBM with optical memory stacks directly on the GPU interposer by 2025</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">Providing low-latency optical connections between CPU and GPU within a single server PCIe slot</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">Data-center network switches and server-to-server interconnects, where high bandwidth over multi-meter cable runs makes optical efficiency advantages most impactful</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">On-chip SRAM-to-GPU-core connections, replacing the copper global interconnect layer</button>
+        </div>
+        <div class="quiz-feedback right">Correct. CPO's energy-per-bit advantage scales with distance — making it most impactful first at the data-center networking layer (top-of-rack switches, server-to-server cables), where electrical interconnects at 400G+ speeds face rising power costs. NVIDIA has announced CPO for Spectrum-X switches; on-package and on-chip optical links are further out.</div>
+        <div class="quiz-feedback wrong">Optical physics means CPO is most valuable where electrical signaling at high bandwidth over distance is most power-intensive — data-center switch interconnects and server cables. On-chip and on-package optical is significantly further from commercial deployment, while switch-level CPO is already in product announcements for 2025–2026.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">Restart Module</button>
+    </div>
+  </div>
+
+</div><!-- end content-area -->
+
+<script>
+var COURSE_ID='the-hardware-race';
+var MODULE_ID='the-m5';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI hardware tutor for AESOP AI Academy, The Hardware Race course, Module 5: The Memory Bandwidth Bottleneck. This lab covers Lesson 1: memory bandwidth fundamentals, arithmetic intensity, the Roofline model, the memory hierarchy (registers, SRAM, HBM, PCIe), and the 1994 Wulf-McKee memory wall paper. Help students understand why AI inference and attention layers are memory-bandwidth-bound, how to calculate arithmetic intensity (FLOP/byte), and how the Roofline model predicts performance limits. Use real GPU specifications (H100: 3.35 TB/s HBM3, ~2 petaFLOPS FP8). Be precise, cite real numbers, and relate concepts to actual AI workloads. Warmly redirect any off-topic questions.',
+
+  l2:'You are an expert AI hardware tutor for AESOP AI Academy, The Hardware Race course, Module 5: The Memory Bandwidth Bottleneck. This lab covers Lesson 2: HBM architecture — through-silicon vias, DRAM stacking, silicon interposers, HBM generations (HBM1 through HBM3e), AMD Fiji (2015), NVIDIA V100 (2017), and the 2023 HBM supply crunch caused by AI accelerator demand. Explain why HBM costs more than GDDR per gigabyte (packaging, yield challenges, TSV process), why its wide bus is more efficient than narrow GDDR at high bandwidth, and the supply chain dynamics (SK Hynix, Samsung, Micron). Use real specifications and documented events. Warmly redirect off-topic questions.',
+
+  l3:'You are an expert AI hardware tutor for AESOP AI Academy, The Hardware Race course, Module 5: The Memory Bandwidth Bottleneck. This lab covers Lesson 3: why Transformer attention is memory-bandwidth-bound — quadratic O(N²) scaling of the attention matrix, KV cache mechanics and sizing, FlashAttention (Tri Dao, Stanford, 2022) and its tiling/kernel-fusion approach, FlashAttention v2 and v3, and grouped-query attention (GQA) for KV cache reduction. Help students calculate real KV cache sizes for specific models (Llama 2 70B, Mistral 7B, etc.) and understand why these exceed single-GPU HBM capacity at scale. Be precise with calculations and reference real papers and model architectures. Warmly redirect off-topic questions.',
+
+  l4:'You are an expert AI hardware tutor for AESOP AI Academy, The Hardware Race course, Module 5: The Memory Bandwidth Bottleneck. This lab covers Lesson 4: technologies beyond HBM — processing-in-memory (Samsung HBM-PIM/Aquabolt-XL, ISSCC 2021; SK Hynix AiM), chiplet interconnect standards (UCIe, UALink announced May 2024), NVLink 4.0 and multi-GPU bandwidth, and co-packaged optics (CPO, Ayar Labs TeraPHY, NVIDIA Spectrum-X). Discuss technical tradeoffs, practical limitations of PIM for general AI workloads, the competitive dynamics of open standards vs NVIDIA proprietary NVLink, and the timeline for optical interconnects to impact AI clusters. Use real documented products and announcements. Warmly redirect off-topic questions.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Great question about bandwidth fundamentals. The key insight is arithmetic intensity: if a GPU operation reads 8 bytes but only performs 2 FLOP, its arithmetic intensity is 0.25 FLOP/byte. Modern GPUs like the H100 have a 'ridge point' around 200+ FLOP/byte in FP16 — so any operation below that ridge is memory-bandwidth-bound. Attention layers typically fall around 1–10 FLOP/byte, far into the bandwidth-bound region. What aspect of the Roofline model would you like to explore further?",
+    "Excellent — let's think about the memory hierarchy. From fastest to slowest: GPU registers (~100 TB/s effective), L1/shared SRAM (~30 TB/s), L2 cache (~9 TB/s), HBM3 (~3.35 TB/s on H100), PCIe (~128 GB/s), NVLink (~900 GB/s). The key principle: the further from the compute core, the slower and larger the memory. An IO-aware algorithm tries to keep hot data in SRAM and minimize HBM round-trips. Does that connect to your question?",
+    "Good point. The Wulf-McKee 1994 prediction was stark: processor performance compounding at 54% per year vs DRAM bandwidth at 7% per year means the gap doubles roughly every 4 years. By 2024, this gap has grown enormous. That's why the HBM3 bandwidth of 3.35 TB/s on H100 is still the binding constraint for attention layers, even though the GPU can theoretically execute 2 petaFLOPS. The memory wall is very real. What else would you like to work through?"
+  ],
+  l2:[
+    "HBM's TSV process is where the cost comes from. Each DRAM die needs thousands of vertical copper vias drilled through 50+ micrometers of silicon — a precision etching and plating process with lower yields than standard DRAM. Stacking 8–12 dies with alignment tolerances under 1 micron adds further yield risk. The silicon interposer itself — a large piece of engineered silicon with thousands of routing traces — can cost as much as the DRAM dies. GDDR6X by comparison is a standard package on a PCB. What specific tradeoff would you like to dig into?",
+    "The V100 inflection point in 2017 is really worth understanding. NVIDIA gave the V100 900 GB/s of HBM2 bandwidth versus 484 GB/s for the GTX 1080 Ti's GDDR5X. For attention operations with arithmetic intensity around 2 FLOP/byte, the V100 was nearly 2× faster purely from bandwidth — before Tensor Cores even entered the picture. AWS launched P3 instances with V100s in October 2017, and every major lab shifted training there almost immediately. HBM went from a graphics curiosity to a mandatory AI component within two years. What else about HBM's history?",
+    "The 2023 HBM supply crunch was genuinely geopolitical in scale. NVIDIA's H100 orders from hyperscalers (Microsoft, Google, Amazon, Meta) in 2023 required HBM3 that only SK Hynix could supply in volume — Samsung hadn't qualified HBM3 for H100 yet, and Micron was even further behind. Multi-year allocation agreements locked up supply. H100 spot prices exceeded $40,000 not because NVIDIA charged that — they sold at ~$30K list — but because secondary market demand from AI startups who couldn't get allocations bid up prices. What aspect of this supply chain would you like to analyze?"
+  ],
+  l3:[
+    "Let's work through a KV cache calculation. For Mistral 7B: 32 layers, 8 KV heads (it uses GQA), 128 head dimension, FP16, 32K context. Calculation: 32 × 8 × 128 × 2 (K+V) × 2 bytes × 32,768 tokens = 32 × 8 × 128 × 2 × 2 × 32768 = 32 × 8 × 128 × 131,072 bytes ≈ 4.3 GB per batch item. That's remarkably small because Mistral uses only 8 KV heads vs 32 query heads — GQA reduces the cache by 4×. A full MHA model with 32 KV heads would need ~17 GB at the same context. Does that help clarify GQA's impact?",
+    "FlashAttention's tiling insight is elegant. Standard attention: compute Q@K^T (N×N matrix) → write to HBM → read back → softmax → write to HBM → read back → @V. Each write/read of the N×N matrix costs O(N²) HBM bandwidth. FlashAttention tiles: take a block of Q rows and a block of K/V columns that fit in SRAM (~256KB). Compute partial attention scores, apply online softmax (no materialization needed), accumulate into output. Repeat. The full N×N matrix never exists in HBM. HBM reads/writes drop from O(N²) to O(N) for intermediate values. That's why FlashAttention is faster even though it executes the same number of FLOPs. Want to trace through a specific example?",
+    "The arithmetic intensity of a standard attention forward pass (without FlashAttention) is approximately: FLOPs = 4 × B × N² × D (for two matrix multiplies and softmax). Bytes accessed = 4 × B × N² × D + 2 × B × N × D × 4 (reads + writes of QKV and attention matrix). For large N, the N² terms dominate: arithmetic intensity ≈ 1 FLOP/byte. The H100's ridge point in FP16 is ~200 FLOP/byte. So standard attention operates at about 0.5% of peak FLOP utilization — 99.5% of the time the arithmetic units are waiting for HBM. FlashAttention recovers some of this by increasing effective arithmetic intensity per HBM access through tiling. What else would you like to explore?"
+  ],
+  l4:[
+    "Comparing PIM vs co-packaged optics for LLM training by 2027: PIM is most useful for inference, not training. Training requires flexible, programmable compute (backpropagation through arbitrary graph topologies), which PIM's simple SIMD engines cannot handle. PIM works for forward-pass operations with regular structure (GEMV, activation functions) but cannot run full training loops. CPO addresses a different problem: inter-node bandwidth in 100K-GPU clusters. By 2027, CPO at the switch and NIC level seems more likely to matter for training at scale — it directly addresses the all-reduce communication bottleneck in data-parallel training. PIM will matter more for inference serving cost reduction. Does that framing help?",
+    "UALink's strategic significance is about breaking NVIDIA's NVLink monopoly in scale-out AI networking. Currently, connecting 8 H100s with NVLink requires NVSwitch — a proprietary NVIDIA chip. At cluster scale (tens of thousands of GPUs), operators must use InfiniBand or Ethernet for inter-node communication, which is much slower than NVLink. UALink aims to provide NVLink-class bandwidth with an open standard that AMD, Intel, and custom ASIC vendors can implement — meaning a Google TPU cluster or AMD MI300X cluster could potentially achieve the same scale-out bandwidth as an NVIDIA NVLink fabric. The catch: it's a 2024 announcement; commercial deployment depends on ecosystem adoption. What would you like to analyze further?",
+    "Ayar Labs' TeraPHY chiplet is a useful concrete example of CPO. It's a photonic I/O chiplet: place it next to a GPU or switch ASIC on a silicon interposer, and it provides 2 Tb/s (terabits, not bytes) of optical bandwidth using about 5 picojoules per bit. For comparison, a typical SerDes electrical link at 112 Gbps consumes ~5–15 pJ/bit over short distances but rises sharply at longer cable runs. Optical is distance-independent. For a 200-meter fiber run in a large data center, electrical solutions require expensive retimers at each hop; optical signals propagate with only modulator/detector energy cost. This is why CPO matters most at the data-center networking layer. What else about the optical interconnect landscape?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbackReplies[labId]||_fallbackReplies['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1)%arr.length;
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  if(role==='user'){msgs.scrollTop=msgs.scrollHeight;}else{requestAnimationFrame(function(){var dt=div.getBoundingClientRect().top-msgs.getBoundingClientRect().top;msgs.scrollTop+=dt;});}
+  return div;
+}
+
+function handleKey(e,labId){
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    chatSend(labId);
+  }
+}
+
+function resetChat(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  msgs.innerHTML='';
+  var openers={
+    l1:'Welcome to Lab 1. I\'m here to help you understand memory bandwidth, arithmetic intensity, and the Roofline model as they apply to AI hardware. Ask me about specific GPU specs, why attention layers are bandwidth-bound, or how to calculate whether your workload hits the compute or bandwidth ceiling. Where would you like to start?',
+    l2:'Welcome to Lab 2. Let\'s dig into High Bandwidth Memory — the stacking process, interposer economics, generational improvements from HBM1 through HBM3e, and the supply-chain dynamics that made HBM a geopolitical commodity in 2023. What aspect would you like to explore first?',
+    l3:'Welcome to Lab 3. Let\'s analyze attention memory bandwidth in depth — KV cache sizing, FlashAttention\'s tiling strategy, grouped-query vs multi-head attention tradeoffs, and how these interact with real GPU memory capacity. Want to work through a calculation, or explore a specific model\'s memory profile?',
+    l4:'Welcome to Lab 4. Let\'s explore the technologies competing to push past HBM\'s limits — processing-in-memory, chiplet interconnect standards like UCIe and UALink, co-packaged optics, and how these fit into the trajectory of AI accelerator design. What would you like to examine first?'
+  };
+  addMsg(labId,'ai',openers[labId]||openers['l1']);
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(typeof chatExchanges[labId]==='undefined') chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var rb=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:rb});
+    addMsg(labId,'ai',rb);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+  var success=false;
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var payload={
+        model:'claude-opus-4-5',
+        max_tokens:500,
+        system:LAB_SYSTEM_PROMPTS[labId]||LAB_SYSTEM_PROMPTS['l1'],
+        messages:chatHistories[labId]
+      };
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I\'m having trouble responding. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      success=true;
+      break;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      success=true;
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+updateTabs();
+</script>
+</body>
+</html>

@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-23 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>The Hardware Race — M6: Inference vs. Training Hardware</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- the-hardware-race-m6 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(79,207,138,0.06);border:1px solid rgba(79,207,138,0.18);color:#4fcf8a;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.mt-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.mt-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.compare-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.85rem;}
+.compare-table th{background:rgba(var(--accent-rgb),0.06);color:var(--accent);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.6rem 0.85rem;border:1px solid var(--border-dark);text-align:left;}
+.compare-table td{padding:0.6rem 0.85rem;border:1px solid var(--border-dark);color:#6e6861;line-height:1.6;vertical-align:top;}
+.compare-table tr:nth-child(even) td{background:rgba(255,255,255,0.01);}
+.compare-table td strong{color:#a89f93;}
+.metric-row{display:flex;gap:1rem;margin:1rem 0;flex-wrap:wrap;}
+.metric-card{flex:1;min-width:140px;background:rgba(var(--accent-rgb),0.03);border:1px solid var(--border-dark);border-radius:6px;padding:0.85rem 1rem;}
+.metric-val{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:var(--gold);line-height:1;}
+.metric-label{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-top:0.3rem;}
+.metric-note{font-size:0.75rem;color:#4a5a6a;margin-top:0.25rem;line-height:1.5;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.75rem 1.25rem 1.25rem;}.metric-row{flex-direction:column;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══ L1: Two Modes, Two Hardware Philosophies ═══ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 1</div>
+    <h1>Two Modes, Two Hardware Philosophies</h1>
+    <div class="tagline">Training builds knowledge. Inference delivers it. The silicon behind each task looks nothing alike.</div>
+    <div class="lesson-question">Why can't one chip optimally do both?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Context — January 2023">
+      <p class="story-text">When Microsoft deployed ChatGPT at scale following the November 2022 launch, its Azure infrastructure teams discovered an uncomfortable truth: the same GPU clusters that had trained GPT-3.5 were <em>expensive and inefficient</em> for serving millions of daily queries. Training and inference, it turned out, are not just different workloads — they demand different hardware architectures entirely.</p>
+    </div>
+
+    <h3 class="section-heading">The Fundamental Split</h3>
+    <div class="section-body">
+      <p>Modern large language models live two very different lives. <em>Training</em> is the months-long process of adjusting billions of parameters by computing gradients across massive datasets. <em>Inference</em> is the millisecond-to-millisecond act of generating a response when a user submits a prompt. These two workloads have opposing computational signatures.</p>
+      <p>Training is <strong>compute-bound</strong>: the bottleneck is raw floating-point throughput. Every GPU cycle must be filled with matrix multiplications. GPT-4 training, estimated to have consumed roughly 25,000 A100 GPUs for approximately 90 to 100 days according to reporting from The Information and SemiAnalysis, demanded sustained throughput above all else.</p>
+      <p>Inference is often <strong>memory-bandwidth-bound</strong>: the bottleneck is how fast the chip can load model weights from memory into compute units. A 70-billion-parameter model in FP16 requires 140 GB of weight storage. Each token generated means streaming those weights across the memory bus — repeatedly, for every user.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Why This Matters</div>
+      <p>A chip optimized for training maximizes FLOPS. A chip optimized for inference maximizes memory bandwidth and minimizes latency per token. Maximizing both simultaneously is physically constrained by power budgets and die area — hence the fork into specialized hardware.</p>
+    </div>
+
+    <h3 class="section-heading">Roofline Model: The Physics of the Divide</h3>
+    <div class="section-body">
+      <p>Chip architects use the <em>roofline model</em> to visualize where a workload hits its ceiling. Every operation has an <strong>arithmetic intensity</strong> — the ratio of floating-point operations to bytes of memory traffic. Training large batch matrix multiplications have high arithmetic intensity (hundreds of FLOPs per byte), so they benefit from raw compute. Inference with small batch sizes has arithmetic intensity often below 10 FLOPs per byte, making it memory-bandwidth-limited.</p>
+      <p>NVIDIA's A100 has 2 TB/s of HBM2e bandwidth and 312 TFLOPS of BF16 compute. Its compute-to-bandwidth ratio is roughly 156 FLOPs per byte — fine for training, but inference at batch size 1 barely scratches the surface of that compute capacity. The chip sits mostly idle on the compute side while memory transfers dominate latency.</p>
+    </div>
+
+    <div class="compare-table-wrap" style="overflow-x:auto;margin:1rem 0;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Training</th>
+            <th>Inference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Primary bottleneck</strong></td>
+            <td>Compute (FLOPS)</td>
+            <td>Memory bandwidth</td>
+          </tr>
+          <tr>
+            <td><strong>Batch size</strong></td>
+            <td>Thousands of samples</td>
+            <td>Often 1–32 requests</td>
+          </tr>
+          <tr>
+            <td><strong>Precision needed</strong></td>
+            <td>BF16 / FP32 mixed</td>
+            <td>INT8 / INT4 viable</td>
+          </tr>
+          <tr>
+            <td><strong>Duration</strong></td>
+            <td>Weeks to months</td>
+            <td>Milliseconds per token</td>
+          </tr>
+          <tr>
+            <td><strong>Memory footprint</strong></td>
+            <td>Weights + gradients + optimizer states (3–4× model size)</td>
+            <td>Weights + KV cache only</td>
+          </tr>
+          <tr>
+            <td><strong>Latency tolerance</strong></td>
+            <td>High (throughput matters)</td>
+            <td>Low (user-facing)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="section-heading">The KV Cache: Inference's Hidden Memory Burden</h3>
+    <div class="section-body">
+      <p>One inference-specific phenomenon with no training analog is the <em>key-value cache</em>. During autoregressive generation, each new token attends to all prior tokens' keys and values. Rather than recompute them, the model caches them in GPU memory. For a long context — GPT-4's 128K token window — the KV cache can consume tens of gigabytes of VRAM per concurrent user. This is purely an inference-time memory pressure that never appears during training.</p>
+      <p>Anthropic's Claude models running on AWS Inferentia2 chips must manage KV cache allocation dynamically across thousands of simultaneous sessions — a problem training hardware never encounters. This drove AWS to architect Inferentia2 with specific on-chip SRAM pools sized for KV cache patterns rather than gradient storage.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Key Terms</div>
+      <div class="key-term"><span class="kt-term">Arithmetic Intensity</span><span class="kt-def">Ratio of floating-point operations to bytes of data moved; determines whether a workload is compute-bound or memory-bound.</span></div>
+      <div class="key-term"><span class="kt-term">KV Cache</span><span class="kt-def">Memory buffer storing attention key and value tensors for all prior tokens in a generation sequence; purely an inference-time cost.</span></div>
+      <div class="key-term"><span class="kt-term">Roofline Model</span><span class="kt-def">Framework plotting achievable performance against arithmetic intensity, revealing whether compute or bandwidth is the binding constraint.</span></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Open Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ Q1 ═══ -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Lesson 1 Quiz</h1>
+    <div class="tagline">Two Modes, Two Hardware Philosophies — check your understanding</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-1">
+      <div class="quiz-q">1. Why is inference often described as memory-bandwidth-bound rather than compute-bound?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Inference uses higher floating-point precision than training.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">At small batch sizes, the chip spends most time loading model weights from memory, not computing.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Inference hardware has no on-chip compute units.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Training uses less memory than inference per operation.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. With batch size 1, arithmetic intensity drops below the chip's compute-to-bandwidth ratio — weight loading becomes the bottleneck, not multiplication.</div>
+      <div class="quiz-feedback wrong">Not quite. The key insight is arithmetic intensity at small batch sizes — weight streaming dominates the time budget, not floating-point precision or hardware design.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-2">
+      <div class="quiz-q">2. What is the KV cache and why does it only appear during inference?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A cache of gradient updates stored to speed up backpropagation.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A kernel-level virtual memory page for model checkpoints.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Stored attention key/value tensors for all prior tokens, avoiding recomputation during autoregressive generation.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A hardware register file on the GPU that holds weight parameters.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Training processes full sequences in parallel (no autoregression), so no KV cache is needed. Inference generates one token at a time and must cache prior context.</div>
+      <div class="quiz-feedback wrong">Incorrect. The KV cache is specific to attention during autoregressive token generation — it stores keys and values so the model doesn't recompute them for every new token.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-3">
+      <div class="quiz-q">3. Training large LLMs requires storing gradients and optimizer states in addition to weights. Approximately how much more memory does this require compared to weights alone?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">About 10% more.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">3–4× the model's weight size.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Exactly 2× the model's weight size.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">No extra memory — gradients overwrite weights in place.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. With mixed-precision training using Adam optimizer: FP32 master weights + FP32 gradients + two FP32 optimizer moments ≈ 16 bytes per parameter, roughly 3–4× the FP16 weight footprint.</div>
+      <div class="quiz-feedback wrong">Incorrect. Adam optimizer requires storing first and second moment estimates in FP32 alongside FP32 master weights and FP16 working weights — totaling 3–4× the weight size.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 1 ═══ -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1 — Roofline Reasoning</h1>
+    <div class="tagline">Discuss training vs. inference hardware constraints with an AI tutor</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're advising a startup that just finished training a 7B-parameter language model. They want to serve it to 10,000 concurrent users. Discuss with the AI tutor: what hardware tradeoffs should they consider when moving from training infrastructure to inference infrastructure?</p>
+      <div class="lab-prompt">Starter: "We trained our 7B model on A100s. Should we serve on A100s too, or is there a better option for inference?"</div>
+    </div>
+    <div class="lab-chat" id="chat-lab1">
+      <div class="lab-chat-header">
+        <span>AI Tutor — Hardware Architecture</span>
+        <div class="chat-badge">Lab 1</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you think through the training-to-inference hardware transition. What's your first question about moving from A100 training clusters to production inference infrastructure?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Ask about inference vs. training hardware…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═══ L2: Training Chips — The A100/H100 Era ═══ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 2</div>
+    <h1>Training Chips — The A100 and H100 Era</h1>
+    <div class="tagline">NVIDIA's datacenter GPUs became the default training substrate. Understanding why reveals what training hardware must do.</div>
+    <div class="lesson-question">What architectural decisions make the H100 four times faster than the A100 at transformer training?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="The Hopper Launch — March 2022">
+      <p class="story-text">At GTC 2022, Jensen Huang unveiled the H100 — the first GPU built from the ground up with transformer workloads explicitly in mind. The Hopper architecture introduced the <em>Transformer Engine</em>, a dedicated hardware block that dynamically switches between FP8 and BF16 precision within a single layer pass. The impact was immediate: the H100 delivered roughly <em>4× the training throughput</em> of the A100 on GPT-style models, a performance leap that arrived precisely as demand for training capacity exploded post-ChatGPT.</p>
+    </div>
+
+    <h3 class="section-heading">What Training Hardware Must Deliver</h3>
+    <div class="section-body">
+      <p>Training a frontier model is, at its core, a sustained matrix multiplication problem. The forward pass computes activations; the backward pass computes gradients using those same weight matrices. Both phases demand <em>high-precision arithmetic</em> (gradients must accumulate without overflow), <em>massive parallelism</em> across thousands of chips, and <em>high-bandwidth interconnects</em> to synchronize gradient updates.</p>
+      <p>The A100 (Ampere, 2020) shipped with 312 TFLOPS of BF16 Tensor Core performance and 600 GB/s NVLink 3.0 chip-to-chip bandwidth. Each chip in a DGX A100 server is connected to seven others via NVLink — essential for tensor and pipeline parallelism across a node. Scaling beyond a single node required InfiniBand at 200 Gb/s, with all-reduce collective operations distributing gradient updates across the cluster.</p>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-val">312</div>
+        <div class="metric-label">TFLOPS BF16</div>
+        <div class="metric-note">NVIDIA A100 · Tensor Core peak</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">989</div>
+        <div class="metric-label">TFLOPS BF16</div>
+        <div class="metric-note">NVIDIA H100 SXM · Transformer Engine</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">3.35×</div>
+        <div class="metric-label">Throughput Gain</div>
+        <div class="metric-note">H100 vs A100 on GPT-3 training benchmark</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">900 GB/s</div>
+        <div class="metric-label">NVLink 4.0</div>
+        <div class="metric-note">H100 intra-node bandwidth</div>
+      </div>
+    </div>
+
+    <h3 class="section-heading">The Transformer Engine: FP8 Mixed Precision</h3>
+    <div class="section-body">
+      <p>The H100's most significant training innovation is its Transformer Engine. Traditional mixed-precision training (introduced by NVIDIA and Baidu researchers in 2018) uses FP16 for forward activations and FP32 for gradient accumulation. The Transformer Engine extends this by introducing <em>FP8 computation</em> — 8-bit floating point — for the most numerically tolerant operations within each transformer block.</p>
+      <p>The key challenge with FP8 is its limited dynamic range. The Transformer Engine maintains per-tensor scaling factors, automatically adjusting them each iteration to prevent underflow or overflow. This <em>dynamic range management</em> happens in hardware, transparently to the framework. The result is near-FP16 accuracy with roughly 2× the arithmetic throughput — verified in NVIDIA's H100 launch documentation and subsequently in production at Meta's training runs for Llama 2.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Real Case: Meta Llama 2 Training</div>
+      <p>Meta trained Llama 2 70B on 2,000 A100 GPUs over approximately 1,720,000 GPU-hours, consuming roughly 3.3 million tokens per second. The training run used FSDP (Fully Sharded Data Parallelism) across nodes, where gradient synchronization latency across InfiniBand links was the primary inter-node bottleneck. Meta reported in the Llama 2 technical report that hardware failures during training caused approximately 2,000 individual job restarts — underscoring why checkpoint frequency is a first-class training hardware concern.</p>
+    </div>
+
+    <h3 class="section-heading">NVLink and the Multi-GPU Training Problem</h3>
+    <div class="section-body">
+      <p>No single GPU can hold a frontier model's weights plus its optimizer states. GPT-3 at 175 billion parameters requires roughly 2.8 TB in FP32 optimizer state — far exceeding any single chip's memory. Training therefore requires <em>model parallelism</em>: splitting either layers (pipeline parallelism) or weight tensors (tensor parallelism) across multiple GPUs.</p>
+      <p>Tensor parallelism requires all-reduce operations after every transformer layer's forward and backward pass — typically every few milliseconds. At this frequency, the interconnect speed is critical. NVLink 4.0's 900 GB/s bidirectional bandwidth (H100) means an all-reduce across eight chips on a single node completes in microseconds. InfiniBand HDR at 200 Gb/s (roughly 25 GB/s) handles the slower inter-node reduction. The architectural consequence: training clusters are designed as <em>fat-tree networks</em> with high bisection bandwidth to minimize all-reduce latency.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Key Terms</div>
+      <div class="key-term"><span class="kt-term">Transformer Engine</span><span class="kt-def">NVIDIA H100 hardware block that automatically manages FP8/BF16 precision switching per tensor to maximize throughput without accuracy loss.</span></div>
+      <div class="key-term"><span class="kt-term">Tensor Parallelism</span><span class="kt-def">Model parallelism strategy splitting individual weight matrices across GPUs; requires all-reduce every forward/backward pass.</span></div>
+      <div class="key-term"><span class="kt-term">FSDP</span><span class="kt-def">Fully Sharded Data Parallelism — shards optimizer states, gradients, and parameters across ranks, reducing per-GPU memory by the number of GPUs in the shard group.</span></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+    <button class="pnav-btn" onclick="goPage('p-q2')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Open Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ Q2 ═══ -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Lesson 2 Quiz</h1>
+    <div class="tagline">Training Chips — the A100/H100 Era</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q2-1">
+      <div class="quiz-q">1. What is the primary innovation of the H100's Transformer Engine compared to standard mixed-precision training?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It eliminates the need for gradient accumulation entirely.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">It dynamically manages FP8 precision with per-tensor scaling, achieving higher throughput without accuracy loss.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It uses FP64 precision for all operations to improve numerical stability.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It replaces HBM memory with on-chip SRAM for all weight storage.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The Transformer Engine's automatic per-tensor scaling solves FP8's limited dynamic range problem, enabling near-FP16 accuracy with roughly 2× the arithmetic throughput.</div>
+      <div class="quiz-feedback wrong">Incorrect. The Transformer Engine uses FP8 (not FP64) with automatic per-tensor scaling factors to manage dynamic range — this is what enables higher throughput.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-2">
+      <div class="quiz-q">2. Why does tensor parallelism place such stringent demands on interconnect bandwidth?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Because model checkpoints must be saved to shared storage after every layer.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Because each GPU must download updated weights from a central parameter server each step.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Because all-reduce operations must complete after every transformer layer's forward and backward pass — multiple times per second.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Because activation tensors must be replicated across all GPUs before the forward pass.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Tensor parallelism splits weight matrices; recomposing partial outputs requires all-reduce after every layer, making high-frequency, low-latency interconnects essential.</div>
+      <div class="quiz-feedback wrong">Incorrect. Tensor parallelism requires all-reduce after every individual transformer layer — not just at step boundaries — making interconnect latency a per-layer training cost.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-3">
+      <div class="quiz-q">3. Meta's Llama 2 70B training run experienced approximately 2,000 job restarts. What does this reveal about training infrastructure requirements?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">That NVIDIA GPUs are fundamentally unreliable for large-scale training.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">That checkpoint frequency and fault tolerance are first-class engineering concerns in training hardware design.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">That Llama 2 used incorrect training hyperparameters that caused instability.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">That distributed training across nodes is impossible without custom hardware.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. At the scale of thousands of GPUs running for months, hardware failures are statistically near-certain. Checkpointing strategy and fast restart capability are infrastructure requirements, not afterthoughts.</div>
+      <div class="quiz-feedback wrong">Incorrect. Failures at scale are statistically expected — with 2,000 GPUs running for months, individual component failures are inevitable. The lesson is designing for fault tolerance and checkpoint recovery.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 2 ═══ -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2 — Training Cluster Design</h1>
+    <div class="tagline">Explore the architectural decisions behind frontier model training hardware</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're a hardware architect at a lab planning to train a 100B-parameter model. Discuss with the AI tutor how you'd configure your GPU cluster: what parallelism strategies would you use, what interconnect do you need, and how does the H100's Transformer Engine affect your precision choices?</p>
+      <div class="lab-prompt">Starter: "We need to train a 100B parameter model. Walk me through how to think about parallelism strategy and interconnect requirements."</div>
+    </div>
+    <div class="lab-chat" id="chat-lab2">
+      <div class="lab-chat-header">
+        <span>AI Tutor — Training Architecture</span>
+        <div class="chat-badge">Lab 2</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">Welcome to Lab 2. Let's work through the hardware design for a 100B-parameter training run. What aspect would you like to start with — memory capacity planning, parallelism strategy, or interconnect design?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Ask about training cluster architecture…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═══ L3: Inference Chips — Purpose-Built Accelerators ═══ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 3</div>
+    <h1>Inference Chips — Purpose-Built Accelerators</h1>
+    <div class="tagline">Google's TPUs, AWS Inferentia, Groq's LPU, and NVIDIA's inference-optimized line redrew the economics of serving AI at scale.</div>
+    <div class="lesson-question">When the workload shifts from training to serving, what does optimal silicon look like — and who got there first?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="Groq's LPU — February 2024">
+      <p class="story-text">When Groq's inference service went public in early 2024, benchmarkers clocked it serving Llama 2 70B at over <em>300 tokens per second per user</em> — roughly 10× faster than typical GPU-based inference endpoints. Groq's chip, the Language Processing Unit, achieved this not through raw FLOPS but through a radically different architectural philosophy: eliminating memory bandwidth as the bottleneck entirely by placing all model weights in on-chip SRAM.</p>
+    </div>
+
+    <h3 class="section-heading">The Inference Optimization Axes</h3>
+    <div class="section-body">
+      <p>Purpose-built inference accelerators compete on three primary dimensions: <em>tokens per second per chip</em> (throughput), <em>time-to-first-token</em> (latency), and <em>cost per million tokens</em> (efficiency). These metrics often trade off against each other and against chip area — creating distinct architectural philosophies.</p>
+      <p>Four major design approaches have emerged from the 2020–2025 inference hardware wave, each reflecting a different hypothesis about where the bottleneck lies and how to eliminate it.</p>
+    </div>
+
+    <div class="compare-table-wrap" style="overflow-x:auto;margin:1rem 0;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Chip</th>
+            <th>Key Insight</th>
+            <th>Throughput Advantage</th>
+            <th>Tradeoff</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Groq LPU</strong></td>
+            <td>All weights in on-chip SRAM; deterministic execution, zero DRAM</td>
+            <td>~300 tok/s (Llama 70B, 2024)</td>
+            <td>Limited model size; high chip cost</td>
+          </tr>
+          <tr>
+            <td><strong>Google TPU v5e</strong></td>
+            <td>Matrix multiply units + high-BW HBM; bfloat16 native; scale-out mesh</td>
+            <td>Optimized for batch; strong at high QPS</td>
+            <td>Requires quantization or TPU-optimized models</td>
+          </tr>
+          <tr>
+            <td><strong>AWS Inferentia2</strong></td>
+            <td>Custom ISA, on-chip SRAM scratchpads, NeuronCore clusters</td>
+            <td>4× lower cost than GPU for INT8 inference</td>
+            <td>Requires Neuron SDK compilation</td>
+          </tr>
+          <tr>
+            <td><strong>NVIDIA L40S</strong></td>
+            <td>Ada Lovelace GPU; INT8 Tensor Cores; lower power than H100</td>
+            <td>Good generality; high ecosystem support</td>
+            <td>Still DRAM-bound at small batch</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="section-heading">Google TPU v4 and v5e: The Systolic Array Philosophy</h3>
+    <div class="section-body">
+      <p>Google designed TPUs around <em>systolic arrays</em> — grids of multiply-accumulate units that pass partial sums neighbor-to-neighbor, maximizing data reuse without the generality overhead of a GPU's SIMT model. This makes TPUs extremely efficient for the large matrix multiplications that dominate transformer computations when batch sizes are high.</p>
+      <p>The TPU v4, deployed in Google's AI Supercomputer pods from 2021, connected 4,096 chips via a 3D torus interconnect with 1.1 Tb/s total bandwidth per chip. Google used this infrastructure to serve production Bard (now Gemini) queries from early 2023. The TPU v5e (2023), optimized specifically for inference, trades peak FLOPS for lower power and cost-per-token — Google claimed 2× better performance per dollar for inference versus TPU v4 in their launch materials.</p>
+    </div>
+
+    <h3 class="section-heading">AWS Inferentia2: The Custom Silicon Bet</h3>
+    <div class="section-body">
+      <p>Amazon introduced Inferentia in 2019 and Inferentia2 in 2023, targeting the specific economics of serving ML models at AWS scale. Inferentia2 uses a NeuronCore v2 architecture with 32 MB of on-chip SRAM per core — compared to roughly 50 MB shared across an entire A100. This SRAM serves as a managed scratchpad for weights and activations in tight inference loops, dramatically reducing HBM traffic.</p>
+      <p>AWS reports Inferentia2-based instances (Inf2) deliver up to 4× higher throughput and 10× lower latency than comparable GPU instances for production NLP workloads. Anthropic signed a $4 billion partnership with AWS partly predicated on Inferentia2 and Trainium2 for production Claude serving — a public signal that purpose-built inference silicon is cost-competitive at hyperscale.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Quantization: The Software Lever on Inference Hardware</div>
+      <p>Purpose-built inference chips are designed to take maximum advantage of quantized weights. INT8 inference requires half the memory bandwidth of FP16 for weight loading; INT4 cuts it to a quarter. On chips like Inferentia2 and the L40S with native INT8 Tensor Cores, this translates directly to 2–4× higher throughput. The accuracy cost of INT8 quantization on models like Llama 2 was measured by Meta at under 1% perplexity degradation — an acceptable tradeoff for the inference cost reduction at millions of daily queries.</p>
+    </div>
+
+    <h3 class="section-heading">Continuous Batching: The Software–Hardware Co-design</h3>
+    <div class="section-body">
+      <p>Inference hardware efficiency depends critically on keeping arithmetic intensity high — which requires batching multiple user requests together. <em>Continuous batching</em>, introduced in Orca (2022) and popularized by vLLM (2023), allows new requests to join a batch mid-generation rather than waiting for all requests to finish. This keeps GPUs (and custom accelerators) from sitting idle between request arrivals, raising effective batch size and thus arithmetic intensity.</p>
+      <p>vLLM's PagedAttention additionally manages KV cache memory like virtual memory pages — reducing fragmentation that previously wasted 60–80% of KV cache VRAM. Together, these techniques are as important to inference throughput as the hardware itself, which is why inference chip vendors (NVIDIA, AWS, Groq) all provide tight software stack integrations rather than selling bare silicon.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Key Terms</div>
+      <div class="key-term"><span class="kt-term">Language Processing Unit (LPU)</span><span class="kt-def">Groq's inference chip using on-chip SRAM to hold all model weights, eliminating DRAM bandwidth as the throughput bottleneck.</span></div>
+      <div class="key-term"><span class="kt-term">Continuous Batching</span><span class="kt-def">Inference serving technique allowing new requests to join active batches mid-generation, keeping hardware utilization high.</span></div>
+      <div class="key-term"><span class="kt-term">PagedAttention</span><span class="kt-def">vLLM's KV cache memory management system using virtual-memory-style paging to reduce fragmentation and increase inference throughput.</span></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+    <button class="pnav-btn" onclick="goPage('p-q3')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Open Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ Q3 ═══ -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Lesson 3 Quiz</h1>
+    <div class="tagline">Inference Chips — Purpose-Built Accelerators</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q3-1">
+      <div class="quiz-q">1. Groq's LPU achieved dramatically higher inference throughput than GPU-based systems primarily by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Running at a higher clock frequency than NVIDIA GPUs.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Using a larger number of HBM memory stacks per chip.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Storing all model weights in on-chip SRAM, eliminating DRAM bandwidth as the bottleneck.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Quantizing models to 2-bit precision, reducing weight size by 8×.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. By fitting weights in on-chip SRAM, the LPU eliminates the memory-bandwidth wall that limits GPU inference throughput at small batch sizes — the fundamental inference bottleneck.</div>
+      <div class="quiz-feedback wrong">Incorrect. Groq's key innovation is on-chip SRAM for weight storage, not clock speed or HBM. This eliminates the memory bandwidth bottleneck that constrains GPU inference performance.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-2">
+      <div class="quiz-q">2. Why does continuous batching improve inference hardware utilization compared to static batching?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">It allows new requests to join mid-generation, keeping batch sizes high and arithmetic intensity elevated even with variable request arrival rates.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It pre-computes all possible responses and caches them before any user submits a query.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It reduces the number of attention heads computed per layer, lowering latency.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">It uses speculative decoding to run multiple generation paths in parallel.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Static batching forces the accelerator to wait for all batch members to finish before accepting new work. Continuous batching fills those idle slots, keeping hardware utilization near 100%.</div>
+      <div class="quiz-feedback wrong">Incorrect. Continuous batching works by allowing mid-generation request insertion — solving the idle-wait problem of static batching where slow requests hold back the entire batch.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-3">
+      <div class="quiz-q">3. AWS's Anthropic partnership ($4B) was partly predicated on Inferentia2 and Trainium2. What does this signal about the inference silicon market?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">That NVIDIA GPUs are insufficient for inference and will be replaced entirely by custom chips.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">That inference workloads are too small to justify custom silicon investment.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">That purpose-built inference silicon is cost-competitive at hyperscale, making vertical integration between chip designers and AI model providers economically rational.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">That Anthropic will design its own inference chips independently of AWS.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. When serving billions of tokens daily, even modest per-token cost reductions from custom silicon translate to hundreds of millions in savings — justifying the tight vertical integration between hyperscalers and AI labs.</div>
+      <div class="quiz-feedback wrong">Incorrect. The partnership signals that custom inference silicon achieves cost-per-token advantages sufficient to justify deep integration between chip designers and AI model providers at hyperscale serving volumes.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 3 ═══ -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3 — Inference Architecture Decisions</h1>
+    <div class="tagline">Evaluate purpose-built inference chips for a real-world serving scenario</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>Your company needs to serve a Llama 2 70B model to 50,000 daily active users with a p99 latency target of 500ms for first token. Explore with the AI tutor the tradeoffs between Groq LPU, AWS Inferentia2, Google TPU v5e, and NVIDIA L40S for this workload.</p>
+      <div class="lab-prompt">Starter: "We need sub-500ms first-token latency for Llama 70B at scale. Which inference chip architecture should we evaluate first and why?"</div>
+    </div>
+    <div class="lab-chat" id="chat-lab3">
+      <div class="lab-chat-header">
+        <span>AI Tutor — Inference Hardware</span>
+        <div class="chat-badge">Lab 3</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">Welcome to Lab 3. You have a real latency target — sub-500ms first-token for Llama 70B — and four chip architectures to evaluate. This is a genuine engineering tradeoff. Where would you like to start: latency characteristics, throughput economics, or operational complexity of each platform?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Ask about inference chip tradeoffs…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+</div>
+
+<!-- ═══ L4: The Economics of Split Infrastructure ═══ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 4</div>
+    <h1>The Economics of Split Infrastructure</h1>
+    <div class="tagline">Training costs are one-time; inference costs are forever. The hardware decisions made at training time constrain the economics of every query that follows.</div>
+    <div class="lesson-question">How do the largest AI labs actually balance training and inference hardware spend — and what does that reveal about the future of the hardware market?</div>
+  </div>
+  <div class="lesson-body">
+    <div class="story-scene" data-label="OpenAI's Infrastructure Costs — 2023">
+      <p class="story-text">In late 2023, The Information reported that OpenAI spent approximately <em>$700,000 per day</em> running ChatGPT on Azure infrastructure — an annualized inference bill exceeding $250 million. Meanwhile, GPT-4 training was estimated at $50–$100 million as a one-time cost. The pattern was clear: <em>training is a project; inference is a business</em>. The ongoing compute bill dwarfs the upfront training investment within months of deployment.</p>
+    </div>
+
+    <h3 class="section-heading">Training Capex vs. Inference Opex</h3>
+    <div class="section-body">
+      <p>AI infrastructure finance distinguishes between <em>capital expenditure</em> (buying or reserving GPU clusters for training) and <em>operational expenditure</em> (ongoing cloud compute for serving). A model trained once can serve queries for years — meaning inference hardware costs accumulate indefinitely while training costs are amortized over the model's useful life.</p>
+      <p>For a model with 1 billion daily tokens served at $0.002 per thousand tokens (a rough 2024 market rate for GPT-4 class models), the annual inference cost is approximately $730 million. A GPT-4-class training run at an estimated $50–100 million becomes economically insignificant within two months of serving at that scale. This asymmetry drives the inference optimization arms race: every 10% reduction in inference cost-per-token translates to $73 million in annual savings at that serving volume.</p>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-card">
+        <div class="metric-val">$50–100M</div>
+        <div class="metric-label">GPT-4 Training Est.</div>
+        <div class="metric-note">One-time capital cost · 2023 estimates</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">$700K/day</div>
+        <div class="metric-label">ChatGPT Serving</div>
+        <div class="metric-note">Reported Azure inference bill · late 2023</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">&lt;3 months</div>
+        <div class="metric-label">Break-Even</div>
+        <div class="metric-note">When inference cost exceeds training cost</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">60–70%</div>
+        <div class="metric-label">Inference Share</div>
+        <div class="metric-note">Of total GPU cloud spend for AI workloads · 2024</div>
+      </div>
+    </div>
+
+    <h3 class="section-heading">The Training–Inference Chip Portfolio Strategy</h3>
+    <div class="section-body">
+      <p>In response to these economics, major AI labs have adopted <em>split hardware portfolios</em>: H100/A100 clusters for training new models, combined with purpose-built or cost-optimized inference hardware for production serving. This creates distinct procurement, operations, and software engineering requirements — effectively two separate infrastructure teams within the same organization.</p>
+      <p>Google's approach is illustrative. The company uses TPU v4 pods for training Gemini models and TPU v5e for serving — the v5e chip was explicitly designed for inference economics, trading some peak FLOPS for lower power and cost-per-token. Google Cloud reported at Next 2023 that TPU v5e provides approximately 2× better price-performance for inference versus TPU v4.</p>
+      <p>Microsoft (OpenAI's partner) takes a different approach: using A100 and H100 clusters in Azure for both training and inference, but at different utilization modes. Training jobs run in large dedicated reservations; inference runs on the same hardware but with a different cluster management regime optimized for latency and throughput targets rather than sustained throughput.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Real Case: Meta's Inference Cost Reduction Program</div>
+      <p>Meta's 2023 Annual Report disclosed that AI infrastructure efficiency was a primary cost management lever. Meta deployed quantization (INT8 and INT4) across production recommendation and language models, reportedly reducing inference compute costs by 30–40% for those models. At Meta's scale — serving billions of daily users — this translates to hundreds of millions in annual infrastructure savings. The Llama 2 technical report specifically discusses INT8 quantization results, reporting under 1% perplexity increase on MMLU benchmarks — validating quantization as a production-viable inference cost lever.</p>
+    </div>
+
+    <h3 class="section-heading">The Longer-Context Problem: Inference Gets More Expensive</h3>
+    <div class="section-body">
+      <p>A structural trend making inference hardware economics harder is context length expansion. GPT-4's jump from 8K to 128K context and Claude's 200K context window have dramatically increased KV cache memory requirements. At 128K tokens with a 70B model, the KV cache for a single session can exceed 50 GB — meaning a GPU with 80 GB HBM2e can serve only one such session at peak context.</p>
+      <p>This drives demand for KV cache offloading strategies (moving less-recently-used cache entries to CPU DRAM or NVMe SSD), and for hardware architectures with larger HBM capacity. The H100 NVL (NVLink) variant ships with 188 GB of HBM3e for exactly this reason — its primary use case is long-context inference, not training, despite being marketed as a training chip.</p>
+    </div>
+
+    <h3 class="section-heading">What the Split Means for the Hardware Market</h3>
+    <div class="section-body">
+      <p>The training-inference split is reshaping the competitive landscape. NVIDIA still dominates training (roughly 80% market share in datacenter GPU compute as of 2024) but faces meaningful competition in inference from AWS Inferentia, Google TPUs, and emerging players. The inference market's fragmentation reflects its diversity: different latency requirements, model sizes, and throughput targets reward different architectural approaches.</p>
+      <p>Analysts at SemiAnalysis estimated in 2024 that inference hardware spending would exceed training hardware spending for the first time by 2025, driven by the deployment of foundation models into production applications. This shift is already visible in NVIDIA's product roadmap — the Blackwell B200 includes a dedicated inference configuration (the B100) and features like FP4 precision and multi-instance GPU partitioning explicitly targeted at inference efficiency.</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Key Terms</div>
+      <div class="key-term"><span class="kt-term">Capex vs. Opex</span><span class="kt-def">Capital expenditure (one-time hardware purchase/reservation for training) versus operational expenditure (ongoing serving costs); inference Opex exceeds training Capex within months at scale.</span></div>
+      <div class="key-term"><span class="kt-term">KV Cache Offloading</span><span class="kt-def">Technique moving less-active KV cache entries from GPU HBM to CPU DRAM or NVMe to support long-context inference within GPU memory budgets.</span></div>
+      <div class="key-term"><span class="kt-term">Split Hardware Portfolio</span><span class="kt-def">Organizational strategy maintaining separate hardware fleets optimized for training (throughput) and inference (latency/cost-per-token) rather than using identical chips for both.</span></div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+    <button class="pnav-btn" onclick="goPage('p-q4')">Lesson Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Open Lab →</button>
+  </div>
+</div>
+
+<!-- ═══ Q4 ═══ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Lesson 4 Quiz</h1>
+    <div class="tagline">The Economics of Split Infrastructure</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q4-1">
+      <div class="quiz-q">1. OpenAI's reported ~$700K/day ChatGPT serving cost vs. ~$50–100M one-time GPT-4 training cost implies what about the training-inference economic relationship?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Training is the dominant long-term cost and should receive the most optimization attention.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Inference costs exceed training costs within months, making inference optimization the primary long-term financial lever.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Training and inference costs are roughly equal over the model's lifetime.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The model should be retrained frequently to reduce per-inference costs.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. At $700K/day, inference costs match GPT-4's estimated $50–100M training cost within 72–143 days. Every subsequent year of serving costs more than the original training — making inference the dominant optimization target.</div>
+      <div class="quiz-feedback wrong">Incorrect. At $700K/day inference spending, the one-time training cost is recovered within 3–4 months. Inference is the long-term dominant cost, not training.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-2">
+      <div class="quiz-q">2. Why does expanding context length (e.g., from 8K to 128K tokens) make inference hardware economics significantly harder?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Longer contexts require retraining the model with more parameters.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">The KV cache grows proportionally with context length, consuming GPU HBM and sharply reducing the number of concurrent sessions a single chip can serve.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Attention computation at long context requires FP64 precision, reducing throughput.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Longer contexts require more model parameters to be loaded, increasing weight storage.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. KV cache size scales with sequence length. At 128K tokens with a 70B model, a single session can require 50+ GB of HBM — an entire GPU's memory — reducing concurrency to near 1 per chip and dramatically increasing cost-per-session.</div>
+      <div class="quiz-feedback wrong">Incorrect. The key issue is KV cache memory, which scales with context length. A 128K-token session can consume an entire GPU's HBM for KV storage alone, collapsing concurrency and exploding cost-per-session.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-3">
+      <div class="quiz-q">3. SemiAnalysis estimated inference hardware spending would exceed training hardware spending by 2025. What market dynamic drives this shift?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">AI labs are stopping all new model training as existing models are sufficient.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Training hardware prices have fallen dramatically, reducing their share of total spend.</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Deployed foundation models are serving billions of daily queries, creating sustained inference demand that accumulates over time while training runs are episodic.</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Inference chips are more expensive per unit than training chips, skewing spend.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Training runs are finite projects; inference serving is continuous and grows with user adoption. As more models deploy to production, the aggregate inference compute demand compounds — eventually exceeding the episodic training demand that dominated earlier in the AI scaling era.</div>
+      <div class="quiz-feedback wrong">Incorrect. The driver is that inference demand is continuous and grows with deployment, while training is episodic. The sheer volume of daily queries across many deployed models accumulates into a larger sustained demand than periodic training runs.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 4 ═══ -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4 — Infrastructure Economics</h1>
+    <div class="tagline">Model the training vs. inference cost split for a real AI product</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Mission</h4>
+      <p>You're the VP of Infrastructure at a startup that just deployed a GPT-4-class model. Your board wants to understand the 3-year total cost of ownership breakdown between training and inference, and which optimization levers — quantization, continuous batching, purpose-built inference chips — deliver the most financial impact.</p>
+      <div class="lab-prompt">Starter: "We trained our model for $30M. We're now serving 500M tokens/day. Help me model the 3-year TCO and identify the highest-impact cost reduction lever."</div>
+    </div>
+    <div class="lab-chat" id="chat-lab4">
+      <div class="lab-chat-header">
+        <span>AI Tutor — Infrastructure Economics</span>
+        <div class="chat-badge">Lab 4</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">Welcome to Lab 4. Let's build out your TCO model. At 500M tokens/day, your inference costs will dominate your training investment within weeks. To start: what's your current cost per million tokens, and are you running on general-purpose GPUs or purpose-built inference chips?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Ask about inference economics and optimization…" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══ MODULE TEST ═══ -->
+<div class="page" id="p-mt">
+  <div class="mt-hero">
+    <h1>Module 6 — Module Test</h1>
+    <div class="tagline">Inference vs. Training Hardware · 15 questions · Pass at 80%</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt-1">
+      <div class="quiz-q">1. What does "arithmetic intensity" measure, and why is it the key variable in the roofline model?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">The ratio of floating-point operations to bytes of memory traffic; it determines whether compute or bandwidth is the binding performance constraint.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The number of transformer layers in a model; higher layers have more arithmetic operations.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The ratio of training time to inference time for a given model architecture.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The precision level of floating-point operations used during forward pass computation.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Arithmetic intensity determines which roofline boundary a workload hits: the compute peak or the bandwidth peak. Training has high intensity; small-batch inference has low intensity.</div>
+      <div class="quiz-feedback wrong">Incorrect. Arithmetic intensity is FLOPs per byte of memory traffic — the key variable in determining whether a workload is compute-bound or memory-bandwidth-bound.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-2">
+      <div class="quiz-q">2. During autoregressive inference, why does each new token require loading model weights again?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Weights are updated after each token in a process similar to online learning.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Each token generation passes through all model layers sequentially; at batch size 1 there's no reuse across multiple samples to amortize weight loading.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">GPU caches are cleared between tokens to prevent attention pattern contamination.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Weights are quantized differently for each token based on context, requiring re-loading from storage.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Unlike training with large batches where weight loading is amortized across many samples, single-user inference at batch size 1 must stream all weights through the memory bus for every token with no reuse benefit.</div>
+      <div class="quiz-feedback wrong">Incorrect. Weights don't change during inference. The issue is that at small batch sizes, weight loading can't be amortized across multiple samples — each token pass must stream billions of weight bytes through the memory bus.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-3">
+      <div class="quiz-q">3. The H100's Transformer Engine introduced FP8 precision. What problem does its dynamic scaling solve?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">FP8's high power consumption — scaling adjusts voltage dynamically to reduce heat.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">FP8's limited dynamic range — per-tensor scaling factors prevent underflow and overflow that would degrade model accuracy.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">FP8's slow memory bandwidth — scaling compresses tensors before they are stored in HBM.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">FP8's incompatibility with gradient checkpointing — scaling ensures gradients are stored in FP32 automatically.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. FP8 has only 8 bits to represent values — a much narrower range than FP16. The Transformer Engine's per-tensor scaling factors calibrate the representable range per tensor, preventing the numerical errors that would otherwise make FP8 unusable for training.</div>
+      <div class="quiz-feedback wrong">Incorrect. The dynamic scaling in the Transformer Engine addresses FP8's limited dynamic range — the narrow span of values an 8-bit float can represent — by maintaining per-tensor scaling factors calibrated each iteration.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-4">
+      <div class="quiz-q">4. Fully Sharded Data Parallelism (FSDP) reduces per-GPU memory by sharding optimizer states across ranks. What is the maximum memory reduction achievable with FSDP?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">2× — FSDP halves optimizer state memory by using INT8 precision.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Fixed at 4× regardless of GPU count.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Proportional to the number of GPUs in the shard group — 64-GPU FSDP achieves up to 64× reduction in per-GPU optimizer state memory.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">10× — limited by the NVLink bandwidth required for shard reassembly.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. FSDP shards parameters, gradients, and optimizer states across all ranks in the shard group. With N GPUs, each GPU holds 1/N of each shard type — theoretically N× reduction, bounded by practical all-gather communication costs.</div>
+      <div class="quiz-feedback wrong">Incorrect. FSDP achieves memory reduction proportional to the number of GPUs in the shard group, since each GPU only holds 1/N of the total sharded state for N-GPU groups.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-5">
+      <div class="quiz-q">5. Google's TPU v5e was designed specifically for inference rather than training. Which characteristic reflects this inference optimization?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Higher peak FLOPS per chip than TPU v4 to handle more tokens per second.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Lower power and cost-per-token at the expense of some peak FLOPS, prioritizing economics over raw throughput.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Support for FP64 precision to ensure gradient accuracy during serving.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Larger HBM capacity than TPU v4 to store larger model checkpoints.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Google explicitly traded peak FLOPS for improved cost-per-token on TPU v5e — the right optimization for inference where sustained economic efficiency matters more than peak throughput.</div>
+      <div class="quiz-feedback wrong">Incorrect. TPU v5e trades some compute peak for lower power and better cost-per-token — the characteristic signature of an inference-optimized chip versus a training-optimized one.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-6">
+      <div class="quiz-q">6. vLLM's PagedAttention addresses which specific inference memory problem?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Weight parameter storage exceeding GPU HBM capacity for large models.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Gradient accumulation overflow during long inference sequences.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">KV cache memory fragmentation that previously wasted 60–80% of reserved GPU memory, limiting concurrency.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Attention computation becoming quadratic with sequence length, requiring approximation.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Traditional KV cache management reserved contiguous memory blocks per request, leading to severe fragmentation. PagedAttention uses virtual-memory-style paging, allocating KV cache in small non-contiguous blocks — dramatically improving GPU utilization.</div>
+      <div class="quiz-feedback wrong">Incorrect. PagedAttention specifically addresses KV cache memory fragmentation — not weight storage or attention complexity. It manages cache memory in pages rather than contiguous blocks, recovering the 60–80% of memory wasted by traditional approaches.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-7">
+      <div class="quiz-q">7. Groq's LPU architecture has a fundamental capacity constraint compared to GPU-based inference. What is it?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">On-chip SRAM capacity limits the maximum model size that can be served — models too large to fit in SRAM cannot run on the LPU without expensive multi-chip configurations.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The LPU cannot run quantized models, limiting its throughput advantages to FP16 workloads.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The LPU requires retraining models on its custom instruction set before serving.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The LPU's deterministic execution model prevents it from handling variable-length inputs.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. SRAM is much more expensive per bit than DRAM — the LPU's on-chip SRAM approach eliminates bandwidth bottlenecks but caps the model size to what fits in SRAM, a fundamental physical constraint.</div>
+      <div class="quiz-feedback wrong">Incorrect. The LPU's constraint is on-chip SRAM capacity. SRAM is far more expensive per bit than DRAM, so LPU chips can't match GPUs' hundreds of gigabytes of HBM — models must fit in the available SRAM.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-8">
+      <div class="quiz-q">8. Meta reported that INT8 quantization on Llama 2 70B caused under 1% perplexity increase on MMLU. What is the practical significance of this finding?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">It means INT8 quantization is unsuitable for production use and should only be used for development.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">It validates that INT8 quantization is production-viable, enabling 2× memory bandwidth improvement and proportional throughput gains with negligible accuracy cost.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">It proves that quantization always reduces accuracy by exactly 1%, making it predictably acceptable.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">It demonstrates that INT4 quantization would also be viable since INT8 has so little impact.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Under 1% perplexity degradation at INT8 means the accuracy cost is acceptable for production serving. Combined with 2× memory bandwidth efficiency from half-width weights, this makes INT8 a compelling inference optimization at scale.</div>
+      <div class="quiz-feedback wrong">Incorrect. Under 1% perplexity increase is well within production tolerance, meaning INT8 is viable for real serving — enabling 2× better memory bandwidth utilization (half the bytes to load) and proportional throughput gains.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-9">
+      <div class="quiz-q">9. NVLink 4.0 provides 900 GB/s bidirectional bandwidth between H100s in a node. Why is this specifically important for tensor parallelism during training?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Tensor parallelism requires continuous streaming of training data between GPUs at high rates.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Tensor parallelism requires all-reduce synchronization after every transformer layer, meaning interconnect latency appears multiple times per training step.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Tensor parallelism copies full model checkpoints between GPUs every layer for redundancy.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Tensor parallelism uses NVLink exclusively for gradient communication, with InfiniBand used for activations.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. In tensor parallelism, each layer's computation is split across GPUs. After each layer's partial outputs are computed, all-reduce must aggregate them — meaning every transformer layer adds a collective communication round. High NVLink bandwidth makes this per-layer cost small.</div>
+      <div class="quiz-feedback wrong">Incorrect. Tensor parallelism requires all-reduce after every transformer layer — not just at step end. This means NVLink bandwidth directly affects per-layer computation time, appearing hundreds of times per training step.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-10">
+      <div class="quiz-q">10. AWS Inferentia2's NeuronCore v2 architecture uses 32 MB of on-chip SRAM per core. What inference workload characteristic does this specifically address?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Repeated weight loading from HBM during tight inference loops — on-chip SRAM reduces HBM traffic for frequently accessed weight tiles.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">KV cache storage — 32 MB SRAM per core stores the full KV cache for one user session.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Gradient storage — Inferentia2 can perform online learning without external gradient memory.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Model checkpoint storage — the SRAM replaces HBM for weight persistence across requests.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. On-chip SRAM serves as a managed scratchpad for weight tiles and activations in tight inference loops. By staging frequently-used weights in SRAM, the NeuronCore reduces the volume of HBM traffic per token, improving throughput and energy efficiency.</div>
+      <div class="quiz-feedback wrong">Incorrect. The on-chip SRAM acts as a scratchpad reducing HBM traffic for frequently accessed weight tiles during inference loops — not KV cache or gradient storage. Reducing this DRAM traffic is the key inference optimization.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-11">
+      <div class="quiz-q">11. A 128K-token context window with a 70B model can require 50+ GB of KV cache per session. What is the direct operational consequence for inference serving?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The model must be quantized to INT4 to fit both weights and KV cache in GPU memory.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Training the model on long contexts requires proportionally more compute than short-context training.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">GPU concurrency collapses — an 80 GB HBM GPU can serve only 1 session at peak context, dramatically increasing cost-per-session.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Attention computation becomes the primary bottleneck instead of weight loading, shifting the workload to compute-bound.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. If KV cache alone consumes most of a GPU's HBM, fewer concurrent sessions fit on each chip. At the limit, a single long-context session monopolizes an entire GPU — making per-session compute cost equivalent to dedicated hardware.</div>
+      <div class="quiz-feedback wrong">Incorrect. The key consequence is concurrency collapse: KV cache consuming most of a GPU's HBM means very few (potentially just one) long-context sessions can run simultaneously per chip, exploding cost-per-session.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-12">
+      <div class="quiz-q">12. Google's TPU v4 pods use a 3D torus interconnect topology. What property of this topology is specifically valuable for training large models?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">3D torus topologies eliminate the need for all-reduce collectives by using direct peer-to-peer weight transfers.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">3D torus topologies enable all chips to share a unified HBM memory pool across the pod.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">3D torus topologies provide high bisection bandwidth and short maximum path lengths between any two chips, minimizing collective communication latency at scale.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">3D torus topologies allow chips to operate at different clock frequencies, enabling heterogeneous parallelism.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. In a 3D torus, no chip is far from any other — maximum hop count is bounded by the cube root of total chip count. This keeps all-reduce latency low at scale, critical for model parallelism where synchronization happens every layer.</div>
+      <div class="quiz-feedback wrong">Incorrect. The 3D torus provides high bisection bandwidth and short maximum paths between chips — these properties minimize all-reduce latency for collective operations that must synchronize across thousands of chips every training step.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-13">
+      <div class="quiz-q">13. Continuous batching (Orca) improves hardware utilization by allowing new requests to join mid-generation. What problem with static batching does this solve?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">In static batching, faster-finishing requests leave the GPU idle while waiting for the slowest request in the batch to complete before new requests can be admitted.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Static batching requires all requests to have identical input lengths, rejecting variable-length queries.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Static batching cannot use quantized weights because precision must be consistent across a batch.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Static batching recomputes KV cache for all batch members whenever any single request completes.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Static batching gates new work on the slowest batch member. Since generation lengths vary widely, fast-finishing requests create idle GPU slots. Continuous batching fills those slots immediately, keeping arithmetic intensity — and hardware utilization — high.</div>
+      <div class="quiz-feedback wrong">Incorrect. Static batching's core problem is the idle-wait: fast requests finish but the batch slot can't be refilled until all batch members complete. Continuous batching allows immediate slot reuse, eliminating this waste.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-14">
+      <div class="quiz-q">14. SemiAnalysis estimated inference hardware spending would exceed training hardware spending by 2025. Which trend is the primary driver of inference spend growth?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Inference chips are 10× more expensive per unit than training chips, inflating total inference spend.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">AI labs are reducing training runs due to diminishing returns on scaling.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Deployed models serving billions of daily queries generate continuous, growing inference demand that compounds over time as user adoption grows.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Inference requires more precision than training (FP64), making each inference operation more compute-intensive.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Training is episodic; inference is perpetual and grows with adoption. Each new model deployment adds a sustained inference load. As the installed base of deployed models grows, aggregate inference demand accumulates and eventually dominates the market.</div>
+      <div class="quiz-feedback wrong">Incorrect. The driver is accumulated continuous inference demand: each deployed model generates ongoing serving load that compounds as more models deploy and user adoption grows — eventually overwhelming the episodic nature of training runs.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-15">
+      <div class="quiz-q">15. The NVIDIA H100 NVL (NVLink) variant ships with 188 GB of HBM3e — more than the standard H100's 80 GB. What is its primary intended use case?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Training trillion-parameter models that require storing full optimizer states on a single chip.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Running multiple different models simultaneously on the same chip for multi-tenant training.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Long-context inference — serving sessions with 100K+ token contexts where KV cache can exceed 50 GB per session, requiring HBM beyond what the standard H100 provides.</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Storing all model weights and activations for a 70B model in FP32 precision during training.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Despite being marketed alongside training chips, the H100 NVL's primary use case is long-context inference. At 128K+ token contexts, KV cache alone can exceed the standard 80 GB HBM — the 188 GB variant provides headroom for weights plus large KV caches per session.</div>
+      <div class="quiz-feedback wrong">Incorrect. The H100 NVL's 188 GB HBM is primarily for long-context inference — where KV cache for 128K+ token sessions can exceed 50 GB, requiring more HBM than the standard H100 provides even after accounting for model weights.</div>
+    </div>
+
+    <div class="mt-score" id="mt-score"></div>
+
+  </div>
+  <div class="page-nav" style="margin-top:1rem;">
+    <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1')">Review from L1 →</button>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='the-hardware-race';
+var MODULE_ID='the-m6';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next)return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev)prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc)sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var target=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(target)target.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var target=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(target)target.classList.add('show');
+  mtAnswered++;
+  if(result==='correct')mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an AI hardware architecture tutor for AESOP AI Academy, specifically for Module 6: Inference vs. Training Hardware. This lab explores why training and inference require different hardware. Key concepts: arithmetic intensity, roofline model, memory-bandwidth-bound workloads, KV cache, batch size effects on GPU utilization. When students ask about moving from A100 training clusters to inference infrastructure, help them think through: (1) why A100s are over-specified for inference compute but potentially right for bandwidth, (2) the cost economics of $2/hr A100 serving vs purpose-built inference chips, (3) KV cache memory pressure at scale, (4) how batch size affects hardware efficiency. Use real figures: A100 has 312 TFLOPS BF16 and 2 TB/s HBM bandwidth. Stay focused on training vs inference hardware tradeoffs. Be conversational and Socratic — ask follow-up questions to deepen understanding.',
+  l2:'You are an AI hardware architecture tutor for AESOP AI Academy, Module 6 Lab 2: Training Cluster Design. This lab focuses on planning a 100B-parameter model training run. Key concepts: model parallelism (tensor, pipeline, data parallelism), FSDP, NVLink bandwidth requirements, all-reduce collective operations, H100 Transformer Engine and FP8 precision, InfiniBand for inter-node communication, checkpoint strategy for fault tolerance. Help students reason through: (1) memory requirements — 100B params in FP32 optimizer state ≈ 1.6 TB, far exceeding single GPU capacity, (2) tensor parallelism all-reduce frequency and why NVLink 4.0 900 GB/s matters, (3) FP8 vs BF16 precision tradeoffs for training stability, (4) how many GPUs needed and what interconnect topology. Reference real specs: H100 has 80 GB HBM3, 989 TFLOPS BF16, 900 GB/s NVLink 4.0. Be technically precise and encourage students to calculate memory requirements themselves.',
+  l3:'You are an AI hardware architecture tutor for AESOP AI Academy, Module 6 Lab 3: Inference Architecture Decisions. This lab evaluates Groq LPU, AWS Inferentia2, Google TPU v5e, and NVIDIA L40S for serving Llama 2 70B with p99 <500ms first-token latency at scale. Key considerations: (1) Groq LPU: ~300 tok/s for Llama 70B but SRAM capacity limits model size and multi-chip cost is high; best for latency-critical use cases, (2) AWS Inferentia2: 4x lower cost than GPU for INT8, requires Neuron SDK compilation, good for high-volume batch, (3) Google TPU v5e: optimized for high-QPS batch inference, good for throughput not single-request latency, (4) NVIDIA L40S: 48 GB GDDR6, INT8 Tensor Cores, good ecosystem support, still memory-bandwidth-limited at batch 1. For p99 <500ms first-token: Groq has best latency characteristics; Inferentia2 has best cost at scale. Help students analyze the full latency stack: network round-trip, request queuing, prefill compute, KV allocation.',
+  l4:'You are an AI infrastructure economics tutor for AESOP AI Academy, Module 6 Lab 4: Training vs Inference TCO. This lab models 3-year total cost of ownership for an AI product serving 500M tokens/day. Key economic facts: (1) At $0.002/1K tokens (GPT-4 class pricing), 500M tokens/day = $1,000/day = $365K/year inference cost, (2) Training one-time cost of $30M is recovered in 82 days at that inference rate, (3) Over 3 years: $30M training + $1.095B inference = inference is 97% of TCO, (4) Major cost levers: INT8 quantization saves ~30-40% (Meta case), continuous batching improves utilization 2-3x, purpose-built chips (Inferentia2) save ~4x vs GPU cost, (5) Context length expansion dramatically increases per-session cost via KV cache. Help students build intuition for: which optimizations compound, how to prioritize engineering effort, why inference optimization ROI dwarfs training optimization ROI at scale. Use the $30M training / 500M daily tokens framing throughout.'
+};
+
+var _fallbackResponses={
+  l1:[
+    "Great question about the A100 for inference. The A100 has 312 TFLOPS of BF16 compute but only 2 TB/s of HBM bandwidth. At batch size 1, you're only using a fraction of that compute — the weight loading from HBM is your bottleneck. What does that suggest about whether you're paying for capabilities you don't need?",
+    "Think about it this way: at $2–3/hr per A100, you're paying for 312 TFLOPS of matrix multiply performance. But at small inference batch sizes, you're utilizing maybe 5–10% of that compute. The rest is idle while you wait for weight bytes to arrive from HBM. What alternative architectures might be worth evaluating?",
+    "The KV cache is another factor. At 10,000 concurrent users with average 2,000-token contexts, your KV cache alone might require 20+ GB of HBM. On an 80 GB A100, that's 25% of your memory just for KV state before you even load weights. How does that change your capacity planning?"
+  ],
+  l2:[
+    "For 100B parameters with Adam optimizer in FP32: weights are 400 GB (FP32), gradients 400 GB, first moment 400 GB, second moment 400 GB — that's 1.6 TB total. An H100 has 80 GB HBM3. How many GPUs minimum do you need just for memory capacity, before considering compute?",
+    "With tensor parallelism across 8 GPUs on a node, you need all-reduce after every transformer layer. A 100B model might have 80 layers — that's 80 all-reduce operations per forward pass, another 80 per backward. At 900 GB/s NVLink 4.0, how does that compare to 200 Gb/s InfiniBand for cross-node tensor parallelism?",
+    "The Llama 2 training run had ~2,000 restarts across months. At what checkpoint frequency does the expected time lost to restarts become acceptable? If checkpointing takes 5 minutes and you restart on average every 6 hours, what fraction of compute is checkpointing overhead?"
+  ],
+  l3:[
+    "For p99 <500ms first-token latency: first-token latency is dominated by prefill computation — processing your input prompt through all layers. Groq's LPU has deterministic execution with no cache misses (all weights in SRAM), giving very consistent latency. But what happens when your Llama 70B weights exceed the LPU's SRAM capacity?",
+    "AWS Inferentia2's strength is cost at high volume. At 4x lower cost than GPU inference for INT8, serving 500M tokens/day the savings compound quickly. But it requires compiling your model with the Neuron SDK — what's the operational tradeoff between upfront compilation complexity and ongoing cost savings?",
+    "Consider the latency stack for your p99 target: network round-trip (~10-50ms), request queuing time (depends on utilization), prefill compute (scales with prompt length), KV cache allocation. Which of these does chip choice directly control, and which are architectural decisions independent of chip selection?"
+  ],
+  l4:[
+    "At 500M tokens/day and $0.002 per 1,000 tokens, your daily inference spend is $1,000/day. Your $30M training cost is recovered in 30 days. Year 1 inference: $365K. Over 3 years: $1.095M inference vs $30M training — wait, let me recalculate that. What's your current actual cost-per-thousand-tokens on your serving infrastructure?",
+    "INT8 quantization is often the highest-ROI single optimization. Meta reported 30-40% cost reduction with under 1% accuracy loss on Llama 2. On a $1,000/day inference bill, that's $300-400/day saved, or $110K-146K/year — from a one-time engineering investment. How does that compare to the ROI of buying more efficient serving hardware?",
+    "Continuous batching improving utilization 2-3x means you need 50-67% fewer GPUs for the same throughput. If you're spending $1,000/day on inference compute, continuous batching could reduce that to $330-500/day. Combined with INT8 quantization and purpose-built inference chips, what's the theoretical minimum cost per million tokens you could reach?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbackResponses[labId]||_fallbackResponses['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1)%arr.length;
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container)return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container)return;
+  container.innerHTML='';
+  var greetings={
+    l1:'Welcome to Lab 1. I\'m here to help you think through the training-to-inference hardware transition. What\'s your first question about moving from A100 training clusters to production inference infrastructure?',
+    l2:'Welcome to Lab 2. Let\'s work through the hardware design for a 100B-parameter training run. What aspect would you like to start with — memory capacity planning, parallelism strategy, or interconnect design?',
+    l3:'Welcome to Lab 3. You have a real latency target — sub-500ms first-token for Llama 70B — and four chip architectures to evaluate. This is a genuine engineering tradeoff. Where would you like to start: latency characteristics, throughput economics, or operational complexity of each platform?',
+    l4:'Welcome to Lab 4. Let\'s build out your TCO model. At 500M tokens/day, your inference costs will dominate your training investment within weeks. To start: what\'s your current cost per million tokens, and are you running on general-purpose GPUs or purpose-built inference chips?'
+  };
+  addMsg(labId,'ai',greetings[labId]||'How can I help you explore this topic?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn)return;
+  var txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]){chatHistories[labId]=[];chatExchanges[labId]=0;}
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    _checkLabComplete(labId);
+    btn.disabled=false;
+    if(inp)inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var msgs=chatHistories[labId].map(function(m){return{role:m.role,content:m.content};});
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:msgs
+        })
+      });
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'I encountered an error — please try again.';
+      chatHistories[labId].push({role:'assistant',content:text});
+      if(thinking&&thinking.parentNode)thinking.remove();
+      addMsg(labId,'ai',text);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+      btn.disabled=false;
+      if(inp)inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode)thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      _checkLabComplete(labId);
+    }
+  }
+  btn.disabled=false;
+  if(inp)inp.focus();
+}
+
+function _checkLabComplete(labId){
+  if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+    labSignaled[labId]=true;
+    window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+  }
+}
+
+// Keyboard enter on textareas
+document.addEventListener('DOMContentLoaded',function(){
+  updateTabs();
+});
+updateTabs();
+</script>
+
+</body>
+</html>

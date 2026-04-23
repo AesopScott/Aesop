@@ -1,0 +1,1159 @@
+<!doctype html>
+<!-- v1.0.1 | 2026-04-23 -->
+<!-- mwr-tracker: MWR (Morale, Welfare & Recreation) partnership outreach tracker (public read-only, Firebase admin login for write) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MWR Tracker — AESOP AI Academy</title>
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<style>
+/* ─── Design tokens (AESOP palette) ──────────────────────────── */
+:root {
+  --navy: #0d1b2a;
+  --navy-mid: #16293d;
+  --navy-light: #1e3a52;
+  --gold: #c9a05a;
+  --gold-light: #dbb87a;
+  --gold-pale: #f5e9d0;
+  --cream: #faf8f4;
+  --teal: #3dd6c0;
+  --ink: #2d2a26;
+  --ink-light: #6b6560;
+  --muted: #94a3b8;
+  --border: #2a3a4a;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --info: #38bdf8;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font: 14px/1.5 var(--font-body);
+  margin: 0;
+  background: var(--navy);
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+a { color: var(--gold-light); text-decoration: none; }
+a:hover { color: var(--gold); }
+
+.page-header {
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-header h1 {
+  margin: 0;
+  font: 700 22px/1.2 var(--font-display);
+  color: var(--gold-light);
+  letter-spacing: -0.01em;
+}
+.page-header h1 span { color: #e2e8f0; font-weight: 400; }
+.page-header .meta { color: var(--muted); font-size: 12px; }
+.back-link {
+  font-size: 12px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.back-link:hover { color: var(--gold-light); }
+
+.summary-bar {
+  display: flex;
+  gap: 20px;
+  padding: 10px 32px;
+  background: #0b1220;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.summary-bar .stat b { color: #e2e8f0; }
+.summary-bar .spacer { flex: 1; }
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--border);
+  background: #0b1220;
+  align-items: center;
+}
+.toolbar input[type=search],
+.toolbar select {
+  background: var(--navy);
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.toolbar input[type=search] { min-width: 200px; }
+.toolbar .spacer { flex: 1; }
+.toolbar .legend { display: flex; gap: 10px; font-size: 11px; color: var(--muted); align-items: center; flex-wrap: wrap; }
+.toolbar .legend span { display: flex; align-items: center; gap: 3px; }
+.toolbar .legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+main { padding: 0 24px 80px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 0; font-size: 13px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; text-align: left; }
+th {
+  position: sticky;
+  top: 0;
+  background: #0b1220;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  z-index: 2;
+  white-space: nowrap;
+}
+tr { cursor: pointer; transition: background 0.12s; }
+tr:hover td { background: #162033; }
+tr.tier-header td {
+  background: var(--navy-mid);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: default;
+  padding: 10px;
+  border-bottom: 2px solid var(--gold);
+}
+.base-name { font-weight: 600; color: #e2e8f0; white-space: nowrap; }
+.base-abbr { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.branch-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.branch-army { background: rgba(76, 127, 73, 0.20); color: #9ac992; }
+.branch-af { background: rgba(56, 189, 248, 0.14); color: var(--info); }
+.branch-sf { background: rgba(167, 139, 250, 0.18); color: #c4b5fd; }
+.branch-navy { background: rgba(30, 64, 175, 0.30); color: #93c5fd; }
+.branch-marines { background: rgba(220, 38, 38, 0.18); color: #fca5a5; }
+.branch-cg { background: rgba(249, 115, 22, 0.16); color: #fdba74; }
+.branch-joint { background: rgba(201, 160, 90, 0.20); color: var(--gold-light); }
+.mwr-yes { color: var(--ok); font-weight: 600; font-size: 12px; }
+.mwr-no { color: var(--err); font-size: 12px; }
+.mwr-unknown { color: var(--muted); font-size: 12px; font-style: italic; }
+.notes-cell { font-size: 12px; color: var(--muted); max-width: 220px; }
+
+select.status-select {
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+select.status-select:hover { border-color: var(--border); }
+select.status-select:focus { border-color: var(--gold); outline: none; background: var(--navy); }
+.status-not-started { color: var(--muted); }
+.status-researching { color: var(--info); }
+.status-contacted { color: #a78bfa; }
+.status-meeting-scheduled { color: var(--warn); }
+.status-mou-drafted { color: #fb923c; }
+.status-approved { color: var(--ok); }
+.status-declined { color: var(--err); }
+.status-on-hold { color: #94a3b8; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--navy-mid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 680px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: modalIn 0.2s ease-out;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-header h2 { margin: 0; font: 700 18px/1.2 var(--font-display); color: var(--gold-light); }
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.modal-close:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+.modal-body { padding: 20px 24px 24px; }
+.modal-body h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 18px 0 8px;
+}
+.modal-body h3:first-child { margin-top: 0; }
+.modal-body p, .modal-body li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 6px;
+}
+.modal-body ul { margin: 0 0 10px; padding-left: 20px; }
+.modal-body .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.modal-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.modal-contact { background: var(--navy); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 8px; font-size: 13px; }
+.modal-contact b { color: #e2e8f0; }
+.modal-notes textarea {
+  width: 100%;
+  min-height: 60px;
+  background: var(--navy);
+  color: #e2e8f0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font: 13px/1.5 var(--font-body);
+  resize: vertical;
+}
+.modal-notes textarea:focus { border-color: var(--gold); outline: none; }
+.modal-notes label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; display: block; margin-bottom: 4px; }
+
+.page-footer {
+  color: var(--muted);
+  font-size: 11px;
+  padding: 24px 32px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+
+.auth-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.85); display:none; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
+.auth-overlay.open { display:flex; }
+.auth-box { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; padding:28px; width:360px; max-width:92vw; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.4); position:relative; }
+.auth-logo { font-size:32px; margin-bottom:8px; }
+.auth-box h2 { margin:4px 0 6px; font-size:18px; color:var(--gold-light); }
+.auth-box p { color:var(--muted); font-size:13px; margin:0 0 16px; }
+.auth-input { width:100%; padding:9px 11px; margin:6px 0; background:#0f172a; color:#e2e8f0; border:1px solid var(--border); border-radius:6px; font-size:14px; font-family:var(--font-body); }
+.auth-input:focus { outline:none; border-color:var(--gold); }
+.auth-btn { width:100%; padding:9px; margin-top:8px; background:var(--gold); color:#0b1220; border:0; border-radius:6px; font-weight:600; cursor:pointer; font-size:14px; }
+.auth-btn:hover { filter:brightness(1.1); }
+.auth-close { position:absolute; top:10px; right:14px; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; padding:4px 8px; border-radius:4px; }
+.auth-close:hover { color:#e2e8f0; background:rgba(255,255,255,0.05); }
+.auth-error { color:var(--err); font-size:12px; min-height:16px; margin-top:8px; }
+.user-bar { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+.admin-login-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.admin-login-btn:hover { color:var(--gold-light); border-color:var(--gold); }
+.sign-out-btn { background:none; border:1px solid var(--border); color:var(--muted); border-radius:4px; padding:3px 8px; font-size:11px; cursor:pointer; }
+.sign-out-btn:hover { color:#e2e8f0; border-color:var(--gold); }
+.admin-badge { display:inline-block; background:rgba(34,197,94,0.15); color:var(--ok); font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
+
+@media (max-width: 768px) {
+  .page-header, .summary-bar, .toolbar { padding-left: 16px; padding-right: 16px; }
+  main { padding: 0 8px 80px; }
+  .notes-cell, .location-cell { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Admin login modal (not blocking) ── -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <button class="auth-close" id="auth-close">&times;</button>
+    <div class="auth-logo">&#x1f512;</div>
+    <h2>Admin Sign In</h2>
+    <p>Sign in for edit access.</p>
+    <input class="auth-input" id="auth-email" type="email" placeholder="Email address" autocomplete="email">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn">Sign In</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<div class="page-header">
+  <div>
+    <a href="/ai-academy/courses.html" class="back-link">&larr; Back to Courses</a>
+    <h1>MWR <span>Tracker</span></h1>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div class="meta">Morale, Welfare &amp; Recreation Partnership Outreach &middot; Updated April 2026</div>
+    <div class="user-bar" id="userBar">
+      <button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>
+    </div>
+  </div>
+</div>
+
+<div class="summary-bar" id="summaryBar">
+  <span class="stat"><b id="countTotal">0</b> Installations</span>
+  <span class="stat">Approved: <b id="countApproved">0</b></span>
+  <span class="stat">MOU Drafted: <b id="countMou">0</b></span>
+  <span class="stat">Contacted: <b id="countContacted">0</b></span>
+  <span class="stat">Researching: <b id="countResearching">0</b></span>
+  <span class="stat">Not Started: <b id="countNotStarted">0</b></span>
+</div>
+
+<div class="toolbar">
+  <input type="search" id="searchBox" placeholder="Search installations, cities, states...">
+  <select id="filterTier">
+    <option value="">All Tiers</option>
+    <option value="1">Tier 1 — Local (Colorado)</option>
+    <option value="2">Tier 2 — Major Army Installations</option>
+    <option value="3">Tier 3 — Major Air &amp; Space Force</option>
+    <option value="4">Tier 4 — Joint Bases</option>
+    <option value="5">Tier 5 — Navy / Marines / Coast Guard</option>
+  </select>
+  <select id="filterBranch">
+    <option value="">All Branches</option>
+    <option value="army">Army</option>
+    <option value="af">Air Force</option>
+    <option value="sf">Space Force</option>
+    <option value="navy">Navy</option>
+    <option value="marines">Marines</option>
+    <option value="cg">Coast Guard</option>
+    <option value="joint">Joint Base</option>
+  </select>
+  <select id="filterStatus">
+    <option value="">All Statuses</option>
+    <option value="not-started">Not Started</option>
+    <option value="researching">Researching</option>
+    <option value="contacted">Contacted</option>
+    <option value="meeting-scheduled">Meeting Scheduled</option>
+    <option value="mou-drafted">MOU Drafted</option>
+    <option value="approved">Approved</option>
+    <option value="declined">Declined</option>
+    <option value="on-hold">On Hold</option>
+  </select>
+  <div class="spacer"></div>
+  <div class="legend">
+    <span><span class="dot" style="background:#9ac992"></span> Army</span>
+    <span><span class="dot" style="background:var(--info)"></span> Air Force</span>
+    <span><span class="dot" style="background:#c4b5fd"></span> Space Force</span>
+    <span><span class="dot" style="background:#93c5fd"></span> Navy</span>
+    <span><span class="dot" style="background:#fca5a5"></span> Marines</span>
+    <span><span class="dot" style="background:var(--gold-light)"></span> Joint</span>
+  </div>
+</div>
+
+<main>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:18%">Installation</th>
+        <th style="width:7%">Branch</th>
+        <th style="width:14%" class="location-cell">Location</th>
+        <th style="width:11%">Status</th>
+        <th style="width:9%">MWR Active</th>
+        <th style="width:15%">MWR Director / Contact</th>
+        <th style="width:22%" class="notes-cell">Notes</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</main>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="page-footer">AESOP AI Academy &middot; MWR Tracker &middot; Morale, Welfare &amp; Recreation Partnership Outreach</div>
+
+<!-- Firebase SDK + admin auth -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+    authDomain:        "playagame-f733d.firebaseapp.com",
+    projectId:         "playagame-f733d",
+    storageBucket:     "playagame-f733d.firebasestorage.app",
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+  const isAdmin = u => u && ADMIN_EMAILS.includes(u.email);
+
+  const overlay  = document.getElementById('auth-overlay');
+  const errEl    = document.getElementById('auth-error');
+  const userBar  = document.getElementById('userBar');
+
+  document.getElementById('adminLoginBtn').addEventListener('click', () => {
+    overlay.classList.add('open');
+    document.getElementById('auth-email').focus();
+  });
+  document.getElementById('auth-close').addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+  document.getElementById('auth-btn').addEventListener('click', doSignIn);
+  document.getElementById('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
+  document.getElementById('auth-email').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('auth-pass').focus(); });
+
+  async function doSignIn() {
+    errEl.textContent = '';
+    const email = document.getElementById('auth-email').value.trim();
+    const pass  = document.getElementById('auth-pass').value;
+    if (!email || !pass) { errEl.textContent = 'Email and password required.'; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      errEl.textContent = (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found')
+        ? 'Invalid email or password.' : (e.message || 'Sign in failed.');
+    }
+  }
+
+  function updateUserBar(user) {
+    if (user && isAdmin(user)) {
+      userBar.innerHTML = `
+        <span style="color:#e2e8f0">${user.email}</span>
+        <span class="admin-badge">ADMIN</span>
+        <button class="sign-out-btn" id="signOutBtn">Sign Out</button>`;
+      document.getElementById('signOutBtn').addEventListener('click', () => signOut(auth));
+    } else {
+      userBar.innerHTML = `<button class="admin-login-btn" id="adminLoginBtn">Admin Login</button>`;
+      document.getElementById('adminLoginBtn').addEventListener('click', () => {
+        overlay.classList.add('open');
+        document.getElementById('auth-email').focus();
+      });
+    }
+  }
+
+  window.__ADMIN_MODE = false;
+
+  onAuthStateChanged(auth, user => {
+    overlay.classList.remove('open');
+    if (user && isAdmin(user)) {
+      window.__ADMIN_MODE = true;
+      updateUserBar(user);
+    } else if (user && !isAdmin(user)) {
+      signOut(auth);
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+      errEl.textContent = 'This account does not have admin access.';
+      overlay.classList.add('open');
+    } else {
+      window.__ADMIN_MODE = false;
+      updateUserBar(null);
+    }
+    document.dispatchEvent(new CustomEvent('authReady'));
+  });
+
+  document.dispatchEvent(new CustomEvent('authReady'));
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   MWR INSTALLATION DATA — ordered by tier & priority for Aesop Academy
+   Morale, Welfare & Recreation (MWR) partnership outreach
+   Goal: place Aesop AI Academy courses as an MWR education benefit
+   available to service members, families, and DoD civilians
+   ═══════════════════════════════════════════════════════════════════ */
+
+const BASES = [
+  // ── TIER 1: Local Colorado installations ─────────────────────
+  { tier: 1, abbr: "FTC", name: "Fort Carson", branch: "army",
+    location: "Colorado Springs, CO", population: "~26,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Fort Carson Family & MWR",
+    mwrPhone: "719-526-4713", mwrEmail: "",
+    detail: "Fort Carson Family & MWR operates a full suite of recreational and education programs including the Army Continuing Education System (ACES). The MWR Education Center partners with training providers to offer self-improvement and workforce development courses to soldiers and their families. Nearest major Army installation to Aesop's operations — highest priority MWR target.",
+    actions: [
+      "Call Fort Carson Family & MWR (719-526-4713) to introduce Aesop Academy",
+      "Request a slot in the MWR Education Center course catalog",
+      "Offer free introductory AI Literacy module as a pilot for service members",
+      "Explore funding via Army Tuition Assistance (TA) and MyCAA spouse benefits",
+      "Connect with Army Community Service (ACS) for family education programs"
+    ],
+    links: [
+      "https://carson.armymwr.com/",
+      "https://www.goarmyed.com/"
+    ],
+    notes: "Highest priority. Closest major base. Army MWR education budget is largest of all branches."
+  },
+  { tier: 1, abbr: "PSFB", name: "Peterson Space Force Base", branch: "sf",
+    location: "Colorado Springs, CO", population: "~8,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Peterson SFB Services Squadron (FSS)",
+    mwrPhone: "719-556-7610", mwrEmail: "",
+    detail: "Space Force installations use Air Force Services Squadron (FSS) infrastructure for MWR-equivalent programs. Peterson SFB FSS manages Airman & Family Readiness, education center, and recreation programs. Small but technically focused workforce — ideal audience for AI literacy and AI governance curriculum.",
+    actions: [
+      "Contact Peterson FSS Education Center (719-556-7610)",
+      "Propose AI Literacy and AI Governance courses for Space Force personnel",
+      "Explore Air Force Tuition Assistance integration",
+      "Coordinate with Schriever and Buckley SFB (same regional command)"
+    ],
+    links: ["https://www.peterson.spaceforce.mil/"],
+    notes: "Small population but high technical aptitude. AI governance is an especially strong fit."
+  },
+  { tier: 1, abbr: "USAFA", name: "U.S. Air Force Academy", branch: "af",
+    location: "USAF Academy, CO", population: "~4,400 cadets + 7,000 staff",
+    mwrActive: "yes",
+    mwrName: "USAFA 10th Force Support Squadron",
+    mwrPhone: "719-333-2582", mwrEmail: "",
+    detail: "USAFA's Force Support Squadron manages education, recreation, and community programs. Cadet-facing programs are tightly controlled but staff and family programs are more accessible. Opportunity to position Aesop as a faculty enrichment and continuing education resource for USAFA civilian and military staff.",
+    actions: [
+      "Contact USAFA FSS Education Center",
+      "Propose AI Ethics and AI Literacy as staff development modules",
+      "Explore partnership with USAFA Center for Character & Leadership Development",
+      "Offer AI governance curriculum for USAFA faculty and civilians"
+    ],
+    links: ["https://www.usafa.edu/", "https://usafa.armyfss.com/"],
+    notes: "Primarily a staff/civilian opportunity. Cadet programs require separate academic approval."
+  },
+  { tier: 1, abbr: "SCHR", name: "Schriever Space Force Base", branch: "sf",
+    location: "Colorado Springs, CO", population: "~8,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "Schriever SFB FSS (via Peterson AFRC)",
+    mwrPhone: "719-556-7610", mwrEmail: "",
+    detail: "Schriever SFB shares MWR/FSS infrastructure with Peterson SFB. Home to Space Delta 6 (Cyberspace Operations) — the cyber workforce here has high AI literacy demand. Education services run jointly through Peterson's Education Center.",
+    actions: [
+      "Bundle Schriever into Peterson FSS outreach",
+      "Target Delta 6 cyber workforce specifically with AI + cybersecurity content",
+      "Propose joint AI professional development series across Peterson/Schriever/Buckley"
+    ],
+    links: ["https://www.schriever.spaceforce.mil/"],
+    notes: "Shares FSS with Peterson — one outreach call covers both bases."
+  },
+  { tier: 1, abbr: "BUCK", name: "Buckley Space Force Base", branch: "sf",
+    location: "Aurora, CO (Denver metro)", population: "~14,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "Buckley SFB FSS / Education Center",
+    mwrPhone: "720-847-6681", mwrEmail: "",
+    detail: "Buckley SFB Force Support Squadron manages education, family readiness, and recreation. Denver metro location means service members and families have access to broader civilian education resources — Aesop needs to compete on value and relevance. Strong Colorado Air National Guard presence adds part-time warrior population.",
+    actions: [
+      "Contact Buckley FSS Education Center",
+      "Pitch AI Literacy as an affordable, remote-friendly MWR education benefit",
+      "Target Air National Guard members — AI skills for dual-use civilian careers",
+      "Leverage MyCAA for military spouse AI education funding"
+    ],
+    links: ["https://www.buckley.spaceforce.mil/"],
+    notes: "Denver metro. COANG presence opens door to part-time warrior and military family pipeline."
+  },
+
+  // ── TIER 2: Major Army MWR programs nationwide ─────────────
+  { tier: 2, abbr: "FTLB", name: "Fort Liberty (formerly Bragg)", branch: "army",
+    location: "Fayetteville, NC", population: "~54,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Fort Liberty Family & MWR",
+    mwrPhone: "910-396-5886", mwrEmail: "",
+    detail: "Fort Liberty has one of the largest and best-funded MWR operations in the Army. The Education Center coordinates with dozens of education partners and manages Army Tuition Assistance for the largest Army installation by population. Huge family and spouse population creates strong MyCAA demand. ACES (Army Continuing Education System) is deeply embedded here.",
+    actions: [
+      "Apply as an ACES-affiliated provider at Fort Liberty Education Center",
+      "Request catalog listing in Fort Liberty MWR education programs",
+      "Target spouses through MyCAA AI Literacy course offering",
+      "Network with existing education providers on base for referral partnerships"
+    ],
+    links: ["https://liberty.armymwr.com/", "https://www.goarmyed.com/"],
+    notes: "Largest Army installation. MWR Education Center is a well-oiled machine. Competitive but enormous reach."
+  },
+  { tier: 2, abbr: "FTCV", name: "Fort Cavazos (formerly Hood)", branch: "army",
+    location: "Killeen, TX", population: "~36,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Fort Cavazos Family & MWR",
+    mwrPhone: "254-287-1578", mwrEmail: "",
+    detail: "Fort Cavazos MWR operates a comprehensive education and family support program. Large soldier and family population creates robust MWR education demand. Austin proximity (~65 miles) means soldiers and families aspire to tech careers — AI literacy is a direct hit for this population.",
+    actions: [
+      "Contact Fort Cavazos MWR Education Center",
+      "Emphasize Austin tech career pathways enabled by AI literacy",
+      "Propose AI Literacy as an on-base education event / workshop series",
+      "Explore Tuition Assistance integration for full course access"
+    ],
+    links: ["https://cavazos.armymwr.com/"],
+    notes: "Austin tech proximity is the sales message. Large family population for MyCAA spouse angle."
+  },
+  { tier: 2, abbr: "JBLM", name: "Joint Base Lewis-McChord", branch: "joint",
+    location: "Tacoma, WA", population: "~54,000 service members",
+    mwrActive: "yes",
+    mwrName: "JBLM Family & MWR",
+    mwrPhone: "253-967-4455", mwrEmail: "",
+    detail: "JBLM MWR is a large joint operation covering Army and Air Force personnel. Education Center coordinates TA and ACES programs. Seattle tech corridor proximity (Amazon, Microsoft, Boeing) means AI literacy has enormous career value for transitioning and serving personnel. One of the strongest ROI arguments for any MWR pitch.",
+    actions: [
+      "Contact JBLM MWR Education Center",
+      "Lead with Seattle tech career outcomes for AI literacy pitch",
+      "Target family members through MyCAA — strong demand given tech employers nearby",
+      "Propose AI Literacy workshops for the Family Readiness Groups (FRGs)"
+    ],
+    links: ["https://lewismcchord.armymwr.com/"],
+    notes: "Seattle tech proximity = strongest career ROI pitch in the country. Do not miss this one."
+  },
+  { tier: 2, abbr: "FTCAM", name: "Fort Campbell", branch: "army",
+    location: "Fort Campbell, KY/TN", population: "~30,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Fort Campbell Family & MWR",
+    mwrPhone: "270-798-9922", mwrEmail: "",
+    detail: "Fort Campbell MWR Education Center supports 101st Airborne and 5th SFG personnel and families. Nashville proximity (~1 hour) opens strong civilian employer pipeline. Aviation community creates unique demand for AI applications in logistics and operations.",
+    actions: [
+      "Contact Fort Campbell MWR Education Center",
+      "Build Nashville employer outcomes into the AI literacy pitch",
+      "Target 5th SFG community — special operations families have high education motivation"
+    ],
+    links: ["https://campbell.armymwr.com/"],
+    notes: "Nashville proximity and aviation community create strong career alignment."
+  },
+  { tier: 2, abbr: "FTST", name: "Fort Stewart", branch: "army",
+    location: "Hinesville, GA", population: "~18,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Fort Stewart Family & MWR",
+    mwrPhone: "912-767-4375", mwrEmail: "",
+    detail: "Fort Stewart / Hunter Army Airfield combined MWR operation. Savannah metro area provides civilian employer connections. 3rd Infantry Division soldier and family population creates solid MWR education demand. Less competition from tech training providers than larger installations.",
+    actions: [
+      "Contact Fort Stewart MWR Education Center",
+      "Emphasize Savannah/coastal GA civilian career pathways",
+      "Leverage lower provider competition as a differentiator"
+    ],
+    links: ["https://stewart.armymwr.com/"],
+    notes: "Less competitive market than Bragg/Cavazos. Solid Tier 2 MWR target."
+  },
+  { tier: 2, abbr: "FTDR", name: "Fort Drum", branch: "army",
+    location: "Watertown, NY", population: "~19,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Fort Drum Family & MWR",
+    mwrPhone: "315-772-9325", mwrEmail: "",
+    detail: "Fort Drum MWR serves the 10th Mountain Division in a remote upstate NY location. The isolation drives high demand for online/remote education options — exactly what Aesop delivers. Families and soldiers actively seek remote-compatible skills for post-service careers.",
+    actions: [
+      "Contact Fort Drum MWR Education Center",
+      "Lead with remote-delivery as the key advantage — no commute required",
+      "Target family members with MyCAA and flexible AI literacy scheduling"
+    ],
+    links: ["https://drum.armymwr.com/"],
+    notes: "Remote location = remote education demand. Strong fit for Aesop's delivery model."
+  },
+
+  // ── TIER 3: Major Air & Space Force MWR programs ─────────────
+  { tier: 3, abbr: "JBSA", name: "Joint Base San Antonio", branch: "joint",
+    location: "San Antonio, TX", population: "~80,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "JBSA Force Support Squadron",
+    mwrPhone: "210-652-1110", mwrEmail: "",
+    detail: "JBSA is the largest Air Force-managed MWR operation in the DoD. Three major installations (Lackland, Randolph, Fort Sam Houston) share a unified FSS infrastructure. Enormous education center operation managing TA, CCAF, and partner course catalogs. Medical Corps and training community at Fort Sam creates unique demand for AI in healthcare and workforce applications.",
+    actions: [
+      "Apply as a JBSA Education Center partner provider",
+      "Target healthcare-adjacent AI curriculum at Fort Sam Houston component",
+      "Propose AI Literacy for basic training graduate follow-on (Lackland)",
+      "Leverage Texas Workforce Commission MWR education grant programs"
+    ],
+    links: ["https://www.jbsa.mil/", "https://jbsa.armyfss.com/"],
+    notes: "Largest AF MWR in DoD. Healthcare AI at Fort Sam is a unique differentiator."
+  },
+  { tier: 3, abbr: "LAFB", name: "Langley AFB (JB Langley-Eustis)", branch: "joint",
+    location: "Hampton, VA", population: "~20,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "JB Langley-Eustis FSS",
+    mwrPhone: "757-764-4470", mwrEmail: "",
+    detail: "Joint AF/Army FSS operation covering both Langley AFB and Fort Eustis. Air Combat Command HQ presence creates demand for strategic AI literacy among senior staff. Hampton Roads has a dense military spouse workforce — strong MyCAA opportunity.",
+    actions: [
+      "Contact Langley-Eustis FSS Education Center",
+      "Target senior NCO and officer population for AI governance curriculum",
+      "Build Hampton Roads military spouse pipeline through MyCAA outreach"
+    ],
+    links: ["https://www.jble.af.mil/"],
+    notes: "ACC HQ creates senior leader AI demand. Hampton Roads spouse market is large."
+  },
+  { tier: 3, abbr: "WPAFB", name: "Wright-Patterson AFB", branch: "af",
+    location: "Dayton, OH", population: "~27,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "Wright-Patterson FSS Education Center",
+    mwrPhone: "937-257-3592", mwrEmail: "",
+    detail: "Wright-Patterson FSS manages one of the Air Force's most technically sophisticated education programs, aligned to the Air Force Research Laboratory (AFRL) workforce. AI literacy and AI governance are especially relevant here. Ohio's July 2026 AI adoption mandate creates broader regional demand. WPAFB civilians and contractors also use education center resources.",
+    actions: [
+      "Contact WPAFB FSS Education Center",
+      "Pitch AI Governance curriculum — directly relevant to AFRL mission",
+      "Build Dayton/Cincinnati employer pipeline for post-service outcomes",
+      "Propose AI Literacy as a mandatory refresher aligned to Ohio AI mandates"
+    ],
+    links: ["https://www.wpafb.af.mil/"],
+    notes: "Most technically sophisticated AF education market. AI governance is the right pitch."
+  },
+  { tier: 3, abbr: "NELL", name: "Nellis AFB", branch: "af",
+    location: "Las Vegas, NV", population: "~12,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Nellis FSS Education Center",
+    mwrPhone: "702-652-2018", mwrEmail: "",
+    detail: "Nellis FSS education program serves the fighter training community. Las Vegas proximity creates an unusual MWR environment — recreation options compete heavily for attention. Education program needs strong career ROI messaging to compete. Pilot and maintainer community has high AI-in-aviation interest.",
+    actions: [
+      "Contact Nellis FSS Education Center",
+      "Lead with aviation AI applications (autonomous systems, AI maintenance)",
+      "Target maintainer community — AI is rapidly entering aircraft sustainment"
+    ],
+    links: ["https://www.nellis.af.mil/"],
+    notes: "Compete with Vegas distractions by leading with career ROI. Aviation AI is the hook."
+  },
+  { tier: 3, abbr: "HILL", name: "Hill AFB", branch: "af",
+    location: "Ogden, UT", population: "~23,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "Hill AFB FSS Education Center",
+    mwrPhone: "801-777-3415", mwrEmail: "",
+    detail: "Hill AFB FSS education program supports the large depot/logistics workforce at Ogden ALC. Utah's Silicon Slopes tech corridor (Lehi, Provo, Salt Lake City) provides strong civilian career pull. Many civilians co-located on base also use FSS education resources.",
+    actions: [
+      "Contact Hill FSS Education Center",
+      "Lead with Silicon Slopes career outcomes for AI literacy",
+      "Target civilian logistics workforce alongside active duty"
+    ],
+    links: ["https://www.hill.af.mil/"],
+    notes: "Silicon Slopes proximity is the pitch. Civilian depot workforce is a bonus audience."
+  },
+  { tier: 3, abbr: "TIND", name: "Tinker AFB", branch: "af",
+    location: "Oklahoma City, OK", population: "~26,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "Tinker AFB FSS Education Center",
+    mwrPhone: "405-734-4222", mwrEmail: "",
+    detail: "Tinker FSS education program supports the Oklahoma City ALC and the largest single-site Oklahoma employer. AI literacy aligns with Oklahoma's state-level K-12 AI adoption push. Low provider competition relative to installation size makes this an attractive MWR entry point.",
+    actions: [
+      "Contact Tinker FSS Education Center",
+      "Align pitch with Oklahoma's AI adoption initiative",
+      "Target civilian ALC workforce alongside active duty"
+    ],
+    links: ["https://www.tinker.af.mil/"],
+    notes: "Low competition. Oklahoma state AI tailwind. Large depot civilian population."
+  },
+
+  // ── TIER 4: Joint Bases (other regions) ───────────────────────
+  { tier: 4, abbr: "JBAB", name: "Joint Base Andrews", branch: "joint",
+    location: "Camp Springs, MD (DC metro)", population: "~17,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "JB Andrews FSS Education Center",
+    mwrPhone: "301-981-7032", mwrEmail: "",
+    detail: "JB Andrews FSS education program serves a workforce embedded in the DC federal contractor ecosystem. AI governance and AI policy curriculum are acutely relevant here. Many personnel hold clearances and are targeting GovTech / defense contractor roles. High-value, premium audience for AI content.",
+    actions: [
+      "Contact JB Andrews FSS Education Center",
+      "Lead with AI governance and AI policy curriculum — directly relevant to DC ecosystem",
+      "Target cleared-to-civilian transitions with AI skills pitch",
+      "Build Beltway contractor pipeline (Lockheed, Booz Allen, GDIT, Leidos)"
+    ],
+    links: ["https://www.jba.af.mil/"],
+    notes: "DC metro cleared workforce = premium pipeline for AI governance curriculum."
+  },
+  { tier: 4, abbr: "JBER", name: "JB Elmendorf-Richardson", branch: "joint",
+    location: "Anchorage, AK", population: "~32,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "JBER Family & MWR",
+    mwrPhone: "907-552-2049", mwrEmail: "",
+    detail: "JBER MWR serves a large joint AF/Army workforce in geographic isolation. Remote Alaska location drives extremely high demand for online education programs. Families are especially motivated to pursue remote-compatible skills given the challenge of spousal employment in Anchorage.",
+    actions: [
+      "Contact JBER MWR Education Center",
+      "Lead with remote delivery and flexible scheduling as key differentiators",
+      "Target military spouses — spousal employment scarcity creates strong MyCAA demand"
+    ],
+    links: ["https://www.jber.jb.mil/"],
+    notes: "Alaska isolation = highest demand for remote education in the DoD. Strong MyCAA opportunity."
+  },
+  { tier: 4, abbr: "JBPH", name: "JB Pearl Harbor-Hickam", branch: "joint",
+    location: "Honolulu, HI", population: "~65,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "JBPHH Family Support Center",
+    mwrPhone: "808-474-1999", mwrEmail: "",
+    detail: "JBPHH MWR serves a massive joint Navy/AF workforce in Hawaii. Cost of living pressure means many service members moonlight or pursue side income streams — AI skills are a direct enabler. Strong INDOPACOM strategic role means AI governance curriculum is career-relevant for senior personnel.",
+    actions: [
+      "Contact JBPHH Family Support Center",
+      "Lead with remote AI courses as a career accelerator despite Hawaii cost of living",
+      "Target senior INDOPACOM staff with AI governance and AI policy content"
+    ],
+    links: ["https://www.cnic.navy.mil/Pearl-Harbor-Hickam/"],
+    notes: "INDOPACOM volume. Cost of living pressure drives supplemental skill-building demand."
+  },
+
+  // ── TIER 5: Navy / Marines / Coast Guard MWR ─────────────────
+  { tier: 5, abbr: "NORF", name: "Naval Station Norfolk", branch: "navy",
+    location: "Norfolk, VA", population: "~75,000 service members",
+    mwrActive: "yes",
+    mwrName: "Norfolk Fleet & Family Support Center (FFSC)",
+    mwrPhone: "757-444-2102", mwrEmail: "",
+    detail: "Norfolk FFSC manages one of the Navy's largest MWR and family readiness operations. Fleet and Family Support Center coordinates education, TA, and community resources for the Atlantic Fleet. Hampton Roads has the highest concentration of military families in the US — enormous MyCAA and MWR education opportunity.",
+    actions: [
+      "Apply as a Navy FFSC education partner at Hampton Roads",
+      "Target IT and cyber rates — strong AI literacy demand",
+      "Build spouse education pipeline through MyCAA and FFSC family programs",
+      "Propose AI Literacy workshops for Fleet readiness courses"
+    ],
+    links: ["https://www.cnic.navy.mil/Norfolk/"],
+    notes: "Largest Navy MWR operation. Hampton Roads spouse market is enormous for MyCAA."
+  },
+  { tier: 5, abbr: "SDNB", name: "Naval Base San Diego", branch: "navy",
+    location: "San Diego, CA", population: "~35,000 service members",
+    mwrActive: "yes",
+    mwrName: "San Diego FFSC",
+    mwrPhone: "866-923-6478", mwrEmail: "",
+    detail: "San Diego FFSC supports Pacific Fleet personnel and families. San Diego tech ecosystem (Qualcomm, defense primes, biotech) provides strong civilian career pull for AI literacy graduates. One of the most competitive MWR education markets — differentiate on AI specialization.",
+    actions: [
+      "Apply as Navy FFSC education partner at San Diego",
+      "Lead with San Diego tech employer outcomes for AI graduates",
+      "Cross-market with Camp Pendleton FFSC — same metropolitan area"
+    ],
+    links: ["https://www.cnic.navy.mil/San-Diego/"],
+    notes: "Competitive market. Differentiate on AI specialization vs generic coding bootcamps."
+  },
+  { tier: 5, abbr: "CPEN", name: "Marine Corps Base Camp Pendleton", branch: "marines",
+    location: "Oceanside, CA", population: "~38,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Camp Pendleton Marine Corps Community Services (MCCS)",
+    mwrPhone: "760-725-5773", mwrEmail: "",
+    detail: "Camp Pendleton MCCS (the Marine equivalent of MWR) operates a full education and family support center for I MEF. Marine Corps education culture is strong — Marines are encouraged to pursue education and self-improvement. San Diego tech proximity creates strong career alignment for AI literacy graduates.",
+    actions: [
+      "Contact Camp Pendleton MCCS Education Center",
+      "Pitch AI Literacy as a Marine Corps self-improvement resource",
+      "Build SoCal tech employer pipeline alongside FFSC San Diego outreach",
+      "Explore Marine Corps Tuition Assistance integration"
+    ],
+    links: ["https://www.pendleton.marines.mil/", "https://www.pendletonmccs.com/"],
+    notes: "MCCS is the Marine brand for MWR. Strong education culture among Marines."
+  },
+  { tier: 5, abbr: "LEJN", name: "MCB Camp Lejeune", branch: "marines",
+    location: "Jacksonville, NC", population: "~47,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Camp Lejeune MCCS",
+    mwrPhone: "910-451-2865", mwrEmail: "",
+    detail: "Camp Lejeune MCCS serves II MEF, the largest Marine Corps base on the East Coast. Jacksonville, NC is a smaller metro — fewer competing civilian education providers. Strong spouse community with MyCAA demand. Adjacent to Fort Liberty creates large regional military family concentration.",
+    actions: [
+      "Contact Camp Lejeune MCCS Education Center",
+      "Emphasize remote delivery — Jacksonville's limited civilian options make online a plus",
+      "Target military spouses through MyCAA AI literacy pathway"
+    ],
+    links: ["https://www.lejeune.marines.mil/"],
+    notes: "Less competition than California MCCS markets. Strong spouse MyCAA opportunity."
+  },
+  { tier: 5, abbr: "NSGL", name: "Naval Station Great Lakes", branch: "navy",
+    location: "Great Lakes, IL", population: "~22,000 total workforce",
+    mwrActive: "yes",
+    mwrName: "Great Lakes FFSC",
+    mwrPhone: "847-688-3603", mwrEmail: "",
+    detail: "Great Lakes FFSC supports Navy boot camp graduates and ongoing training commands. Chicago metro proximity provides excellent civilian career connections. Newly graduated sailors transitioning to A-schools are in a prime learning mindset — AI literacy as an elective could complement technical ratings training.",
+    actions: [
+      "Contact Great Lakes FFSC Education Center",
+      "Propose AI Literacy as a voluntary enrichment program for sailors",
+      "Build Chicago tech employer pipeline for career outcomes"
+    ],
+    links: ["https://www.cnic.navy.mil/Great-Lakes/"],
+    notes: "Boot camp culture means learner readiness is high. Chicago metro is an asset."
+  },
+  { tier: 5, abbr: "USCG", name: "Coast Guard Training Center Cape May", branch: "cg",
+    location: "Cape May, NJ", population: "~1,300 staff + rotating recruits",
+    mwrActive: "yes",
+    mwrName: "USCG Work-Life (MWR equivalent)",
+    mwrPhone: "202-795-6680 (USCG HQ Work-Life)", mwrEmail: "",
+    detail: "Coast Guard Work-Life Division manages the CG equivalent of MWR programs. CG is DHS-aligned (not DoD), which means separate TA and education program pathways. Smaller volume but highly technical enlisted community. Apply through USCG HQ Work-Life for nationwide access rather than installation-by-installation.",
+    actions: [
+      "Contact USCG HQ Work-Life Division for nationwide education partnership",
+      "Navigate DHS rather than DoD TA pathway for funding eligibility",
+      "Target IT, electronics, and cyber ratings for AI literacy"
+    ],
+    links: ["https://www.dcms.uscg.mil/Our-Organization/Assistant-Commandant-for-Human-Resources-CG-1/Civilian-Human-Resources-Diversity-and-Leadership-Directorate/Office-of-Work-Life-CG-111/"],
+    notes: "DHS channel, not DoD — requires different partnership application. Small but high-quality audience."
+  },
+  { tier: 5, abbr: "QUAN", name: "MCB Quantico", branch: "marines",
+    location: "Quantico, VA", population: "~12,000 active duty",
+    mwrActive: "yes",
+    mwrName: "Quantico MCCS",
+    mwrPhone: "703-784-2842", mwrEmail: "",
+    detail: "Quantico MCCS serves an officer-heavy Marine Corps base adjacent to the FBI Academy and DC metro area. Highly educated population with strong interest in professional development and advanced credentials. AI governance and AI ethics are especially relevant for this leadership-focused audience.",
+    actions: [
+      "Contact Quantico MCCS Education Center",
+      "Lead with AI governance and AI ethics for officer professional development",
+      "Build DC metro contractor pipeline for post-service outcomes",
+      "Propose AI literacy seminar series for OCS and TBS candidates"
+    ],
+    links: ["https://www.quantico.marines.mil/"],
+    notes: "Officer-heavy + DC metro = premium AI governance audience. Small volume, high value."
+  }
+];
+
+/* ─── Tier labels ──────────────────────────────────────────────── */
+const TIER_LABELS = {
+  1: "Tier 1 — Local Installations (Colorado)",
+  2: "Tier 2 — Major Army MWR Programs",
+  3: "Tier 3 — Major Air &amp; Space Force MWR Programs",
+  4: "Tier 4 — Joint Base MWR (Other Regions)",
+  5: "Tier 5 — Navy / Marines / Coast Guard MWR"
+};
+
+const BRANCH_INFO = {
+  army:    { label: "Army",        cls: "branch-army" },
+  af:      { label: "Air Force",   cls: "branch-af" },
+  sf:      { label: "Space Force", cls: "branch-sf" },
+  navy:    { label: "Navy",        cls: "branch-navy" },
+  marines: { label: "Marines",     cls: "branch-marines" },
+  cg:      { label: "Coast Guard", cls: "branch-cg" },
+  joint:   { label: "Joint Base",  cls: "branch-joint" }
+};
+
+const STATUS_OPTIONS = [
+  { value: "not-started",       label: "Not Started" },
+  { value: "researching",       label: "Researching" },
+  { value: "contacted",         label: "Contacted" },
+  { value: "meeting-scheduled", label: "Meeting Scheduled" },
+  { value: "mou-drafted",       label: "MOU Drafted" },
+  { value: "approved",          label: "Approved" },
+  { value: "declined",          label: "Declined" },
+  { value: "on-hold",           label: "On Hold" }
+];
+
+/* ─── Local storage ────────────────────────────────────────────── */
+const STORAGE_KEY = "aesop-mwr-tracker";
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch(e) {}
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); }
+function getStatus(abbr) { return (saved[abbr] && saved[abbr].status) || "not-started"; }
+function setStatus(abbr, val) { if (!saved[abbr]) saved[abbr] = {}; saved[abbr].status = val; save(); }
+function getUserNotes(abbr) { return (saved[abbr] && saved[abbr].userNotes) || ""; }
+function setUserNotes(abbr, val) { if (!saved[abbr]) saved[abbr] = {}; saved[abbr].userNotes = val; save(); }
+
+/* ─── Render ───────────────────────────────────────────────────── */
+const tbody       = document.getElementById("tableBody");
+const search      = document.getElementById("searchBox");
+const filterTier  = document.getElementById("filterTier");
+const filterBranch = document.getElementById("filterBranch");
+const filterStatus = document.getElementById("filterStatus");
+
+function renderTable() {
+  const q  = search.value.toLowerCase();
+  const ft = filterTier.value;
+  const fb = filterBranch.value;
+  const fs = filterStatus.value;
+
+  let html = "";
+  let currentTier = 0;
+  let idx = 0;
+
+  BASES.forEach(b => {
+    const status = getStatus(b.abbr);
+    if (q && !b.name.toLowerCase().includes(q) && !b.abbr.toLowerCase().includes(q) && !b.location.toLowerCase().includes(q)) return;
+    if (ft && String(b.tier) !== ft) return;
+    if (fb && b.branch !== fb) return;
+    if (fs && status !== fs) return;
+
+    if (b.tier !== currentTier) {
+      currentTier = b.tier;
+      html += `<tr class="tier-header"><td colspan="8">${TIER_LABELS[b.tier]}</td></tr>`;
+    }
+
+    idx++;
+    const bi = BRANCH_INFO[b.branch] || { label: b.branch, cls: "" };
+    const opts = STATUS_OPTIONS.map(o =>
+      `<option value="${o.value}" ${status === o.value ? "selected" : ""}>${o.label}</option>`
+    ).join("");
+
+    const adminMode = window.__ADMIN_MODE;
+    const statusCell = adminMode
+      ? `<select class="status-select status-${status}" onclick="event.stopPropagation()" onchange="changeStatus('${b.abbr}', this)">${opts}</select>`
+      : `<span class="status-select status-${status}" style="cursor:default">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+    const mwrCell = b.mwrActive === "yes"
+      ? '<span class="mwr-yes">&#10003; Active</span>'
+      : b.mwrActive === "no"
+        ? '<span class="mwr-no">&#10007; No</span>'
+        : '<span class="mwr-unknown">Unknown</span>';
+
+    const contactCell = b.mwrPhone
+      ? `<div style="font-size:12px;line-height:1.4"><div>${b.mwrName || ''}</div><div style="color:var(--muted);font-size:11px">${b.mwrPhone}</div></div>`
+      : `<div style="font-size:12px;color:var(--muted)">${b.mwrName || '—'}</div>`;
+
+    html += `<tr data-abbr="${b.abbr}">
+      <td style="color:var(--muted)">${idx}</td>
+      <td><span class="base-name">${b.name}</span><span class="base-abbr">${b.abbr}</span></td>
+      <td><span class="branch-tag ${bi.cls}">${bi.label}</span></td>
+      <td class="location-cell" style="font-size:12px">${b.location}</td>
+      <td>${statusCell}</td>
+      <td>${mwrCell}</td>
+      <td>${contactCell}</td>
+      <td class="notes-cell">${b.notes}</td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+  updateSummary();
+}
+
+function updateSummary() {
+  let total = 0, approved = 0, mou = 0, contacted = 0, researching = 0, notStarted = 0;
+  BASES.forEach(b => {
+    total++;
+    const st = getStatus(b.abbr);
+    if (st === "approved") approved++;
+    else if (st === "mou-drafted") mou++;
+    else if (st === "contacted" || st === "meeting-scheduled") contacted++;
+    else if (st === "researching") researching++;
+    else if (st === "not-started") notStarted++;
+  });
+  document.getElementById("countTotal").textContent = total;
+  document.getElementById("countApproved").textContent = approved;
+  document.getElementById("countMou").textContent = mou;
+  document.getElementById("countContacted").textContent = contacted;
+  document.getElementById("countResearching").textContent = researching;
+  document.getElementById("countNotStarted").textContent = notStarted;
+}
+
+function changeStatus(abbr, el) {
+  setStatus(abbr, el.value);
+  el.className = `status-select status-${el.value}`;
+  updateSummary();
+}
+
+/* ─── Modal ────────────────────────────────────────────────────── */
+const mOverlay  = document.getElementById("modalOverlay");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody  = document.getElementById("modalBody");
+
+function openModal(abbr) {
+  const b = BASES.find(x => x.abbr === abbr);
+  if (!b) return;
+
+  const status    = getStatus(abbr);
+  const userNotes = getUserNotes(abbr);
+  const bi = BRANCH_INFO[b.branch] || { label: b.branch, cls: "" };
+
+  const statusOpts = STATUS_OPTIONS.map(o =>
+    `<option value="${o.value}" ${status === o.value ? "selected" : ""}>${o.label}</option>`
+  ).join("");
+
+  let linksHtml = "";
+  if (b.links && b.links.length) {
+    linksHtml = b.links.map(l => `<li><a href="${l}" target="_blank" rel="noopener">${l.replace(/^https?:\/\//, '').split('/').slice(0,2).join('/')}</a></li>`).join("");
+  }
+
+  let actionsHtml = "";
+  if (b.actions && b.actions.length) {
+    actionsHtml = b.actions.map(a => `<li>${a}</li>`).join("");
+  }
+
+  const adminMode = window.__ADMIN_MODE;
+
+  const statusHtml = adminMode
+    ? `<select class="status-select status-${status}" style="font-size:14px;padding:6px 10px;background:var(--navy);border:1px solid var(--border);border-radius:6px;margin-bottom:12px"
+              onchange="changeStatus('${abbr}', this); this.className='status-select status-'+this.value;">
+        ${statusOpts}
+      </select>`
+    : `<span class="status-select status-${status}" style="font-size:14px">${STATUS_OPTIONS.find(o=>o.value===status).label}</span>`;
+
+  const notesHtml = adminMode
+    ? `<div class="modal-notes">
+        <label>Your Notes</label>
+        <textarea id="modalNotes" placeholder="Add your notes for ${b.name}...">${userNotes}</textarea>
+      </div>`
+    : (userNotes ? `<div class="modal-notes"><label>Notes</label><p style="font-size:13px;color:#cbd5e1;background:var(--navy);padding:8px 10px;border-radius:6px;border:1px solid var(--border)">${userNotes.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</p></div>` : '');
+
+  const mwrLabel = b.mwrActive === "yes" ? "Yes — MWR/FSS/MCCS active on this installation"
+                 : b.mwrActive === "no"  ? "No — No active MWR program found"
+                 : "Unknown — needs verification";
+
+  const contactBlock = `
+    <div class="modal-contact">
+      <b>${b.mwrName || 'MWR / FSS / MCCS Office'}</b><br>
+      ${b.mwrPhone ? `&#128222; <a href="tel:${b.mwrPhone.replace(/[^0-9+]/g,'')}">${b.mwrPhone}</a>` : '<span style="color:var(--muted)">No phone on file</span>'}
+      ${b.mwrEmail ? `<br>&#9993; <a href="mailto:${b.mwrEmail}">${b.mwrEmail}</a>` : ''}
+    </div>`;
+
+  modalTitle.textContent = `${b.name} (${b.abbr})`;
+  modalBody.innerHTML = `
+    <div class="tag-row">
+      <span class="modal-tag ${bi.cls}">${bi.label}</span>
+      <span class="modal-tag" style="background:rgba(255,255,255,0.06);color:var(--muted)">Tier ${b.tier}</span>
+      <span class="modal-tag" style="background:rgba(255,255,255,0.06);color:var(--muted)">${b.location}</span>
+    </div>
+
+    <h3>Overview</h3>
+    <p>${b.detail}</p>
+
+    <h3>Population</h3>
+    <p>${b.population || 'Unknown'}</p>
+
+    <h3>MWR / FSS / MCCS Program</h3>
+    <p>${mwrLabel}</p>
+
+    <h3>MWR Contact</h3>
+    ${contactBlock}
+
+    ${actionsHtml ? `<h3>Action Items</h3><ul>${actionsHtml}</ul>` : ""}
+
+    ${linksHtml ? `<h3>Key Links</h3><ul>${linksHtml}</ul>` : ""}
+
+    <h3>Status</h3>
+    ${statusHtml}
+
+    ${notesHtml}
+  `;
+
+  if (adminMode) {
+    const notesEl = document.getElementById("modalNotes");
+    notesEl.addEventListener("input", () => { setUserNotes(abbr, notesEl.value); });
+  }
+
+  mOverlay.classList.add("open");
+}
+
+document.getElementById("modalClose").onclick = () => mOverlay.classList.remove("open");
+mOverlay.addEventListener("click", e => { if (e.target === mOverlay) mOverlay.classList.remove("open"); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") mOverlay.classList.remove("open"); });
+
+tbody.addEventListener("click", e => {
+  const row = e.target.closest("tr[data-abbr]");
+  if (row && !e.target.matches("select")) openModal(row.dataset.abbr);
+});
+
+search.addEventListener("input", renderTable);
+filterTier.addEventListener("change", renderTable);
+filterBranch.addEventListener("change", renderTable);
+filterStatus.addEventListener("change", renderTable);
+
+document.addEventListener("authReady", renderTable);
+renderTable();
+</script>
+</body>
+</html>

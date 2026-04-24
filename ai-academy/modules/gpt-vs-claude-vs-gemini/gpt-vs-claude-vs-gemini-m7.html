@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.4 | 2026-04-22 -->
+<!-- v1.0.5 | 2026-04-24 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -720,28 +720,101 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
 <div class="page" id="p-l4">
     <div class="lesson-hero">
       <div class="lesson-kicker">GPT vs. Claude vs. Gemini · Choosing the Right Model · Lesson 4</div>
-      <h1>Advanced Applications and Synthesis</h1>
-      <div class="tagline">Bringing together concepts from the module and exploring real-world implications and advanced use cases.</div>
+      <h1>Real-World Deployments: Case Studies in Model Selection</h1>
+      <div class="tagline">Theory becomes judgment when the task is real, the deadline is tomorrow, and the wrong choice ships to thousands of users.</div>
     </div>
     <div class="lesson-body">
+      <div class="story-scene" data-label="CONTEXT · BRIDGING FRAMEWORK TO PRACTICE">
+        <p class="story-text">In Lessons 1–3 you built a mental map: a five-axis framework, GPT-4o's ecosystem depth, and the distinct strengths of Claude and Gemini. In practice, model selection happens fast — a team lead asks which model to wire up, and you have five minutes to answer with confidence. This lesson closes the loop with four concrete scenarios: what was chosen, why, and what tradeoffs were accepted.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
       <div class="lesson-section">
-        <div class="section-heading">Module Synthesis</div>
+        <div class="section-heading">Case Study 1 — Legal Document Review at Scale</div>
         <div class="section-body">
-          <p>In this final lesson, we synthesize the key concepts you've learned throughout this module. The material covered in Lessons 1-3 provides the foundation for understanding how these ideas apply to complex, real-world scenarios.</p>
-          <p>Consider how the core principles interact and combine. Where do they reinforce each other? Where do they create tensions? How would you navigate those tensions in practice?</p>
+          <p><strong>Scenario:</strong> A mid-size law firm needs to process full merger-and-acquisition due diligence packages — typically 200–400 pages of contracts, disclosure schedules, and regulatory filings — and produce structured summaries before each partner review meeting.</p>
+          <p><strong>Model selected: Claude 3.5 Sonnet (200K context window).</strong></p>
+          <p>The decisive factor was context length. A 300-page document, once converted to text, runs to roughly 150,000–180,000 tokens. GPT-4o's 128K window would require chunking — introducing seam errors where related clauses on page 12 and page 280 never appear in the same context. Claude's 200K window ingests the entire document in one call, allowing the model to catch cross-references, notice contradictions between schedules, and produce a coherent whole-document summary.</p>
+          <p>Constitutional AI training was a secondary benefit: the firm's ethics committee was comfortable with Claude's cautious defaults on sensitive client data. Cost was a non-issue at this task volume (a few hundred documents per month).</p>
+        </div>
+        <div class="callout">
+          <p class="callout-label">KEY TRADEOFF</p>
+          <p>Claude's 200K context solved the chunking problem but added per-call cost versus using Claude Haiku on chunked segments. For documents consistently under 80K tokens, a chunk-and-merge strategy with Haiku would be cheaper — but for full due diligence packages, whole-document coherence justified the Sonnet price point.</p>
         </div>
       </div>
 
       <div class="section-divider"></div>
 
       <div class="lesson-section">
-        <div class="section-heading">Looking Forward</div>
+        <div class="section-heading">Case Study 2 — Customer Service Chatbot for a SaaS Platform</div>
         <div class="section-body">
-          <p>As you complete this module, think about how the ideas presented here connect to your own work and interests. What questions remain? What would you want to explore further? Use the lab to deepen your thinking.</p>
+          <p><strong>Scenario:</strong> A B2B SaaS company wants to deploy an AI-powered support bot that handles billing questions, feature explanations, and account troubleshooting. It must integrate with Zendesk, pull from a Confluence knowledge base, and escalate to human agents via webhook.</p>
+          <p><strong>Model selected: GPT-4o via the OpenAI API.</strong></p>
+          <p>The ecosystem argument was decisive here. OpenAI's function-calling specification is natively supported by Zendesk's AI partner integrations, and the Confluence connector had already been built by the infrastructure team using an existing OpenAI plugin. Switching to Claude would have meant rebuilding those connectors. GPT-4o's broad tool-use support also made it straightforward to wire up the escalation webhook.</p>
+          <p>Consumer familiarity mattered too — the support team was already using ChatGPT internally, so GPT-4o's behavioral defaults felt predictable to the team writing system prompts. Response latency on GPT-4o mini (used for intent classification) was fast enough that users experienced no perceptible delay before the model routed to the right knowledge-base section.</p>
+        </div>
+        <div class="callout">
+          <p class="callout-label">KEY TRADEOFF</p>
+          <p>The team actually ran GPT-4o mini for intent classification (cheap, fast) and GPT-4o for final response generation (higher quality). This two-tier model routing pattern — a small model decides, a large model generates — is increasingly common in production pipelines and cuts cost by 60–80% on high-volume deployments.</p>
         </div>
       </div>
-    </div>
-    <div class="quiz-area" style="padding-top:0;">
+
+      <div class="section-divider"></div>
+
+      <div class="lesson-section">
+        <div class="section-heading">Case Study 3 — Scientific Research Assistant at a University Lab</div>
+        <div class="section-body">
+          <p><strong>Scenario:</strong> A computational biology lab wants an assistant that can answer questions about recent preprints, synthesize findings across 2024 literature, and suggest experimental protocols — all while staying current with work published in the last three months.</p>
+          <p><strong>Model selected: Gemini 1.5 Pro with search grounding enabled.</strong></p>
+          <p>Recency was the critical constraint. Claude and standard GPT-4o have training cutoffs and no live web access by default; their knowledge of a preprint posted last Tuesday is zero. Gemini's search grounding capability — routing queries through Google Search before generating a response — meant the assistant could accurately surface findings from arXiv, bioRxiv, and PubMed published days earlier.</p>
+          <p>The lab also ran experiments through Google Colab and stored datasets in Google Drive. Gemini's Workspace integration let the assistant access Drive folders directly when analyzing existing datasets, eliminating a manual copy-paste step that had been friction in earlier workflows.</p>
+        </div>
+        <div class="callout">
+          <p class="callout-label">KEY TRADEOFF</p>
+          <p>Search grounding added latency — each query triggered a web search before generation, adding 1–3 seconds per response. For a research assistant used asynchronously (not real-time), this was acceptable. For a latency-sensitive application, that same feature would be a deal-breaker.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="lesson-section">
+        <div class="section-heading">Case Study 4 — High-Volume Content Classification Pipeline</div>
+        <div class="section-body">
+          <p><strong>Scenario:</strong> A media monitoring company needs to classify 500,000 social media posts per day into 12 content categories (news, opinion, satire, misinformation, etc.) with a cost budget of under $50/day and a latency requirement of under 500ms per call.</p>
+          <p><strong>Model selected: Gemini 1.5 Flash (primary) / Claude Haiku (fallback).</strong></p>
+          <p>At this volume, cost arithmetic dominates every other consideration. Gemini 1.5 Flash was priced at approximately $0.075 per 1M input tokens at mid-2024 rates. Processing 500,000 posts averaging ~100 tokens each is 50M tokens/day — roughly $3.75/day, well within budget. GPT-4o at $5/1M tokens would cost ~$250/day for the same load. Even GPT-4o mini ($0.15/1M input) would cost $7.50/day — more expensive than Flash with no latency advantage.</p>
+          <p>Flash's median response time of ~300ms cleared the 500ms SLA. Claude Haiku was configured as a fallback for posts where Flash returned low-confidence classifications, accepting slightly higher cost on the ~5% of ambiguous cases in exchange for better accuracy on edge cases.</p>
+        </div>
+        <div class="callout">
+          <p class="callout-label">KEY TRADEOFF</p>
+          <p>Flash's speed-and-cost advantages come with a quality ceiling. On nuanced satire detection or multi-label classification, Flash underperformed Sonnet-class models in internal evaluations. The team accepted lower accuracy on hard cases in exchange for the economics working at scale — a deliberate engineering tradeoff, not an oversight.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="lesson-section">
+        <div class="section-heading">Cross-Case Patterns</div>
+        <div class="section-body">
+          <p>Looking across all four cases, three patterns emerge consistently:</p>
+        </div>
+        <div class="flow-steps">
+          <div class="flow-step">
+            <div class="flow-num">1</div>
+            <div class="flow-text"><strong>One axis usually dominates.</strong> Context length decided Case 1. Ecosystem integration decided Case 2. Recency decided Case 3. Cost decided Case 4. The five-axis framework helps you find that dominant axis quickly rather than treating every axis as equal weight.</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-num">2</div>
+            <div class="flow-text"><strong>Model routing is a first-class pattern.</strong> Two of the four cases used multiple models in the same pipeline — a cheap model for classification or routing, a capable model for generation. This is not a workaround; it is standard production architecture.</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-num">3</div>
+            <div class="flow-text"><strong>Tradeoffs are accepted, not solved.</strong> Each choice gave something up: chunking coherence for cost (Case 1 alternative), rebuilding connectors for safety tuning (Case 2 alternative), latency for recency (Case 3), accuracy ceiling for economics (Case 4). The job is to choose which tradeoffs your task can absorb — not to find a model that has no tradeoffs.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="page-nav">
         <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
         <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz 4 →</button>
@@ -751,43 +824,48 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
 
   <!-- ═══════════════════ QUIZ 4 ═══════════════════ -->
   <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+    </div>
     <div class="quiz-area">
-      <h2>Lesson 4 Quiz</h2>
-      <div class="quiz-box" id="q0-l4">
-        <div class="quiz-q">Which concept from this lesson represents the most significant challenge in practice?</div>
-        <div class="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this,'correct','q0-l4')">Integrating multiple frameworks while maintaining clarity</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Understanding individual technical concepts</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Memorizing definitions</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Spelling difficult terms correctly</button>
-        </div>
-        <div class="quiz-feedback right">✓ Correct. The real challenge is synthesis and integration across complex domains.</div>
-        <div class="quiz-feedback wrong">✗ Incorrect. The most significant practical challenge is integrating multiple frameworks while maintaining clarity and coherence.</div>
-      </div>
 
       <div class="quiz-box" id="q1-l4">
-        <div class="quiz-q">How would you apply the key concepts from this lesson to a novel scenario?</div>
+        <div class="quiz-q">1. A legal team processes 300-page merger agreements. After one call, they find the model's summary misses a cross-reference between page 14 and page 290. What is the most likely root cause?</div>
         <div class="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">By identifying core principles and adapting them to the specific context</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By applying the same approach without modification</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By avoiding the concepts in unfamiliar situations</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By deferring to experts only</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">A. The model lacks legal training data</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">B. The document was chunked because it exceeded the model's context window, so page 14 and page 290 were never in the same context</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">C. The system prompt was too short</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">D. The model hallucinated the page references</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct. Effective application requires extracting core principles and adapting them thoughtfully to new contexts.</div>
-        <div class="quiz-feedback wrong">✗ Incorrect. The right approach is identifying core principles and thoughtfully adapting them to the specific context.</div>
+        <div class="quiz-feedback right">✓ Correct. Context-window chunking is the classic cause of cross-reference failures in long-document tasks. When a 300-page document (~150K tokens) exceeds a model's window and must be split, clauses on distant pages never share the same context — making cross-reference detection impossible without a whole-document model like Claude 200K.</div>
+        <div class="quiz-feedback wrong">✗ Context-window chunking is the issue. When a document is split across calls, content on page 14 and page 290 never appears in the same context, so the model cannot detect the relationship between them. This is the core reason Claude's 200K window matters for full due-diligence review.</div>
       </div>
 
       <div class="quiz-box" id="q2-l4">
-        <div class="quiz-q">What would you prioritize when facing conflicting principles from different lessons?</div>
+        <div class="quiz-q">2. A product team runs 500,000 classification calls per day on a $50/day budget, latency must be under 500ms. Which model tier is the correct match?</div>
         <div class="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Context-specific evaluation of which principles are most relevant</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Always prioritizing one set of principles over another</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Ignoring the conflict and hoping it resolves itself</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Seeking a universal principle that eliminates all tradeoffs</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">A. GPT-4o — best overall quality at any volume</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">B. Claude Opus — highest reasoning accuracy</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">C. Gemini Flash or Claude Haiku — sub-$0.10/1M token pricing clears the budget; ~300ms median latency clears the SLA</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">D. GPT-4o mini — cheapest OpenAI option, always the right answer for volume</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct. Context-specific evaluation allows you to navigate tradeoffs thoughtfully based on specific circumstances.</div>
-        <div class="quiz-feedback wrong">✗ Incorrect. The best approach is context-specific evaluation to determine which principles are most relevant to your situation.</div>
+        <div class="quiz-feedback right">✓ Correct. At 500K calls × ~100 tokens = 50M tokens/day, Flash's ~$0.075/1M pricing costs ~$3.75/day — well inside the $50 budget. GPT-4o at $5/1M would cost ~$250/day; even GPT-4o mini at $0.15/1M costs $7.50/day. Flash and Haiku are the purpose-built high-volume tier; latency of ~300ms clears the 500ms SLA.</div>
+        <div class="quiz-feedback wrong">✗ Cost arithmetic rules this decision. At 50M tokens/day, GPT-4o costs ~$250/day (10× over budget) and GPT-4o mini costs ~$7.50/day. Gemini Flash at ~$0.075/1M comes to ~$3.75/day and delivers ~300ms latency — both constraints met. This is the Flash/Haiku use case.</div>
       </div>
+
+      <div class="quiz-box" id="q3-l4">
+        <div class="quiz-q">3. Which of the following best describes the "model routing" pattern seen in Case Studies 2 and 4?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">A. Switching between models based on user preference settings</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">B. Running the same prompt against multiple models simultaneously and averaging the outputs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-l4')">C. Using a small, cheap model for intent classification or routing, then calling a larger model only for final response generation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-l4')">D. Letting the user manually choose which model answers each message</button>
+        </div>
+        <div class="quiz-feedback right">✓ Correct. Model routing uses a fast, cheap model (GPT-4o mini, Flash, or Haiku) to classify the request and determine what's needed, then passes only the relevant subset of work to a more capable (and more expensive) model for generation. This cuts cost by 60–80% on high-volume pipelines while preserving quality on outputs that matter.</div>
+        <div class="quiz-feedback wrong">✗ Model routing means a small model handles intent classification (cheap, fast) and a larger model handles final generation (higher quality). The CS platform in Case 2 routed to GPT-4o mini for intent, then GPT-4o for responses. Case 4 used Flash for classification with Haiku as fallback on ambiguous posts. It's a deliberate pipeline architecture, not a UI toggle.</div>
+      </div>
+
     </div>
     <div class="quiz-area" style="padding-top:0;">
       <div class="page-nav">
@@ -839,183 +917,183 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
       </div>
 
       <div class="quiz-box" id="mt-q1">
-        <div class="quiz-q">Which concept from Lesson 1 is most foundational?</div>
+        <div class="quiz-q">1. A team needs to analyze creative brand voice across 500 ad campaigns to identify what emotional tone drives conversions. Which decision-framework axis is most decisive here?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q1')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">Ecosystem integration — they need Google Workspace connectors</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q1')">Task type — creative/analytical reasoning determines which model's defaults best match the work</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">Latency SLA — ad analysis must happen in under 200ms</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">Context window — each campaign is only a few sentences</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Task type is the primary axis when the work is fundamentally about reasoning quality — here, nuanced interpretation of creative tone. Ecosystem and latency are secondary once you've established what kind of reasoning the task demands.</div>
+        <div class="quiz-feedback wrong">✗ Task type is the lead axis. Creative/analytical reasoning quality determines which model's defaults suit the work. Latency, ecosystem, and context window are secondary constraints for this scenario.</div>
       </div>
 
       <div class="quiz-box" id="mt-q2">
-        <div class="quiz-q">How does Lesson 2 expand on Lesson 1?</div>
+        <div class="quiz-q">2. A consumer health app must ensure its AI never suggests a specific medication dosage. Which model property most directly addresses this safety requirement?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q2')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">GPT-4o's DALL-E integration, which prevents image generation of medical content</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">Gemini's search grounding, which verifies claims against live web sources</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q2')">Claude's Constitutional AI training, which produces cautious defaults on safety-sensitive outputs</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">GPT-4o mini's lower cost per token, enabling more moderation API calls</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Constitutional AI is Anthropic's training methodology that embeds safety principles directly into Claude's behavior. It produces consistently cautious outputs on medical, legal, and other high-stakes domains — making it the strongest default fit for compliance-sensitive consumer health applications.</div>
+        <div class="quiz-feedback wrong">✗ Constitutional AI (CAI) is the relevant property. Claude's CAI training produces cautious, harm-aware defaults on safety-sensitive content — the strongest out-of-the-box posture for a health app that cannot risk specific dosage recommendations.</div>
       </div>
 
       <div class="quiz-box" id="mt-q3">
-        <div class="quiz-q">What is the key insight from Lesson 3?</div>
+        <div class="quiz-q">3. At mid-2024 pricing, which ordering correctly ranks these models from cheapest to most expensive per 1M input tokens?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q3')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">GPT-4o → Claude 3.5 Sonnet → Gemini Flash → Claude Haiku</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q3')">Gemini Flash → Claude Haiku → GPT-4o mini → Claude 3.5 Sonnet → GPT-4o</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">Claude Opus → GPT-4o → Gemini 1.5 Pro → Claude Haiku → Gemini Flash</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">All models cost the same per token; differences only appear at output</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Flash (~$0.075/1M) and Haiku are the cheapest tier, GPT-4o mini (~$0.15/1M) sits above them, Claude 3.5 Sonnet (~$3/1M) in the mid tier, and GPT-4o (~$5/1M) at the high end. Knowing this ordering is essential for cost-axis decisions.</div>
+        <div class="quiz-feedback wrong">✗ The correct order is Flash/Haiku at the bottom, GPT-4o mini above them, mid-tier Sonnet-class models, then GPT-4o at the top. This ordering directly drives high-volume deployment decisions where cost arithmetic dominates.</div>
       </div>
 
       <div class="quiz-box" id="mt-q4">
-        <div class="quiz-q">How do all lessons integrate in Lesson 4?</div>
+        <div class="quiz-q">4. A real-time customer-facing chatbot must respond within 400ms at the 95th percentile. Which model tier is most appropriate?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q4')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">Claude Opus — highest reasoning quality justifies any latency</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">GPT-4o — the most widely used model is always fast enough</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q4')">Gemini Flash or Claude Haiku — purpose-built speed tier with ~300ms median latency</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">Gemini 1.5 Pro — largest context window means fewest retries</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Flash and Haiku are designed for latency-sensitive workloads. Their ~300ms median latency comfortably clears a 400ms SLA. Opus and full GPT-4o are significantly slower and would frequently miss the 95th-percentile threshold.</div>
+        <div class="quiz-feedback wrong">✗ Latency-sensitive applications require the Flash/Haiku tier. These models are optimized for speed (~300ms median) at the cost of some reasoning depth. Opus and standard GPT-4o are much slower and would breach the 400ms SLA at scale.</div>
       </div>
 
       <div class="quiz-box" id="mt-q5">
-        <div class="quiz-q">Question 5</div>
+        <div class="quiz-q">5. Which two models can natively handle book-length inputs (e.g., a full novel of ~120,000 tokens) in a single API call without chunking?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q5')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q5')">Claude 3.5 Sonnet (200K context) and Gemini 1.5 Pro (1M context)</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">GPT-4o (128K context) and Claude Haiku (200K context)</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">GPT-4o mini (128K context) and Gemini Flash (32K context)</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">All current frontier models support at least 200K tokens</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. At mid-2024, Claude's 200K and Gemini 1.5 Pro's 1M context windows are the two options that handle book-length inputs without chunking. GPT-4o's 128K window falls short of a full novel (~120K tokens is close but margin is thin; longer books exceed it).</div>
+        <div class="quiz-feedback wrong">✗ Claude (200K) and Gemini 1.5 Pro (1M) are the two models designed for extremely long inputs. GPT-4o's 128K window is insufficient for full-length novels, and GPT-4o mini has the same 128K limit.</div>
       </div>
 
       <div class="quiz-box" id="mt-q6">
-        <div class="quiz-q">Question 6</div>
+        <div class="quiz-q">6. GPT-4o is described as "natively multimodal." What does that mean in practice?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q6')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">It was the first model to support text input alongside structured data</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">It can generate images, audio, and video directly as output in all API tiers</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q6')">Audio, image, and text are processed by the same underlying model rather than being stitched together from separate models</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">It supports more programming languages than any other model</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. "Natively multimodal" means GPT-4o processes audio, images, and text within a single unified model — no separate speech-to-text or image-recognition pipeline feeding into a text model. This reduces latency and error surface compared to stitched-together pipelines.</div>
+        <div class="quiz-feedback wrong">✗ Native multimodality means the audio, image, and text modalities are handled by one unified model. Earlier GPT systems used separate models (Whisper for audio, CLIP for images) piped together. GPT-4o's unified architecture reduces latency and avoids transcription errors.</div>
       </div>
 
       <div class="quiz-box" id="mt-q7">
-        <div class="quiz-q">Question 7</div>
+        <div class="quiz-q">7. A developer wants to build a workflow that generates Python code, executes it against sample data, and iterates based on output. Which GPT-4o feature most directly enables this?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q7')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">DALL-E integration — image generation from code descriptions</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q7')">Code Interpreter (Advanced Data Analysis) — runs code in a sandboxed environment and feeds results back into context</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">Consumer familiarity — most developers already know ChatGPT's interface</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">128K context window — stores all prior code iterations</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Code Interpreter runs code in a sandboxed Python environment and returns results (including errors, plots, and data outputs) directly into the conversation context. This closed-loop generate → execute → iterate pattern is exactly what Code Interpreter was designed for.</div>
+        <div class="quiz-feedback wrong">✗ Code Interpreter (now called Advanced Data Analysis in ChatGPT) executes Python in a sandbox and feeds the output back into context — enabling the generate → run → iterate loop. DALL-E is for image generation; context window size affects memory, not execution.</div>
       </div>
 
       <div class="quiz-box" id="mt-q8">
-        <div class="quiz-q">Question 8</div>
+        <div class="quiz-q">8. Which of the following is a documented, distinctive strength of Claude relative to GPT-4o and Gemini in enterprise deployments?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q8')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">Real-time web search and search grounding</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">Native integration with Google Docs, Gmail, and Drive</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q8')">Following nuanced, multi-step instructions with high fidelity over long outputs</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">Generating images via DALL-E</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Claude's training emphasizes instruction-following accuracy — maintaining complex constraints, format requirements, and behavioral rules across very long responses. This makes it especially strong for tasks requiring precise adherence to detailed specifications, like contract drafting templates or structured research reports.</div>
+        <div class="quiz-feedback wrong">✗ Claude's distinctive strength is nuanced instruction following — reliably maintaining complex behavioral constraints across long outputs. Real-time search is Gemini's strength; Google Workspace integration is Gemini's strength; DALL-E is an OpenAI product.</div>
       </div>
 
       <div class="quiz-box" id="mt-q9">
-        <div class="quiz-q">Question 9</div>
+        <div class="quiz-q">9. An enterprise team uses Google Workspace daily — documents live in Drive, meetings are scheduled in Google Calendar, and email runs through Gmail. Which model has the strongest native integration argument?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q9')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q9')">Gemini, via its built-in Google Workspace extensions and Vertex AI integration</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">GPT-4o, because OpenAI's plugin ecosystem covers Workspace tools</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">Claude, because its 200K context can ingest entire Drive folders at once</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">All three models integrate equally well with Google Workspace</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Gemini's Workspace extensions are native first-party integrations — not third-party connectors. Gemini in Gmail, Docs, and Drive can read and write directly to the user's Workspace without OAuth headaches or third-party middleware. This is a genuine ecosystem advantage for Google-centric organizations.</div>
+        <div class="quiz-feedback wrong">✗ Gemini has native first-party Workspace integrations — Gemini in Gmail, Docs, Drive, and Meet are Google-built products. OpenAI's Workspace connectors are third-party plugins; Claude has no direct Workspace integration. For Google-centric teams, Gemini's ecosystem advantage is real and significant.</div>
       </div>
 
       <div class="quiz-box" id="mt-q10">
-        <div class="quiz-q">Question 10</div>
+        <div class="quiz-q">10. What is "search grounding" as implemented in Gemini, and which scenario most benefits from it?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q10')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">Grounding refers to limiting responses to content within a provided document; best for summarization tasks</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">Grounding means the model cites its training data sources; best for academic research</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q10')">Search grounding routes the query through Google Search before generating a response, enabling real-time web knowledge; best for tasks requiring current information</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">Grounding is a fine-tuning technique that anchors outputs to a specific writing style; best for brand voice consistency</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Search grounding means Gemini can issue a Google Search query as part of answering your prompt, then incorporate the live results before generating its response. This gives it access to information published after its training cutoff — critical for scientific research, news analysis, or any domain where recency matters.</div>
+        <div class="quiz-feedback wrong">✗ Search grounding = live Google Search integrated into the generation process. The model queries the web before answering, bringing in post-training information. This is Gemini's key advantage for any task requiring current knowledge — recent research, news events, newly published documentation.</div>
       </div>
 
       <div class="quiz-box" id="mt-q11">
-        <div class="quiz-q">Question 11</div>
+        <div class="quiz-q">11. All three major model families (OpenAI, Anthropic, Google) now support function calling / tool use. What distinguishes OpenAI's position in this space?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q11')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">OpenAI is the only provider with a structured tool-use API</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q11')">OpenAI pioneered the plugin and function-calling ecosystem, giving GPT-4o the broadest set of pre-built third-party integrations</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">OpenAI's function calling is faster than Anthropic's and Google's implementations</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">Only OpenAI models can call external APIs; Claude and Gemini require a middleware layer</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. OpenAI introduced the plugin ecosystem in 2023 and the function-calling API shortly after, giving third-party developers a head start building connectors. By mid-2024, the breadth of pre-built integrations (Zapier, Zendesk, GitHub, etc.) for GPT-4o significantly exceeds what's available for Claude and Gemini.</div>
+        <div class="quiz-feedback wrong">✗ All three providers support function calling. OpenAI's advantage is ecosystem maturity — they were first, which means more third-party developers have built and published integrations. When a team needs to wire up an existing enterprise tool, the GPT-4o connector often already exists.</div>
       </div>
 
       <div class="quiz-box" id="mt-q12">
-        <div class="quiz-q">Question 12</div>
+        <div class="quiz-q">12. A compliance team must deploy an AI that will handle HIPAA-adjacent patient intake forms. The primary model-selection criterion should be:</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q12')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">Cost per token — healthcare volume is high so economics dominate</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">Multimodal capability — patients often submit photos of their insurance cards</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">Context window — patient histories can be long</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q12')">Safety posture and compliance defaults — the model must not suggest diagnoses or generate non-compliant content</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Safety requirements dominate in compliance-sensitive healthcare deployments. The risk of a single non-compliant output — a diagnostic suggestion, a medication recommendation — far outweighs cost or latency concerns. Claude's Constitutional AI training is purpose-built for this safety posture.</div>
+        <div class="quiz-feedback wrong">✗ Safety posture is the dominant axis here. In HIPAA-adjacent applications, a single non-compliant model output carries regulatory and legal risk. Cost and context window are secondary; the primary criterion is whether the model's defaults are cautious enough for healthcare content.</div>
       </div>
 
       <div class="quiz-box" id="mt-q13">
-        <div class="quiz-q">Question 13</div>
+        <div class="quiz-q">13. A startup processes 2 million short text inputs per day for content moderation. Their budget is $100/day. Which strategy is most cost-effective?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q13')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q13')">Use Gemini Flash or Claude Haiku for all classification calls — sub-$0.10/1M pricing keeps the daily cost well under $100</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">Use GPT-4o for all calls — highest quality reduces the false-positive rate enough to justify the cost</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">Use Claude Opus — its reasoning depth means fewer edge cases need human review, saving money overall</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">Use GPT-4o mini — it's the cheapest OpenAI option so it must be cheapest overall</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. At 2M inputs × ~50 tokens average = 100M tokens/day. Gemini Flash at ~$0.075/1M = $7.50/day; Claude Haiku at similar pricing. GPT-4o at $5/1M = $500/day (5× over budget). GPT-4o mini at $0.15/1M = $15/day — viable but more expensive than Flash. The Flash/Haiku tier is the right answer when cost is the binding constraint.</div>
+        <div class="quiz-feedback wrong">✗ Flash/Haiku is the correct tier. At 100M tokens/day, GPT-4o costs ~$500/day (far over budget), GPT-4o mini costs ~$15/day, and Flash/Haiku costs ~$7.50/day. The cheapest OpenAI option is not the cheapest overall — Gemini Flash and Claude Haiku are cheaper.</div>
       </div>
 
       <div class="quiz-box" id="mt-q14">
-        <div class="quiz-q">Question 14</div>
+        <div class="quiz-q">14. Gemini 1.5 Pro's 1M-token context window was publicly demonstrated in April 2024. What real-world document set was used in that demonstration?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q14')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">The complete works of Shakespeare (~900,000 words)</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q14')">The Apollo 11 mission transcript (~240,000 tokens), processed in a single call</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">A full-length feature film script at 1M tokens</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">The entire GPT-4 technical report and associated appendices</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Google's April 2024 demonstration of Gemini 1.5 Pro's context window used the Apollo 11 mission transcript — approximately 240,000 tokens — processed in a single API call. This was cited in the module as evidence that the 1M-token limit is real, not just a marketing figure.</div>
+        <div class="quiz-feedback wrong">✗ The Apollo 11 mission transcript (~240,000 tokens) was the document used in Google's April 2024 public demonstration of Gemini 1.5 Pro's long-context capability. This real demonstration is cited in the module to establish that the 1M-token window is functional, not theoretical.</div>
       </div>
 
       <div class="quiz-box" id="mt-q15">
-        <div class="quiz-q">Question 15</div>
+        <div class="quiz-q">15. When applying the five-axis decision framework to a new deployment, which statement best reflects how the axes should be weighted?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q15')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">All five axes should always be weighted equally to avoid bias toward any single model</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">Cost should always be the tiebreaker when other axes are ambiguous</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">Safety posture always takes priority over all other axes in every deployment</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q15')">One axis typically dominates based on the specific task's binding constraint — identify that constraint first, then treat remaining axes as secondary filters</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. The module's core lesson is that one axis usually dominates: context length dominated the legal document case, ecosystem dominated the SaaS chatbot case, recency dominated the research assistant case, and cost dominated the classification pipeline. The skill is quickly identifying which axis is the binding constraint for your specific task, then using the others as secondary filters.</div>
+        <div class="quiz-feedback wrong">✗ The framework's practical value comes from identifying which single axis is the binding constraint for your task. Equal weighting leads to paralysis; always-cost or always-safety rules lead to wrong answers in contexts where another axis dominates. Case Study analysis consistently showed one axis driving the decision while others served as filters.</div>
       </div>
 
       <div id="mt-result" style="display:none; margin-top:2rem; padding:1.5rem; background:#f5f5f5; border-radius:8px;">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.6 | 2026-04-22 -->
+<!-- v1.0.7 | 2026-04-24 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -497,28 +497,57 @@
   <div class="page" id="p-l4">
     <div class="lesson-hero">
       <div class="lesson-kicker">AI in Game Design I · NPC Behavior and Decision-Making · Lesson 4</div>
-      <h1>Advanced Applications and Synthesis</h1>
-      <div class="tagline">Bringing together concepts from the module and exploring real-world implications and advanced use cases.</div>
+      <h1>Hybrid Architectures: When to Combine FSMs, Behavior Trees, and Utility AI</h1>
+      <div class="tagline">Real games layer multiple systems — here's how production teams decide what goes where.</div>
     </div>
     <div class="lesson-body">
+
+      <div class="story-scene" data-label="DOCUMENTED CASE — F.E.A.R., 2005">
+        <p class="story-text">When Monolith Productions shipped <em>F.E.A.R.</em> in 2005, the game's AI attracted immediate attention from the press and industry alike. Enemies flanked the player, suppressed fire while teammates advanced, communicated cover positions, and dove through windows to avoid grenades. Lead AI programmer Jeff Orkin documented the system in detail: it used <strong>GOAP — Goal-Oriented Action Planning</strong> — rather than a traditional FSM or behavior tree. Each AI agent held a goal (KillPlayer, TakeCover, FleeFromGrenade) and a library of actions. A forward-planning algorithm searched for the lowest-cost sequence of actions that would satisfy the current goal, replanning dynamically when circumstances changed. The result was squad tactics that emerged from the planning system rather than being hand-authored, producing behavior that felt genuinely intelligent.</p>
+      </div>
+
       <div class="lesson-section">
-        <div class="section-heading">Module Synthesis</div>
+        <div class="section-heading">Why Pure Systems Hit Limits</div>
         <div class="section-body">
-          <p>In this final lesson, we synthesize the key concepts you've learned throughout this module. The material covered in Lessons 1-3 provides the foundation for understanding how these ideas apply to complex, real-world scenarios.</p>
-          <p>Consider how the core principles interact and combine. Where do they reinforce each other? Where do they create tensions? How would you navigate those tensions in practice?</p>
+          <p>Each system covered in this module excels in specific conditions but struggles in others. <strong>FSMs</strong> are predictable and cheap but explode in state count as behavior complexity grows. <strong>Behavior Trees</strong> are modular and prioritizable but can become unwieldy when many behaviors compete on a continuum rather than a clear hierarchy. <strong>Utility AI</strong> handles continuous, competing actions elegantly but lacks the natural priority-override structure that hierarchical logic provides.</p>
+          <p>Production games rarely use any single system in isolation. The standard approach is <strong>layered architecture</strong>: different systems handle different levels of abstraction, each doing what it does best.</p>
         </div>
       </div>
 
       <div class="section-divider"></div>
 
       <div class="lesson-section">
-        <div class="section-heading">Looking Forward</div>
+        <div class="section-heading">A Typical Three-Layer Stack</div>
         <div class="section-body">
-          <p>As you complete this module, think about how the ideas presented here connect to your own work and interests. What questions remain? What would you want to explore further? Use the lab to deepen your thinking.</p>
+          <p><strong>Layer 1 — High-Level State (FSM):</strong> A simple FSM governs the NPC's major mode. States might be Combat, Patrol, Flee, and Idle. Transitions are infrequent and triggered by large-scale events — player spotted, health below 25%, squad all dead. This layer is cheap and predictable. Designers can enumerate every possible top-level state and guarantee the NPC is never simultaneously in Combat and Patrol.</p>
+          <p><strong>Layer 2 — Tactical Decisions (Behavior Tree):</strong> Inside the Combat state, a behavior tree governs moment-to-moment tactics. A root Selector chooses between Attack, TakeCover, Reload, and CallForReinforcements based on tree traversal order. The tree's modularity makes it easy to add a new tactic — ThrowGrenade — without rearchitecting the state machine. Damián Isla's documented approach from the Halo series used exactly this kind of tree within a high-level state context.</p>
+          <p><strong>Layer 3 — Action Selection (Utility AI):</strong> Within certain behavior tree leaf nodes — particularly where multiple equivalent options exist — utility scoring breaks ties. When the NPC could advance to cover A, B, or C, a utility function scoring distance, exposure, and proximity to the player selects the best option. This avoids hard-coded priority rules for decisions that are genuinely continuous in nature.</p>
         </div>
       </div>
-    </div>
-    <div class="quiz-area" style="padding-top:0;">
+
+      <div class="section-divider"></div>
+
+      <div class="callout">
+        <div class="callout-label">GOAP: Planning Instead of Pre-Authoring</div>
+        <p><strong>Goal-Oriented Action Planning (GOAP)</strong> is an alternative to both behavior trees and utility AI for complex tactical behavior. The NPC defines goals (reach objective, eliminate threat) and a library of actions with preconditions and effects. A planning algorithm — typically A* over a state space — finds the cheapest action sequence that achieves the goal. GOAP is powerful because new behaviors emerge from new actions added to the library, without any designer needing to manually wire how they connect. F.E.A.R.'s squad AI used GOAP to produce flanking and suppression behavior that Monolith's Jeff Orkin described as requiring minimal hand-authoring of specific tactics.</p>
+      </div>
+
+      <div class="lesson-section">
+        <div class="section-heading">LLMs as a Fourth Layer: Dialogue on Top of Behavior</div>
+        <div class="section-body">
+          <p>The most recent development in NPC AI architecture adds a fourth layer above the behavioral stack: <strong>LLM-based dialogue</strong>. The FSM/BT/utility system governs what the NPC <em>does</em> — how it moves, fights, and reacts. The LLM governs what the NPC <em>says</em> about it. An enemy soldier whose behavior tree has just transitioned to TakeCover state might simultaneously be running an LLM dialogue system that produces a taunting remark contextually appropriate to the player's last action.</p>
+          <p>Ubisoft's NEO NPC prototype (GDC 2024) demonstrated this pattern: traditional behavior systems handled navigation and combat, while Claude (Anthropic) powered the NPC's verbal layer. The two systems were loosely coupled — the dialogue system received structured state signals (health, location, current objective) from the behavior system and incorporated them into natural-language context. This architecture preserves the reliability of hand-authored behavioral logic while adding the flexibility of generative dialogue.</p>
+          <p>The key engineering constraint is <strong>latency budget</strong>. A behavior tree tick runs in microseconds; an LLM response takes 0.5–3 seconds. In practice, LLM dialogue is triggered asynchronously on specific events (entering a new zone, player performing a notable action) rather than every frame, so the behavioral system never blocks on the LLM response.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Design Principle</div>
+        <p>When choosing which system to use at each architectural layer, ask: Is the decision categorical (yes/no, mode A/mode B) or continuous (how much, which of many)? Categorical decisions favor FSMs and BT priority ordering. Continuous decisions favor utility scoring. Planning-under-uncertainty with many possible action sequences favors GOAP. No single answer is universally correct — the right architecture depends on the specific behavior you need to produce.</p>
+      </div>
+
       <div class="page-nav">
         <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
         <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz 4 →</button>
@@ -528,42 +557,45 @@
 
   <!-- ═══════════════════ QUIZ 4 ═══════════════════ -->
   <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">3 questions — free, untracked, retake anytime.</div>
+    </div>
     <div class="quiz-area">
-      <h2>Lesson 4 Quiz</h2>
       <div class="quiz-box" id="q0-l4">
-        <div class="quiz-q">Which concept from this lesson represents the most significant challenge in practice?</div>
+        <div class="quiz-q">In the three-layer hybrid architecture described in the lesson, which system handles high-level mode switching — such as transitioning between Combat, Patrol, and Flee?</div>
         <div class="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this,'correct','q0-l4')">Integrating multiple frameworks while maintaining clarity</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Understanding individual technical concepts</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Memorizing definitions</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">Spelling difficult terms correctly</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">A. Utility AI, because it scores all modes continuously and selects the highest.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q0-l4')">B. A Finite State Machine, because it is cheap, predictable, and handles categorical mode transitions.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">C. A Behavior Tree root Selector, because priority ordering governs mode selection.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q0-l4')">D. GOAP, because planning is needed to decide which mode to enter.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct. The real challenge is synthesis and integration across complex domains.</div>
-        <div class="quiz-feedback wrong">✗ Incorrect. The most significant practical challenge is integrating multiple frameworks while maintaining clarity and coherence.</div>
+        <div class="quiz-feedback right">✓ Correct. The FSM handles high-level mode switching precisely because those decisions are categorical and infrequent — Combat vs. Patrol vs. Flee — where predictability and low cost matter most.</div>
+        <div class="quiz-feedback wrong">✗ The FSM sits at the top layer for high-level mode transitions. Its predictability and low runtime cost make it ideal for categorical, infrequent decisions like entering or leaving Combat.</div>
       </div>
 
       <div class="quiz-box" id="q1-l4">
-        <div class="quiz-q">How would you apply the key concepts from this lesson to a novel scenario?</div>
+        <div class="quiz-q">What made F.E.A.R.'s (2005) GOAP-based AI distinctive compared to traditional FSM or behavior tree approaches?</div>
         <div class="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">By identifying core principles and adapting them to the specific context</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By applying the same approach without modification</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By avoiding the concepts in unfamiliar situations</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">By deferring to experts only</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">A. It used a neural network trained on human player data to predict the best tactic.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">B. It hard-coded flanking and suppression sequences for each enemy type in designer-authored scripts.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-l4')">C. A planning algorithm dynamically searched for the lowest-cost action sequence to achieve the current goal, making squad tactics emerge from the system rather than being hand-authored.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-l4')">D. It ran a separate behavior tree for each individual enemy limb to coordinate group movement.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct. Effective application requires extracting core principles and adapting them thoughtfully to new contexts.</div>
-        <div class="quiz-feedback wrong">✗ Incorrect. The right approach is identifying core principles and thoughtfully adapting them to the specific context.</div>
+        <div class="quiz-feedback right">✓ Correct. GOAP's forward-planning approach meant flanking, suppression, and cover behavior emerged from action-sequence search rather than explicit designer scripting of each tactic.</div>
+        <div class="quiz-feedback wrong">✗ F.E.A.R.'s GOAP system used a planning algorithm to find the cheapest action sequence satisfying the current goal. Squad tactics like flanking emerged from the planner, not from hand-authored scripts.</div>
       </div>
 
       <div class="quiz-box" id="q2-l4">
-        <div class="quiz-q">What would you prioritize when facing conflicting principles from different lessons?</div>
+        <div class="quiz-q">When LLM dialogue is layered on top of a traditional behavior system, why is the LLM triggered asynchronously on events rather than every frame?</div>
         <div class="quiz-opts">
-          <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">Context-specific evaluation of which principles are most relevant</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Always prioritizing one set of principles over another</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Ignoring the conflict and hoping it resolves itself</button>
-          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">Seeking a universal principle that eliminates all tradeoffs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-l4')">A. LLM responses take 0.5–3 seconds, which would block the behavior system if called synchronously each frame; event-based triggering avoids that bottleneck.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">B. LLMs can only process one request per minute due to API rate limits.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">C. The behavior tree has a hard lock that prevents any other system from running while it ticks.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-l4')">D. Players would notice repeated dialogue if the LLM ran every frame and cached responses.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct. Context-specific evaluation allows you to navigate tradeoffs thoughtfully based on specific circumstances.</div>
-        <div class="quiz-feedback wrong">✗ Incorrect. The best approach is context-specific evaluation to determine which principles are most relevant to your situation.</div>
+        <div class="quiz-feedback right">✓ Correct. Behavior tree ticks run in microseconds; LLM responses take seconds. Asynchronous event-based triggering lets both systems run without either blocking the other.</div>
+        <div class="quiz-feedback wrong">✗ The constraint is latency: LLMs take 0.5–3 seconds per response. Triggering asynchronously on specific events (entering a zone, notable player action) keeps the behavior system running without waiting on the LLM.</div>
       </div>
     </div>
     <div class="quiz-area" style="padding-top:0;">
@@ -616,183 +648,183 @@
       </div>
 
       <div class="quiz-box" id="mt-q1">
-        <div class="quiz-q">Which concept from Lesson 1 is most foundational?</div>
+        <div class="quiz-q">Which of the following best defines a Finite State Machine (FSM) in the context of NPC AI?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q1')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">A system where an NPC scores all possible behaviors and selects the highest.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q1')">A model where the NPC exists in exactly one of a fixed set of states at any moment, with transitions triggered by conditions.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">A directed tree of nodes evaluated top-down each frame, returning Success, Failure, or Running.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q1')">A planner that searches for the cheapest action sequence to satisfy the current goal.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. An FSM has a finite, bounded set of states; the NPC is in exactly one at a time; and transitions fire when specific conditions are met.</div>
+        <div class="quiz-feedback wrong">✗ An FSM is defined by a fixed set of states with one active at a time, and transitions triggered by conditions — not scoring, tree traversal, or planning.</div>
       </div>
 
       <div class="quiz-box" id="mt-q2">
-        <div class="quiz-q">How does Lesson 2 expand on Lesson 1?</div>
+        <div class="quiz-q">What is the "state explosion problem" in FSM design?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q2')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">An FSM crashes when two transitions fire simultaneously.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">Entry and exit actions run too slowly when many states are active at once.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q2')">As NPC behavior grows richer, the number of required states and transitions becomes unmanageably large.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q2')">The NPC becomes trapped in a single state when no transition condition evaluates to true.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. More complex behaviors require exponentially more states and transitions, making the graph unmanageable — the core motivation for behavior trees and utility AI.</div>
+        <div class="quiz-feedback wrong">✗ State explosion means that richer NPC behavior requires more states and more transitions between them, eventually making the FSM graph too large to manage reliably.</div>
       </div>
 
       <div class="quiz-box" id="mt-q3">
-        <div class="quiz-q">What is the key insight from Lesson 3?</div>
+        <div class="quiz-q">In a Behavior Tree, what does a Selector node do when it encounters its first child that returns Success?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q3')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">It continues evaluating remaining children to confirm the result.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q3')">It immediately returns Success itself, stopping further child evaluation.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">It restarts from the root on the next tick.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q3')">It passes Running upward and waits for all children to finish.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. A Selector acts as logical OR — it returns Success the moment any child succeeds, without evaluating remaining children.</div>
+        <div class="quiz-feedback wrong">✗ A Selector (Fallback) node is logical OR: the first child that returns Success causes the Selector to immediately return Success and stop evaluating further children.</div>
       </div>
 
       <div class="quiz-box" id="mt-q4">
-        <div class="quiz-q">How do all lessons integrate in Lesson 4?</div>
+        <div class="quiz-q">What does a Sequence node return if any of its children returns Failure?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q4')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">It skips that child and continues with the next one.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">It returns Running and retries the failed child next tick.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q4')">It immediately returns Failure itself, stopping further child evaluation.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q4')">It returns Success if at least one child has already succeeded.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. A Sequence is logical AND — all children must succeed. The moment any child fails, the Sequence fails immediately.</div>
+        <div class="quiz-feedback wrong">✗ A Sequence node is logical AND: it returns Failure the instant any child fails, abandoning the rest of the sequence for that tick.</div>
       </div>
 
       <div class="quiz-box" id="mt-q5">
-        <div class="quiz-q">Question 5</div>
+        <div class="quiz-q">What is the primary modularity advantage of Behavior Trees over flat FSMs, as documented in Damián Isla's Halo 2 GDC presentation?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q5')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q5')">New behaviors can be added as new branches without modifying existing logic.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">Behavior Trees run faster because they use fewer CPU instructions than FSMs.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">Behavior Trees allow an NPC to be in multiple states simultaneously.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q5')">Behavior Trees eliminate the need for condition checks by using random selection.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Isla's key insight was modularity: adding a "use vehicle" behavior required no changes to the existing combat or patrol branches, unlike the HFSM approach.</div>
+        <div class="quiz-feedback wrong">✗ The breakthrough was modularity — new behaviors become new branches without touching existing logic, which was impossible in the HFSM approach where adding behaviors required rewiring existing transitions.</div>
       </div>
 
       <div class="quiz-box" id="mt-q6">
-        <div class="quiz-q">Question 6</div>
+        <div class="quiz-q">Which game series is most widely cited in industry literature as a prominent example of Behavior Trees for enemy AI?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q6')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">The Sims series</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">The Elder Scrolls series</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q6')">The Halo series</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q6')">The F.E.A.R. series</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Bungie's Halo series — particularly Halo 2 and Damián Isla's 2005 GDC presentation — is the canonical industry example of behavior trees for NPC enemy AI.</div>
+        <div class="quiz-feedback wrong">✗ The Halo series is the most-cited example. Damián Isla's 2005 GDC talk on Halo 2's tree-based AI system seeded behavior tree adoption across the industry.</div>
       </div>
 
       <div class="quiz-box" id="mt-q7">
-        <div class="quiz-q">Question 7</div>
+        <div class="quiz-q">How does a utility AI system select which action an NPC should perform?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q7')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">It runs each available action for one frame and returns the first to succeed.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">It selects randomly from actions whose preconditions are currently true.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q7')">It assigns a numeric score to each possible action and selects the highest scorer.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q7')">It follows a fixed priority list authored by designers at build time.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Utility AI scores every available action using consideration functions and selects the action with the highest resulting score each evaluation cycle.</div>
+        <div class="quiz-feedback wrong">✗ Utility AI assigns numeric scores to all available actions using consideration functions, then selects the highest-scoring one — the defining characteristic of the approach.</div>
       </div>
 
       <div class="quiz-box" id="mt-q8">
-        <div class="quiz-q">Question 8</div>
+        <div class="quiz-q">The Sims (2000) is a classic example of utility AI because:</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q8')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">It used a behavior tree to select between Sleep, Eat, and Socialize actions.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">Designers hard-coded a priority list specifying that Hunger always beat Sleep.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q8')">A neural network trained on player behavior determined each Sim's choices.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q8')">Each action received a utility score from motive values like Hunger and Energy, and the highest scorer was selected — no designer-specified priority order.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. The Sims computed utility scores from motive levels for every available action and selected the highest scorer, producing emergent behavior without any hand-authored priority ordering.</div>
+        <div class="quiz-feedback wrong">✗ The Sims computed utility scores from motive values (Hunger, Energy, Social) and picked the highest-scoring action each tick. No designer specified that one need always beats another — the scores decided.</div>
       </div>
 
       <div class="quiz-box" id="mt-q9">
-        <div class="quiz-q">Question 9</div>
+        <div class="quiz-q">GOAP (Goal-Oriented Action Planning) as used in F.E.A.R. (2005) differs from a behavior tree primarily because:</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q9')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q9')">GOAP dynamically plans a sequence of actions to satisfy a goal, rather than following a pre-authored tree structure.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">GOAP uses random action selection to make enemy behavior unpredictable.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">GOAP has no concept of goals — it operates purely on environmental sensors.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q9')">GOAP requires a neural network to estimate action costs at runtime.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. GOAP searches for the cheapest action sequence that achieves the current goal. Behavior like flanking emerges from planning rather than being explicitly authored in tree branches.</div>
+        <div class="quiz-feedback wrong">✗ The key distinction is planning: GOAP's A*-style search finds an action sequence to achieve a goal dynamically. Behavior trees are pre-authored structures that a designer explicitly builds — no runtime planning occurs.</div>
       </div>
 
       <div class="quiz-box" id="mt-q10">
-        <div class="quiz-q">Question 10</div>
+        <div class="quiz-q">F.E.A.R.'s (2005) enemy AI was considered groundbreaking for which specific behaviors?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q10')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">Procedurally generating unique enemy models and dialogue for each encounter.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q10')">Enemies flanking the player, suppressing fire while teammates advanced, and communicating cover positions — emerging from a planning system rather than hand-authored scripts.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">Enemies learning from player tactics over the course of a session using machine learning.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q10')">Enemies choosing dialogue responses dynamically using an early LLM.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. F.E.A.R.'s Replica soldiers flanked, suppressed, and coordinated — behaviors that emerged from GOAP planning rather than explicit scripting, which is why they felt genuinely tactical.</div>
+        <div class="quiz-feedback wrong">✗ F.E.A.R. was notable for squad-level tactical behavior: flanking, suppression, and coordination that emerged from the GOAP planner rather than designer-scripted sequences.</div>
       </div>
 
       <div class="quiz-box" id="mt-q11">
-        <div class="quiz-q">Question 11</div>
+        <div class="quiz-q">In Unreal Engine's Behavior Tree system, what is the Blackboard used for?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q11')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">Storing compiled bytecode for the behavior tree.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">Rendering a visual debug overlay showing the active tree node.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q11')">A shared key-value memory store that NPC perception systems write to and behavior tree condition nodes read from.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q11')">A random-seed generator that varies NPC decision outcomes each session.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. The Blackboard is shared memory — perception systems write data like "last known player position," and BT condition nodes read those values rather than querying the world directly each frame.</div>
+        <div class="quiz-feedback wrong">✗ The Blackboard is a shared key-value memory store. Action nodes write world-state data into it; condition nodes read from it. This decouples perception from decision-making in the tree.</div>
       </div>
 
       <div class="quiz-box" id="mt-q12">
-        <div class="quiz-q">Question 12</div>
+        <div class="quiz-q">Why does utility AI multiply consideration scores together rather than adding them?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q12')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">Multiplication is computationally faster on game hardware than addition.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">Addition would always produce the same result regardless of input values.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q12')">Multiplication allows scores to exceed 1.0, giving priority actions more range.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q12')">A near-zero consideration (such as player being invisible) suppresses the entire action score even when other factors are high, preventing nonsensical decisions.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Multiplication means any single veto-level consideration collapses the whole product — preventing an NPC from attacking an invisible enemy just because health and distance scores happen to be high.</div>
+        <div class="quiz-feedback wrong">✗ Multiplication creates a veto effect: if one consideration is near zero (player not visible), the entire action score collapses regardless of other factors — blocking nonsensical behavior like attacking an unseen enemy.</div>
       </div>
 
       <div class="quiz-box" id="mt-q13">
-        <div class="quiz-q">Question 13</div>
+        <div class="quiz-q">What is "emergent behavior" in NPC AI design?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q13')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q13')">Complex, interesting patterns that arise from the interaction of simple rules, without being explicitly scripted by designers.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">Behavior that is randomly generated each session with no consistent patterns.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">NPC dialogue generated by an LLM that was not anticipated by the writer.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q13')">A bug where an NPC leaves its designed state machine and enters an undefined state.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Emergent behavior is the hallmark of well-designed AI systems: Pac-Man ghost interactions, Sims comedic collapses, and F.E.A.R. squad flanking all arose from simple rules rather than explicit scripting.</div>
+        <div class="quiz-feedback wrong">✗ Emergent behavior means complex patterns arising from simple rules — not scripted, not random. The Pac-Man ghosts' collectively interesting behavior emerges from each ghost's individual simple FSM rules interacting.</div>
       </div>
 
       <div class="quiz-box" id="mt-q14">
-        <div class="quiz-q">Question 14</div>
+        <div class="quiz-q">In a hybrid NPC architecture, which layer is best suited to handle moment-to-moment tactical choices within a combat encounter — such as deciding whether to attack, take cover, or reload?</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q14')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">A top-level FSM, because state transitions are cheap and reliable.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q14')">A Behavior Tree, because its modular Selector/Sequence hierarchy naturally encodes tactical priority ordering.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">An LLM, because natural language reasoning handles tactical nuance best.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q14')">A random number generator seeded by player health, to keep behavior unpredictable.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. The Behavior Tree handles tactical decisions within a major state — its Selector/Sequence structure naturally prioritizes Attack over Retreat over Reload, and new tactics can be added as new branches.</div>
+        <div class="quiz-feedback wrong">✗ The Behavior Tree is the right layer for tactical decisions. Its priority-ordered Selector/Sequence structure handles "try attack first, fall back to cover, fall back to reload" cleanly — and new tactics slot in as new branches.</div>
       </div>
 
       <div class="quiz-box" id="mt-q15">
-        <div class="quiz-q">Question 15</div>
+        <div class="quiz-q">A Decorator node in a Behavior Tree differs from Selector and Sequence nodes because it:</div>
         <div class="quiz-opts">
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">A</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">B</button>
-          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q15')">C</button>
-          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">D</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">Evaluates all children in parallel and returns when the majority succeed.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">Assigns a utility score to each child and returns the highest scorer.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,true,'mt-q15')">Wraps a single child node and modifies its behavior — for example, inverting its result or repeating it N times.</button>
+          <button class="mt-opt" onclick="mtAnswer(this,false,'mt-q15')">Acts as the root of the tree and initiates the tick every frame.</button>
         </div>
-        <div class="quiz-feedback right">✓ Correct</div>
-        <div class="quiz-feedback wrong">✗ Incorrect</div>
+        <div class="quiz-feedback right">✓ Correct. Decorators wrap exactly one child and modify what it does — common examples include Inverter (flips Success/Failure), Repeater (runs child N times), and UntilFail (keeps running until child fails).</div>
+        <div class="quiz-feedback wrong">✗ A Decorator has exactly one child and modifies its behavior — Inverter flips the result, Repeater runs it multiple times, UntilFail loops it until failure. It is not a multi-child combiner like Selector or Sequence.</div>
       </div>
 
       <div id="mt-result" style="display:none; margin-top:2rem; padding:1.5rem; background:#f5f5f5; border-radius:8px;">

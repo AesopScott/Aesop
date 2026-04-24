@@ -83,33 +83,44 @@ def synthesize_topics(signals):
         source_tag = f"[{s['source']}]"
         signal_text += f"- {source_tag} {s['topic']} (score: {s['score']})\n"
 
+    existing_draft_titles = load_existing_draft_titles()
+    existing_context = (
+        "These topics are ALREADY IN OUR DRAFT QUEUE — do not propose anything similar:\n"
+        + "\n".join(f"  - {t}" for t in existing_draft_titles[:60])
+        if existing_draft_titles else ""
+    )
+
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 COURSE TOPIC CANDIDATES specifically relevant to learners aged 17–25: college students, recent graduates, early-career workers, and young adults building skills independently.
+I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 COURSE TOPIC CANDIDATES for the YOUNG ADULT track — learners aged 17–25: college students, recent graduates, early-career workers, and independent builders.
 
 RAW SIGNALS:
 {signal_text}
 
+{existing_context}
+
 LENS FOR YOUNG ADULTS (17-25):
-Think about what THESE learners face:
 - College coursework and studying with AI
-- Internship and job hunting (AI for resumes, cover letters, interviews)
-- Side hustles, freelancing, and making money with AI tools
+- Job hunting (resumes, cover letters, interview prep with AI)
+- Side hustles, freelancing, making money with AI tools
 - Creative work: music, art, writing, content creation
-- Social media and the AI behind it
 - First jobs — how AI is reshaping entry-level work
-- Understanding and evaluating AI tools they use daily
-- Building things without needing to code (no-code/AI tools)
-- Privacy, data, and their digital footprint
-- AI and relationships, social dynamics, identity online
+- Building things without needing to code
+
+MODEL & TOOL PRIORITY (highest demand right now):
+We need MORE courses on specific AI products. Actively propose:
+- Named models: Claude, ChatGPT/GPT-4o, Gemini, Perplexity, Manus, DeepSeek, Grok, Copilot
+- Creative tools: Midjourney, DALL-E, Stable Diffusion, Runway, ElevenLabs, Suno
+- Productivity tools: NotionAI, Canva AI, GitHub Copilot
+- Model comparisons framed for personal use: "Claude vs ChatGPT: Which One for You?"
+These tool courses are SHORTER (5 modules) and highly actionable.
 
 RULES:
-- Filter and reframe signals for a 17–25 audience — not corporate, not childlike
-- Avoid purely enterprise/executive topics (those go in the Professional track)
-- Avoid K-12-style topics (those go in the Youth track)
-- Merge similar signals into a single coherent course topic
-- Include high-demand model-specific topics (Claude, ChatGPT, etc.) framed for personal use
-- For each topic, note which raw signals fed into it
+- Framing must be for a 17–25 audience — not corporate, not childlike
+- Avoid purely enterprise/executive topics (those go in Professional track)
+- Avoid K-12-style topics (those go in Youth track)
+- Merge similar signals into a single coherent topic
+- Do NOT propose anything already in the draft queue listed above
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
@@ -149,12 +160,82 @@ Return ONLY the JSON array. No preamble, no markdown fences."""
 
 def _fallback_topics():
     return [
-        {"topic": "AI for Your Job Search",        "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9, "is_model_topic": False},
-        {"topic": "AI Tools for College Students",  "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8, "is_model_topic": False},
-        {"topic": "Making Money With AI Side Hustles", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8, "is_model_topic": False},
-        {"topic": "AI and Your Creative Work",      "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7, "is_model_topic": False},
-        {"topic": "What AI Really Knows About You", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7, "is_model_topic": False},
+        {"topic": "ChatGPT for Students and Side Hustles", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9, "is_model_topic": True},
+        {"topic": "Claude for Writing and Research",       "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8, "is_model_topic": True},
+        {"topic": "Perplexity: AI Search for Real Life",   "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8, "is_model_topic": True},
+        {"topic": "AI for Your Job Search",                "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9, "is_model_topic": False},
+        {"topic": "Making Money With AI Side Hustles",     "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8, "is_model_topic": False},
+        {"topic": "Gemini for College Productivity",       "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7, "is_model_topic": True},
+        {"topic": "AI and Your Creative Work",             "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7, "is_model_topic": False},
     ]
+
+
+# ── DRAFT DEDUP HELPERS ───────────────────────────────────────────────────────
+
+def _cosine_sim(v1, v2):
+    dot = sum(a * b for a, b in zip(v1, v2))
+    n1  = sum(a * a for a in v1) ** 0.5
+    n2  = sum(b * b for b in v2) ** 0.5
+    return dot / (n1 * n2) if n1 and n2 else 0.0
+
+
+def load_existing_draft_titles():
+    """Return list of titles for all existing YA drafts (for semantic dedup)."""
+    titles = []
+    if DRAFTS_DIR.exists():
+        for f in sorted(DRAFTS_DIR.glob("*.json")):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and data.get("title"):
+                    titles.append(data["title"])
+            except Exception:
+                continue
+    return titles
+
+
+def check_draft_coverage(gaps):
+    """
+    Remove gap candidates too close to existing drafts.
+    Pinecone only indexes built HTML modules — this catches drafts already
+    in the queue that haven't been built yet.
+    """
+    titles = load_existing_draft_titles()
+    if not titles or not VOYAGE_API_KEY:
+        return gaps
+
+    print(f"\n  Phase 3b: Dedup against {len(titles)} existing YA drafts\n")
+
+    try:
+        resp = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
+            headers={"Authorization": f"Bearer {VOYAGE_API_KEY}", "content-type": "application/json"},
+            json={"model": "voyage-3", "input": titles[:150], "input_type": "document"},
+            timeout=60,
+        )
+        if resp.status_code != 200:
+            print(f"  WARNING: draft-dedup embed failed ({resp.status_code}) — skipping")
+            return gaps
+        draft_vecs = [item["embedding"] for item in resp.json()["data"]]
+    except Exception as e:
+        print(f"  WARNING: draft-dedup failed: {e} — skipping")
+        return gaps
+
+    filtered = []
+    for c in gaps:
+        vec = embed_query(c["topic"])
+        if vec is None:
+            filtered.append(c)
+            continue
+        max_sim = max((_cosine_sim(vec, dv) for dv in draft_vecs), default=0.0)
+        if max_sim >= GAP_THRESHOLD:
+            print(f"  [DRAFT DUP] {c['topic']}: sim={max_sim:.3f} — already in draft queue")
+        else:
+            c["draft_sim"] = round(max_sim, 3)
+            filtered.append(c)
+
+    removed = len(gaps) - len(filtered)
+    print(f"  Draft dedup: removed {removed}, {len(filtered)} true gaps remain")
+    return filtered
 
 
 # ── PHASE 3: CHECK PINECONE FOR GAPS ──────────────────────────────────────────
@@ -222,7 +303,10 @@ def check_gaps(candidates):
             gaps.append(c)
 
     gaps.sort(key=lambda x: (-x.get("demand_score", 0), x["corpus_score"]))
-    print(f"\n  Found {len(gaps)} gaps out of {len(candidates)} candidates")
+    print(f"\n  Found {len(gaps)} Pinecone gaps out of {len(candidates)} candidates")
+
+    # Phase 3b: also filter against existing draft queue (not in Pinecone)
+    gaps = check_draft_coverage(gaps)
     return gaps
 
 
@@ -272,23 +356,26 @@ Generate {len(topics_to_draft)} course proposals for learners aged {AGE_RANGE}: 
 Avoid duplicating these existing draft IDs/titles: {existing_note}
 
 DESIGN PRINCIPLES FOR YOUNG ADULT COURSES (17-25):
-- Speak directly to the learner's actual situation: job searching, student life, side projects, creative work, first career steps
-- Tone: smart and direct — not corporate, not childlike. Like a knowledgeable friend who tells you what you actually need to know
-- Every course should answer: "What can I DO with this right now?"
-- Include at least one module per course where learners apply the concept to their own life or work
-- Avoid generic "AI overview" framing — be specific about the real skill or decision being taught
-- Career and financial relevance is high for this audience — lean into it where appropriate
+- Tone: smart and direct — like a knowledgeable friend, not a professor or a marketer
+- Every course must answer: "What can I DO with this right now?"
+- Include at least one module where learners apply the concept to their own life or work
+- Career and financial relevance is high — lean into it where appropriate
+
+MODULE COUNT RULES (important):
+- Topics marked ⚑ MODEL TOPIC: design a FOCUSED 5-module course (tool-specific, immediately actionable)
+- All other topics: design a full 8-module course
 
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-for-job-hunting")
 - "title": short, compelling course title that a 20-year-old would want to click (max 6 words)
-- "modules": array of 8 module names (each max 6 words) — design a full 8-module arc
+- "modules": array of module names — 5 modules for ⚑ MODEL TOPIC, 8 for everything else
 - "synopsis": 2-sentence description written for the learner directly (use "you")
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for young adults' AI literacy
 - "learning_outcome": 1 sentence — what can the learner DO after this course?
+- "is_model_topic": true if the course is specifically about a named AI model, tool, or integration
 
-For topics marked ⚑ MODEL TOPIC, design courses around actually using the model to accomplish real goals — job search, creative work, studying, building things.
+For topics marked ⚑ MODEL TOPIC: make the course immediately useful — get the learner productive with the tool fast. Cover what it does, how to use it for their goals, tips and tricks, and where it falls short.
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 

@@ -88,29 +88,43 @@ def synthesize_topics(signals):
         source_tag = f"[{s['source']}]"
         signal_text += f"- {source_tag} {s['topic']} (score: {s['score']})\n"
 
+    existing_draft_titles = load_existing_draft_titles()
+    existing_context = (
+        "These topics are ALREADY IN OUR DRAFT QUEUE — do not propose anything similar:\n"
+        + "\n".join(f"  - {t}" for t in existing_draft_titles[:60])
+        if existing_draft_titles else ""
+    )
+
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for the PROFESSIONAL track of our AI literacy curriculum — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+).
+I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for the PROFESSIONAL track — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+).
 
 RAW SIGNALS:
 {signal_text}
 
+{existing_context}
+
 LENS FOR PROFESSIONALS (25+):
-Think about what THESE learners face:
 - Using AI effectively in their specific industry or role
 - Managing AI tools and teams that use AI
 - AI strategy, ROI, and business cases
-- Staying current as AI reshapes their profession
 - Legal, ethical, and regulatory considerations at work
-- AI for productivity and specialized professional tasks
 - Enterprise AI integration and governance
 
+MODEL & TOOL PRIORITY (these are the highest-demand gaps right now):
+We need MORE courses on specific AI products and integration tools. Actively look for and propose:
+- Named AI models/assistants: Claude (Anthropic), ChatGPT/GPT-4o, Gemini, Perplexity, Manus,
+  Microsoft Copilot, DeepSeek, Grok, Llama, Mistral, NotionAI, HubSpot AI, Salesforce Einstein
+- AI integration/automation: Zapier AI, Make (Integromat), n8n, LangChain, OpenAI API, Claude API
+- AI in specific pro tools: GitHub Copilot, Figma AI, Canva AI, Adobe Firefly, Runway, ElevenLabs
+- Model comparison courses: "ChatGPT vs Claude vs Gemini for Business", "Choosing Your AI Stack"
+These tool-specific courses are SHORTER (5 modules) and highly actionable.
+
 RULES:
-- Filter and reframe signals for a working adult / professional audience
-- Avoid purely consumer/teen topics (those go in the Youth or Young Adult tracks)
 - Merge similar signals into a single coherent topic
-- Each topic should be specific enough for a focused course (not just "AI" or "machine learning")
-- PAY SPECIAL ATTENTION to signals about specific AI models (Claude, GPT-4, Gemini, Copilot, etc.) — propose model-specific or model-comparison courses framed for professional use (e.g. "Choosing the Right AI Model for Your Team", "Getting the Most from Claude at Work").
+- Each topic should be specific enough for a focused course
+- Avoid purely consumer/teen topics (those go in the Youth or Young Adult tracks)
+- Do NOT propose anything already in the draft queue listed above
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
@@ -151,12 +165,86 @@ Return ONLY the JSON array. No preamble, no markdown fences."""
 def _fallback_topics():
     """Static fallback if all signal sources fail."""
     return [
-        {"topic": "AI in Healthcare", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
-        {"topic": "AI Ethics for Beginners", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
-        {"topic": "AI and Job Automation", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 6},
-        {"topic": "AI Safety and Alignment", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 6},
-        {"topic": "AI for Small Business", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 5},
+        {"topic": "Getting the Most from Claude",       "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9,  "is_model_topic": True},
+        {"topic": "Mastering ChatGPT for Work",         "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9,  "is_model_topic": True},
+        {"topic": "Gemini for Google Workspace",        "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        {"topic": "Perplexity vs Traditional Search",   "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        {"topic": "Manus: Autonomous AI Agents",        "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "Microsoft Copilot for Professionals","signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        {"topic": "Open-Source LLMs: Llama and Mistral","signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "AI Workflow Automation with Zapier", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": False},
+        {"topic": "AI in Healthcare",                   "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": False},
+        {"topic": "AI for Small Business",              "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 6,  "is_model_topic": False},
     ]
+
+
+# ── DRAFT DEDUP HELPERS ──────────────────────────────────────────────────────
+
+def _cosine_sim(v1, v2):
+    dot = sum(a * b for a, b in zip(v1, v2))
+    n1  = sum(a * a for a in v1) ** 0.5
+    n2  = sum(b * b for b in v2) ** 0.5
+    return dot / (n1 * n2) if n1 and n2 else 0.0
+
+
+def load_existing_draft_titles():
+    """Return list of titles for all existing drafts (for semantic dedup)."""
+    titles = []
+    if DRAFTS_DIR.exists():
+        for f in sorted(DRAFTS_DIR.glob("*.json")):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and data.get("title"):
+                    titles.append(data["title"])
+            except Exception:
+                continue
+    return titles
+
+
+def check_draft_coverage(gaps):
+    """
+    Remove any gap candidates that are semantically too close to an existing
+    draft (Pinecone only indexes BUILT module HTML; drafts in the queue are
+    invisible to it — this closes that blind spot).
+    """
+    titles = load_existing_draft_titles()
+    if not titles or not VOYAGE_API_KEY:
+        return gaps
+
+    print(f"\n  Phase 3b: Dedup against {len(titles)} existing drafts in {DRAFTS_DIR}/\n")
+
+    # Batch-embed all existing draft titles once
+    try:
+        resp = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
+            headers={"Authorization": f"Bearer {VOYAGE_API_KEY}", "content-type": "application/json"},
+            json={"model": "voyage-3", "input": titles[:150], "input_type": "document"},
+            timeout=60,
+        )
+        if resp.status_code != 200:
+            print(f"  WARNING: draft-dedup embed failed ({resp.status_code}) — skipping")
+            return gaps
+        draft_vecs = [item["embedding"] for item in resp.json()["data"]]
+    except Exception as e:
+        print(f"  WARNING: draft-dedup failed: {e} — skipping")
+        return gaps
+
+    filtered = []
+    for c in gaps:
+        vec = embed_query(c["topic"])
+        if vec is None:
+            filtered.append(c)
+            continue
+        max_sim = max((_cosine_sim(vec, dv) for dv in draft_vecs), default=0.0)
+        if max_sim >= GAP_THRESHOLD:
+            print(f"  [DRAFT DUP] {c['topic']}: sim={max_sim:.3f} — already in draft queue")
+        else:
+            c["draft_sim"] = round(max_sim, 3)
+            filtered.append(c)
+
+    removed = len(gaps) - len(filtered)
+    print(f"  Draft dedup: removed {removed}, {len(filtered)} true gaps remain")
+    return filtered
 
 
 # ── PHASE 3: CHECK PINECONE FOR GAPS ────────────────────────────────────────
@@ -226,7 +314,10 @@ def check_gaps(candidates):
 
     # Sort by demand (high) then corpus score (low = bigger gap)
     gaps.sort(key=lambda x: (-x.get("demand_score", 0), x["corpus_score"]))
-    print(f"\n  Found {len(gaps)} gaps out of {len(candidates)} candidates")
+    print(f"\n  Found {len(gaps)} Pinecone gaps out of {len(candidates)} candidates")
+
+    # Phase 3b: also filter against existing draft queue (not in Pinecone)
+    gaps = check_draft_coverage(gaps)
     return gaps
 
 
@@ -282,16 +373,20 @@ DESIGN PRINCIPLES FOR PROFESSIONAL COURSES:
 - Include at least one module where learners apply concepts to their own work context
 - Avoid condescending "AI 101" framing — assume professional intelligence, focus on AI-specific knowledge
 
+MODULE COUNT RULES (important):
+- Topics marked ⚑ MODEL TOPIC: design a FOCUSED 5-module course (tool-specific, highly actionable)
+- All other topics: design a comprehensive 8-module course
+
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-in-healthcare")
 - "title": short, compelling course title (max 6 words)
-- "modules": array of 8 module names (each max 6 words) — design a full 8-module course
+- "modules": array of module names — 5 modules for ⚑ MODEL TOPIC, 8 for everything else
 - "synopsis": 2-sentence course description written for a professional audience
 - "tier": "Beginner", "Intermediate", or "Advanced"
-- "rationale": 1 sentence on why this gap matters for professional AI literacy, referencing the demand signals
-- "is_model_topic": true if the course is specifically about one or more named AI models or model selection/comparison
+- "rationale": 1 sentence on why this gap matters for professional AI literacy
+- "is_model_topic": true if the course is specifically about one or more named AI models, tools, or integrations
 
-For topics marked ⚑ MODEL TOPIC, design courses that help professionals understand, choose, and deploy specific AI models effectively in their work.
+For topics marked ⚑ MODEL TOPIC: design hands-on courses that get professionals productive with the specific tool immediately. Cover: what it does and doesn't do, how it compares, practical workflows, real use cases, limitations, and either advanced features or integration with other tools.
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 

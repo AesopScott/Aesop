@@ -13,6 +13,11 @@
  *   /courses/{folder}/m{N}  ->  module-view.php?course={folder}&module={N}
  */
 
+// ── No-cache headers — module content updates frequently ──
+header('Cache-Control: no-cache, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 // ── Parse request ──────────────────────────────────────────
 $course = preg_replace('/[^a-z0-9_-]/i', '', $_GET['course'] ?? '');
 $module = (int)($_GET['module'] ?? 0);

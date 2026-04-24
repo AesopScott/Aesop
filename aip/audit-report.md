@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 15:40 UTC
+**Generated:** 2026-04-24 17:09 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 524 · **Warnings:** 897
 

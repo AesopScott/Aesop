@@ -469,6 +469,10 @@ def main() -> None:
 
     if not courses:
         print("✓ All module directories are fully registered. Nothing to do.")
+        # Clear the report so notify_registration.py doesn't resend stale entries
+        report_path = REPO / "aip" / "registration-report.json"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        save_json(report_path, {"registered": []})
         return
 
     print(f"Found {len(courses)} course(s) with registration gaps:\n")

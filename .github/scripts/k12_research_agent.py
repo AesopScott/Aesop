@@ -263,15 +263,26 @@ def check_draft_coverage(gaps):
         return gaps
 
     filtered = []
+    filtered_vecs = []   # vecs for already-accepted candidates (within-batch dedup)
     for c, vec in zip(gaps, candidate_vecs):
+        # 1. Check against known catalog+draft titles
         max_sim = max((_cosine_sim(vec, kv) for kv in known_vecs), default=0.0)
         if max_sim >= GAP_THRESHOLD:
             best_idx = max(range(len(known_vecs)), key=lambda i: _cosine_sim(vec, known_vecs[i]))
             matched = all_titles[best_idx] if best_idx < len(all_titles) else "?"
             print(f"  [DUP] {c['topic']}: sim={max_sim:.3f} → '{matched}'")
-        else:
-            c["catalog_sim"] = round(max_sim, 3)
-            filtered.append(c)
+            continue
+
+        # 2. Check against already-accepted candidates in this same batch
+        batch_sim = max((_cosine_sim(vec, kv) for kv in filtered_vecs), default=0.0)
+        if batch_sim >= GAP_THRESHOLD:
+            best_idx = max(range(len(filtered_vecs)), key=lambda i: _cosine_sim(vec, filtered_vecs[i]))
+            print(f"  [BATCH-DUP] {c['topic']}: sim={batch_sim:.3f} → '{filtered[best_idx]['topic']}'")
+            continue
+
+        c["catalog_sim"] = round(max_sim, 3)
+        filtered.append(c)
+        filtered_vecs.append(vec)
 
     removed = len(gaps) - len(filtered)
     print(f"  Catalog+draft dedup: removed {removed}, {len(filtered)} true gaps remain")
@@ -392,6 +403,8 @@ TOPICS TO DEVELOP (with age bands and demand signals):
 {topic_details}
 
 Avoid duplicating these existing draft IDs/titles: {existing_note}
+
+IMPORTANT: Each course in this response must cover a DISTINCTLY different theme — do not generate two courses on the same topic with different titles or framings. If two proposed topics overlap significantly, merge them into the best single course.
 
 DESIGN PRINCIPLES FOR YOUTH COURSES:
 - Learning happens through story, choice, and creation — not lecture

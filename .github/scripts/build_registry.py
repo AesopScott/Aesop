@@ -104,6 +104,13 @@ def parse_courses_html(path):
         end = panel_starts[idx + 1][0] if idx + 1 < len(panel_starts) else len(html)
         block = html[start:end]
 
+        # Tighten the block: for live panels that have a proper closing </div>,
+        # stop at the CTA link closing tag to avoid capturing content from
+        # adjacent panels that follow without a new <div class="core-panel"...> tag.
+        cta_end = re.search(r'</a>\s*\n\s*</div>', block)
+        if cta_end:
+            block = block[:cta_end.end()]
+
         # Extract icon
         icon_m = re.search(r'core-panel__icon[^>]*>(.*?)</span>', block)
         icon = icon_m.group(1).strip() if icon_m else ""
@@ -138,18 +145,23 @@ def parse_courses_html(path):
             if link_m:
                 course_id = link_m.group(1)
 
-        # Extract modules
+        # Extract modules — split on <div class="core-mod"> so each piece
+        # contains one module's content. This avoids the subtitle-borrow
+        # problem where a module without a subtitle steals the next one's.
         modules = []
-        mod_pattern = re.compile(
-            r'core-mod__num[^>]*>(M\d+)</div>.*?'
-            r'core-mod__title[^>]*>(.*?)</div>.*?'
-            r'core-mod__sub[^>]*>(.*?)</div>',
-            re.DOTALL
-        )
-        for mm in mod_pattern.finditer(block):
-            mod_num = mm.group(1)  # M1, M2, etc.
-            mod_title = mm.group(2).strip()
-            mod_sub = mm.group(3).strip()
+        num_pat   = re.compile(r'core-mod__num[^>]*>(M\d+)</div>')
+        title_pat = re.compile(r'core-mod__title[^>]*>(.*?)</div>')
+        sub_pat   = re.compile(r'core-mod__sub[^>]*>(.*?)</div>')
+        mod_pieces = re.split(r'<div\s+class="core-mod">', block)
+        for piece in mod_pieces[1:]:  # skip content before first module
+            num_m   = num_pat.search(piece)
+            title_m = title_pat.search(piece)
+            if not num_m or not title_m:
+                continue
+            mod_num   = num_m.group(1)
+            mod_title = title_m.group(1).strip()
+            sub_m     = sub_pat.search(piece)
+            mod_sub   = sub_m.group(1).strip() if sub_m else ""
             modules.append({
                 "num": int(mod_num[1:]),
                 "title": mod_title,
@@ -287,6 +299,17 @@ _MODULE_ID_PREFIXES = {
     "ai-and-creativity": "cre",
     "ai-and-national-security": "ans",
     "how-large-language-models-work": "llm",
+    "whats-really-inside-ai": "wha",
+    "ai-and-fake-information": "afk",
+    "coded-unfair-ai-bias-exposed": "cui",
+    "make-it-yours-creating-with-ai": "miy",
+    "ai-and-climate": "clm",
+    "ai-bias-and-fairness": "abf",
+    "ai-careers-and-research": "acr",
+    "ai-in-society": "ais",
+    "building-with-ai": "bwa",
+    "the-context-window-race": "cwr",
+    "the-future-of-intelligence": "foi",
 }
 
 # Map of course IDs whose folder name doesn't match the ID

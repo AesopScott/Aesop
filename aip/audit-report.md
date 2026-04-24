@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 18:27 UTC
+**Generated:** 2026-04-24 19:22 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 526 · **Warnings:** 929
+**Errors:** 526 · **Warnings:** 932
 
 ---
 
@@ -983,7 +983,7 @@
 
 ## Module File Integrity
 
-### Warnings (509)
+### Warnings (512)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1477,6 +1477,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m3.html` has no COURSE_ID constant

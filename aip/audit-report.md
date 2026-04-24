@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 17:09 UTC
+**Generated:** 2026-04-24 17:43 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 524 · **Warnings:** 897
+**Errors:** 524 · **Warnings:** 920
 
 ---
 
@@ -981,7 +981,7 @@
 
 ## Module File Integrity
 
-### Warnings (477)
+### Warnings (500)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1085,6 +1085,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m3.html` has no COURSE_ID constant
@@ -1175,6 +1183,8 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m3.html` has no COURSE_ID constant
@@ -1283,6 +1293,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m3.html` has no COURSE_ID constant
@@ -1294,6 +1312,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `creating-with-ai-tools-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `creating-with-ai-tools-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m2.html` has no COURSE_ID constant
@@ -1433,6 +1454,8 @@
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m1.html` has no COURSE_ID constant

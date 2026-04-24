@@ -280,7 +280,7 @@ def find_unregistered() -> list[dict]:
             "bar":          bar_color,
             "sub_word":     sub_word,
             "mega_section": mega_section,
-            "url":          f"/ai-academy/modules/{course_id}/",
+            "url":          f"/ai-academy/modules/electives-hub.html?course={course_id}",
             "missing": {
                 "courses_data": missing_courses_data,
                 "registry":     missing_registry,

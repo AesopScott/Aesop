@@ -273,12 +273,15 @@ Return ONLY a JSON array of objects. No preamble, no markdown fences."""
                 messages=[{"role": "user", "content": prompt}]
             )
             break
-        except anthropic.OverloadedError:
-            wait = 30 * (attempt + 1)
-            print(f"  Anthropic overloaded (529) — retrying in {wait}s (attempt {attempt+1}/4)...")
-            time.sleep(wait)
+        except anthropic.APIStatusError as e:
+            if e.status_code in (529, 500, 503):
+                wait = 30 * (attempt + 1)
+                print(f"  Anthropic API error {e.status_code} — retrying in {wait}s (attempt {attempt+1}/4)...")
+                time.sleep(wait)
+            else:
+                raise
     else:
-        raise RuntimeError("Anthropic API overloaded after 4 attempts — try again later.")
+        raise RuntimeError("Anthropic API unavailable after 4 attempts — try again later.")
 
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)

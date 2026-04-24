@@ -16,6 +16,7 @@ import os
 import sys
 import json
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 import anthropic
@@ -106,11 +107,23 @@ Return a JSON array of 25 objects:
 
 Return ONLY the JSON array. No preamble, no markdown fences."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            break
+        except anthropic.APIStatusError as e:
+            if e.status_code in (529, 500, 503):
+                wait = 30 * (attempt + 1)
+                print(f"  Anthropic API error {e.status_code} — retrying in {wait}s (attempt {attempt+1}/4)...")
+                time.sleep(wait)
+            else:
+                raise
+    else:
+        raise RuntimeError("Anthropic API unavailable after 4 attempts — try again later.")
 
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)
@@ -262,11 +275,23 @@ For topics marked ⚑ MODEL TOPIC, design courses that help learners understand,
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            break
+        except anthropic.APIStatusError as e:
+            if e.status_code in (529, 500, 503):
+                wait = 30 * (attempt + 1)
+                print(f"  Anthropic API error {e.status_code} — retrying in {wait}s (attempt {attempt+1}/4)...")
+                time.sleep(wait)
+            else:
+                raise
+    else:
+        raise RuntimeError("Anthropic API unavailable after 4 attempts — try again later.")
 
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)

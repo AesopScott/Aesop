@@ -1,6 +1,6 @@
-/* ─────────────────────────────────────────────────────────────
- * AESOP AI Academy — Shared Top Banner
- * ─────────────────────────────────────────────────────────────
+﻿/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * AESOP AI Academy â€” Shared Top Banner
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * Single source of truth for the site-wide top banner (pill
  * nav + live stats + language / dark-mode / report utilities).
  *
@@ -13,14 +13,14 @@
  *      #topBanner element to <body>, and wires up stats + lang + dismiss.
  *
  * Edit this file to change the banner on every page at once.
- * ───────────────────────────────────────────────────────────── */
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 (function () {
   'use strict';
 
   // Avoid double-mount if the script gets included twice.
   if (document.getElementById('topBanner')) return;
 
-  /* ─── CSS ─────────────────────────────────────────────── */
+  /* â”€â”€â”€ CSS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   var CSS = '' +
     /* Reserve space for the fixed banner on every page, and add scroll
        padding so #anchor links don't land hidden underneath it. */
@@ -152,7 +152,7 @@
     '  .tb-stats { flex-direction: column; align-items: flex-start; }' +
     '}';
 
-  /* ─── HTML ────────────────────────────────────────────── */
+  /* â”€â”€â”€ HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   var HTML = '' +
     '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
     '  <nav class="tb-pills" aria-label="Primary navigation">' +
@@ -162,7 +162,7 @@
     '    <a href="/ai-academy/students.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Students</a>' +
     '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83C\uDF4E</span>Teachers / Parents</a>' +
     '    <a class="tb-pill-right-start" href="/about/mission.html"><span class="ico" aria-hidden="true">\u2726</span>Our Mission</a>' +
-    '    <a href="/about/advisory-board.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Advisory Board</a>' +
+    '    <a href="/about/advisory-board-about.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Advisory Board</a>' +
     '    <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">\uD83D\uDCAC</span>Forums \u00B7 Discord</a>' +
     '    <a href="/report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">\u2691</span>Report</a>' +
     '  </nav>' +
@@ -199,7 +199,7 @@
     '  </div>' +
     '</div>';
 
-  /* ─── INJECT flag-icons CSS (for .fi fi-xx language flags) ─── */
+  /* â”€â”€â”€ INJECT flag-icons CSS (for .fi fi-xx language flags) â”€â”€â”€ */
   if (!document.querySelector('link[href*="flag-icons"]')) {
     var flagLink = document.createElement('link');
     flagLink.rel  = 'stylesheet';
@@ -207,13 +207,13 @@
     (document.head || document.documentElement).appendChild(flagLink);
   }
 
-  /* ─── INJECT CSS ─────────────────────────────────────── */
+  /* â”€â”€â”€ INJECT CSS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   var styleEl = document.createElement('style');
   styleEl.id = 'topBannerStyles';
   styleEl.textContent = CSS;
   (document.head || document.documentElement).appendChild(styleEl);
 
-  /* ─── INJECT HTML ────────────────────────────────────── */
+  /* â”€â”€â”€ INJECT HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   // Prefer an explicit mount point; otherwise prepend to body.
   function mount() {
     var target = document.getElementById('topBanner-mount');
@@ -222,14 +222,14 @@
     } else if (document.body) {
       document.body.insertAdjacentHTML('afterbegin', HTML);
     } else {
-      // <body> not parsed yet — wait for it.
+      // <body> not parsed yet â€” wait for it.
       document.addEventListener('DOMContentLoaded', mount, { once: true });
       return;
     }
     wireBehaviors();
   }
 
-  /* ─── BEHAVIORS (stats fetch + lang selector) ─────────── */
+  /* â”€â”€â”€ BEHAVIORS (stats fetch + lang selector) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function wireBehaviors() {
     // Live stats: fetch /stats.json and update ticker numbers.
     try {

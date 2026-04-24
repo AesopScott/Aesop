@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.3 | 2026-04-23 -->
+<!-- v1.0.4 | 2026-04-23 -->
 <!-- v1.0.13 | 2026-04-23 — add Run Youth Now button -->
 <!-- v1.1.0 | 2026-04-14 -->
 <html lang="en">
@@ -731,8 +731,10 @@ async function loadDrafts() {
   const container = document.getElementById('drafts-container');
 
   try {
-    // Load from site-local index (no GitHub API needed for reads)
-    const indexRes = await fetch(`../${DRAFTS_PATH}/index.json`);
+    // Load from GitHub raw content so reads stay in sync with API writes
+    const RAW = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main`;
+    const bust = `?t=${Date.now()}`;
+    const indexRes = await fetch(`${RAW}/${DRAFTS_PATH}/index.json${bust}`);
     if (!indexRes.ok) throw new Error(`Could not load draft index (${indexRes.status})`);
     const fileList = await indexRes.json();
 
@@ -744,9 +746,9 @@ async function loadDrafts() {
       return;
     }
 
-    // Fetch each draft JSON from the site directly
+    // Fetch each draft JSON from GitHub raw (cache-busted)
     const drafts = await Promise.all(jsonFiles.map(async f => {
-      const res = await fetch(`../${DRAFTS_PATH}/${f}`);
+      const res = await fetch(`${RAW}/${DRAFTS_PATH}/${f}${bust}`);
       const data = await res.json();
       data._filename = f;
       data._sha = '';  // SHA fetched on-demand for write operations

@@ -2,27 +2,43 @@
 """
 AIP Auto-Patch — adds approved AIP drafts to courses.html and courses-data.json
 
-Reads all JSON files in aip/drafts/, finds approved ones not yet in
-courses.html, and injects:
-  1. A sidebar tab button (Coming Soon) in the Core Courses group
+Reads all JSON files in aip/drafts/ (or --drafts-dir), finds approved ones not
+yet in courses.html, and injects:
+  1. A sidebar tab button (Coming Soon) in the appropriate group
   2. A course panel with title, synopsis, and module list
 
 Also syncs approved drafts into courses-data.json so they appear in the
 module generator dropdown with proper {n, title, sub} module objects.
 
 Panels use id="aip-{draft_id}" to avoid clashing with existing IDs.
-Tab buttons are inserted alphabetically within the Core Courses group.
+Tab buttons are inserted alphabetically within the target sidebar group.
+
+Usage:
+    python aip_autopatch.py                            # general drafts
+    python aip_autopatch.py --drafts-dir aip/k12-drafts --category Youth
 """
 
+import argparse
 import json
 import os
 import re
 import sys
 from pathlib import Path
 
-DRAFTS_DIR = Path("aip/drafts")
 COURSES_HTML = Path("ai-academy/courses.html")
 COURSES_DATA = Path("ai-academy/modules/courses-data.json")
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--drafts-dir", default="aip/drafts",
+                        help="Directory containing draft JSON files (default: aip/drafts)")
+    parser.add_argument("--category", default="Core Courses",
+                        help="Sidebar group label to insert tab buttons into (default: Core Courses)")
+    return parser.parse_args()
+
+args = parse_args()
+DRAFTS_DIR = Path(args.drafts_dir)
+TARGET_CATEGORY = args.category  # e.g. "Core Courses" or "Youth"
 
 # Icons to cycle through for AIP courses
 ICONS = ["🧠", "🔬", "🌐", "⚡", "🔮", "📊", "🛡️", "🎯", "💡", "🚀"]
@@ -55,9 +71,11 @@ def build_tab_button(draft):
     draft_id = draft["id"]
     title = draft["title"]
     panel_id = f"aip-{draft_id}"
+    cat = draft.get("category", TARGET_CATEGORY)
+    data_type = "Youth" if cat == "Youth" else "Core"
     return (
         f'        <button class="core-tab coming" data-panel="{panel_id}" '
-        f'data-cat="Core Courses" data-type="Core" '
+        f'data-cat="{cat}" data-type="{data_type}" '
         f'onclick="openTab(this,\'{panel_id}\')">'
         f'{title} <span class="tab-cs-badge">Soon</span></button>'
     )
@@ -84,16 +102,20 @@ def build_course_panel(draft, index):
             </div>
           </div>"""
 
+    is_youth = draft.get("category") == "Youth" or draft.get("audience") == "youth"
+    age_badge = f'<span class="core-badge-age">Ages {draft["age_range"]}</span>\n            ' if is_youth and draft.get("age_range") else ""
+    panel_num = f"Youth · Ages {draft['age_range']}" if is_youth and draft.get("age_range") else "AIP Draft"
+
     return f"""      <div class="core-panel core-panel--cs" id="{panel_id}">
         <div class="core-panel__header">
           <span class="core-panel__icon">{icon}</span>
           <div class="core-panel__meta">
-            <div class="core-panel__num">AIP Draft</div>
+            <div class="core-panel__num">{panel_num}</div>
             <div class="core-panel__title">{title}</div>
             <div class="core-panel__desc">{synopsis}</div>
           </div>
           <div class="core-panel__badges">
-            <span class="core-badge-cs">Coming Soon</span>
+            {age_badge}<span class="core-badge-cs">Coming Soon</span>
             <span class="core-badge-mods">{num_modules} Modules</span>
           </div>
         </div>
@@ -105,12 +127,17 @@ def build_course_panel(draft, index):
 
 
 def insert_tab_button(html, tab_html, draft_title):
-    """Insert tab button alphabetically into the Core Courses sidebar group."""
-    # Find the Core Courses group
-    marker = '<div class="core-sidebar-cat">📚 Core Courses</div>'
+    """Insert tab button alphabetically into the target sidebar group."""
+    # Map category name to the sidebar cat header text
+    CAT_MARKERS = {
+        "Core Courses": '<div class="core-sidebar-cat">📚 Core Courses</div>',
+        "Youth":        '<div class="core-sidebar-cat">🎓 Youth (Ages 8–16)</div>',
+    }
+    marker = CAT_MARKERS.get(TARGET_CATEGORY,
+                              f'<div class="core-sidebar-cat">{TARGET_CATEGORY}</div>')
     marker_pos = html.find(marker)
     if marker_pos == -1:
-        print("  ERROR: Could not find Core Courses sidebar group")
+        print(f"  ERROR: Could not find '{TARGET_CATEGORY}' sidebar group in courses.html")
         return html
 
     # Find the closing </div> of the sidebar group after this marker
@@ -194,6 +221,12 @@ def sync_to_courses_data(drafts):
         ]
 
         entry = {"id": draft_id, "name": draft["title"], "modules": modules}
+        if draft.get("audience"):
+            entry["audience"] = draft["audience"]
+        if draft.get("age_range"):
+            entry["age_range"] = draft["age_range"]
+        if draft.get("category"):
+            entry["category"] = draft["category"]
         data.setdefault("courses", []).append(entry)
         existing_ids.add(draft_id)
         print(f"  + courses-data.json: {draft['title']} ({len(modules)} modules)")

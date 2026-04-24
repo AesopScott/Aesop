@@ -21,9 +21,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_heal: ${{ steps.check.outputs.should_heal }}
+    steps:
+      - name: Check if workflow failed
+        id: check
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" = "failure" ]; then
+            echo "should_heal=true" >> $GITHUB_OUTPUT
+            echo "Workflow failed — self-heal will run."
+          else
+            echo "should_heal=false" >> $GITHUB_OUTPUT
+            echo "Workflow succeeded (${{ github.event.workflow_run.conclusion }}) — nothing to heal."
+          fi
+
   heal:
-    # Only run when the triggering workflow actually failed
-    if: github.event.workflow_run.conclusion == 'failure'
+    needs: check
+    if: needs.check.outputs.should_heal == 'true'
 
     runs-on: ubuntu-latest
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 add_course.py — Zero-prompt course registration scanner.
 
@@ -26,6 +27,11 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+# Force UTF-8 stdout so Unicode characters (checkmarks, em-dashes, etc.)
+# don't crash on Windows terminals that default to cp1252.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 REPO         = Path(__file__).resolve().parents[2]
@@ -236,10 +242,14 @@ def find_unregistered() -> list[dict]:
 
         course_id = d.name
 
-        # Check which locations are missing this course
+        # Check which locations are missing this course.
+        # For courses.html we look for the LIVE Enter Course link rather than
+        # any substring occurrence of the course ID — AIP draft placeholders
+        # (e.g. "aip-whats-really-inside-ai" in the mega-menu) contain the
+        # course ID as a substring and would cause a false negative.
         missing_courses_data = course_id not in courses_data_ids
         missing_registry     = course_id not in registered_ids
-        missing_html         = course_id not in courses_html
+        missing_html         = f"electives-hub.html?course={course_id}" not in courses_html
         missing_dashboard    = course_id not in dashboard_ids
 
         # Extract data from HTML (name needed for i18n check)
@@ -348,8 +358,11 @@ def build_live_panel(dv: int, course: dict) -> str:
 
 def register_courses_html(course: dict, html: str) -> str:
     """Add panel + mega-menu button. Returns updated HTML."""
-    if course["id"] in html:
-        return html  # already present somewhere
+    # Guard on the LIVE Enter Course link rather than any substring of the
+    # course ID. AIP draft placeholder buttons (e.g. "aip-whats-really-inside-ai")
+    # contain the course ID as a substring and would cause a spurious early-return.
+    if f"electives-hub.html?course={course['id']}" in html:
+        return html  # live panel already present
 
     dv = next_dv_id(html)
 

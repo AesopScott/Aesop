@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-24 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploying and Monitoring AI – M3: Tracing LLM Calls</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- deploying-and-monitoring-ai-m3 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-error{color:#f07070;font-size:0.78rem;font-style:italic;padding:0.5rem 1rem;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.trace-diagram{background:var(--panel);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin:1.25rem 0;font-family:'Courier New',monospace;font-size:0.78rem;line-height:2;color:#6e6861;overflow-x:auto;}
+.trace-diagram .tr-root{color:var(--gold);}
+.trace-diagram .tr-span{color:#38bdf8;}
+.trace-diagram .tr-attr{color:#a89f93;}
+.trace-diagram .tr-val{color:#4fcf8a;}
+.trace-diagram .tr-err{color:#f07070;}
+.data-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.82rem;}
+.data-table th{background:rgba(201,160,90,0.06);color:var(--gold);font-weight:700;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.6rem 0.85rem;border-bottom:1px solid var(--border-dark);text-align:left;}
+.data-table td{padding:0.6rem 0.85rem;border-bottom:1px solid rgba(26,39,56,0.6);color:#a89f93;vertical-align:top;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table .tag{display:inline-block;font-size:0.62rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;}
+.tag-green{background:rgba(79,207,138,0.1);border:1px solid rgba(79,207,138,0.2);color:#4fcf8a;}
+.tag-red{background:rgba(240,112,112,0.1);border:1px solid rgba(240,112,112,0.2);color:#f07070;}
+.tag-blue{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.2);color:#38bdf8;}
+.tag-gold{background:rgba(201,160,90,0.1);border:1px solid rgba(201,160,90,0.2);color:var(--gold);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1.25rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════════════════════ L1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 1</div>
+      <h1>What Is a Trace? Spans, Trees, and Request Lineage</h1>
+      <div class="tagline">Every LLM call leaves a trail. Learning to read that trail turns invisible failures into actionable data.</div>
+      <div class="lesson-question">How do you reconstruct exactly what happened inside a multi-step LLM pipeline when something goes wrong?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — OpenAI's 2023 ChatGPT Outages">
+        <p class="story-text">In March 2023, OpenAI experienced a series of ChatGPT service disruptions that affected millions of users. Engineers tracing the incidents discovered that cascading failures in upstream retrieval calls were masking the root cause — the <em>visible</em> symptom was slow completions, but the <em>actual</em> cause was a Redis cache layer timing out 400 ms before the LLM call even started. Without structured traces showing the full request lineage, the team initially chased the wrong component for over an hour. The incident post-mortem explicitly cited the need for end-to-end distributed tracing across all pipeline stages.</p>
+      </div>
+
+      <div class="section-heading">The Anatomy of a Trace</div>
+      <div class="section-body">
+        <p>A <em>trace</em> is the complete record of a single request as it travels through your system. Think of it as a receipt that captures every operation performed on behalf of that one user interaction — from the moment the HTTP request arrived to the moment the final token was returned.</p>
+        <p>Every trace is composed of <strong>spans</strong>. A span represents a single named unit of work: one database query, one prompt construction step, one LLM API call, one post-processing step. Spans have a start time, an end time, and a set of attributes (key-value metadata). The critical structural feature is that spans can be <strong>nested</strong> — a parent span can have many child spans, forming a tree.</p>
+        <p>That tree structure is called the <em>span tree</em> or <em>trace tree</em>. The root span represents the entire user-visible operation. Children represent sub-operations. Grandchildren represent sub-sub-operations. The depth of this tree directly reflects the complexity of your pipeline.</p>
+      </div>
+
+      <div class="trace-diagram">
+<span class="tr-root">TRACE</span> id=<span class="tr-val">a3f9c2</span> service=<span class="tr-attr">chat-api</span>
+│
+├─ <span class="tr-span">span</span> <span class="tr-attr">name</span>=<span class="tr-val">"handle_chat_request"</span> <span class="tr-attr">duration</span>=<span class="tr-val">1842ms</span>  <span class="tr-attr">[ROOT]</span>
+│  │
+│  ├─ <span class="tr-span">span</span> <span class="tr-attr">name</span>=<span class="tr-val">"retrieve_user_context"</span> <span class="tr-attr">duration</span>=<span class="tr-val">412ms</span>
+│  │  └─ <span class="tr-span">span</span> <span class="tr-attr">name</span>=<span class="tr-val">"redis_get"</span> <span class="tr-attr">duration</span>=<span class="tr-val">408ms</span>  <span class="tr-err">← SLOW</span>
+│  │
+│  ├─ <span class="tr-span">span</span> <span class="tr-attr">name</span>=<span class="tr-val">"build_prompt"</span> <span class="tr-attr">duration</span>=<span class="tr-val">23ms</span>
+│  │
+│  └─ <span class="tr-span">span</span> <span class="tr-attr">name</span>=<span class="tr-val">"llm_completion"</span> <span class="tr-attr">duration</span>=<span class="tr-val">1407ms</span>
+│     ├─ <span class="tr-attr">model</span>=<span class="tr-val">"gpt-4"</span>  <span class="tr-attr">tokens_in</span>=<span class="tr-val">812</span>  <span class="tr-attr">tokens_out</span>=<span class="tr-val">241</span>
+│     └─ <span class="tr-attr">latency_to_first_token</span>=<span class="tr-val">389ms</span>
+      </div>
+
+      <div class="section-body">
+        <p>The diagram above shows why tracing is so powerful: at a glance you can see that the Redis span consumed 408 ms before the LLM was even called. Without this tree structure, the only observable signal is the 1,842 ms total latency — which could implicate any component.</p>
+      </div>
+
+      <div class="section-heading">Trace IDs and Context Propagation</div>
+      <div class="section-body">
+        <p>Every trace needs a globally unique <em>trace ID</em>. This ID is generated once at the entry point and then <em>propagated</em> through every downstream call. If your LLM pipeline calls a vector database, which calls an embedding service, all three operations must carry the same trace ID so they can later be stitched together into one coherent tree.</p>
+        <p>The mechanism for propagation is <em>context carriers</em> — typically HTTP headers. The W3C TraceContext specification standardized the <strong>traceparent</strong> header in 2019, giving distributed systems a vendor-neutral way to pass trace IDs across service boundaries. OpenTelemetry (OTel), which became the industry standard for observability instrumentation, implements TraceContext natively.</p>
+        <p>Each span also carries its own <em>span ID</em> and a <em>parent span ID</em>. The parent-child relationship is reconstructed by the observability backend (Jaeger, Honeycomb, Grafana Tempo, Langfuse, etc.) when it receives the spans after the fact.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real-World Pattern — W3C traceparent header</div>
+        <p>Format: <strong>version-traceId-parentId-flags</strong>. Example: <code>traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</code>. The 32-hex trace ID and 16-hex parent span ID are the fields your instrumentation libraries read and write automatically when you use OTel SDKs.</p>
+      </div>
+
+      <div class="section-heading">Spans vs. Events vs. Logs</div>
+      <div class="section-body">
+        <p>It is worth distinguishing three related concepts that are often conflated:</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Span</span>
+        <span class="kt-def">A duration with a start and end time, representing a unit of work. Has attributes, events, and a status. Structured and queryable.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Span Event</span>
+        <span class="kt-def">A timestamped annotation attached to a span. Records a discrete moment within a span — e.g., "token stream started", "function call returned". Zero duration.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Log</span>
+        <span class="kt-def">A timestamped string message. Traditionally unstructured and not linked to a trace unless explicitly correlated via a trace ID in the log record.</span>
+      </div>
+
+      <div class="section-body">
+        <p>Modern observability practice connects all three. A span can carry a log record; a log record can carry a trace ID. The OTel specification defines how all three signals — <em>traces, metrics, and logs</em> — interoperate. For LLM pipelines specifically, span events are extremely useful for marking moments like "first token received" or "tool call dispatched" within a longer completion span.</p>
+      </div>
+
+      <div class="section-heading">LLM-Specific Span Attributes</div>
+      <div class="section-body">
+        <p>Generic distributed tracing was designed for microservices, not language models. LLM calls have unique properties that require additional span attributes. OpenTelemetry's GenAI semantic conventions, proposed in 2024 and progressively adopted, define standard attribute names for LLM spans:</p>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Attribute</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>gen_ai.system</td><td>string</td><td>Provider name: "openai", "anthropic", "google_vertexai"</td></tr>
+          <tr><td>gen_ai.request.model</td><td>string</td><td>Requested model ID, e.g. "gpt-4o-mini"</td></tr>
+          <tr><td>gen_ai.response.model</td><td>string</td><td>Actual model used (may differ due to routing)</td></tr>
+          <tr><td>gen_ai.usage.input_tokens</td><td>int</td><td>Prompt tokens consumed</td></tr>
+          <tr><td>gen_ai.usage.output_tokens</td><td>int</td><td>Completion tokens generated</td></tr>
+          <tr><td>gen_ai.request.temperature</td><td>float</td><td>Sampling temperature used</td></tr>
+          <tr><td>gen_ai.response.finish_reasons</td><td>string[]</td><td>"stop", "length", "tool_calls", "content_filter"</td></tr>
+        </tbody>
+      </table>
+
+      <div class="section-body">
+        <p>Capturing these attributes consistently across every LLM call in your pipeline is the foundation of everything else in this module. You cannot alert on token overruns, debug finish_reason anomalies, or build cost dashboards without first ensuring they are recorded in your spans.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Takeaway</div>
+        <p>A trace is a tree of spans. Each span is a timed unit of work with structured attributes. The trace ID threads through every layer of your pipeline, making it possible to reconstruct the full causal chain of any request — including exactly which LLM call consumed how many tokens and returned which finish reason.</p>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">Quiz →</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Traces, spans, and request lineage · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">A trace is best described as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A single timed operation within a microservice</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">The complete record of a single request as it travels through a system, composed of nested spans</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A log file aggregated from multiple services</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A metric time series for request latency</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A trace is the full end-to-end record of one request, built from a tree of spans that each represent a unit of work.</div>
+        <div class="quiz-feedback wrong">Not quite. Individual operations are spans; traces are the complete tree of spans for one request. Logs and metrics are separate observability signals.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">Which W3C specification standardized how trace context is propagated across HTTP service boundaries?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">W3C CORS</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">OpenAPI 3.0</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">W3C TraceContext (traceparent header)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">W3C Content Security Policy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The W3C TraceContext spec, finalized in 2019, defines the traceparent header format that carries trace IDs across service boundaries in a vendor-neutral way.</div>
+        <div class="quiz-feedback wrong">The W3C TraceContext specification, using the traceparent HTTP header, is the standard. CORS, OpenAPI, and CSP serve entirely different purposes.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">What does the OTel semantic convention attribute <strong>gen_ai.response.finish_reasons</strong> capture?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The HTTP status code returned by the provider API</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The number of tokens in the completion</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Why the model stopped generating — e.g., "stop", "length", "tool_calls", "content_filter"</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The sampling temperature used for the request</button>
+        </div>
+        <div class="quiz-feedback right">Correct. finish_reasons tells you why the model stopped — crucial for diagnosing truncated outputs (length), content policy blocks (content_filter), or tool use (tool_calls).</div>
+        <div class="quiz-feedback wrong">gen_ai.response.finish_reasons records why the model stopped generating tokens. HTTP codes, token counts, and temperature are separate attributes.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-4">
+        <div class="quiz-q">In the OpenAI March 2023 outage example, what was the actual root cause masked by the visible symptom of slow completions?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">The GPT-4 model weights were being reloaded</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">A Redis cache layer timing out before the LLM call even started</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Prompt injection attacks overwhelming the safety classifiers</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Token generation was throttled by rate limiting</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Redis cache was timing out 400 ms before the LLM call, but without distributed tracing the team initially chased the LLM layer. End-to-end traces revealed the true upstream culprit.</div>
+        <div class="quiz-feedback wrong">The root cause was a Redis cache timeout upstream of the LLM call. The lesson is that without trace trees showing the full pipeline, engineers chase the visible symptom rather than the real cause.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — Reading Trace Trees</h1>
+      <div class="tagline">Practice interpreting span trees and identifying slow or failed spans</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are an observability engineer reviewing traces from a production RAG (retrieval-augmented generation) chatbot. The AI assistant will present you with trace data and ask you to identify root causes, slow spans, and missing attributes.</p>
+        <p>Discuss at least 3 different trace scenarios with the assistant to complete this lab.</p>
+        <div class="lab-prompt">Ask: "Show me a trace with a problem and help me diagnose it" — or describe a real tracing challenge you want to explore.</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Trace Analysis Lab</span>
+          <div class="chat-badge">L1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to the trace analysis lab. I'm going to act as your observability console — presenting you with realistic LLM pipeline traces and helping you develop the skill of reading span trees. Ready to look at your first trace? Just say "show me a trace" or ask about any tracing concept from Lesson 1.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ L2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 2</div>
+      <h1>Instrumenting LLM Calls with OpenTelemetry</h1>
+      <div class="tagline">Automatic and manual instrumentation strategies — getting spans into your observability backend without rewriting your pipeline.</div>
+      <div class="lesson-question">What is the minimum instrumentation code needed to get meaningful LLM traces flowing into a backend like Jaeger or Honeycomb?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — Langchain's Tracing Journey">
+        <p class="story-text">When LangChain released its callback system in early 2023, tracing was an afterthought — developers were forced to implement custom callbacks and manually log every chain step. By mid-2023, teams at companies including Replit and Notion reported that debugging multi-step agents consumed a disproportionate share of engineering time because there was no standardized way to correlate a user complaint with a specific chain execution. LangChain subsequently integrated LangSmith in late 2023 and added OpenTelemetry export support in 2024, reducing mean time to diagnose agent failures by a documented factor of roughly 4× in internal benchmarks published at their developer conference.</p>
+      </div>
+
+      <div class="section-heading">OpenTelemetry SDK Basics</div>
+      <div class="section-body">
+        <p>OpenTelemetry (OTel) is a CNCF project that provides a unified SDK for capturing traces, metrics, and logs. For Python — the most common language for LLM application development — the relevant packages are <em>opentelemetry-sdk</em>, <em>opentelemetry-api</em>, and an exporter such as <em>opentelemetry-exporter-otlp</em>.</p>
+        <p>The bootstrap sequence is always the same: create a <strong>TracerProvider</strong>, attach a <strong>Span Processor</strong> (which controls how spans are batched and exported), configure an <strong>Exporter</strong> (which specifies where spans go), and then call <strong>tracer.start_as_current_span()</strong> to instrument your code.</p>
+      </div>
+
+      <div class="trace-diagram">
+<span class="tr-root"># Minimal OTel bootstrap — Python</span>
+<span class="tr-attr">from</span> opentelemetry <span class="tr-attr">import</span> trace
+<span class="tr-attr">from</span> opentelemetry.sdk.trace <span class="tr-attr">import</span> TracerProvider
+<span class="tr-attr">from</span> opentelemetry.sdk.trace.export <span class="tr-attr">import</span> BatchSpanProcessor
+<span class="tr-attr">from</span> opentelemetry.exporter.otlp.proto.grpc.trace_exporter <span class="tr-attr">import</span> OTLPSpanExporter
+
+provider = TracerProvider()
+provider.add_span_processor(
+    BatchSpanProcessor(OTLPSpanExporter(endpoint=<span class="tr-val">"http://localhost:4317"</span>))
+)
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer(<span class="tr-val">"my-llm-app"</span>)
+
+<span class="tr-root"># Wrapping an OpenAI call</span>
+<span class="tr-attr">with</span> tracer.start_as_current_span(<span class="tr-val">"llm_completion"</span>) <span class="tr-attr">as</span> span:
+    response = openai_client.chat.completions.create(
+        model=<span class="tr-val">"gpt-4o"</span>, messages=messages
+    )
+    span.set_attribute(<span class="tr-val">"gen_ai.usage.input_tokens"</span>,  response.usage.prompt_tokens)
+    span.set_attribute(<span class="tr-val">"gen_ai.usage.output_tokens"</span>, response.usage.completion_tokens)
+    span.set_attribute(<span class="tr-val">"gen_ai.response.finish_reasons"</span>, [response.choices[<span class="tr-val">0</span>].finish_reason])
+      </div>
+
+      <div class="section-heading">Auto-Instrumentation Libraries</div>
+      <div class="section-body">
+        <p>Manually wrapping every LLM call with context managers is tedious and error-prone. The OTel ecosystem addresses this through <em>auto-instrumentation</em> — libraries that monkey-patch the underlying SDK client at import time so every call is automatically wrapped.</p>
+        <p>As of 2024, the most production-tested options are:</p>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Library</th><th>Covers</th><th>OTel GenAI Conventions</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>opentelemetry-instrumentation-openai</td>
+            <td>openai Python SDK (chat, embeddings, images)</td>
+            <td><span class="tag tag-green">Yes</span></td>
+          </tr>
+          <tr>
+            <td>opentelemetry-instrumentation-anthropic</td>
+            <td>anthropic Python SDK (messages, streams)</td>
+            <td><span class="tag tag-green">Yes</span></td>
+          </tr>
+          <tr>
+            <td>openinference (Arize)</td>
+            <td>LangChain, LlamaIndex, OpenAI, Anthropic</td>
+            <td><span class="tag tag-gold">Partial</span></td>
+          </tr>
+          <tr>
+            <td>traceloop openllmetry</td>
+            <td>OpenAI, Anthropic, Cohere, Bedrock, LangChain</td>
+            <td><span class="tag tag-gold">Partial</span></td>
+          </tr>
+          <tr>
+            <td>Langfuse SDK (decorator)</td>
+            <td>Any LLM call via Python decorator or callback</td>
+            <td><span class="tag tag-blue">Own schema</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-body">
+        <p>The choice between these libraries comes down to: <strong>(1)</strong> whether you need OTel-standard span format (for routing to generic backends), or <strong>(2)</strong> whether you want a purpose-built LLM observability backend (Langfuse, Arize Phoenix, Helicone) that has its own richer schema. Many teams run both: OTel for infrastructure-level traces, Langfuse for LLM-specific analytics.</p>
+      </div>
+
+      <div class="section-heading">Sampling Strategies</div>
+      <div class="section-body">
+        <p>At scale, tracing every single request is expensive. A production system processing 10,000 LLM calls per minute generates significant span data. OTel provides configurable <em>samplers</em> to control which traces are retained:</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">AlwaysOn</span>
+        <span class="kt-def">Record every trace. Appropriate for development and staging. Not cost-effective at high production volume.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">TraceIdRatio</span>
+        <span class="kt-def">Record a fixed percentage of traces by hashing the trace ID. E.g., 0.1 = 10%. Simple, unbiased, but may miss rare errors.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">ParentBased</span>
+        <span class="kt-def">Respect the sampling decision made by the upstream caller. Essential for consistent trace trees across microservices.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Tail-Based Sampling</span>
+        <span class="kt-def">Buffer all spans, then decide whether to keep the trace after it completes — allowing you to always keep error traces and high-latency traces regardless of volume. Requires a collector with tail sampling support (e.g., OTel Collector with tail_sampling processor).</span>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Practical Recommendation</div>
+        <p>For LLM pipelines, <strong>tail-based sampling with error and latency rules</strong> is the gold standard. Always keep: any trace where a span has status ERROR, any trace where total duration exceeds your P99 threshold, and a configurable percentage of successful traces for baseline statistics. This ensures you never lose a failure trace while controlling storage costs.</p>
+      </div>
+
+      <div class="section-heading">The OTel Collector</div>
+      <div class="section-body">
+        <p>Rather than exporting spans directly from your application to a backend, the recommended architecture interposes an <em>OTel Collector</em> — a standalone agent or sidecar that receives spans over OTLP, applies processing (batching, filtering, attribute redaction, tail sampling), and fans out to one or more backends.</p>
+        <p>This architecture decouples your application from your observability backend. You can switch from Jaeger to Grafana Tempo to Honeycomb without changing a line of application code — only the Collector's export configuration changes. For LLM pipelines that handle PII in prompts, the Collector is also the right place to apply <em>attribute redaction</em> — stripping or hashing sensitive fields before they leave your infrastructure boundary.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Takeaway</div>
+        <p>Instrument LLM calls with OTel using either manual span wrapping or auto-instrumentation libraries. Route spans through an OTel Collector for processing and fan-out. Use tail-based sampling to always retain error and high-latency traces. Standard GenAI semantic conventions ensure your spans are queryable in any compatible backend.</p>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+        <button class="pnav-btn" onclick="goPage('p-q2')">Quiz →</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">OTel instrumentation, sampling, and the Collector · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">What is the primary advantage of tail-based sampling over head-based (TraceIdRatio) sampling for LLM pipelines?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It is simpler to configure and has lower CPU overhead</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">It can inspect completed traces and always retain errors and high-latency outliers, which head-based sampling may discard</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It propagates sampling decisions from the upstream caller</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It records every single request without any data loss</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tail-based sampling buffers spans and makes the keep/discard decision only after the trace completes, so it can guarantee retention of any trace that contains an error or exceeds a latency threshold.</div>
+        <div class="quiz-feedback wrong">Tail-based sampling's key advantage is post-completion inspection — it can always keep error and high-latency traces. Head-based sampling must decide before seeing the outcome, so rare errors in sampled-out traces are permanently lost.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">Why is routing spans through an OTel Collector recommended rather than exporting directly from the application to the backend?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The Collector compresses spans to reduce network bandwidth</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Direct export is not supported by the OTel SDK</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">The Collector decouples the application from the backend, enables processing (redaction, tail sampling), and allows fan-out to multiple backends</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The Collector converts spans to log format for legacy systems</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Collector architecture decouples instrumentation from backend choice, applies span processing like attribute redaction (important for PII in prompts), and can fan out to multiple observability platforms simultaneously.</div>
+        <div class="quiz-feedback wrong">The Collector's value is decoupling, processing (including PII redaction for prompt data), and multi-backend fan-out. Direct export is supported but inflexible — you can't switch backends or add processing without code changes.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">Which auto-instrumentation library was specifically designed to cover LangChain, LlamaIndex, and multiple LLM providers with OpenInference conventions?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">opentelemetry-instrumentation-openai</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">openinference (by Arize)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">opentelemetry-instrumentation-anthropic</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">LangSmith</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Arize's OpenInference library instruments LangChain, LlamaIndex, OpenAI, and Anthropic using its own OpenInference span conventions, which extend OTel for LLM-specific attributes.</div>
+        <div class="quiz-feedback wrong">Arize's openinference library covers LangChain, LlamaIndex, and multiple providers. The openai/anthropic-specific OTel libraries cover only their respective SDKs. LangSmith is a separate product by LangChain.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-4">
+        <div class="quiz-q">In the OpenTelemetry SDK, what component controls how spans are batched and delivered to an exporter?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">TracerProvider</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Propagator</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Span Processor (e.g., BatchSpanProcessor)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Sampler</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Span Processor sits between the tracer and the exporter. BatchSpanProcessor queues spans and sends them in configurable batches, reducing overhead compared to SimpleSpanProcessor which exports synchronously on every span end.</div>
+        <div class="quiz-feedback wrong">The Span Processor (specifically BatchSpanProcessor for production) handles batching and delivery. The TracerProvider is the factory; the Propagator handles context injection/extraction; the Sampler decides what to record.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Instrumentation Design</h1>
+      <div class="tagline">Design an instrumentation strategy for a realistic LLM pipeline</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You are designing observability for a production RAG pipeline that processes 5,000 requests per hour, handles user PII in prompts, and uses both OpenAI GPT-4o and Anthropic Claude as fallbacks. Work with the assistant to design your complete instrumentation strategy.</p>
+        <p>Cover at least 3 topics: library selection, sampling configuration, and PII handling. Complete 3+ exchanges to finish the lab.</p>
+        <div class="lab-prompt">Start by describing your pipeline architecture, or ask: "Help me choose between auto-instrumentation options for my setup."</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Instrumentation Design Lab</span>
+          <div class="chat-badge">L2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Let's design your LLM pipeline observability from scratch. I'll help you think through library selection, sampling strategy, Collector configuration, and PII handling for your specific setup. Tell me about your pipeline — what frameworks are you using, what volume are you handling, and what are your biggest observability concerns right now?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ L3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 3</div>
+      <h1>Capturing Prompt, Response, and Cost in Spans</h1>
+      <div class="tagline">Deciding what to record — and what not to — balancing debugging value against privacy, storage cost, and compliance risk.</div>
+      <div class="lesson-question">Should you store the full prompt and response text in your spans, and if so, under what conditions and with what safeguards?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — GitHub Copilot's Telemetry Policy Controversy, 2023">
+        <p class="story-text">In 2023, GitHub faced scrutiny after researchers and enterprise customers discovered that Copilot's telemetry pipeline was, under certain configurations, retaining code snippets submitted as context to the model. Microsoft's subsequent privacy audit found that telemetry data paths were capturing more prompt content than intended for debugging purposes. The company updated its enterprise data handling policy in late 2023 to give organizations explicit controls over prompt retention — a direct consequence of observability instrumentation that was too broad. The episode highlighted a tension that every LLM platform team faces: you want prompt data to debug quality issues, but capturing it creates compliance and trust liabilities.</p>
+      </div>
+
+      <div class="section-heading">What to Capture: A Decision Framework</div>
+      <div class="section-body">
+        <p>When instrumenting an LLM call, you have up to five categories of data you can record as span attributes or span events:</p>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Data Category</th><th>Debugging Value</th><th>Privacy Risk</th><th>Storage Cost</th><th>Recommendation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Token counts (in/out)</td>
+            <td><span class="tag tag-green">High</span></td>
+            <td><span class="tag tag-green">None</span></td>
+            <td><span class="tag tag-green">Trivial</span></td>
+            <td>Always capture</td>
+          </tr>
+          <tr>
+            <td>Model ID, finish_reason, latency</td>
+            <td><span class="tag tag-green">High</span></td>
+            <td><span class="tag tag-green">None</span></td>
+            <td><span class="tag tag-green">Trivial</span></td>
+            <td>Always capture</td>
+          </tr>
+          <tr>
+            <td>System prompt (static template)</td>
+            <td><span class="tag tag-green">High</span></td>
+            <td><span class="tag tag-gold">Low</span></td>
+            <td><span class="tag tag-green">Small</span></td>
+            <td>Capture by reference / hash</td>
+          </tr>
+          <tr>
+            <td>User-injected prompt content</td>
+            <td><span class="tag tag-green">High</span></td>
+            <td><span class="tag tag-red">High</span></td>
+            <td><span class="tag tag-gold">Medium</span></td>
+            <td>Redact or encrypt; policy-gated</td>
+          </tr>
+          <tr>
+            <td>Full completion text</td>
+            <td><span class="tag tag-gold">Medium</span></td>
+            <td><span class="tag tag-gold">Medium</span></td>
+            <td><span class="tag tag-red">High</span></td>
+            <td>Sample or truncate; policy-gated</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-body">
+        <p>The practical implication: <em>structural metadata</em> (tokens, latency, model, finish reason) should always be captured because it has high debugging value and zero privacy risk. <em>Prompt and response content</em> requires a policy decision that depends on your regulatory environment, user consent model, and data residency requirements.</p>
+      </div>
+
+      <div class="section-heading">Prompt Hashing and Deduplication</div>
+      <div class="section-body">
+        <p>A common pattern is to store a <strong>SHA-256 hash of the full prompt</strong> as a span attribute instead of the prompt itself. This gives you three capabilities: detecting when the exact same prompt is being retried (debugging retry storms), correlating incidents across users who hit the same template (quality issues are template-level, not user-level), and linking span data to separately-stored prompt records without embedding PII in your trace backend.</p>
+        <p>Some teams go further and store the prompt in an <em>encrypted side-channel store</em> (e.g., S3 with customer-managed keys), then record only the storage key as a span attribute. This approach satisfies "right to erasure" GDPR requests — deleting the encryption key renders the stored prompt unreadable without any changes to the trace backend.</p>
+      </div>
+
+      <div class="section-heading">Cost Attribution in Spans</div>
+      <div class="section-body">
+        <p>Token counts in spans are the raw material for cost tracking. The standard practice is to compute cost at query time — either in your tracing library or in your observability backend — using a pricing lookup table keyed on <em>(provider, model, token_type)</em>.</p>
+        <p>The formula is simple: <strong>cost = (input_tokens × input_price_per_token) + (output_tokens × output_price_per_token)</strong>. What makes this powerful is that cost becomes a span attribute, meaning you can break down cost by any other span attribute: user ID, feature flag, prompt template ID, or time-of-day.</p>
+      </div>
+
+      <div class="trace-diagram">
+<span class="tr-root"># Cost attribution example — computed in span</span>
+<span class="tr-attr">PRICING</span> = {
+    (<span class="tr-val">"openai"</span>, <span class="tr-val">"gpt-4o"</span>): {<span class="tr-val">"input"</span>: <span class="tr-val">2.50</span>/1e6, <span class="tr-val">"output"</span>: <span class="tr-val">10.00</span>/1e6},
+    (<span class="tr-val">"openai"</span>, <span class="tr-val">"gpt-4o-mini"</span>): {<span class="tr-val">"input"</span>: <span class="tr-val">0.15</span>/1e6, <span class="tr-val">"output"</span>: <span class="tr-val">0.60</span>/1e6},
+}
+
+<span class="tr-attr">with</span> tracer.start_as_current_span(<span class="tr-val">"llm_completion"</span>) <span class="tr-attr">as</span> span:
+    resp = client.chat.completions.create(model=<span class="tr-val">"gpt-4o"</span>, messages=msgs)
+    it = resp.usage.prompt_tokens
+    ot = resp.usage.completion_tokens
+    pricing = PRICING[(<span class="tr-val">"openai"</span>, <span class="tr-val">"gpt-4o"</span>)]
+    cost_usd = it * pricing[<span class="tr-val">"input"</span>] + ot * pricing[<span class="tr-val">"output"</span>]
+    span.set_attribute(<span class="tr-val">"gen_ai.usage.cost_usd"</span>, round(cost_usd, <span class="tr-val">6</span>))
+    span.set_attribute(<span class="tr-val">"gen_ai.usage.input_tokens"</span>, it)
+    span.set_attribute(<span class="tr-val">"gen_ai.usage.output_tokens"</span>, ot)
+    span.set_attribute(<span class="tr-val">"app.feature"</span>, <span class="tr-val">"document_summarizer"</span>)
+    span.set_attribute(<span class="tr-val">"app.user_tier"</span>, <span class="tr-val">"free"</span>)
+      </div>
+
+      <div class="section-heading">Streaming Responses and Span Timing</div>
+      <div class="section-body">
+        <p>Streaming completions introduce a subtle instrumentation challenge. When the model streams tokens back in chunks, the span cannot be closed until the stream is exhausted — but the <em>first token latency</em> is often the metric users perceive most directly. The correct pattern is to use a <strong>span event</strong> (zero-duration timestamp within the span) to mark the moment the first token chunk arrives, then close the span only when the stream ends.</p>
+        <p>This gives you two distinct latency metrics within one span: <em>time to first token (TTFT)</em> captured as a span event timestamp minus span start time, and <em>total generation time</em> captured as the span duration. TTFT is what matters for perceived responsiveness; total generation time matters for cost modeling and capacity planning.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Streaming Span Pattern</div>
+        <p>Start span → make streaming call → on first chunk: record span event "first_token_received" → consume full stream, accumulate token count → close span. Compute TTFT = first_token_event.timestamp − span.start_time. Output token count may need to be counted from chunks if the provider doesn't send usage in the stream (Anthropic sends usage in the message_stop event; OpenAI sends it in the final chunk if stream_options.include_usage is True).</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Takeaway</div>
+        <p>Always capture structural LLM metadata (tokens, latency, model, finish reason). Treat prompt and response content as sensitive data requiring a policy decision. Use span attributes for cost attribution keyed on (provider, model). Use span events to capture time-to-first-token within streaming spans.</p>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+        <button class="pnav-btn" onclick="goPage('p-q3')">Quiz →</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Prompt capture, cost attribution, and streaming · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">What is the recommended approach for storing user-injected prompt content in spans given GDPR "right to erasure" requirements?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Store the full prompt text as a span attribute with access controls</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Never capture any information about the prompt in any form</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Store the prompt in an encrypted side-channel store with customer-managed keys and record only the storage key in the span</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Truncate the prompt to the first 50 characters and store that</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Storing prompts in encrypted side-channel storage with customer-managed keys satisfies right-to-erasure by allowing key deletion to render stored content unreadable, without requiring any changes to the trace backend.</div>
+        <div class="quiz-feedback wrong">The encrypted side-channel pattern is the correct approach: store prompt content separately with customer-managed encryption keys, record only the storage reference in the span. Key deletion satisfies erasure requests without touching trace data.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">You want to detect when the exact same prompt template is causing errors across multiple users. What span attribute strategy enables this?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Store the full prompt in every span and grep the backend</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Store a SHA-256 hash of the prompt as a span attribute, enabling correlation without storing PII</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Add a user_id attribute and group errors by user</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Use finish_reason to identify all error spans</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A SHA-256 hash of the prompt lets you group spans by identical prompt content without storing the content itself. Errors clustering around one hash point to a template-level issue rather than a user-specific one.</div>
+        <div class="quiz-feedback wrong">SHA-256 hashing the prompt provides correlation (same hash = same content) without PII exposure. Storing full prompts creates privacy risk; user_id grouping doesn't identify template-level patterns; finish_reason alone can't link errors to a specific template.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">When instrumenting a streaming LLM response, what is the correct way to capture time-to-first-token (TTFT)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Close and re-open the span when the first chunk arrives</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Start a second child span that records only the first chunk</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Add a span event timestamped when the first chunk arrives; compute TTFT as event timestamp minus span start time</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Record TTFT as a separate metric outside the span</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A span event is a zero-duration timestamp within a span. Recording one at first-chunk-arrival lets you compute TTFT = event.timestamp − span.start_time without splitting the span or losing the association with token counts and finish_reason.</div>
+        <div class="quiz-feedback wrong">The span event pattern is correct. Closing and reopening loses data continuity; a child span adds complexity without benefit; a separate metric loses the association with this specific span's token counts and model attributes.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-4">
+        <div class="quiz-q">The formula for computing cost from an LLM span is: cost = (input_tokens × input_price) + (output_tokens × output_price). What additional span attributes make this cost data most useful for analysis?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The HTTP response code and request UUID</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">Feature name, user tier, and prompt template ID — enabling cost breakdown by business dimension</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The sampler type used for this trace</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The OTel Collector endpoint URL</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cost becomes actionable when you can break it down by business dimension — which feature is most expensive, whether free-tier users consume disproportionate tokens, which templates generate the longest outputs. Feature name, user tier, and template ID provide those dimensions.</div>
+        <div class="quiz-feedback wrong">Cost data becomes actionable when cross-referenced with business dimensions. Feature name, user tier, and template ID let you answer questions like "which feature costs most?" and "are free users driving disproportionate costs?" HTTP codes and Collector URLs don't add analytical value.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Cost Attribution & Privacy Design</h1>
+      <div class="tagline">Design the span attributes and data handling policy for a real product scenario</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You're building a B2B SaaS product where enterprise customers submit financial documents for AI-powered analysis. The product must: track LLM costs per customer account, support EU GDPR data residency, and provide quality debugging when the model gives wrong answers.</p>
+        <p>Work with the assistant to design your complete span attribute schema and data handling policy. Discuss cost attribution, PII handling, and streaming instrumentation. Complete 3+ exchanges.</p>
+        <div class="lab-prompt">Start by describing what span attributes you'd capture, or ask: "What are the highest-priority span attributes for my B2B financial AI product?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>Cost &amp; Privacy Design Lab</span>
+          <div class="chat-badge">L3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Let's design your span schema for a GDPR-compliant, cost-tracked B2B financial AI product. This is a genuinely tricky design problem — you need rich debugging data for quality issues, per-customer cost attribution, and EU data residency compliance, which pull in different directions. Tell me your current thinking on what you'd capture in spans, and I'll help you work through the tradeoffs.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ L4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 4</div>
+      <h1>LLM-Specific Observability Tools: Langfuse, Helicone, and Arize Phoenix</h1>
+      <div class="tagline">Purpose-built platforms for LLM tracing — what they offer beyond generic APM and when each fits your stack.</div>
+      <div class="lesson-question">When does a dedicated LLM observability platform justify its cost over a general-purpose tool like Datadog or Grafana?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — Notion AI's Observability Infrastructure, 2024">
+        <p class="story-text">Notion's AI team, which processes millions of LLM requests daily across its document generation, meeting summarization, and Q&amp;A features, published a 2024 engineering blog post describing their observability evolution. They started with a Datadog-based approach, recording token counts as custom metrics. Over time, they found Datadog's query model was not well suited to the hierarchical, multi-step nature of their AI pipelines — they needed to correlate a user-reported quality issue with a specific prompt template version, model parameter set, and retrieval result, across a tree of spans. They migrated to a hybrid architecture: Datadog for infrastructure metrics, and a dedicated LLM observability layer (they evaluated both Langfuse and Arize) for prompt management, quality evals, and LLM-specific dashboards. The post noted that the specialized tool reduced the time to identify a prompt regression from "hours of manual log searching" to "minutes with the evaluation dashboard."</p>
+      </div>
+
+      <div class="section-heading">What Generic APM Cannot Do</div>
+      <div class="section-body">
+        <p>Tools like Datadog, New Relic, and Grafana were designed for microservice infrastructure — latency histograms, error rates, and resource utilization. They are excellent at these tasks but lack LLM-specific primitives. Specifically, generic APM tools do not natively:</p>
+        <p><strong>1. Render prompt/response diffs.</strong> When a prompt template changes, you want to see side-by-side what changed and how outputs changed. APM has no concept of a "prompt template version."</p>
+        <p><strong>2. Run LLM-as-judge evaluations.</strong> You often want to programmatically assess the quality of model outputs (relevance, groundedness, toxicity) and surface quality scores alongside latency and cost. This requires another LLM call — a meta-evaluation — that generic APM doesn't support.</p>
+        <p><strong>3. Manage prompt versions.</strong> Treating prompts as versioned artifacts with A/B testing, rollback, and performance history requires a prompt registry, which is outside the scope of APM.</p>
+        <p><strong>4. Visualize agent execution graphs.</strong> Multi-step agents produce DAG-shaped execution trees that are better visualized as interactive graphs than as flat trace waterfalls.</p>
+      </div>
+
+      <div class="section-heading">Langfuse</div>
+      <div class="section-body">
+        <p>Langfuse is an open-source LLM observability platform (MIT licensed, self-hostable, also offered as cloud SaaS) that has emerged as one of the most widely adopted purpose-built options. Its key capabilities:</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Traces &amp; Generations</span>
+        <span class="kt-def">Langfuse uses "observations" as its span equivalent, with a specialized "generation" type for LLM calls that has first-class fields for prompt, response, token counts, and cost.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Prompt Management</span>
+        <span class="kt-def">Versioned prompt templates stored in Langfuse, fetched at runtime via SDK. Traces link to specific prompt versions, enabling A/B analysis of template changes.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Evaluations (Evals)</span>
+        <span class="kt-def">Attach quality scores to traces — either from human annotation, rule-based classifiers, or LLM-as-judge calls. Scores are queryable alongside cost and latency.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">OTel Export</span>
+        <span class="kt-def">As of 2024, Langfuse can export traces in OTel format to external backends, supporting the hybrid architecture where Langfuse handles LLM-specific data and OTel handles infrastructure.</span>
+      </div>
+
+      <div class="section-heading">Helicone</div>
+      <div class="section-body">
+        <p>Helicone operates as an <em>HTTP proxy</em> rather than an SDK-based instrumentation library. You point your OpenAI (or Anthropic, etc.) API calls at <code>https://oai.hconeai.com/v1</code> instead of <code>https://api.openai.com/v1</code>, and Helicone intercepts every request transparently. This approach has a notable advantage: zero code changes beyond a base URL swap. It also has a notable limitation: you cannot add business-context span attributes (user tier, feature name) without passing them as custom headers.</p>
+        <p>Helicone is well-suited for teams that want rapid time-to-value, B2C SaaS products with high-volume single-provider usage, and cost dashboards without engineering effort. It is less suited for complex multi-provider pipelines where agent orchestration spans many services.</p>
+      </div>
+
+      <div class="section-heading">Arize Phoenix</div>
+      <div class="section-body">
+        <p>Arize Phoenix is an open-source LLM observability tool focused on <em>evaluation and debugging</em> rather than production monitoring. It runs locally or as a cloud service and is primarily used for offline analysis — loading a dataset of traces, running evals, and identifying systematic failure modes.</p>
+        <p>Phoenix uses the <em>OpenInference</em> span convention, which extends OTel with richer LLM-specific attribute namespaces. It has tight integration with LangChain, LlamaIndex, and DSPy. Its strongest differentiator is the ability to run embedding-based clustering on traces — grouping inputs by semantic similarity to surface clusters where the model consistently underperforms.</p>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Platform</th><th>Instrumentation</th><th>Best For</th><th>Self-Host</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Langfuse</td>
+            <td>SDK / OTel</td>
+            <td>Production monitoring + prompt management + evals</td>
+            <td><span class="tag tag-green">Yes (MIT)</span></td>
+          </tr>
+          <tr>
+            <td>Helicone</td>
+            <td>HTTP proxy</td>
+            <td>Rapid deployment, cost visibility, zero-code setup</td>
+            <td><span class="tag tag-gold">Limited</span></td>
+          </tr>
+          <tr>
+            <td>Arize Phoenix</td>
+            <td>OpenInference / OTel</td>
+            <td>Offline eval, embedding clustering, agent debugging</td>
+            <td><span class="tag tag-green">Yes (OSS)</span></td>
+          </tr>
+          <tr>
+            <td>Datadog LLM Obs</td>
+            <td>Auto-instrument</td>
+            <td>Teams already on Datadog, unified infra + LLM</td>
+            <td><span class="tag tag-red">No</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-heading">Choosing a Stack</div>
+      <div class="section-body">
+        <p>The decision framework is straightforward once you identify your primary use case:</p>
+        <p><strong>Startup, moving fast:</strong> Helicone proxy for immediate cost visibility, Langfuse cloud for quality evals. Migrate to self-hosted Langfuse when data residency becomes a requirement.</p>
+        <p><strong>Enterprise with existing APM:</strong> Add OTel GenAI instrumentation to emit standard spans to your existing Datadog/Grafana stack. Add Langfuse (self-hosted) specifically for prompt management and LLM eval workflows. The OTel Collector fans out to both.</p>
+        <p><strong>Research / offline analysis:</strong> Arize Phoenix locally for embedding analysis and systematic eval. Export production traces from Langfuse to Phoenix for deeper investigation of failure clusters.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Takeaway</div>
+        <p>Generic APM tools handle infrastructure metrics well but lack LLM-specific primitives: prompt versioning, evaluation scoring, and agent graph visualization. Purpose-built tools like Langfuse (production monitoring + prompts + evals), Helicone (proxy-based, zero-code), and Arize Phoenix (offline eval + embedding analysis) fill these gaps. Most mature teams run a hybrid: generic APM for infrastructure, a specialized LLM platform for AI-specific workflows.</p>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+        <button class="pnav-btn" onclick="goPage('p-q4')">Quiz →</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">LLM-specific observability tools · 4 questions</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">Helicone operates differently from SDK-based tools like Langfuse. What is its instrumentation mechanism?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">A Python decorator that wraps LLM client calls</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">An HTTP proxy — you redirect API calls to Helicone's URL and it intercepts them transparently</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">An OTel auto-instrumentation library installed via pip</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">A sidecar container that reads network packets</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Helicone is an HTTP proxy. You change only the base URL of your API client (e.g., oai.hconeai.com instead of api.openai.com) and it intercepts all traffic without any SDK changes.</div>
+        <div class="quiz-feedback wrong">Helicone is an HTTP proxy — the key characteristic that enables zero-code setup. The tradeoff is that adding business-context attributes requires custom HTTP headers rather than SDK calls.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">Arize Phoenix's strongest differentiator for diagnosing systematic LLM failures is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Real-time alerting on token count spikes</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">HTTP proxy-based capture with zero instrumentation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Embedding-based clustering of traces to surface groups of semantically similar inputs where the model consistently underperforms</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Prompt version management with A/B testing</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Phoenix's embedding clustering groups semantically similar inputs, revealing failure patterns that would be invisible when looking at individual traces — for example, discovering the model systematically fails on a specific topic category.</div>
+        <div class="quiz-feedback wrong">Phoenix's key differentiator is embedding-based clustering for offline failure analysis. Real-time alerting and HTTP proxy are Helicone characteristics; prompt versioning is a Langfuse feature.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">According to Notion AI's 2024 observability blog post, what was the main limitation that drove them away from a pure Datadog approach?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Datadog was too expensive at their scale</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Datadog's query model wasn't suited to hierarchical multi-step pipelines — correlating user complaints with specific prompt versions required hours of manual log searching</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Datadog didn't support OpenAI's API</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Datadog couldn't handle the volume of tokens being processed</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Notion found that correlating a quality issue across a hierarchical pipeline to a specific prompt template version was not well-supported by Datadog's flat metric model — the specialized LLM tool reduced diagnosis time from hours to minutes.</div>
+        <div class="quiz-feedback wrong">Notion's issue was diagnostic friction: correlating user quality complaints with specific prompt template versions and multi-step pipeline states was slow in Datadog. A specialized LLM observability layer solved the hierarchical query problem.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-4">
+        <div class="quiz-q">What does Langfuse's prompt management feature enable that raw tracing alone cannot?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Faster LLM inference by caching prompt embeddings</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">Versioned prompt templates linked to traces, enabling performance comparison across template changes and rollback to prior versions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Automatic PII redaction from all prompt content</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Real-time token streaming from any LLM provider</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Prompt management in Langfuse means prompts are versioned artifacts. Each trace links to a specific version, so you can query "how did output quality change between prompt v3 and v4?" — something impossible with raw traces that only capture prompt text at call time.</div>
+        <div class="quiz-feedback wrong">Langfuse prompt management versions prompts and links traces to specific versions, enabling before/after performance comparison when you change a template. This is qualitatively different from just capturing prompt text in a span.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ LAB4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Tool Selection &amp; Architecture</h1>
+      <div class="tagline">Choose and justify a complete LLM observability stack for a real scenario</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You're a senior engineer at a healthcare AI company. Your LLM pipeline handles patient intake summaries, runs on AWS, processes ~50K requests/day, uses both OpenAI and Anthropic, and must meet HIPAA data handling requirements. Your team already uses Datadog for infrastructure.</p>
+        <p>Work with the assistant to select and justify a complete observability tool stack. Address: which tools to adopt, how they integrate, what data stays in each, and how you handle HIPAA constraints. Complete 3+ exchanges.</p>
+        <div class="lab-prompt">Start with your tool selection and rationale, or ask: "Walk me through how to evaluate Langfuse vs Helicone for HIPAA-regulated healthcare AI."</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>Tool Selection Lab</span>
+          <div class="chat-badge">L4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">This is an excellent real-world architecture problem. Healthcare AI with HIPAA constraints, multi-provider setup, and an existing Datadog investment — each of these factors meaningfully shapes which observability tools make sense. Let's work through this systematically. What's your initial instinct on tool selection, and what's your biggest concern: HIPAA compliance, multi-provider coverage, prompt management, or evaluation quality?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Type your message…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 3 Test — Tracing LLM Calls</h1>
+      <div class="tagline">15 questions · Score 80% or higher to pass</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. A span in distributed tracing is best defined as:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">The full end-to-end record of a user request</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">A single named, timed unit of work with a start time, end time, and attributes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">A log line emitted during request processing</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">A metric data point recorded when a service call completes</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A span is a named, timed unit of work — the atomic building block of a trace.</div>
+        <div class="quiz-feedback wrong">A span is the atomic timed unit. A trace is the full tree of spans. Logs and metrics are separate signals.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. What is the purpose of a <strong>trace ID</strong> in distributed tracing?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">To uniquely identify a specific span within a service</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">To correlate all spans across all services that belong to the same user request</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">To specify which sampler should process this trace</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">To route the request to the correct microservice</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The trace ID is propagated through all services and allows the observability backend to assemble all spans from a single request into one coherent trace tree.</div>
+        <div class="quiz-feedback wrong">The trace ID is a global correlation key that ties together all spans from one request, across all services.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. The W3C TraceContext specification defines which HTTP header for trace propagation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">X-Trace-Id</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Authorization</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">traceparent</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">X-Request-Id</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The traceparent header carries the version, trace ID, parent span ID, and flags in a standardized format.</div>
+        <div class="quiz-feedback wrong">The W3C TraceContext spec defines the traceparent header as the standard carrier for distributed trace context.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Which OTel semantic convention attribute captures the reason an LLM stopped generating tokens?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">gen_ai.usage.output_tokens</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">gen_ai.request.temperature</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">gen_ai.response.finish_reasons</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">gen_ai.system</button>
+        </div>
+        <div class="quiz-feedback right">Correct. gen_ai.response.finish_reasons records values like "stop", "length", "tool_calls", or "content_filter" — essential for diagnosing truncated or blocked outputs.</div>
+        <div class="quiz-feedback wrong">gen_ai.response.finish_reasons is the correct attribute. It captures stop, length, tool_calls, and content_filter values.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. In the OpenTelemetry SDK, the BatchSpanProcessor is preferred over SimpleSpanProcessor in production because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">It queues spans and exports them in batches, reducing per-span export overhead compared to synchronous export on every span end</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">It compresses spans using GZIP before exporting</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">It applies tail-based sampling rules</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">It validates spans against the GenAI semantic conventions</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BatchSpanProcessor is async and batches spans, dramatically reducing the latency impact on the hot path compared to SimpleSpanProcessor's synchronous per-span export.</div>
+        <div class="quiz-feedback wrong">BatchSpanProcessor's key advantage is async batched export. Simple is synchronous and adds latency to every span end.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. Tail-based sampling decides whether to keep or discard a trace:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">At the moment the root span starts, based on the trace ID hash</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Based on the sampling decision made by the upstream caller</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">After the trace completes, by inspecting the full span tree for errors, latency, or other conditions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Randomly, with equal probability for all traces</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Tail-based sampling buffers spans until the trace is complete, then applies rules — allowing it to always keep error traces regardless of their position in the sampling rate.</div>
+        <div class="quiz-feedback wrong">Tail sampling happens after trace completion, enabling condition-based retention. Head-based sampling (TraceIdRatio) decides at trace start; ParentBased respects the upstream decision.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. Which of the following is the correct location in the OTel architecture to apply PII redaction from LLM prompt attributes?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">In the LLM provider's API before the response is returned</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">In the observability backend's query engine</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">In the OTel Collector, using attribute redaction processors before export</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">In the user's browser before the request is sent</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The OTel Collector is the right place for attribute redaction — it processes spans before they leave your infrastructure boundary, ensuring PII never reaches external backends.</div>
+        <div class="quiz-feedback wrong">The OTel Collector intercepts spans before export and is the correct place for PII redaction processors, keeping sensitive data within your infrastructure boundary.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. The correct formula for computing the cost of an LLM call from span data is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">total_tokens × average_price_per_token</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">(input_tokens × input_price_per_token) + (output_tokens × output_price_per_token)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">output_tokens × output_price_per_token only (input tokens are free)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">request_duration_ms × cost_per_millisecond</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LLM providers charge separately for input and output tokens at different rates. The correct formula sums both components.</div>
+        <div class="quiz-feedback wrong">Input and output tokens are priced separately (and differently), so both must be included in the cost formula.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. To capture time-to-first-token (TTFT) within a streaming LLM span, you should:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Open a child span that ends when the first token arrives</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Add a span event timestamped at first chunk arrival; compute TTFT as event.timestamp − span.start_time</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Record TTFT as a separate OTel metric outside the trace</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Close the span at first token, then open a new span for the remainder of the stream</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Span events are zero-duration timestamps within a span, perfect for marking moments like "first token received" without splitting the span or losing the association with total tokens and finish_reason.</div>
+        <div class="quiz-feedback wrong">Span events are the correct mechanism — they timestamp a moment within a span. This keeps TTFT associated with the same span that carries token counts and model metadata.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. Storing a SHA-256 hash of a prompt as a span attribute (instead of the prompt text) enables which capability while protecting PII?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Reconstructing the original prompt from the hash for debugging</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Correlating traces that used identical prompt content, revealing template-level error patterns</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Encrypting the prompt in transit to the LLM provider</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Reducing the token count sent to the model</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Hashes can be compared for equality without revealing content — identical hashes mean identical prompts, enabling you to detect when errors cluster around one template version.</div>
+        <div class="quiz-feedback wrong">SHA-256 is one-way — you can't reconstruct the prompt from the hash. But hashes are equal when content is equal, enabling correlation without PII exposure.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. Which LLM observability tool uses an HTTP proxy as its primary instrumentation mechanism?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Arize Phoenix</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Langfuse</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Helicone</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">OpenInference</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Helicone sits between your application and the LLM provider as an HTTP proxy, requiring only a base URL change with no SDK modifications.</div>
+        <div class="quiz-feedback wrong">Helicone is the proxy-based tool. Langfuse and Arize Phoenix use SDK instrumentation; OpenInference is a span convention, not a tool.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Arize Phoenix's most distinctive capability for diagnosing systematic LLM failures is:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Real-time alerting on cost spikes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Versioned prompt template management</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Embedding-based clustering that groups semantically similar inputs to surface where the model systematically underperforms</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">HTTP proxy capture requiring zero code changes</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Phoenix clusters trace inputs by embedding similarity, revealing failure patterns invisible at the individual trace level — for example, a model that consistently fails on a specific topic domain.</div>
+        <div class="quiz-feedback wrong">Embedding clustering is Phoenix's unique capability. Real-time alerting and proxy capture describe other tools; prompt versioning is Langfuse.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. What does the OTel Collector's fan-out capability enable that direct SDK-to-backend export does not?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Faster span delivery due to proximity to the application</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Simultaneous export to multiple backends (e.g., Grafana Tempo for infrastructure and Langfuse for LLM analysis) without code changes</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Automatic GenAI semantic convention validation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Span encryption using TLS certificates</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Collector can receive spans once and export them to multiple backends in parallel — infrastructure APM, LLM-specific platforms, and long-term storage — all without any application code changes.</div>
+        <div class="quiz-feedback wrong">Fan-out means one ingestion point, multiple export destinations. This is one of the Collector's key architectural advantages.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. The ParentBased sampler in OTel is critical for multi-service pipelines because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">It samples at a higher rate than TraceIdRatio</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">It ensures all services in a distributed trace respect the same sampling decision, preventing incomplete trace trees</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">It applies tail-based sampling rules at each service boundary</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">It always samples 100% of requests regardless of volume</button>
+        </div>
+        <div class="quiz-feedback right">Correct. If Service A decides to sample a trace, ParentBased ensures downstream Service B also records its spans for that trace — maintaining trace tree completeness across service boundaries.</div>
+        <div class="quiz-feedback wrong">ParentBased propagates the upstream sampling decision downstream, keeping trace trees intact. Without it, some services may record spans and others may not for the same trace.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. According to Notion AI's 2024 case, what was the primary outcome of adding a purpose-built LLM observability layer alongside their existing Datadog setup?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">They eliminated Datadog entirely and reduced monitoring costs by 60%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">They achieved GDPR compliance for EU user data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Time to diagnose AI prompt regressions dropped from hours of manual log searching to minutes using the evaluation dashboard</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">They reduced LLM API costs by switching providers more efficiently</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The hybrid approach — Datadog for infrastructure, specialized LLM tool for AI-specific analysis — dramatically reduced diagnostic time for AI quality issues, which was the specific gap generic APM couldn't fill.</div>
+        <div class="quiz-feedback wrong">Notion kept Datadog for infrastructure and added a specialized LLM tool. The key outcome was reducing AI quality diagnosis time from hours to minutes.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">Restart Module</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='deploying-and-monitoring-ai';
+var MODULE_ID='dep-m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are an expert observability engineer tutoring a student on reading distributed trace trees for LLM pipelines. Your role is to present realistic trace scenarios (in ASCII tree format when helpful), ask diagnostic questions, and guide the student to identify slow spans, missing attributes, root causes, and anomalies. Reference real concepts: span trees, parent-child relationships, OTel GenAI attributes (gen_ai.usage.input_tokens, gen_ai.response.finish_reasons, etc.), trace IDs, and W3C traceparent. Present at least 2-3 different trace problems across the conversation. Be encouraging and ask follow-up questions. Stay strictly on topic — if asked about unrelated subjects, warmly redirect back to trace analysis. Academy context: AESOP AI Academy, Deploying and Monitoring AI, Module 3.',
+
+  l2: 'You are an expert OTel instrumentation architect helping a student design an LLM observability strategy for a production RAG pipeline (5,000 req/hr, handles user PII, uses OpenAI GPT-4o and Anthropic Claude fallback). Guide them through: choosing between auto-instrumentation libraries (opentelemetry-instrumentation-openai, openinference, traceloop openllmetry, Langfuse SDK), configuring tail-based vs head-based sampling, setting up an OTel Collector for fan-out and PII redaction, and writing the bootstrap code. Ask probing questions about their constraints. Provide concrete recommendations with rationale. Stay on topic — redirect off-topic questions warmly. Academy context: AESOP AI Academy, Deploying and Monitoring AI, Module 3.',
+
+  l3: 'You are an expert in LLM observability data design, specializing in span attribute schemas, cost attribution, and privacy-preserving instrumentation. Help the student design a complete span attribute strategy for a B2B SaaS financial document AI with EU GDPR requirements and per-customer cost tracking. Guide them through: which attributes to always capture (token counts, model, finish_reason, latency), how to handle user prompt content (hashing, encrypted side-channel, policy gates), how to compute and attribute cost_usd, and how to instrument streaming responses with span events for TTFT. Push them to think through tradeoffs. Stay on topic. Academy context: AESOP AI Academy, Deploying and Monitoring AI, Module 3.',
+
+  l4: 'You are a senior LLM platform architect helping a student choose and justify an observability tool stack for a healthcare AI company (HIPAA, AWS, 50K req/day, OpenAI + Anthropic, existing Datadog). Guide them through evaluating: Langfuse (self-hosted for HIPAA), Helicone (proxy limitations for healthcare), Arize Phoenix (offline eval), and Datadog LLM Observability (unified but not self-hosted). Help them think through HIPAA BAA requirements, data residency, which data goes to which tool, OTel Collector fan-out architecture, and prompt management needs. Ask probing questions about their constraints and priorities. Stay strictly on topic. Academy context: AESOP AI Academy, Deploying and Monitoring AI, Module 3.'
+};
+
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var _fallbacks={
+  l1:[
+    "Let's look at a trace. Here's a RAG pipeline trace:\n\nTRACE id=b7e2a1\n├─ handle_request [ROOT] 2341ms\n│  ├─ embed_query 18ms\n│  ├─ vector_search 1892ms ← ?\n│  ├─ build_prompt 12ms\n│  └─ llm_completion 419ms\n\nThe vector_search span took 1,892ms out of 2,341ms total. What questions would you ask first to diagnose this?",
+    "Good analysis. Now consider: the span has no attributes beyond its duration. What gen_ai or infrastructure attributes should a well-instrumented vector_search span carry? Think about what would help you distinguish 'slow query' from 'slow network' from 'large result set'.",
+    "Exactly. Now here's a different trace where finish_reason is 'length' and output_tokens equals exactly 512 (the max_tokens setting). What does this tell you, and what's the operational risk if you don't alert on this pattern?"
+  ],
+  l2:[
+    "Good question. For your setup — two providers, PII in prompts, 5K req/hr — I'd recommend a two-layer approach: opentelemetry-instrumentation-openai and opentelemetry-instrumentation-anthropic for standard OTel GenAI spans, plus Langfuse SDK for prompt management and eval. What's your current thinking on sampling rate at that volume?",
+    "At 5K req/hr, head-based sampling at 10% gives you 500 traces/hr — enough for statistical baselines. But you'll want tail-based sampling rules in the OTel Collector to always keep error traces and traces with latency > P95. What does your current error rate look like, and do you have a latency SLA?",
+    "For PII, the Collector is the right redaction layer. The attributes processor can hash or drop gen_ai.input_messages.content before export to external backends, while still allowing the full content to reach a self-hosted Langfuse instance inside your VPC. Does your compliance requirement allow prompt content inside your own infrastructure, or is it stricter than that?"
+  ],
+  l3:[
+    "For a GDPR-compliant financial AI product, I'd structure your span schema in two tiers. Tier 1 (always capture, no policy gate): gen_ai.usage.input_tokens, gen_ai.usage.output_tokens, gen_ai.response.finish_reasons, gen_ai.request.model, total latency, TTFT span event, cost_usd, customer_id (hashed), feature_name. Tier 2 (policy-gated): prompt_hash (SHA-256), response_quality_score. What's your position on storing the actual document content that users submit?",
+    "The encrypted side-channel pattern works well here. Store the financial document in S3 with customer-managed KMS keys, record only the S3 object key as a span attribute. For GDPR right-to-erasure: delete the KMS key, and the stored document is cryptographically unreadable — no changes to your trace backend needed. For TTFT on streaming: what LLM provider are you using? Anthropic and OpenAI handle stream usage events differently.",
+    "OpenAI sends usage in the final stream chunk when you set stream_options={'include_usage': True}. Anthropic sends it in the message_stop event. For your span, add a span event 'first_token_received' when the first content chunk arrives, then accumulate token count from the usage event and set gen_ai.usage.output_tokens on span end. What are your customer-level cost attribution requirements — do you bill back to customers, or is this internal cost visibility?"
+  ],
+  l4:[
+    "For HIPAA-regulated healthcare AI, the critical filter is: does the tool offer a Business Associate Agreement (BAA) and support self-hosted or on-premise deployment? Helicone cloud — no self-host, no BAA for small plans. Langfuse — MIT licensed, full self-host on your AWS infrastructure, no data leaves your boundary. That makes Langfuse the strong default for PHI-adjacent traces. What's your team's Kubernetes/Docker deployment capability?",
+    "Here's the architecture I'd recommend: (1) OTel Collector deployed as a sidecar in your ECS/EKS cluster — applies PII redaction, fans out to Datadog (infra metrics only, no prompt data) and self-hosted Langfuse (LLM-specific data, inside your VPC). (2) Langfuse for prompt management, token-level cost attribution per patient encounter, and quality evals. (3) Arize Phoenix locally for periodic offline analysis of failure clusters. Does your Datadog contract cover the LLM Observability add-on, or are you on a standard APM plan?",
+    "The OTel Collector attribute processor is your HIPAA compliance control point. Configure it to: hash any attribute containing patient_id before export to Datadog; drop gen_ai.input_messages entirely from the Datadog exporter pipeline; allow full attributes only to the Langfuse exporter (self-hosted, inside your AWS VPC). This gives you infrastructure visibility in Datadog with zero PHI exposure, and full LLM debugging capability in Langfuse without leaving your compliance boundary. What's your current data retention requirement for LLM traces?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbacks[labId]||_fallbacks.l1;
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1)%replies.length;
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  msgs.innerHTML='';
+  var greetings={
+    l1:'Welcome to the trace analysis lab. I\'m going to act as your observability console — presenting you with realistic LLM pipeline traces and helping you develop the skill of reading span trees. Ready to look at your first trace? Just say "show me a trace" or ask about any tracing concept from Lesson 1.',
+    l2:'Let\'s design your LLM pipeline observability from scratch. I\'ll help you think through library selection, sampling strategy, Collector configuration, and PII handling for your specific setup. Tell me about your pipeline — what frameworks are you using, what volume are you handling, and what are your biggest observability concerns right now?',
+    l3:'Let\'s design your span schema for a GDPR-compliant, cost-tracked B2B financial AI product. This is a genuinely tricky design problem — you need rich debugging data for quality issues, per-customer cost attribution, and EU data residency compliance, which pull in different directions. Tell me your current thinking on what you\'d capture in spans, and I\'ll help you work through the tradeoffs.',
+    l4:'This is an excellent real-world architecture problem. Healthcare AI with HIPAA constraints, multi-provider setup, and an existing Datadog investment — each of these factors meaningfully shapes which observability tools make sense. Let\'s work through this systematically. What\'s your initial instinct on tool selection, and what\'s your biggest concern: HIPAA compliance, multi-provider coverage, prompt management, or evaluation quality?'
+  };
+  addMsg(labId,'ai',greetings[labId]||'Lab reset. How can I help you explore this topic?');
+  var inp=document.getElementById('inp-'+labId);
+  if(inp) inp.value='';
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(chatExchanges[labId]===undefined) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var msgs=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:500,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:msgs
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I\'m having trouble responding right now. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  updateTabs();
+  ['l1','l2','l3','l4'].forEach(function(lid){
+    var ta=document.getElementById('inp-'+lid);
+    if(ta){
+      ta.addEventListener('input',function(){
+        this.style.height='auto';
+        this.style.height=Math.min(this.scrollHeight,100)+'px';
+      });
+    }
+  });
+});
+</script>
+</body>
+</html>

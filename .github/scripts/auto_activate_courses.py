@@ -208,6 +208,31 @@ def main():
     save_json(COURSES_DATA, cdata)
     print(f"  -> courses-data.json: {updated_cd} course(s) set live=True")
 
+    # Flip mega-link--soon → mega-link--live in courses.html for each activated course
+    courses_html_path = REPO_ROOT / "ai-academy" / "courses.html"
+    if courses_html_path.exists():
+        import re
+        html = courses_html_path.read_text(encoding="utf-8")
+        updated_html = 0
+        for c in candidates:
+            # Match the soon button whose panel references this course id
+            # Panels use both cp-style IDs and course-id-style IDs
+            pattern = rf'(class="mega-link mega-link--soon"[^>]*(?:data-panel="[^"]*"|onclick="[^"]*"){0}[^>]*>(?:[^<]*{re.escape(c["title"])}[^<]*))'
+            # Simpler: find any --soon button whose text matches the course title
+            before = html
+            html = re.sub(
+                rf'(class="mega-link )mega-link--soon("(?:[^>]*)>{re.escape(c["title"])})',
+                r'\1mega-link--live\2',
+                html
+            )
+            if html != before:
+                updated_html += 1
+                print(f"  -> courses.html: '{c['title']}' button set to live")
+        if updated_html:
+            courses_html_path.write_text(html, encoding="utf-8")
+        else:
+            print(f"  -> courses.html: no --soon buttons found to flip (may already be live)")
+
     # Rebuild stats
     live_count = rebuild_stats(registry)
     print(f"  -> stats.json: coursesLive={live_count}")

@@ -36,7 +36,7 @@ PINECONE_API_KEY  = os.environ.get("PINECONE_API_KEY", "")
 PINECONE_HOST     = os.environ.get("PINECONE_HOST", "")
 PINECONE_INDEX    = "aesop-academy"
 DRAFTS_DIR        = Path("aip/k12-drafts")
-DRAFTS_PER_RUN    = 20
+DRAFTS_PER_RUN    = int(os.environ.get("DRAFTS_PER_RUN", "20"))
 GAP_THRESHOLD     = 0.72
 
 AUDIENCE    = "youth"
@@ -81,21 +81,64 @@ def synthesize_topics(signals):
     for s in signals[:50]:
         signal_text += f"- [{s['source']}] {s['topic']} (score: {s['score']})\n"
 
+    existing_draft_titles = load_existing_draft_titles()
+    catalog_titles        = load_catalog_titles()
+
+    already_lines = []
+    if existing_draft_titles:
+        already_lines.append("Draft queue (pending review — do NOT propose anything similar):")
+        already_lines.extend(f"  - {t}" for t in existing_draft_titles[:60])
+    if catalog_titles:
+        already_lines.append("Already built and published (in catalog — do NOT propose anything similar):")
+        already_lines.extend(f"  - {t}" for t in catalog_titles[:120])
+
+    existing_context = (
+        "ALREADY EXISTS — do not propose anything similar to the following:\n"
+        + "\n".join(already_lines)
+        if already_lines else ""
+    )
+
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from K-12 education communities (teachers, parents, students) showing what topics are most discussed and searched around AI education for young learners. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for an AI literacy curriculum aimed at students aged 8-16.
+I've collected real-world signals from K-12 education communities showing what topics are most discussed around AI education for young learners. Your job is to synthesize these into 25 COURSE TOPIC CANDIDATES for an AI literacy curriculum aimed at students aged 8-16.
 
 RAW SIGNALS:
 {signal_text}
 
+{existing_context}
+
 RULES:
 - Each topic must be age-appropriate and meaningful for 8-16 year olds
-- Topics should be genuinely educational — not just "AI is cool" but substantive skills and concepts
+- Topics should be genuinely educational — not just "AI is cool" but substantive skills
 - Think in three age bands: 8-10 (foundational wonder), 11-13 (exploratory, creative), 14-16 (analytical, applied)
 - Merge similar signals into a single coherent topic
-- Include topics across: AI literacy, critical thinking about AI, creating with AI, AI ethics and safety, AI in everyday life, AI and careers, how AI works (age-appropriate), digital citizenship
-- Avoid topics that are too advanced (transformer architecture, fine-tuning) or too vague ("AI for kids")
-- For each topic, note which age band it fits best
+- Include topics across: AI literacy, critical thinking about AI, creating with AI, AI ethics and safety, AI in everyday life, digital citizenship
+
+AI TOOL TOPICS FOR STUDENTS (high demand, age-appropriate):
+Kids and teens are ALREADY using these — they need structured AI literacy around them:
+
+Ages 8-10 (foundational, wonder-driven):
+- What AI chatbots actually are and how to talk to them
+- AI helpers at school: what they can and can't do
+- How AI art is made (simple, visual)
+
+Ages 11-13 (exploratory, questioning):
+- ChatGPT and AI assistants: a guide for middle schoolers
+- Using AI for homework: what's ok, what's cheating, what's smart
+- AI art tools (DALL-E, Canva AI, Adobe Firefly) — making and understanding
+- AI music tools (Suno, Udio) — creating and understanding
+- Spotting AI-generated content: images, text, video
+
+Ages 14-16 (analytical, applied):
+- Prompt engineering basics: getting more from any AI tool
+- AI coding assistants (GitHub Copilot, Cursor) — intro for teen coders
+- Comparing AI tools: ChatGPT vs Claude vs Gemini for teens
+- Building simple AI workflows without code (Flowise, Dify intro)
+- AI agents explained: what Manus, AutoGPT, and agents actually do
+- AI and your future career: what changes, what doesn't
+
+Propose these only if not already in the draft queue.
+- Do NOT propose anything already in the draft queue or catalog listed above
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
@@ -107,11 +150,23 @@ Return a JSON array of 25 objects:
 
 Return ONLY the JSON array. No preamble, no markdown fences."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            break
+        except anthropic.APIStatusError as e:
+            if e.status_code in (529, 500, 503):
+                wait = 30 * (attempt + 1)
+                print(f"  Anthropic API error {e.status_code} — retrying in {wait}s (attempt {attempt+1}/4)...")
+                time.sleep(wait)
+            else:
+                raise
+    else:
+        raise RuntimeError("Anthropic API unavailable after 4 attempts — try again later.")
 
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)
@@ -124,12 +179,126 @@ Return ONLY the JSON array. No preamble, no markdown fences."""
 
 def _fallback_topics():
     return [
-        {"topic": "How AI Actually Works", "age_band": "11-13", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8},
-        {"topic": "AI and Fake Information", "age_band": "11-13", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8},
-        {"topic": "Creating with AI Tools", "age_band": "14-16", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
-        {"topic": "AI Bias and Fairness", "age_band": "14-16", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
-        {"topic": "Talking to AI: Prompt Writing", "age_band": "8-10", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
+        {"topic": "How AI Actually Works",              "age_band": "11-13", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8},
+        {"topic": "AI and Fake Information",            "age_band": "11-13", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8},
+        {"topic": "Using ChatGPT for Homework Help",    "age_band": "11-13", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8},
+        {"topic": "Creating with AI Art Tools",         "age_band": "14-16", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8},
+        {"topic": "AI Chatbots: What Are They Really?", "age_band": "8-10",  "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
+        {"topic": "AI Bias and Fairness",               "age_band": "14-16", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
+        {"topic": "Talking to AI: Prompt Writing",      "age_band": "8-10",  "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7},
     ]
+
+
+# ── DRAFT DEDUP HELPERS ───────────────────────────────────────────────────────
+
+def _cosine_sim(v1, v2):
+    dot = sum(a * b for a, b in zip(v1, v2))
+    n1  = sum(a * a for a in v1) ** 0.5
+    n2  = sum(b * b for b in v2) ** 0.5
+    return dot / (n1 * n2) if n1 and n2 else 0.0
+
+
+CATALOG_PATH = Path("ai-academy/modules/courses-data.json")
+
+
+def load_existing_draft_titles():
+    """Return list of titles for all existing K-12 drafts (for semantic dedup)."""
+    titles = []
+    if DRAFTS_DIR.exists():
+        for f in sorted(DRAFTS_DIR.glob("*.json")):
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and data.get("title"):
+                    titles.append(data["title"])
+            except Exception:
+                continue
+    return titles
+
+
+def load_catalog_titles():
+    """Return all course names from courses-data.json (full catalog)."""
+    if not CATALOG_PATH.exists():
+        return []
+    try:
+        data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+        return [c["name"] for c in data.get("courses", []) if c.get("name")]
+    except Exception as e:
+        print(f"  WARNING: Could not load catalog titles: {e}")
+        return []
+
+
+def check_draft_coverage(gaps):
+    """
+    Remove K-12 gap candidates too close to existing K-12 drafts OR any
+    course already in the full catalog.
+    """
+    draft_titles   = load_existing_draft_titles()
+    catalog_titles = load_catalog_titles()
+    all_titles = draft_titles + catalog_titles
+
+    if not all_titles or not VOYAGE_API_KEY:
+        return gaps
+
+    print(f"\n  Phase 3b: Dedup against {len(draft_titles)} K-12 drafts + "
+          f"{len(catalog_titles)} catalog courses\n")
+
+    try:
+        resp = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
+            headers={"Authorization": f"Bearer {VOYAGE_API_KEY}", "content-type": "application/json"},
+            json={"model": "voyage-3", "input": all_titles[:200], "input_type": "document"},
+            timeout=90,
+        )
+        if resp.status_code != 200:
+            print(f"  WARNING: catalog-dedup embed failed ({resp.status_code}) — skipping")
+            return gaps
+        known_vecs = [item["embedding"] for item in resp.json()["data"]]
+    except Exception as e:
+        print(f"  WARNING: catalog-dedup failed: {e} — skipping")
+        return gaps
+
+    # Batch-embed all candidate topics (bare topics, no age prefix — catalog titles are bare too)
+    candidate_topics = [c["topic"] for c in gaps]
+    try:
+        resp2 = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
+            headers={"Authorization": f"Bearer {VOYAGE_API_KEY}", "content-type": "application/json"},
+            json={"model": "voyage-3", "input": candidate_topics, "input_type": "query"},
+            timeout=90,
+        )
+        if resp2.status_code != 200:
+            print(f"  WARNING: candidate embed failed ({resp2.status_code}) — skipping catalog dedup")
+            return gaps
+        candidate_vecs = [item["embedding"] for item in resp2.json()["data"]]
+    except Exception as e:
+        print(f"  WARNING: candidate embed failed: {e} — skipping catalog dedup")
+        return gaps
+
+    filtered = []
+    filtered_vecs = []   # vecs for already-accepted candidates (within-batch dedup)
+    for c, vec in zip(gaps, candidate_vecs):
+        # 1. Check against known catalog+draft titles
+        max_sim = max((_cosine_sim(vec, kv) for kv in known_vecs), default=0.0)
+        if max_sim >= GAP_THRESHOLD:
+            best_idx = max(range(len(known_vecs)), key=lambda i: _cosine_sim(vec, known_vecs[i]))
+            matched = all_titles[best_idx] if best_idx < len(all_titles) else "?"
+            print(f"  [DUP] {c['topic']}: sim={max_sim:.3f} → '{matched}'")
+            continue
+
+        # 2. Check against already-accepted candidates in this same batch
+        batch_sim = max((_cosine_sim(vec, kv) for kv in filtered_vecs), default=0.0)
+        if batch_sim >= GAP_THRESHOLD:
+            best_idx = max(range(len(filtered_vecs)), key=lambda i: _cosine_sim(vec, filtered_vecs[i]))
+            print(f"  [BATCH-DUP] {c['topic']}: sim={batch_sim:.3f} → '{filtered[best_idx]['topic']}'")
+            continue
+
+        c["catalog_sim"] = round(max_sim, 3)
+        filtered.append(c)
+        filtered_vecs.append(vec)
+
+    removed = len(gaps) - len(filtered)
+    print(f"  Catalog+draft dedup: removed {removed}, {len(filtered)} true gaps remain")
+    return filtered
 
 
 # ── PHASE 3: CHECK PINECONE FOR GAPS ──────────────────────────────────────────
@@ -197,7 +366,10 @@ def check_gaps(candidates):
             gaps.append(c)
 
     gaps.sort(key=lambda x: (-x.get("demand_score", 0), x["corpus_score"]))
-    print(f"\n  Found {len(gaps)} gaps out of {len(candidates)} candidates")
+    print(f"\n  Found {len(gaps)} Pinecone gaps out of {len(candidates)} candidates")
+
+    # Phase 3b: also filter against existing draft queue (not in Pinecone)
+    gaps = check_draft_coverage(gaps)
     return gaps
 
 
@@ -244,6 +416,8 @@ TOPICS TO DEVELOP (with age bands and demand signals):
 
 Avoid duplicating these existing draft IDs/titles: {existing_note}
 
+IMPORTANT: Each course in this response must cover a DISTINCTLY different theme — do not generate two courses on the same topic with different titles or framings. If two proposed topics overlap significantly, merge them into the best single course.
+
 DESIGN PRINCIPLES FOR YOUTH COURSES:
 - Learning happens through story, choice, and creation — not lecture
 - Every module should include at least one moment where the learner decides something
@@ -256,7 +430,7 @@ DESIGN PRINCIPLES FOR YOUTH COURSES:
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-and-fake-news")
 - "title": short, compelling title a student would want to click (max 6 words)
-- "modules": array of 8 module names (each max 6 words) — design a full 8-module arc
+- "modules": array of 6 module names (each max 6 words) — design a focused 6-module arc
 - "synopsis": 2-sentence description written for a student or their teacher
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "age_band": "8-10", "11-13", or "14-16"

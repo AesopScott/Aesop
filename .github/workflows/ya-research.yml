@@ -1,0 +1,44 @@
+name: Young Adult AIP Research Agent
+
+on:
+  schedule:
+    - cron: '0 11 * * 3'   # Every Wednesday at 11am UTC
+  workflow_dispatch:         # Manual trigger anytime
+
+jobs:
+  ya-research:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AIP_COMMIT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic pinecone requests pytrends
+
+      - name: Run Young Adult Research Agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.anthropic }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.pinecone }}
+          PINECONE_HOST: https://aesop-academy-sqe0vz2.svc.aped-4627-b74a.pinecone.io
+        run: python .github/scripts/ya_research_agent.py
+
+      - name: Rebuild Young Adult draft index
+        run: python .github/scripts/rebuild_index.py aip/ya-drafts
+
+      - name: Commit Young Adult draft proposals
+        run: |
+          git config user.name "YA Research Agent"
+          git config user.email "ya-agent@aesopacademy.org"
+          git add aip/ya-drafts/
+          git diff --staged --quiet || git commit -m "YA AIP: $(date '+%Y-%m-%d') young adult course draft proposals"
+          git pull --no-rebase origin main
+          git push

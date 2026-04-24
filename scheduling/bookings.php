@@ -18,11 +18,18 @@ $rows = $stmt->fetchAll();
 
 // Fetch Teams join URLs from Graph for each booking
 foreach ($rows as &$r) {
-    $r['join_url'] = null;
+    $r['join_url']  = null;
+    $r['graph_err'] = null;
     if ($r['outlook_event_id']) {
         $eid = rawurlencode($r['outlook_event_id']);
-        $ev  = graphGet('/me/events/' . $eid . '?$select=onlineMeeting');
-        $r['join_url'] = $ev['onlineMeeting']['joinUrl'] ?? null;
+        $ev  = graphGet('/me/events/' . $eid . '?$select=onlineMeeting,onlineMeetingUrl,isOnlineMeeting');
+        if (isset($ev['error'])) {
+            $r['graph_err'] = $ev['error']['code'] . ': ' . $ev['error']['message'];
+        } else {
+            $r['join_url'] = $ev['onlineMeeting']['joinUrl']
+                          ?? $ev['onlineMeetingUrl']
+                          ?? null;
+        }
     }
 }
 unset($r);
@@ -77,6 +84,8 @@ header('Content-Type: text/html; charset=utf-8');
       <td>
         <?php if ($r['join_url']): ?>
           <a class="join-btn" href="<?= htmlspecialchars($r['join_url']) ?>" target="_blank">Join</a>
+        <?php elseif ($r['graph_err']): ?>
+          <span class="no-link" title="<?= htmlspecialchars($r['graph_err']) ?>">⚠ error</span>
         <?php else: ?>
           <span class="no-link">—</span>
         <?php endif; ?>

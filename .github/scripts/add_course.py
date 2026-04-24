@@ -379,9 +379,20 @@ def register_courses_html(course: dict, html: str) -> str:
     section_label = course["mega_section"]
     cat_pos = html.find(f'<div class="mega-cat">{section_label}</div>')
     if cat_pos != -1:
-        next_cat = html.find('<div class="mega-cat">', cat_pos + len(section_label))
-        section_end = next_cat if next_cat != -1 else html.find('</div>', cat_pos + 30)
-        section = html[cat_pos:section_end]
+        # Start AFTER the mega-cat's own closing </div> so we never insert inside it
+        cat_end = html.find('</div>', cat_pos) + len('</div>')
+        next_cat = html.find('<div class="mega-cat">', cat_end)
+        if next_cat != -1:
+            section_end = next_cat
+        else:
+            # Last section — end at the nearest mega-group or mega-tier closing tag
+            section_end = html.find('\n        </div>', cat_end)
+            if section_end == -1:
+                section_end = html.find('\n      </div>', cat_end)
+            if section_end == -1:
+                section_end = len(html)
+
+        section = html[cat_end:section_end]
 
         btn_pat = re.compile(r'        <button class="mega-link[^"]*"[^>]*>([^<]+)</button>')
         buttons = list(btn_pat.finditer(section))
@@ -400,7 +411,7 @@ def register_courses_html(course: dict, html: str) -> str:
         if insert_offset is None:
             insert_offset = len(section) if not buttons else buttons[-1].end() + 1
 
-        abs_insert = cat_pos + insert_offset
+        abs_insert = cat_end + insert_offset
         html = html[:abs_insert] + new_btn + "\n" + html[abs_insert:]
 
     return html

@@ -17,6 +17,7 @@ import os
 import sys
 import json
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 import anthropic
@@ -255,7 +256,7 @@ DESIGN PRINCIPLES FOR YOUTH COURSES:
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-and-fake-news")
 - "title": short, compelling title a student would want to click (max 6 words)
-- "modules": array of 8 module names (each max 6 words) — design a full 8-module arc
+- "modules": array of 6 module names (each max 6 words) — design a focused 6-module arc
 - "synopsis": 2-sentence description written for a student or their teacher
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "age_band": "8-10", "11-13", or "14-16"
@@ -264,11 +265,23 @@ For EACH topic, return a JSON object with exactly these fields:
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=5000,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=5000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            break
+        except anthropic.APIStatusError as e:
+            if e.status_code in (529, 500, 503):
+                wait = 30 * (attempt + 1)
+                print(f"  Anthropic API error {e.status_code} — retrying in {wait}s (attempt {attempt+1}/4)...")
+                time.sleep(wait)
+            else:
+                raise
+    else:
+        raise RuntimeError("Anthropic API unavailable after 4 attempts — try again later.")
 
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)

@@ -22,11 +22,28 @@ Usage:
 """
 
 import argparse
+import html as _html_mod
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+
+def _h(value) -> str:
+    """HTML-escape untrusted text before interpolating into HTML markup."""
+    return _html_mod.escape(str(value or ""), quote=True)
+
+
+def _js_str(value) -> str:
+    """Escape a value for safe embedding inside a single-quoted JS string
+    literal. Strips CR/LF and escapes backslash, quote, and <."""
+    s = str(value or "")
+    s = s.replace("\\", "\\\\").replace("'", "\\'")
+    s = s.replace("\r", "").replace("\n", "\\n")
+    # Prevent </script> break-out inside inline <script> blocks.
+    s = s.replace("<", "\\u003c")
+    return s
 
 # Force UTF-8 stdout so Unicode characters (checkmarks, em-dashes, etc.)
 # don't crash on Windows terminals that default to cp1252.
@@ -325,33 +342,35 @@ def build_live_panel(dv: int, course: dict) -> str:
 
     mod_rows = ""
     for m in course["modules"]:
-        sub_html = f'<div class="core-mod__sub">{m["sub"]}</div>' if m.get("sub") else ""
+        sub_html = (
+            f'<div class="core-mod__sub">{_h(m["sub"])}</div>' if m.get("sub") else ""
+        )
         mod_rows += (
             f'          <div class="core-mod">'
-            f'<div class="core-mod__num">M{m["n"]}</div>'
+            f'<div class="core-mod__num">M{_h(m["n"])}</div>'
             f'<div class="core-mod__info">'
-            f'<div class="core-mod__title">{m["title"]}</div>'
+            f'<div class="core-mod__title">{_h(m["title"])}</div>'
             f'{sub_html}</div></div>\n'
         )
 
     return f"""
       <div class="core-panel" id="dv-{dv}">
         <div class="core-panel__header">
-          <span class="core-panel__icon">{icon}</span>
+          <span class="core-panel__icon">{_h(icon)}</span>
           <div class="core-panel__meta">
-            <div class="core-panel__title">{name}</div>
-            <div class="core-panel__desc">{desc}</div>
+            <div class="core-panel__title">{_h(name)}</div>
+            <div class="core-panel__desc">{_h(desc)}</div>
           </div>
           <div class="core-panel__badges">
             <span class="core-badge-live">Live</span>
-            <span class="core-badge-mods">{n_mods} Modules</span>
+            <span class="core-badge-mods">{_h(n_mods)} Modules</span>
           </div>
         </div>
         <div class="core-modules-label">Course modules</div>
         <div class="core-modules-grid">
 {mod_rows.rstrip()}
         </div>
-        <a class="core-panel__cta" href="{url}">Enter Course →</a>
+        <a class="core-panel__cta" href="{_h(url)}">Enter Course →</a>
       </div>
 """
 
@@ -400,7 +419,7 @@ def register_courses_html(course: dict, html: str) -> str:
         new_btn = (
             f'        <button class="mega-link mega-link--live" '
             f'data-panel="dv-{dv}" onclick="megaSelect(this,\'dv-{dv}\')">'
-            f'{course["name"]}</button>'
+            f'{_h(course["name"])}</button>'
         )
 
         insert_offset = None
@@ -426,11 +445,16 @@ def register_dashboard(course: dict, html: str) -> str:
     if not courses_match:
         return html
 
+    # n_mods must be an integer — coerce to prevent raw numeric injection
+    try:
+        n_mods_int = int(course["n_mods"])
+    except (TypeError, ValueError):
+        n_mods_int = 0
     new_entry = (
-        f"      {{ id:'{course['id']}', title:'{course['name']}', "
-        f"sub:'{course['name']}', icon:'{course['icon']}', "
-        f"bar:'{course['bar']}', modules:{course['n_mods']}, "
-        f"url:'{course['url']}' }},"
+        f"      {{ id:'{_js_str(course['id'])}', title:'{_js_str(course['name'])}', "
+        f"sub:'{_js_str(course['name'])}', icon:'{_js_str(course['icon'])}', "
+        f"bar:'{_js_str(course['bar'])}', modules:{n_mods_int}, "
+        f"url:'{_js_str(course['url'])}' }},"
     )
     insert_pos = courses_match.start(3)
     return html[:insert_pos] + "\n" + new_entry + html[insert_pos:]

@@ -55,6 +55,13 @@ def load_report() -> dict:
     if not data.get("registered"):
         print("Registration report is empty — no new courses. Skipping notification.")
         sys.exit(0)
+    # Older reports stored HTML entities (e.g. "AI &amp; Climate") because
+    # names were scraped raw from HTML. Decode here so the email renders
+    # correctly after the HTML-escaping sinks apply.
+    for c in data["registered"]:
+        for field in ("name", "desc"):
+            if isinstance(c.get(field), str):
+                c[field] = html.unescape(c[field])
     return data
 
 

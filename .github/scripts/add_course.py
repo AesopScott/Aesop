@@ -146,7 +146,7 @@ def extract_course_name(course_id: str, m1_html: str) -> str:
     """Extract course name from lesson-kicker in m1.html, or title-case the folder name."""
     match = re.search(r'class="lesson-kicker">([^·<]+)', m1_html)
     if match:
-        return match.group(1).strip()
+        return _html_mod.unescape(match.group(1).strip())
     # Fallback: title-case folder name, stripping "ai-" prefix only if the
     # result still makes sense (keep it for "AI Governance" etc.)
     name = course_id.replace("-", " ").replace("_", " ").title()
@@ -165,11 +165,11 @@ def extract_description(m1_html: str) -> str:
     if intro_match:
         desc = re.sub(r'<[^>]+>', '', intro_match.group(1)).strip()
         if desc:
-            return desc
+            return _html_mod.unescape(desc)
     # Fallback: first tagline in the file
     match = re.search(r'class="tagline">(.*?)</div>', m1_html, re.DOTALL)
     if match:
-        return re.sub(r'<[^>]+>', '', match.group(1)).strip()
+        return _html_mod.unescape(re.sub(r'<[^>]+>', '', match.group(1)).strip())
     return ""
 
 

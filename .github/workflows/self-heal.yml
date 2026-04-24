@@ -21,25 +21,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    outputs:
-      should_heal: ${{ steps.check.outputs.should_heal }}
-    steps:
-      - name: Check if workflow failed
-        id: check
-        run: |
-          if [ "${{ github.event.workflow_run.conclusion }}" = "failure" ]; then
-            echo "should_heal=true" >> $GITHUB_OUTPUT
-            echo "Workflow failed — self-heal will run."
-          else
-            echo "should_heal=false" >> $GITHUB_OUTPUT
-            echo "Workflow succeeded (${{ github.event.workflow_run.conclusion }}) — nothing to heal."
-          fi
-
   heal:
-    needs: check
-    if: needs.check.outputs.should_heal == 'true'
+    # No runner is allocated when this condition is false — zero cost on success
+    if: github.event.workflow_run.conclusion == 'failure'
 
     runs-on: ubuntu-latest
 
@@ -62,7 +46,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AIP_COMMIT_TOKEN }}
         run: |
-          # Count how many self-heal commits already exist for this workflow
           WORKFLOW_FILE="${{ github.event.workflow_run.path }}"
           WORKFLOW_FILE="${WORKFLOW_FILE##*/}"
           COUNT=$(git log --oneline --grep="self-heal" -n 10 | wc -l | tr -d ' ')
@@ -88,7 +71,6 @@ jobs:
           BREVO_SMTP_KEY:  ${{ secrets.BREVO_SMTP_KEY }}
           NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
         run: |
-          # Only email if self-heal wrote an unfixable report
           if [ -f "aip/self-heal-report.json" ]; then
             python - <<'EOF'
 import json, os, smtplib

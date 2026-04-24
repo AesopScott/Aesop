@@ -139,10 +139,21 @@ def build_course_panel(draft, index):
 def insert_tab_button(html, tab_html, draft_title):
     """Insert mega-menu button alphabetically into the target mega-group."""
     CAT_MARKERS = {
-        "Core Courses":   '<div class="mega-cat">\U0001f4da Core Courses</div>',
-        "Professional":   '<div class="mega-cat">\U0001f4bc Professional</div>',
-        "Young Adult":    '<div class="mega-cat">\U0001f393 Young Adult (Ages 17\u201325)</div>',
-        "Youth":          '<div class="mega-cat">\U0001f393 Youth (Ages 8\u201316)</div>',
+        # Current tier-based structure (post-restructure)
+        "Youth":          '<div class="mega-cat">🎓 Youth Courses</div>',
+        "Young Adult":    '<div class="mega-cat">🎨 Art &amp; Creativity</div>',
+        "Professional":   '<div class="mega-cat">📋 Strategy &amp; Org</div>',
+        # Sub-category aliases (for future use)
+        "Strategy":       '<div class="mega-cat">📋 Strategy &amp; Org</div>',
+        "AI Models":      '<div class="mega-cat">📡 AI Models &amp; Research</div>',
+        "AI Frontier":    '<div class="mega-cat">🔭 AI Frontier</div>',
+        "Development":    '<div class="mega-cat">⚙️ Development</div>',
+        "Art":            '<div class="mega-cat">🎨 Art &amp; Creativity</div>',
+        "Society":        '<div class="mega-cat">🌐 Society &amp; Domain</div>',
+        "Applied":        '<div class="mega-cat">🚀 Applied Foundations</div>',
+        "Business":       '<div class="mega-cat">💡 Business Essentials</div>',
+        # Legacy aliases (pre-restructure, kept for safety)
+        "Core Courses":   '<div class="mega-cat">📋 Strategy &amp; Org</div>',
     }
     marker = CAT_MARKERS.get(TARGET_CATEGORY,
                               f'<div class="mega-cat">{TARGET_CATEGORY}</div>')

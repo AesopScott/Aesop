@@ -67,17 +67,14 @@ def draft_already_in_html(html, draft_id):
 
 
 def build_tab_button(draft):
-    """Build a sidebar tab button for a draft (Coming Soon)."""
+    """Build a mega-menu button for a draft (Coming Soon)."""
     draft_id = draft["id"]
     title = draft["title"]
     panel_id = f"aip-{draft_id}"
-    cat = draft.get("category", TARGET_CATEGORY)
-    data_type = "Youth" if cat == "Youth" else "Core"
     return (
-        f'        <button class="core-tab coming" data-panel="{panel_id}" '
-        f'data-cat="{cat}" data-type="{data_type}" '
-        f'onclick="openTab(this,\'{panel_id}\')">'
-        f'{title} <span class="tab-cs-badge">Soon</span></button>'
+        f'        <button class="mega-link mega-link--soon" '
+        f'data-panel="{panel_id}" onclick="megaSelect(this,\'{panel_id}\')">'
+        f'{title}</button>'
     )
 
 
@@ -127,48 +124,35 @@ def build_course_panel(draft, index):
 
 
 def insert_tab_button(html, tab_html, draft_title):
-    """Insert tab button alphabetically into the target sidebar group."""
-    # Map category name to the sidebar cat header text
+    """Insert mega-menu button alphabetically into the target mega-group."""
     CAT_MARKERS = {
-        "Core Courses": '<div class="core-sidebar-cat">📚 Core Courses</div>',
-        "Youth":        '<div class="core-sidebar-cat">🎓 Youth (Ages 8–16)</div>',
+        "Core Courses": '<div class="mega-cat">\U0001f4da Core Courses</div>',
+        "Youth":        '<div class="mega-cat">\U0001f393 Youth (Ages 8\u201316)</div>',
     }
     marker = CAT_MARKERS.get(TARGET_CATEGORY,
-                              f'<div class="core-sidebar-cat">{TARGET_CATEGORY}</div>')
+                              f'<div class="mega-cat">{TARGET_CATEGORY}</div>')
     marker_pos = html.find(marker)
     if marker_pos == -1:
-        print(f"  ERROR: Could not find '{TARGET_CATEGORY}' sidebar group in courses.html")
+        print(f"  ERROR: Could not find '{TARGET_CATEGORY}' mega-group in courses.html")
         return html
 
-    # Find the closing </div> of the sidebar group after this marker
-    # We need to find where buttons end — look for the next </div> that closes the group
-    # The group ends with </div>\n    </nav> or the next <div class="core-sidebar-group">
-    group_end = html.find("</div>\n    </nav>", marker_pos)
-    if group_end == -1:
-        group_end = html.find("    </nav>", marker_pos)
+    # Group ends at the closing </div> before the next mega-group or mega-panel close
+    next_group = html.find('<div class="mega-group">', marker_pos + len(marker))
+    group_end = html.find("      </div>", marker_pos + len(marker))
+    if next_group != -1 and next_group < group_end:
+        group_end = html.rfind("      </div>", marker_pos, next_group)
 
-    # Extract just the buttons section
-    buttons_start = marker_pos + len(marker) + 1  # +1 for newline
+    buttons_start = marker_pos + len(marker)
     buttons_section = html[buttons_start:group_end]
 
-    # Parse existing button titles to find alphabetical position
-    existing_buttons = re.findall(
-        r'(<button class="core-tab[^"]*"[^>]*>)([^<]+)',
-        buttons_section
-    )
-
-    # Find insertion point — after the last button whose title comes before ours
-    insert_after_pos = buttons_start  # default: after the category header
-    for match in re.finditer(
-        r'<button class="core-tab[^"]*"[^>]*>[^<]+(?:<[^>]+>[^<]*</[^>]+>)?</button>',
-        buttons_section
-    ):
-        # Extract the visible text (title) from the button
-        btn_text = re.sub(r'<[^>]+>', '', match.group()).strip()
+    # Find alphabetical insertion point among existing mega-link buttons
+    insert_after_pos = buttons_start
+    for match in re.finditer(r'<button class="mega-link[^"]*"[^>]*>([^<]+)</button>',
+                              buttons_section):
+        btn_text = match.group(1).strip()
         if btn_text.lower() <= draft_title.lower():
             insert_after_pos = buttons_start + match.end()
 
-    # Insert the new button
     html = html[:insert_after_pos] + "\n" + tab_html + html[insert_after_pos:]
     return html
 

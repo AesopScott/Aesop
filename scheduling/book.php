@@ -119,17 +119,18 @@ $notifyBody .= "Time:  $friendly\n";
 if ($note)    $notifyBody .= "Note:  $note\n";
 if ($joinUrl) $notifyBody .= "\nJoin: $joinUrl\n";
 
-graphPost('/me/sendMail', [
+$mailResult = graphPost('/me/sendMail', [
     'message' => [
         'subject' => "New booking: $name — $friendly",
         'body'    => ['contentType' => 'text', 'content' => $notifyBody],
         'toRecipients' => [
-            ['emailAddress' => ['address' => OWNER_EMAIL,        'name' => OWNER_NAME]],
+            ['emailAddress' => ['address' => OWNER_EMAIL,            'name' => OWNER_NAME]],
             ['emailAddress' => ['address' => 'ravenshroud@gmail.com', 'name' => OWNER_NAME]],
         ],
     ],
     'saveToSentItems' => false,
 ]);
+error_log('[scheduler] sendMail result: ' . json_encode($mailResult));
 
 echo json_encode([
     'success'  => true,

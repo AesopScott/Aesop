@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.6 | 2026-04-23 -->
+<!-- v1.0.7 | 2026-04-23 -->
 <!-- v1.0.13 | 2026-04-23 — add Run Youth Now button -->
 <!-- v1.1.0 | 2026-04-14 -->
 <html lang="en">
@@ -417,6 +417,12 @@
     letter-spacing: 0.04em;
   }
 
+  #view-youth-btn.active {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: #fff;
+  }
+
   .view-btn.active {
     background: var(--teal);
     border-color: var(--teal);
@@ -657,6 +663,7 @@
   <!-- ── VIEW TOGGLE ── -->
   <div class="view-toggle">
     <button class="view-btn active" id="view-drafts-btn" onclick="switchView('drafts')">AIP Drafts</button>
+    <button class="view-btn" id="view-youth-btn" onclick="switchView('youth')" style="border-color:var(--gold);color:var(--gold);">Youth Drafts<span class="btn-count" id="youth-count">…</span></button>
     <button class="view-btn" id="view-dev-btn" onclick="switchView('dev')">In Development<span class="btn-count" id="dev-count">…</span></button>
   </div>
 
@@ -678,6 +685,25 @@
 
     <div id="drafts-container">
       <div class="state-msg">Fetching proposals…</div>
+    </div>
+  </div>
+
+  <!-- ── YOUTH DRAFTS VIEW ── -->
+  <div id="youth-view" style="display:none">
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num" id="ystat-total">—</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num pending" id="ystat-pending">—</div><div class="stat-label">Pending</div></div>
+      <div class="stat"><div class="stat-num approved" id="ystat-approved">—</div><div class="stat-label">Approved</div></div>
+      <div class="stat"><div class="stat-num rejected" id="ystat-rejected">—</div><div class="stat-label">Rejected</div></div>
+    </div>
+    <div class="filters" id="youth-filters">
+      <button class="filter-btn" onclick="setYouthFilter('all', this)">All</button>
+      <button class="filter-btn active" onclick="setYouthFilter('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="setYouthFilter('approved', this)">Approved</button>
+      <button class="filter-btn" onclick="setYouthFilter('rejected', this)">Rejected</button>
+    </div>
+    <div id="youth-container">
+      <div class="state-msg">Loading youth drafts…</div>
     </div>
   </div>
 
@@ -711,7 +737,8 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const REPO_OWNER  = 'AesopScott';
 const REPO_NAME   = 'Aesop';
-const DRAFTS_PATH = 'aip/drafts';
+const DRAFTS_PATH    = 'aip/drafts';
+const K12_DRAFTS_PATH = 'aip/k12-drafts';
 // GitHub PAT — only needed for write operations (approve/reject)
 // Reads use site-local index.json (no API needed)
 let GH_TOKEN = sessionStorage.getItem('aip_gh_token') || '';
@@ -719,6 +746,9 @@ let GH_TOKEN = sessionStorage.getItem('aip_gh_token') || '';
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let allDrafts = [];
 let currentFilter = 'pending';
+let allYouthDrafts = [];
+let currentYouthFilter = 'pending';
+let youthLoaded = false;
 let moduleCounter = 0;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -839,7 +869,10 @@ function clearPAT() {
 }
 
 async function setStatus(filename, newStatus) {
-  const draft = allDrafts.find(d => d._filename === filename);
+  const isYouth = currentView === 'youth';
+  const draftsArr = isYouth ? allYouthDrafts : allDrafts;
+  const draftPath = isYouth ? K12_DRAFTS_PATH : DRAFTS_PATH;
+  const draft = draftsArr.find(d => d._filename === filename);
   if (!draft) return;
 
   if (!await ensurePAT('Enter GitHub PAT to approve/reject courses:')) {
@@ -852,7 +885,7 @@ async function setStatus(filename, newStatus) {
   try {
     // Fetch current SHA — if 401, token is stale: clear it and re-prompt once
     if (!draft._sha) {
-      let metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`);
+      let metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${draftPath}/${filename}`);
       if (metaRes.status === 401) {
         clearPAT();
         if (!await ensurePAT('GitHub PAT expired — enter a new one:')) {
@@ -860,7 +893,7 @@ async function setStatus(filename, newStatus) {
           draft.status = 'pending';
           return;
         }
-        metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`);
+        metaRes = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${draftPath}/${filename}`);
       }
       if (!metaRes.ok) throw new Error(`Could not fetch file SHA: ${metaRes.status}`);
       const meta = await metaRes.json();
@@ -874,7 +907,7 @@ async function setStatus(filename, newStatus) {
 
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(updated, null, 2))));
 
-    const res = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${DRAFTS_PATH}/${filename}`, {
+    const res = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${draftPath}/${filename}`, {
       method: 'PUT',
       body: JSON.stringify({
         message: `AIP: ${newStatus} "${draft.title}"`,
@@ -888,8 +921,8 @@ async function setStatus(filename, newStatus) {
     const data = await res.json();
     draft._sha = data.content.sha; // update SHA for future writes
 
-    updateStats();
-    renderDrafts();
+    if (isYouth) { updateYouthStats(); renderYouthDrafts(); }
+    else         { updateStats();      renderDrafts();      }
     showToast(`"${draft.title}" marked as ${newStatus}.`);
 
   } catch (err) {
@@ -922,6 +955,78 @@ function updateStats() {
 function updateSubtitle(count) {
   document.getElementById('subtitle').textContent =
     count === 0 ? 'No proposals yet' : `${count} proposal${count !== 1 ? 's' : ''} in queue`;
+}
+
+// ── YOUTH DRAFTS ──────────────────────────────────────────────────────────────
+function updateYouthStats() {
+  const total    = allYouthDrafts.length;
+  const pending  = allYouthDrafts.filter(d => d.status === 'pending').length;
+  const approved = allYouthDrafts.filter(d => d.status === 'approved').length;
+  const rejected = allYouthDrafts.filter(d => d.status === 'rejected').length;
+  document.getElementById('ystat-total').textContent    = total;
+  document.getElementById('ystat-pending').textContent  = pending;
+  document.getElementById('ystat-approved').textContent = approved;
+  document.getElementById('ystat-rejected').textContent = rejected;
+  document.getElementById('youth-count').textContent    = pending > 0 ? pending : total;
+}
+
+function setYouthFilter(filter, btn) {
+  currentYouthFilter = filter;
+  document.querySelectorAll('#youth-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderYouthDrafts();
+}
+
+function renderYouthDrafts() {
+  const container = document.getElementById('youth-container');
+  const filtered = allYouthDrafts.filter(d => currentYouthFilter === 'all' || d.status === currentYouthFilter);
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="state-msg">No <span>${currentYouthFilter}</span> youth drafts.</div>`;
+    return;
+  }
+  container.style.counterReset = 'module';
+  container.innerHTML = filtered.map((d, i) => renderCard(d, i)).join('');
+}
+
+async function loadYouthDrafts() {
+  const container = document.getElementById('youth-container');
+  try {
+    async function fetchYouthFile(path) {
+      if (GH_TOKEN) {
+        const r = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`);
+        if (r.ok) {
+          const j = await r.json();
+          return JSON.parse(atob(j.content.replace(/\n/g, '')));
+        }
+      }
+      const r = await fetch(`../${path}`);
+      return r.json();
+    }
+    const fileList = await fetchYouthFile(`${K12_DRAFTS_PATH}/index.json`);
+    const jsonFiles = fileList.filter(f => f.endsWith('.json') && f !== 'index.json');
+    if (jsonFiles.length === 0) {
+      container.innerHTML = '<div class="state-msg">No youth drafts yet — run the K-12 agent first.</div>';
+      updateYouthStats();
+      return;
+    }
+    const drafts = await Promise.all(jsonFiles.map(async f => {
+      const data = await fetchYouthFile(`${K12_DRAFTS_PATH}/${f}`);
+      data._filename = f;
+      data._sha = '';
+      return data;
+    }));
+    drafts.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return (b.generated || '').localeCompare(a.generated || '');
+    });
+    allYouthDrafts = drafts;
+    updateYouthStats();
+    renderYouthDrafts();
+    youthLoaded = true;
+  } catch (err) {
+    container.innerHTML = `<div class="state-msg">Error loading youth drafts: <span>${err.message}</span></div>`;
+  }
 }
 
 // ── GITHUB FETCH ──────────────────────────────────────────────────────────────
@@ -1096,12 +1201,17 @@ let pendingRemoveId = null;
 function switchView(view) {
   currentView = view;
   document.getElementById('view-drafts-btn').classList.toggle('active', view === 'drafts');
+  document.getElementById('view-youth-btn').classList.toggle('active', view === 'youth');
   document.getElementById('view-dev-btn').classList.toggle('active', view === 'dev');
   document.getElementById('drafts-view').style.display = view === 'drafts' ? '' : 'none';
+  document.getElementById('youth-view').style.display  = view === 'youth'  ? '' : 'none';
   document.getElementById('dev-view').style.display    = view === 'dev'    ? '' : 'none';
 
   if (view === 'drafts') {
     document.getElementById('page-title').textContent = 'Course Proposals';
+  } else if (view === 'youth') {
+    document.getElementById('page-title').textContent = 'Youth Course Proposals';
+    if (!youthLoaded) loadYouthDrafts();
   } else {
     document.getElementById('page-title').textContent = 'In Development Courses';
     if (devCourses.length === 0) loadDevCourses();

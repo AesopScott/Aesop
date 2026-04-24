@@ -40,6 +40,7 @@ WORKFLOW_SCRIPTS = {
     "update-stats.yml":           ["build_stats.py"],
     "aip-autopatch.yml":          ["aip_autopatch.py"],
     "aip-generate.yml":           ["aip_research_agent.py"],
+    "ya-autopatch.yml":           ["aip_autopatch.py"],
     "k12-autopatch.yml":          ["aip_autopatch.py"],
     "k12-research.yml":           ["k12_research_agent.py"],
     "index-corpus.yml":           ["index_aesop.py"],

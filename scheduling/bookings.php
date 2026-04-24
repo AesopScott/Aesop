@@ -17,27 +17,33 @@ $stmt = getDB()->query(
 $rows = $stmt->fetchAll();
 
 // Fetch Teams join URLs — patch to add Teams if missing
+// Only debug the first row to keep output manageable
+$debugRow = 0;
 foreach ($rows as &$r) {
     $r['join_url']  = null;
     $r['graph_err'] = null;
+    $r['debug']     = null;
     if (!$r['outlook_event_id']) continue;
 
     $eid = rawurlencode($r['outlook_event_id']);
     $ev  = graphGet('/me/events/' . $eid . '?$select=onlineMeeting,onlineMeetingUrl,isOnlineMeeting');
 
+    if ($debugRow === 0) $r['debug'] = ['get' => $ev];
+
     if (isset($ev['error'])) {
         $r['graph_err'] = $ev['error']['code'] . ': ' . $ev['error']['message'];
+        $debugRow++;
         continue;
     }
 
     $joinUrl = $ev['onlineMeeting']['joinUrl'] ?? $ev['onlineMeetingUrl'] ?? null;
 
-    // If no Teams link yet, patch the event to add one
     if (!$joinUrl) {
         $patch = graphPatch('/me/events/' . $eid, [
             'isOnlineMeeting'       => true,
             'onlineMeetingProvider' => 'teamsForBusiness',
         ]);
+        if ($debugRow === 0) $r['debug']['patch'] = $patch;
         if (isset($patch['error'])) {
             $r['graph_err'] = 'patch: ' . $patch['error']['code'] . ': ' . $patch['error']['message'];
         } else {
@@ -46,6 +52,7 @@ foreach ($rows as &$r) {
     }
 
     $r['join_url'] = $joinUrl;
+    $debugRow++;
 }
 unset($r);
 
@@ -113,5 +120,10 @@ header('Content-Type: text/html; charset=utf-8');
 <?php else: ?>
 <p>No bookings yet.</p>
 <?php endif; ?>
+
+<?php foreach ($rows as $r): if ($r['debug']): ?>
+<h2 style="margin-top:2rem;font-size:1rem;">Graph API debug — booking #<?= $r['id'] ?></h2>
+<pre style="background:#1e293b;color:#e2e8f0;padding:1.5rem;border-radius:8px;overflow-x:auto;font-size:.75rem;line-height:1.5;"><?= htmlspecialchars(json_encode($r['debug'], JSON_PRETTY_PRINT)) ?></pre>
+<?php endif; endforeach; ?>
 </body>
 </html>

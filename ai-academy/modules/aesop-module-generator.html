@@ -1894,16 +1894,27 @@ async function buildFullCourse() {
         log('Recovery failed: ' + e.message);
       }
     }
+    // ── Registry write: runs unconditionally — only needs repoFolderHandle,
+    // which is always present during a build. Decoupled from the courses.html
+    // activation so a missing coursesFolderHandle can't skip it.
+    if (repoFolderHandle) {
+      try {
+        await writeRegistryEntry(cid);
+        log('Registry entry written for ' + cid);
+      } catch(regErr) {
+        log('Registry write error: ' + regErr.message);
+      }
+    }
+
+    // ── courses.html activation: needs coursesFolderHandle (ai-academy/ dir).
+    // This handle is often unavailable during auto-activation (no user gesture),
+    // so failures here are expected and handled independently.
     let activationOk = false;
     try {
       await updateCoursesFile({ noPrompt: true });
       activationOk = true;
-      if (repoFolderHandle) {
-        await writeRegistryEntry(cid);
-        log('Registry entry written for ' + cid);
-      }
     } catch(activateErr) {
-      log('Activate error: ' + activateErr.message);
+      log('courses.html activation error: ' + activateErr.message);
       // Fall back to highlighting the button with URGENT messaging
       const activateBtn = document.querySelector('#coursesUpdateCard .btn-set-folder');
       if (activateBtn) {

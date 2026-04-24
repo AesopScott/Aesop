@@ -52,10 +52,22 @@ if ($ts < time() + MIN_NOTICE_HOURS * 3600) {
 
 $friendly = (new DateTime('@' . $ts))->setTimezone($ownerTz)->format('l, F j \a\t g:ia T');
 
+// Create Teams meeting first via dedicated endpoint
+$joinUrl = null;
+if (CREATE_TEAMS_MEETING) {
+    $teamsResult = graphPost('/me/onlineMeetings', [
+        'startDateTime' => $slotStart->format('Y-m-d\TH:i:s') . 'Z',
+        'endDateTime'   => $slotEnd->format('Y-m-d\TH:i:s') . 'Z',
+        'subject'       => 'AESOP AI Academy Meeting — ' . $friendly,
+    ]);
+    $joinUrl = $teamsResult['joinWebUrl'] ?? $teamsResult['joinUrl'] ?? null;
+}
+
 $body  = "Hi $name,\n\n";
 $body .= "Your meeting with " . OWNER_NAME . " at AESOP AI Academy is confirmed for $friendly.\n\n";
-if ($note) $body .= "Your note: $note\n\n";
-$body .= "A Teams link will appear in this invite. If you have any questions before the meeting, reply to this email.\n\n";
+if ($note)    $body .= "Your note: $note\n\n";
+if ($joinUrl) $body .= "Join Teams meeting: $joinUrl\n\n";
+$body .= "If you have any questions before the meeting, reply to this email.\n\n";
 $body .= "Looking forward to connecting!\n\n";
 $body .= OWNER_NAME . "\nAESOP AI Academy\nhttps://aesopacademy.org";
 
@@ -78,9 +90,8 @@ $event = [
     'responseRequested'     => true,
 ];
 
-if (CREATE_TEAMS_MEETING) {
-    $event['isOnlineMeeting']        = true;
-    $event['onlineMeetingProvider']  = 'teamsForBusiness';
+if ($joinUrl) {
+    $event['location'] = ['displayName' => 'Microsoft Teams', 'locationType' => 'default'];
 }
 
 $result = graphPost('/me/events', $event);
@@ -100,8 +111,6 @@ logBooking(
     $slotEnd->setTimezone($ownerTz)->format('Y-m-d H:i:s')
 );
 
-$joinUrl = $result['onlineMeeting']['joinUrl'] ?? null;
-
 // Notify Scott of the new booking
 $notifyBody  = "New meeting booked:\n\n";
 $notifyBody .= "Name:  $name\n";
@@ -114,9 +123,10 @@ graphPost('/me/sendMail', [
     'message' => [
         'subject' => "New booking: $name — $friendly",
         'body'    => ['contentType' => 'text', 'content' => $notifyBody],
-        'toRecipients' => [[
-            'emailAddress' => ['address' => OWNER_EMAIL, 'name' => OWNER_NAME],
-        ]],
+        'toRecipients' => [
+            ['emailAddress' => ['address' => OWNER_EMAIL,        'name' => OWNER_NAME]],
+            ['emailAddress' => ['address' => 'ravenshroud@gmail.com', 'name' => OWNER_NAME]],
+        ],
     ],
     'saveToSentItems' => false,
 ]);

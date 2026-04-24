@@ -160,6 +160,9 @@ def _cosine_sim(v1, v2):
     return dot / (n1 * n2) if n1 and n2 else 0.0
 
 
+CATALOG_PATH = Path("ai-academy/modules/courses-data.json")
+
+
 def load_existing_draft_titles():
     """Return list of titles for all existing K-12 drafts (for semantic dedup)."""
     titles = []
@@ -174,48 +177,66 @@ def load_existing_draft_titles():
     return titles
 
 
+def load_catalog_titles():
+    """Return all course names from courses-data.json (full catalog)."""
+    if not CATALOG_PATH.exists():
+        return []
+    try:
+        data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+        return [c["name"] for c in data.get("courses", []) if c.get("name")]
+    except Exception as e:
+        print(f"  WARNING: Could not load catalog titles: {e}")
+        return []
+
+
 def check_draft_coverage(gaps):
     """
-    Remove gap candidates too close to existing drafts.
-    Pinecone only indexes built HTML modules — this catches K-12 drafts
-    already in the queue that haven't been built yet.
+    Remove K-12 gap candidates too close to existing K-12 drafts OR any
+    course already in the full catalog.
     """
-    titles = load_existing_draft_titles()
-    if not titles or not VOYAGE_API_KEY:
+    draft_titles   = load_existing_draft_titles()
+    catalog_titles = load_catalog_titles()
+    all_titles = draft_titles + catalog_titles
+
+    if not all_titles or not VOYAGE_API_KEY:
         return gaps
 
-    print(f"\n  Phase 3b: Dedup against {len(titles)} existing K-12 drafts\n")
+    print(f"\n  Phase 3b: Dedup against {len(draft_titles)} K-12 drafts + "
+          f"{len(catalog_titles)} catalog courses\n")
 
     try:
         resp = requests.post(
             "https://api.voyageai.com/v1/embeddings",
             headers={"Authorization": f"Bearer {VOYAGE_API_KEY}", "content-type": "application/json"},
-            json={"model": "voyage-3", "input": titles[:150], "input_type": "document"},
-            timeout=60,
+            json={"model": "voyage-3", "input": all_titles[:200], "input_type": "document"},
+            timeout=90,
         )
         if resp.status_code != 200:
-            print(f"  WARNING: draft-dedup embed failed ({resp.status_code}) — skipping")
+            print(f"  WARNING: catalog-dedup embed failed ({resp.status_code}) — skipping")
             return gaps
-        draft_vecs = [item["embedding"] for item in resp.json()["data"]]
+        known_vecs = [item["embedding"] for item in resp.json()["data"]]
     except Exception as e:
-        print(f"  WARNING: draft-dedup failed: {e} — skipping")
+        print(f"  WARNING: catalog-dedup failed: {e} — skipping")
         return gaps
 
     filtered = []
     for c in gaps:
+        # Use youth-framed embedding for K-12 topics
         vec = embed_query(f"K-12 AI education for students ages {AGE_RANGE}: {c['topic']}")
         if vec is None:
             filtered.append(c)
             continue
-        max_sim = max((_cosine_sim(vec, dv) for dv in draft_vecs), default=0.0)
+        max_sim = max((_cosine_sim(vec, kv) for kv in known_vecs), default=0.0)
         if max_sim >= GAP_THRESHOLD:
-            print(f"  [DRAFT DUP] {c['topic']}: sim={max_sim:.3f} — already in draft queue")
+            best_idx = max(range(len(known_vecs)), key=lambda i: _cosine_sim(vec, known_vecs[i]))
+            matched = all_titles[best_idx] if best_idx < len(all_titles) else "?"
+            print(f"  [DUP] {c['topic']}: sim={max_sim:.3f} → '{matched}'")
         else:
-            c["draft_sim"] = round(max_sim, 3)
+            c["catalog_sim"] = round(max_sim, 3)
             filtered.append(c)
 
     removed = len(gaps) - len(filtered)
-    print(f"  Draft dedup: removed {removed}, {len(filtered)} true gaps remain")
+    print(f"  Catalog+draft dedup: removed {removed}, {len(filtered)} true gaps remain")
     return filtered
 
 

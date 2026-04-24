@@ -50,20 +50,32 @@ if ($ts < time() + MIN_NOTICE_HOURS * 3600) {
     exit;
 }
 
-$body  = "Hi $name,\n\nLooking forward to connecting!\n\n";
-$body .= $note ? "Your note: $note\n\n" : '';
-$body .= "— " . OWNER_NAME;
+$friendly = (new DateTime('@' . $ts))->setTimezone($ownerTz)->format('l, F j \a\t g:ia T');
+
+$body  = "Hi $name,\n\n";
+$body .= "Your meeting with " . OWNER_NAME . " at AESOP AI Academy is confirmed for $friendly.\n\n";
+if ($note) $body .= "Your note: $note\n\n";
+$body .= "A Teams link will appear in this invite. If you have any questions before the meeting, reply to this email.\n\n";
+$body .= "Looking forward to connecting!\n\n";
+$body .= OWNER_NAME . "\nAESOP AI Academy\nhttps://aesopacademy.org";
 
 $event = [
-    'subject' => 'Meeting with ' . $name,
+    'subject' => 'AESOP AI Academy Meeting — ' . $friendly,
     'body'    => ['contentType' => 'text', 'content' => $body],
     'start'   => ['dateTime' => $slotStart->format('Y-m-d\TH:i:s'), 'timeZone' => 'UTC'],
     'end'     => ['dateTime' => $slotEnd->format('Y-m-d\TH:i:s'),   'timeZone' => 'UTC'],
-    'attendees' => [[
-        'emailAddress' => ['address' => $email, 'name' => $name],
-        'type'         => 'required',
-    ]],
+    'attendees' => [
+        [
+            'emailAddress' => ['address' => $email, 'name' => $name],
+            'type'         => 'required',
+        ],
+        [
+            'emailAddress' => ['address' => OWNER_EMAIL, 'name' => OWNER_NAME],
+            'type'         => 'required',
+        ],
+    ],
     'allowNewTimeProposals' => false,
+    'responseRequested'     => true,
 ];
 
 if (CREATE_TEAMS_MEETING) {
@@ -89,7 +101,6 @@ logBooking(
 );
 
 $joinUrl = $result['onlineMeeting']['joinUrl'] ?? null;
-$friendly = (new DateTime('@' . $ts))->setTimezone($ownerTz)->format('l, F j \a\t g:ia T');
 
 // Notify Scott of the new booking
 $notifyBody  = "New meeting booked:\n\n";

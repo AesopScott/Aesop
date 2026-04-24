@@ -30,6 +30,12 @@ SUBREDDITS = [
     "AIAssistants",
     "StableDiffusion",    # Image model literacy
     "ChatGPTPromptEngineering",
+    # Agentic frameworks — these communities discuss tools the catalog should cover
+    "LangChain",
+    "AutoGPT",
+    "n8n",
+    "LlamaIndex",
+    "AIAgents",
 ]
 
 # Timeframes: hot (trending now) + top of the month (sustained interest)
@@ -69,6 +75,11 @@ MODEL_TERMS = [
     "reasoning model", "o1", "o3",
     "fine-tuning", "fine tuning", "rlhf", "rag",
     "model comparison", "benchmark",
+    # Agentic frameworks
+    "crewai", "langchain", "langgraph", "llamaindex", "llama index",
+    "flowise", "dify", "n8n", "agentgpt", "autogpt",
+    "manus ai", "openai agents", "semantic kernel",
+    "ai agent", "multi-agent", "agentic",
 ]
 
 
@@ -79,7 +90,11 @@ def _extract_ai_topics(title):
     ai_terms = ["ai", "artificial intelligence", "machine learning", "deep learning",
                  "llm", "gpt", "claude", "neural", "nlp", "computer vision",
                  "generative", "prompt", "model", "chatbot", "automation",
-                 "transformer", "diffusion", "reinforcement learning"]
+                 "transformer", "diffusion", "reinforcement learning",
+                 # Agentic frameworks that don't always include "ai" in title
+                 "crewai", "langchain", "langgraph", "llamaindex", "flowise",
+                 "dify", "n8n", "agentgpt", "autogpt", "semantic kernel",
+                 "agentic", "multi-agent", "agent workflow"]
     has_ai = any(term in lower for term in ai_terms)
     if not has_ai:
         return None

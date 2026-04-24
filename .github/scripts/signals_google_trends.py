@@ -39,6 +39,20 @@ MODEL_SEED_QUERIES = [
     "local AI model",
     "fine tuning AI model",
     "AI model for business",
+    # Agentic frameworks — high demand, curriculum gap area
+    "CrewAI tutorial",
+    "LangGraph agent",
+    "LangChain tutorial",
+    "LlamaIndex RAG",
+    "Flowise AI",
+    "Dify AI platform",
+    "n8n AI workflow",
+    "AI agent framework",
+    "OpenAI Agents SDK",
+    "no code AI agent",
+    "AI automation workflow",
+    "Manus AI agent",
+    "Semantic Kernel tutorial",
 ]
 
 # Categories to scan for related rising queries

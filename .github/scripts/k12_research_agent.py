@@ -36,7 +36,7 @@ PINECONE_API_KEY  = os.environ.get("PINECONE_API_KEY", "")
 PINECONE_HOST     = os.environ.get("PINECONE_HOST", "")
 PINECONE_INDEX    = "aesop-academy"
 DRAFTS_DIR        = Path("aip/k12-drafts")
-DRAFTS_PER_RUN    = 20
+DRAFTS_PER_RUN    = int(os.environ.get("DRAFTS_PER_RUN", "20"))
 GAP_THRESHOLD     = 0.72
 
 AUDIENCE    = "youth"
@@ -82,10 +82,20 @@ def synthesize_topics(signals):
         signal_text += f"- [{s['source']}] {s['topic']} (score: {s['score']})\n"
 
     existing_draft_titles = load_existing_draft_titles()
+    catalog_titles        = load_catalog_titles()
+
+    already_lines = []
+    if existing_draft_titles:
+        already_lines.append("Draft queue (pending review — do NOT propose anything similar):")
+        already_lines.extend(f"  - {t}" for t in existing_draft_titles[:60])
+    if catalog_titles:
+        already_lines.append("Already built and published (in catalog — do NOT propose anything similar):")
+        already_lines.extend(f"  - {t}" for t in catalog_titles[:120])
+
     existing_context = (
-        "These topics are ALREADY IN OUR DRAFT QUEUE — do not propose anything similar:\n"
-        + "\n".join(f"  - {t}" for t in existing_draft_titles[:60])
-        if existing_draft_titles else ""
+        "ALREADY EXISTS — do not propose anything similar to the following:\n"
+        + "\n".join(already_lines)
+        if already_lines else ""
     )
 
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
@@ -235,13 +245,25 @@ def check_draft_coverage(gaps):
         print(f"  WARNING: catalog-dedup failed: {e} — skipping")
         return gaps
 
+    # Batch-embed all candidate topics (bare topics, no age prefix — catalog titles are bare too)
+    candidate_topics = [c["topic"] for c in gaps]
+    try:
+        resp2 = requests.post(
+            "https://api.voyageai.com/v1/embeddings",
+            headers={"Authorization": f"Bearer {VOYAGE_API_KEY}", "content-type": "application/json"},
+            json={"model": "voyage-3", "input": candidate_topics, "input_type": "query"},
+            timeout=90,
+        )
+        if resp2.status_code != 200:
+            print(f"  WARNING: candidate embed failed ({resp2.status_code}) — skipping catalog dedup")
+            return gaps
+        candidate_vecs = [item["embedding"] for item in resp2.json()["data"]]
+    except Exception as e:
+        print(f"  WARNING: candidate embed failed: {e} — skipping catalog dedup")
+        return gaps
+
     filtered = []
-    for c in gaps:
-        # Use youth-framed embedding for K-12 topics
-        vec = embed_query(f"K-12 AI education for students ages {AGE_RANGE}: {c['topic']}")
-        if vec is None:
-            filtered.append(c)
-            continue
+    for c, vec in zip(gaps, candidate_vecs):
         max_sim = max((_cosine_sim(vec, kv) for kv in known_vecs), default=0.0)
         if max_sim >= GAP_THRESHOLD:
             best_idx = max(range(len(known_vecs)), key=lambda i: _cosine_sim(vec, known_vecs[i]))

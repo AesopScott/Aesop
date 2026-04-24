@@ -17,6 +17,7 @@ import os
 import sys
 import json
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 import anthropic
@@ -264,11 +265,20 @@ For EACH topic, return a JSON object with exactly these fields:
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=5000,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    for attempt in range(4):
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=5000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            break
+        except anthropic.OverloadedError:
+            wait = 30 * (attempt + 1)
+            print(f"  Anthropic overloaded (529) — retrying in {wait}s (attempt {attempt+1}/4)...")
+            time.sleep(wait)
+    else:
+        raise RuntimeError("Anthropic API overloaded after 4 attempts — try again later.")
 
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)

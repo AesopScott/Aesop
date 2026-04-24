@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<!-- v1.0.8 | 2026-04-23 -->
-<!-- v1.0.13 | 2026-04-23 — add Run Youth Now button -->
-<!-- v1.1.0 | 2026-04-14 -->
+<!-- v1.0.0 | 2026-04-23 -->
+<!-- v1.2.0 | 2026-04-24 — three-track pipeline: Professional, Young Adult, Youth -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -24,6 +23,8 @@
     --border: #1e2e2b;
     --text: #d4e8e5;
     --muted: #5a7a76;
+    --ya: #6D28D9;
+    --ya-light: #8B5CF6;
     --pending: #C8950A;
     --approved: #1A7A6E;
     --rejected: #7a3030;
@@ -417,6 +418,12 @@
     letter-spacing: 0.04em;
   }
 
+  #view-ya-btn.active {
+    background: var(--ya);
+    border-color: var(--ya-light);
+    color: #fff;
+  }
+
   #view-youth-btn.active {
     background: var(--gold-dim);
     border-color: var(--gold);
@@ -641,16 +648,21 @@
     </div>
   </div>
   <div class="header-meta">
-    <div><span class="pulse-dot"></span>Research Agent Active</div>
-    <div>Runs every Monday · 9:00 UTC</div>
+    <div><span class="pulse-dot"></span>Research Agents Active</div>
+    <div>Pro: Mon · YA: Wed · Youth: Tue · 9–11 UTC</div>
     <button class="btn-run-agent" id="runAgentBtn" onclick="runAgent()">
       <span class="run-spinner"></span>
-      ▶ Run Now
+      ▶ Run Professional
     </button>
     <div id="agent-status"></div>
+    <button class="btn-run-agent" id="runYABtn" onclick="runYAAgent()" style="border-color:var(--ya-light);color:var(--ya-light);">
+      <span class="run-spinner"></span>
+      ▶ Run Young Adult
+    </button>
+    <div id="ya-agent-status"></div>
     <button class="btn-run-agent" id="runK12Btn" onclick="runK12Agent()" style="border-color:var(--gold);color:var(--gold);">
       <span class="run-spinner"></span>
-      ▶ Run Youth Now
+      ▶ Run Youth
     </button>
     <div id="k12-agent-status"></div>
   </div>
@@ -662,8 +674,9 @@
 
   <!-- ── VIEW TOGGLE ── -->
   <div class="view-toggle">
-    <button class="view-btn active" id="view-drafts-btn" onclick="switchView('drafts')">AIP Drafts</button>
-    <button class="view-btn" id="view-youth-btn" onclick="switchView('youth')" style="border-color:var(--gold);color:var(--gold);">Youth Drafts<span class="btn-count" id="youth-count">…</span></button>
+    <button class="view-btn active" id="view-drafts-btn" onclick="switchView('drafts')">Professional<span class="btn-count" id="pro-count">…</span></button>
+    <button class="view-btn" id="view-ya-btn" onclick="switchView('ya')" style="border-color:var(--ya-light);color:var(--ya-light);">Young Adult<span class="btn-count" id="ya-count">…</span></button>
+    <button class="view-btn" id="view-youth-btn" onclick="switchView('youth')" style="border-color:var(--gold);color:var(--gold);">Youth<span class="btn-count" id="youth-count">…</span></button>
     <button class="view-btn" id="view-dev-btn" onclick="switchView('dev')">In Development<span class="btn-count" id="dev-count">…</span></button>
   </div>
 
@@ -685,6 +698,25 @@
 
     <div id="drafts-container">
       <div class="state-msg">Fetching proposals…</div>
+    </div>
+  </div>
+
+  <!-- ── YOUNG ADULT DRAFTS VIEW ── -->
+  <div id="ya-view" style="display:none">
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num" id="yastat-total">—</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num pending" id="yastat-pending">—</div><div class="stat-label">Pending</div></div>
+      <div class="stat"><div class="stat-num approved" id="yastat-approved">—</div><div class="stat-label">Approved</div></div>
+      <div class="stat"><div class="stat-num rejected" id="yastat-rejected">—</div><div class="stat-label">Rejected</div></div>
+    </div>
+    <div class="filters" id="ya-filters">
+      <button class="filter-btn" onclick="setYAFilter('all', this)">All</button>
+      <button class="filter-btn active" onclick="setYAFilter('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="setYAFilter('approved', this)">Approved</button>
+      <button class="filter-btn" onclick="setYAFilter('rejected', this)">Rejected</button>
+    </div>
+    <div id="ya-container">
+      <div class="state-msg">Loading young adult drafts…</div>
     </div>
   </div>
 
@@ -735,20 +767,27 @@
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const REPO_OWNER  = 'AesopScott';
-const REPO_NAME   = 'Aesop';
-const DRAFTS_PATH    = 'aip/drafts';
+const REPO_OWNER      = 'AesopScott';
+const REPO_NAME       = 'Aesop';
+const DRAFTS_PATH     = 'aip/drafts';
+const YA_DRAFTS_PATH  = 'aip/ya-drafts';
 const K12_DRAFTS_PATH = 'aip/k12-drafts';
 // GitHub PAT — only needed for write operations (approve/reject)
-// Reads use site-local index.json (no API needed)
 let GH_TOKEN = sessionStorage.getItem('aip_gh_token') || '';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let allDrafts = [];
-let currentFilter = 'pending';
-let allYouthDrafts = [];
+// Professional
+let allDrafts      = [];
+let currentFilter  = 'pending';
+// Young Adult
+let allYADrafts       = [];
+let currentYAFilter   = 'pending';
+let yaLoaded          = false;
+// Youth
+let allYouthDrafts    = [];
 let currentYouthFilter = 'pending';
-let youthLoaded = false;
+let youthLoaded        = false;
+
 let moduleCounter = 0;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -869,9 +908,10 @@ function clearPAT() {
 }
 
 async function setStatus(filename, newStatus) {
+  const isYA    = currentView === 'ya';
   const isYouth = currentView === 'youth';
-  const draftsArr = isYouth ? allYouthDrafts : allDrafts;
-  const draftPath = isYouth ? K12_DRAFTS_PATH : DRAFTS_PATH;
+  const draftsArr = isYA ? allYADrafts : isYouth ? allYouthDrafts : allDrafts;
+  const draftPath = isYA ? YA_DRAFTS_PATH : isYouth ? K12_DRAFTS_PATH : DRAFTS_PATH;
   const draft = draftsArr.find(d => d._filename === filename);
   if (!draft) return;
 
@@ -921,7 +961,8 @@ async function setStatus(filename, newStatus) {
     const data = await res.json();
     draft._sha = data.content.sha; // update SHA for future writes
 
-    if (isYouth) { updateYouthStats(); renderYouthDrafts(); }
+    if (isYA)    { updateYAStats();    renderYADrafts();    }
+    else if (isYouth) { updateYouthStats(); renderYouthDrafts(); }
     else         { updateStats();      renderDrafts();      }
     showToast(`"${draft.title}" marked as ${newStatus}.`);
 
@@ -955,6 +996,80 @@ function updateStats() {
 function updateSubtitle(count) {
   document.getElementById('subtitle').textContent =
     count === 0 ? 'No proposals yet' : `${count} proposal${count !== 1 ? 's' : ''} in queue`;
+  const pending = allDrafts.filter(d => d.status === 'pending').length;
+  document.getElementById('pro-count').textContent = pending > 0 ? pending : count;
+}
+
+// ── YOUNG ADULT DRAFTS ────────────────────────────────────────────────────────
+function updateYAStats() {
+  const total    = allYADrafts.length;
+  const pending  = allYADrafts.filter(d => d.status === 'pending').length;
+  const approved = allYADrafts.filter(d => d.status === 'approved').length;
+  const rejected = allYADrafts.filter(d => d.status === 'rejected').length;
+  document.getElementById('yastat-total').textContent    = total;
+  document.getElementById('yastat-pending').textContent  = pending;
+  document.getElementById('yastat-approved').textContent = approved;
+  document.getElementById('yastat-rejected').textContent = rejected;
+  document.getElementById('ya-count').textContent        = pending > 0 ? pending : total;
+}
+
+function setYAFilter(filter, btn) {
+  currentYAFilter = filter;
+  document.querySelectorAll('#ya-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderYADrafts();
+}
+
+function renderYADrafts() {
+  const container = document.getElementById('ya-container');
+  const filtered = allYADrafts.filter(d => currentYAFilter === 'all' || d.status === currentYAFilter);
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="state-msg">No <span>${currentYAFilter}</span> young adult drafts.</div>`;
+    return;
+  }
+  container.style.counterReset = 'module';
+  container.innerHTML = filtered.map((d, i) => renderCard(d, i)).join('');
+}
+
+async function loadYADrafts() {
+  const container = document.getElementById('ya-container');
+  try {
+    async function fetchYAFile(path) {
+      if (GH_TOKEN) {
+        const r = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`);
+        if (r.ok) {
+          const j = await r.json();
+          return JSON.parse(atob(j.content.replace(/\n/g, '')));
+        }
+      }
+      const r = await fetch(`../${path}`);
+      return r.json();
+    }
+    const fileList = await fetchYAFile(`${YA_DRAFTS_PATH}/index.json`);
+    const jsonFiles = fileList.filter(f => f.endsWith('.json') && f !== 'index.json');
+    if (jsonFiles.length === 0) {
+      container.innerHTML = '<div class="state-msg">No young adult drafts yet — run the YA agent first.</div>';
+      updateYAStats();
+      return;
+    }
+    const drafts = await Promise.all(jsonFiles.map(async f => {
+      const data = await fetchYAFile(`${YA_DRAFTS_PATH}/${f}`);
+      data._filename = f;
+      data._sha = '';
+      return data;
+    }));
+    drafts.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return (b.generated || '').localeCompare(a.generated || '');
+    });
+    allYADrafts = drafts;
+    updateYAStats();
+    renderYADrafts();
+    yaLoaded = true;
+  } catch (err) {
+    container.innerHTML = `<div class="state-msg">Error loading young adult drafts: <span>${err.message}</span></div>`;
+  }
 }
 
 // ── YOUTH DRAFTS ──────────────────────────────────────────────────────────────
@@ -1041,6 +1156,57 @@ function ghFetch(path, opts = {}) {
 }
 
 // ── RUN AGENT ─────────────────────────────────────────────────────────────────
+async function runYAAgent() {
+  if (!await ensurePAT('Enter GitHub PAT to trigger the Young Adult research agent:')) {
+    showToast('Action cancelled — PAT required.');
+    return;
+  }
+
+  const btn    = document.getElementById('runYABtn');
+  const status = document.getElementById('ya-agent-status');
+
+  btn.disabled = true;
+  btn.classList.add('running');
+  status.textContent = 'Dispatching Young Adult workflow…';
+  status.className = '';
+
+  try {
+    const res = await ghFetch(
+      `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/ya-research.yml/dispatches`,
+      { method: 'POST', body: JSON.stringify({ ref: 'main' }) }
+    );
+
+    if (res.status === 401) {
+      clearPAT();
+      throw new Error('PAT rejected (401) — please try again with a fresh token.');
+    }
+    if (res.status === 403) {
+      clearPAT();
+      throw new Error('PAT needs "Actions: Read and write" permission — go to GitHub → Settings → Developer settings → Personal access tokens → edit your token → Add permissions → Actions → Read and write, then regenerate and try again.');
+    }
+    if (res.status === 404) {
+      throw new Error('Workflow not found — check ya-research.yml exists on main.');
+    }
+    if (!res.ok) {
+      throw new Error(`GitHub returned ${res.status}`);
+    }
+
+    status.textContent = '✓ YA agent dispatched — results land in ~2 min.';
+    status.className = 'ok';
+    showToast('Young Adult Research Agent triggered successfully.');
+
+    await pollLatestRun(status, 'ya-research.yml');
+
+  } catch (err) {
+    status.textContent = '✗ ' + err.message;
+    status.className = 'err';
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('running');
+  }
+}
+
 async function runK12Agent() {
   if (!await ensurePAT('Enter GitHub PAT to trigger the K-12 research agent:')) {
     showToast('Action cancelled — PAT required.');
@@ -1201,14 +1367,19 @@ let pendingRemoveId = null;
 function switchView(view) {
   currentView = view;
   document.getElementById('view-drafts-btn').classList.toggle('active', view === 'drafts');
+  document.getElementById('view-ya-btn').classList.toggle('active', view === 'ya');
   document.getElementById('view-youth-btn').classList.toggle('active', view === 'youth');
   document.getElementById('view-dev-btn').classList.toggle('active', view === 'dev');
   document.getElementById('drafts-view').style.display = view === 'drafts' ? '' : 'none';
+  document.getElementById('ya-view').style.display     = view === 'ya'     ? '' : 'none';
   document.getElementById('youth-view').style.display  = view === 'youth'  ? '' : 'none';
   document.getElementById('dev-view').style.display    = view === 'dev'    ? '' : 'none';
 
   if (view === 'drafts') {
-    document.getElementById('page-title').textContent = 'Course Proposals';
+    document.getElementById('page-title').textContent = 'Professional Proposals';
+  } else if (view === 'ya') {
+    document.getElementById('page-title').textContent = 'Young Adult Proposals';
+    if (!yaLoaded) loadYADrafts();
   } else if (view === 'youth') {
     document.getElementById('page-title').textContent = 'Youth Course Proposals';
     if (!youthLoaded) loadYouthDrafts();
@@ -1423,15 +1594,30 @@ function removePanelFromHtml(html, panelId) {
   return result;
 }
 
-// ── LOAD DEV COUNT ON INIT ───────────────────────────────────────────────────
-(async function loadDevCount() {
+// ── LOAD BADGE COUNTS ON INIT ─────────────────────────────────────────────────
+(async function initBadgeCounts() {
+  // Dev count from courses.html
   try {
     const res = await fetch('../ai-academy/courses.html');
-    if (!res.ok) return;
-    const html = await res.text();
-    const count = (html.match(/core-panel__cta--ghost/g) || []).length;
-    document.getElementById('dev-count').textContent = count;
+    if (res.ok) {
+      const html = await res.text();
+      document.getElementById('dev-count').textContent = (html.match(/core-panel__cta--ghost/g) || []).length;
+    }
   } catch (e) { /* silent */ }
+
+  // YA pending count from index
+  try {
+    async function fetchFile(path) {
+      if (GH_TOKEN) {
+        const r = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`);
+        if (r.ok) { const j = await r.json(); return JSON.parse(atob(j.content.replace(/\n/g,''))); }
+      }
+      const r = await fetch(`../${path}`);
+      return r.json();
+    }
+    const files = await fetchFile(`${YA_DRAFTS_PATH}/index.json`);
+    document.getElementById('ya-count').textContent = files.filter(f => f.endsWith('.json') && f !== 'index.json').length;
+  } catch (e) { document.getElementById('ya-count').textContent = '0'; }
 })();
 </script>
 <script src="/assets/top-banner-v2.js?v=2"></script>

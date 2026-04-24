@@ -39,6 +39,10 @@ DRAFTS_DIR        = Path("aip/drafts")
 DRAFTS_PER_RUN    = 20
 GAP_THRESHOLD     = 0.72
 
+AUDIENCE    = "professional"
+AGE_RANGE   = "25+"
+CATEGORY    = "Professional"
+
 
 # ── PHASE 1: COLLECT SIGNALS ─────────────────────────────────────────────────
 
@@ -86,17 +90,27 @@ def synthesize_topics(signals):
 
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for an AI literacy curriculum.
+I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for the PROFESSIONAL track of our AI literacy curriculum — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+).
 
 RAW SIGNALS:
 {signal_text}
 
+LENS FOR PROFESSIONALS (25+):
+Think about what THESE learners face:
+- Using AI effectively in their specific industry or role
+- Managing AI tools and teams that use AI
+- AI strategy, ROI, and business cases
+- Staying current as AI reshapes their profession
+- Legal, ethical, and regulatory considerations at work
+- AI for productivity and specialized professional tasks
+- Enterprise AI integration and governance
+
 RULES:
-- Merge similar signals into a single coherent topic (e.g. "learn AI for business" + "AI tools for small business" → "AI for Small Business")
+- Filter and reframe signals for a working adult / professional audience
+- Avoid purely consumer/teen topics (those go in the Youth or Young Adult tracks)
+- Merge similar signals into a single coherent topic
 - Each topic should be specific enough for a focused course (not just "AI" or "machine learning")
-- Topics should be educational/literacy focused — things a general audience would take a course on
-- For each topic, list which signals it came from
-- PAY SPECIAL ATTENTION to signals about specific AI models (Claude, GPT-4, Gemini, Llama, Mistral, Copilot, DeepSeek, Perplexity, etc.) — these are high-demand gaps. Propose model-specific or model-comparison courses when you see them (e.g. "Choosing the Right AI Model", "Getting the Most from Claude", "Open-Source AI Models Explained", "AI Model Benchmarks Demystified").
+- PAY SPECIAL ATTENTION to signals about specific AI models (Claude, GPT-4, Gemini, Copilot, etc.) — propose model-specific or model-comparison courses framed for professional use (e.g. "Choosing the Right AI Model for Your Team", "Getting the Most from Claude at Work").
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
@@ -254,24 +268,30 @@ def generate_drafts(gaps):
     )
     existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
 
-    prompt = f"""You are a curriculum designer for AESOP AI Academy — a free AI literacy platform for students, educators, and curious adults.
+    prompt = f"""You are a curriculum designer for AESOP AI Academy — a free AI literacy platform.
 
-Generate {len(topics_to_draft)} course proposals for these topics that are UNDERREPRESENTED in our curriculum, based on real-world demand signals:
+Generate {len(topics_to_draft)} course proposals for the PROFESSIONAL track — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+). These topics are UNDERREPRESENTED in our curriculum based on real demand signals:
 
 {topic_details}
 
 Avoid duplicating these existing draft IDs/titles: {existing_note}
 
+DESIGN PRINCIPLES FOR PROFESSIONAL COURSES:
+- Tone: authoritative and direct — respect the learner's time and expertise
+- Each course should deliver tangible professional value: a skill, a decision framework, or a workflow improvement
+- Include at least one module where learners apply concepts to their own work context
+- Avoid condescending "AI 101" framing — assume professional intelligence, focus on AI-specific knowledge
+
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-in-healthcare")
 - "title": short, compelling course title (max 6 words)
 - "modules": array of 8 module names (each max 6 words) — design a full 8-module course
-- "synopsis": 2-sentence course description for a general audience
+- "synopsis": 2-sentence course description written for a professional audience
 - "tier": "Beginner", "Intermediate", or "Advanced"
-- "rationale": 1 sentence on why this gap matters for AI literacy, referencing the demand signals
+- "rationale": 1 sentence on why this gap matters for professional AI literacy, referencing the demand signals
 - "is_model_topic": true if the course is specifically about one or more named AI models or model selection/comparison
 
-For topics marked ⚑ MODEL TOPIC, design courses that help learners understand, choose, and use specific AI models effectively — these are extremely high-demand right now.
+For topics marked ⚑ MODEL TOPIC, design courses that help professionals understand, choose, and deploy specific AI models effectively in their work.
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
@@ -321,9 +341,12 @@ def save_drafts(drafts):
     saved = []
 
     for draft in drafts:
-        draft["generated"] = date_str
-        draft["status"] = "pending"
+        draft["generated"]        = date_str
+        draft["status"]           = "pending"
         draft["pipeline_version"] = "2.0"
+        draft["audience"]         = AUDIENCE   # "professional"
+        draft["age_range"]        = AGE_RANGE  # "25+"
+        draft["category"]         = CATEGORY   # "Professional"
 
         filename = f"{date_str}-{draft['id']}.json"
         filepath = DRAFTS_DIR / filename

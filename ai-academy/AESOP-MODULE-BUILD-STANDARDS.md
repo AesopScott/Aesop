@@ -1245,6 +1245,14 @@ Place a `<p class="lesson-question">` after the tagline in each lesson-hero. One
 - Lab chat panel with all required IDs
 - Page-nav to next destination
 
+### Course registration — DO NOT run reconcile_all.py locally
+
+**Never run `.github/scripts/reconcile_all.py` (or `--apply`) from a local Claude Code session.** The `register-courses.yml` GitHub Actions workflow runs it automatically on every push that touches `ai-academy/modules/**/*.html`. Running it locally creates uncommitted changes to `courses.html`, `course-registry.json`, `dashboard.html`, and `stats.json` that race with the GitHub Actions commit, causing recurring merge conflicts in GitHub Desktop.
+
+**The correct workflow:** write the module file → commit → push → GitHub Actions handles all registry/surface updates automatically.
+
+---
+
 ### Universal don'ts
 - No `max-width` on content sections, story scenes, quiz boxes, or lab chats
 - No standalone textarea write-in fields (all student writing through AI chat)

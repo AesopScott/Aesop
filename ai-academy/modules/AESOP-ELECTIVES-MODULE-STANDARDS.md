@@ -578,6 +578,14 @@ window.parent.postMessage({ type: '...', courseId: COURSE_ID, moduleId: MODULE_I
 
 ---
 
+## Course registration — DO NOT run reconcile_all.py locally
+
+**Never run `.github/scripts/reconcile_all.py` (or `--apply`) from a local Claude Code session.** The `register-courses.yml` GitHub Actions workflow runs it automatically on every push. Running it locally causes merge conflicts with `courses.html` and registry files.
+
+**Correct workflow:** write module → commit → push → GitHub Actions registers it automatically.
+
+---
+
 ## QA Checklist
 
 Before FTPing a module file:

@@ -107,20 +107,47 @@ LENS FOR YOUNG ADULTS (17-25):
 - First jobs — how AI is reshaping entry-level work
 - Building things without needing to code
 
-MODEL & TOOL PRIORITY (highest demand right now):
-We need MORE courses on specific AI products. Actively propose:
-- Named models: Claude, ChatGPT/GPT-4o, Gemini, Perplexity, Manus, DeepSeek, Grok, Copilot
-- Creative tools: Midjourney, DALL-E, Stable Diffusion, Runway, ElevenLabs, Suno
-- Productivity tools: NotionAI, Canva AI, GitHub Copilot
-- Model comparisons framed for personal use: "Claude vs ChatGPT: Which One for You?"
-These tool courses are SHORTER (5 modules) and highly actionable.
+MODEL & TOOL PRIORITY (highest demand for this age group):
+We need MORE courses on specific AI products framed for young adults. Actively propose from these lists if not already in the draft queue:
+
+CONVERSATIONAL AI (personal use framing):
+- Claude — Claude for Writing, Research, and Side Projects
+- ChatGPT / GPT-4o — ChatGPT for Students and Freelancers
+- Google Gemini — Gemini for College and Personal Productivity
+- Perplexity AI — Perplexity: AI Search for Real Life
+- DeepSeek — DeepSeek: Free Powerful AI for Everyone
+- Model comparisons: "Claude vs ChatGPT: Which One for You?"
+- Manus (Meta AI agent) — Manus: Let AI Do the Work for You
+
+CREATIVE & CONTENT AI TOOLS:
+- Midjourney, DALL-E, Stable Diffusion — AI Art for Creators
+- Suno, Udio — Making Music with AI
+- Runway, Pika — AI Video Creation
+- ElevenLabs — AI Voice and Audio Production
+- Canva AI, Adobe Firefly — AI Design for Creators
+
+PRODUCTIVITY & CAREER TOOLS:
+- NotionAI — Using NotionAI for Study and Projects
+- GitHub Copilot — AI Pair Programming for Beginners
+- Cursor — Building Apps with AI-Assisted Coding
+
+AGENTIC TOOLS (accessible entry points for 17-25):
+- Flowise — Build Your Own AI Workflows Visually
+- Dify — Create AI Apps Without Code
+- n8n — Automate Your Life with AI and n8n
+- AgentGPT — Deploy Your First AI Agent
+- CrewAI — Build AI Agent Teams (for technically curious)
+- OpenClaw — Personal AI Assistant on Your Own Machine
+  (NOTE: OpenClaw is already in catalog — only propose if a distinctly different angle)
+
+These tool-specific courses are SHORTER (5 modules) and highly actionable.
 
 RULES:
 - Framing must be for a 17–25 audience — not corporate, not childlike
 - Avoid purely enterprise/executive topics (those go in Professional track)
 - Avoid K-12-style topics (those go in Youth track)
 - Merge similar signals into a single coherent topic
-- Do NOT propose anything already in the draft queue listed above
+- Do NOT propose anything already in the draft queue or catalog listed above
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)

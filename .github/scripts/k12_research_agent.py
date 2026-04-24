@@ -105,14 +105,30 @@ RULES:
 - Include topics across: AI literacy, critical thinking about AI, creating with AI, AI ethics and safety, AI in everyday life, digital citizenship
 
 AI TOOL TOPICS FOR STUDENTS (high demand, age-appropriate):
-Kids and teens are ALREADY using these — they need structured literacy around them:
-- ChatGPT / AI chatbots in school (homework help, studying, what's OK vs. not)
-- AI art tools (Midjourney, DALL-E, Canva AI) — ages 11-16
-- AI music tools (Suno, Udio) — ages 11-16
-- Asking good questions to AI assistants — ages 8-13
-- What AI chatbots can and can't do — ages 8-13
+Kids and teens are ALREADY using these — they need structured AI literacy around them:
+
+Ages 8-10 (foundational, wonder-driven):
+- What AI chatbots actually are and how to talk to them
+- AI helpers at school: what they can and can't do
+- How AI art is made (simple, visual)
+
+Ages 11-13 (exploratory, questioning):
+- ChatGPT and AI assistants: a guide for middle schoolers
+- Using AI for homework: what's ok, what's cheating, what's smart
+- AI art tools (DALL-E, Canva AI, Adobe Firefly) — making and understanding
+- AI music tools (Suno, Udio) — creating and understanding
+- Spotting AI-generated content: images, text, video
+
+Ages 14-16 (analytical, applied):
+- Prompt engineering basics: getting more from any AI tool
+- AI coding assistants (GitHub Copilot, Cursor) — intro for teen coders
+- Comparing AI tools: ChatGPT vs Claude vs Gemini for teens
+- Building simple AI workflows without code (Flowise, Dify intro)
+- AI agents explained: what Manus, AutoGPT, and agents actually do
+- AI and your future career: what changes, what doesn't
+
 Propose these only if not already in the draft queue.
-- Do NOT propose anything already in the draft queue listed above
+- Do NOT propose anything already in the draft queue or catalog listed above
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)

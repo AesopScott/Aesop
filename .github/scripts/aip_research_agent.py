@@ -112,19 +112,54 @@ LENS FOR PROFESSIONALS (25+):
 - Enterprise AI integration and governance
 
 MODEL & TOOL PRIORITY (these are the highest-demand gaps right now):
-We need MORE courses on specific AI products and integration tools. Actively look for and propose:
-- Named AI models/assistants: Claude (Anthropic), ChatGPT/GPT-4o, Gemini, Perplexity, Manus,
-  Microsoft Copilot, DeepSeek, Grok, Llama, Mistral, NotionAI, HubSpot AI, Salesforce Einstein
-- AI integration/automation: Zapier AI, Make (Integromat), n8n, LangChain, OpenAI API, Claude API
-- AI in specific pro tools: GitHub Copilot, Figma AI, Canva AI, Adobe Firefly, Runway, ElevenLabs
-- Model comparison courses: "ChatGPT vs Claude vs Gemini for Business", "Choosing Your AI Stack"
+We need MORE courses on specific AI products, frameworks, and integration tools. Actively propose from these lists if not already in the draft queue:
+
+CONVERSATIONAL AI MODELS (professional framing):
+- Claude (Anthropic) — Getting the Most from Claude at Work
+- ChatGPT / GPT-4o — Mastering ChatGPT for Business
+- Google Gemini — Gemini for Google Workspace Professionals
+- Perplexity AI — Perplexity vs Search: A Professional Guide
+- Microsoft Copilot — Copilot for Microsoft 365
+- DeepSeek — DeepSeek for Cost-Effective AI Workloads
+- Grok (xAI) — Grok AI for Professionals
+- Model comparison — "Choosing Your AI Stack: Claude vs GPT vs Gemini"
+
+AGENTIC FRAMEWORKS (open-source, local-capable — HIGH DEMAND):
+Note: OpenClaw is already in our catalog. Focus on these gaps:
+- CrewAI — Building Multi-Agent Teams with CrewAI (247K stars, Fortune 500 adoption)
+- LangGraph — Stateful AI Agents with LangGraph
+- LangChain — LLM Application Development with LangChain
+- LlamaIndex — RAG and Agent Workflows with LlamaIndex
+- Haystack (deepset) — Production AI Pipelines with Haystack
+- MetaGPT — Autonomous Software Development with MetaGPT
+- Agent Zero — Sandboxed AI Automation with Agent Zero
+- Microsoft Semantic Kernel — Enterprise AI with Semantic Kernel
+- Microsoft Agent Framework (MAF) — Microsoft's successor to AutoGen
+
+VISUAL / NO-CODE AGENT BUILDERS:
+- Flowise — Visual AI Workflow Builder (acquired by Workday)
+- Dify — No-Code LLM App Development with Dify (138K stars)
+- n8n — AI Workflow Automation with n8n
+- AgentGPT — Browser-Based AI Agent Building
+
+CLOUD AGENT PRODUCTS:
+- Manus (Meta-owned) — Working with Manus: Autonomous AI Agents
+- OpenAI Agents SDK — Building Agents with OpenAI's Agents SDK
+
+PROFESSIONAL AI TOOLS:
+- Zapier AI, Make (Integromat) — connecting AI to business workflows
+- GitHub Copilot, Cursor — AI for Software Development Teams
+- Figma AI, Adobe Firefly — AI for Design Professionals
+- Runway, ElevenLabs — AI Video and Audio for Creators
+- NotionAI, HubSpot AI, Salesforce Einstein — AI in specific platforms
+
 These tool-specific courses are SHORTER (5 modules) and highly actionable.
 
 RULES:
 - Merge similar signals into a single coherent topic
 - Each topic should be specific enough for a focused course
 - Avoid purely consumer/teen topics (those go in the Youth or Young Adult tracks)
-- Do NOT propose anything already in the draft queue listed above
+- Do NOT propose anything already in the draft queue or catalog listed above
 
 Return a JSON array of 25 objects:
 - "topic": clear course-worthy topic name (3-8 words)
@@ -165,16 +200,25 @@ Return ONLY the JSON array. No preamble, no markdown fences."""
 def _fallback_topics():
     """Static fallback if all signal sources fail."""
     return [
-        {"topic": "Getting the Most from Claude",       "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9,  "is_model_topic": True},
-        {"topic": "Mastering ChatGPT for Work",         "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9,  "is_model_topic": True},
-        {"topic": "Gemini for Google Workspace",        "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
-        {"topic": "Perplexity vs Traditional Search",   "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
-        {"topic": "Manus: Autonomous AI Agents",        "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
-        {"topic": "Microsoft Copilot for Professionals","signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
-        {"topic": "Open-Source LLMs: Llama and Mistral","signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
-        {"topic": "AI Workflow Automation with Zapier", "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": False},
-        {"topic": "AI in Healthcare",                   "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": False},
-        {"topic": "AI for Small Business",              "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 6,  "is_model_topic": False},
+        # Conversational AI models
+        {"topic": "Getting the Most from Claude at Work",          "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9,  "is_model_topic": True},
+        {"topic": "Mastering ChatGPT for Business",                "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 9,  "is_model_topic": True},
+        {"topic": "Gemini for Google Workspace Professionals",     "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        {"topic": "Perplexity AI for Professional Research",       "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        {"topic": "Microsoft Copilot for Microsoft 365",           "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        # Agentic frameworks
+        {"topic": "Building Multi-Agent Teams with CrewAI",        "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
+        {"topic": "Stateful AI Agents with LangGraph",             "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "RAG and Agents with LlamaIndex",                "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "No-Code AI App Development with Dify",          "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "Visual AI Workflows with Flowise",              "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "Enterprise AI with Microsoft Semantic Kernel",  "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "Autonomous Agents with Manus",                  "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        # Integration tools
+        {"topic": "AI Workflow Automation with n8n",               "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": True},
+        {"topic": "AI Workflow Automation with Zapier",            "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 7,  "is_model_topic": False},
+        # General professional
+        {"topic": "Choosing Your AI Stack: Models and Tools",      "signals": ["fallback"], "signal_sources": ["static"], "demand_score": 8,  "is_model_topic": True},
     ]
 
 

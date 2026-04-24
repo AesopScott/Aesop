@@ -39,6 +39,11 @@ function graphPost(string $endpoint, array $body, int $accountId = 1): array {
     return httpRequest('POST', 'https://graph.microsoft.com/v1.0' . $endpoint, $body, $token);
 }
 
+function graphPatch(string $endpoint, array $body, int $accountId = 1): array {
+    $token = getValidAccessToken($accountId);
+    return httpRequest('PATCH', 'https://graph.microsoft.com/v1.0' . $endpoint, $body, $token);
+}
+
 function httpPost(string $url, array $fields): array {
     $ctx = stream_context_create([
         'http' => [

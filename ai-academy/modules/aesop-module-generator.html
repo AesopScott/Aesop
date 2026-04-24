@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-23 -->
+<!-- v1.0.3 | 2026-04-24 -->
 <!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
@@ -1872,71 +1872,10 @@ async function buildFullCourse() {
   }
 
   if (allSaved) {
-    showStatus('info', 'All ' + totalMods + ' modules built and saved! Activating course in courses.html...');
-    log('Auto-activating course link in courses.html...');
+    showStatus('success', 'All ' + totalMods + ' modules built and saved! Push to GitHub — activation happens automatically via GitHub Actions.');
+    log('All modules saved. Do NOT run local activation — push to GitHub and register-courses.yml handles courses.html, course-registry.json, and stats automatically.');
 
-    // Auto-trigger activation + registry write (noPrompt: can't show picker outside user gesture)
-    // If coursesFolderHandle is missing but repoFolderHandle is set (= modules/),
-    // try to recover by reading courses.html from the parent directory.
-    if (!coursesFolderHandle && repoFolderHandle) {
-      try {
-        // repoFolderHandle is ai-academy/modules/ — courses.html is in ai-academy/
-        // rootFolderHandle (set in setRepoFolder) should point to ai-academy/.
-        // Recover from it if available.
-        log('coursesFolderHandle lost — attempting recovery from rootFolderHandle...');
-        if (rootFolderHandle) {
-          // Verify we can still read from it
-          await rootFolderHandle.getFileHandle('courses.html');
-          coursesFolderHandle = rootFolderHandle;
-          log('Recovered coursesFolderHandle from rootFolderHandle');
-        }
-      } catch(e) {
-        log('Recovery failed: ' + e.message);
-      }
-    }
-    // ── Registry write: runs unconditionally — only needs repoFolderHandle,
-    // which is always present during a build. Decoupled from the courses.html
-    // activation so a missing coursesFolderHandle can't skip it.
-    if (repoFolderHandle) {
-      try {
-        await writeRegistryEntry(cid);
-        log('Registry entry written for ' + cid);
-      } catch(regErr) {
-        log('Registry write error: ' + regErr.message);
-      }
-    }
-
-    // ── courses.html activation: needs coursesFolderHandle (ai-academy/ dir).
-    // This handle is often unavailable during auto-activation (no user gesture),
-    // so failures here are expected and handled independently.
-    let activationOk = false;
-    try {
-      await updateCoursesFile({ noPrompt: true });
-      activationOk = true;
-    } catch(activateErr) {
-      log('courses.html activation error: ' + activateErr.message);
-      // Fall back to highlighting the button with URGENT messaging
-      const activateBtn = document.querySelector('#coursesUpdateCard .btn-set-folder');
-      if (activateBtn) {
-        activateBtn.style.background = 'var(--teal)';
-        activateBtn.style.color = '#fff';
-        activateBtn.style.boxShadow = '0 0 0 3px rgba(29,158,117,0.35)';
-        activateBtn.style.animation = 'pulse 1.5s ease-in-out infinite';
-      }
-      const card = document.getElementById('coursesUpdateCard');
-      if (card) card.style.border = '2px solid rgba(29,158,117,0.6)';
-      document.getElementById('coursesUpdateStatus').textContent =
-        '⚠️ AUTO-ACTIVATION FAILED — click this button NOW to activate. Course will NOT be live until activated.';
-      document.getElementById('coursesUpdateStatus').style.color = '#f59e0b';
-    }
-
-    // Post-activation audit + standards alignment update
-    if (repoFolderHandle) {
-      try { await runPostActivationAudit(cid); } catch(e) { log('Audit error: ' + e.message); }
-      try { await runPostActivationStandardsUpdate(cid); } catch(e) { log('Standards update error: ' + e.message); }
-    }
-
-    await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: true });
+    await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
   } else if (allSaved === false) {
     await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
   }

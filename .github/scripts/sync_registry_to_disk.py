@@ -46,7 +46,7 @@ REPO        = Path(__file__).resolve().parents[2]
 MODULES_DIR = REPO / "ai-academy" / "modules"
 REGISTRY    = MODULES_DIR / "course-registry.json"
 
-# Rotating pool used by add_course.py for new-course icons.
+# Rotating pool used for new-course icons (inherited from legacy add_course.py).
 ICON_POOL = ["🧩", "🌐", "💡", "🔬", "📊", "🚀", "🎯", "⚙️", "🔭", "🖥️",
              "🤝", "🎨", "💼", "📡", "🛡️", "🧠", "⚡", "🔮"]
 

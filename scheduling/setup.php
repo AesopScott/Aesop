@@ -9,7 +9,7 @@ $params = http_build_query([
     'client_id'     => AZURE_CLIENT_ID,
     'response_type' => 'code',
     'redirect_uri'  => AZURE_REDIRECT_URI,
-    'scope'         => 'Calendars.ReadWrite offline_access',
+    'scope'         => 'Calendars.ReadWrite OnlineMeetings.ReadWrite offline_access',
     'response_mode' => 'query',
     'prompt'        => 'consent',
 ]);

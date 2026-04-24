@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 13:36 UTC
+**Generated:** 2026-04-24 20:11 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 531 · **Warnings:** 887
+**Errors:** 526 · **Warnings:** 937
 
 ---
 
@@ -16,7 +16,7 @@
 
 ## Course Registry
 
-### Errors (453)
+### Errors (452)
 
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -66,7 +66,6 @@
 - 🔴 **MISSING_MODULE**: Registry module file `am-3-m6.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-3-m7.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-3-m8.html` missing from ``
-- 🔴 **MISSING_DIR**: Registry course `how_large_language_models_work` references `/ai-academy/modules/how_large_language_models_work/` which does not exist
 - 🔴 **MISSING_MODULE**: Registry module file `am-6-m1.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-6-m2.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-6-m3.html` missing from ``
@@ -475,18 +474,22 @@
 
 ## Cross-References
 
-### Errors (22)
+### Errors (26)
 
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `applied` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `code` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `coded` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `computer` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `conversational` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `creating` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `deploying` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `evaluation` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `explainable` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `funding` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `gpt` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `how` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `how_large_language_models_work` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `make` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `photography` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `prompt` is linked in courses.html but not defined in electives-hub or registry
@@ -503,7 +506,7 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (56)
+### Errors (48)
 
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
@@ -553,14 +556,6 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m8.html`
 
 ### Warnings (420)
 
@@ -988,7 +983,7 @@
 
 ## Module File Integrity
 
-### Warnings (467)
+### Warnings (517)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1092,6 +1087,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-job-hunting-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m3.html` has no COURSE_ID constant
@@ -1176,6 +1179,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-security-and-red-teaming-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-security-and-red-teaming-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-security-and-red-teaming-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-side-hustle-money-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m3.html` has no COURSE_ID constant
@@ -1284,6 +1295,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `computer-vision-in-daily-life-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m3.html` has no COURSE_ID constant
@@ -1295,6 +1314,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `creating-with-ai-tools-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `creating-with-ai-tools-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `deploying-and-monitoring-ai-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m2.html` has no COURSE_ID constant
@@ -1304,6 +1331,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `explainable-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `explainable-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `explainable-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `explainable-ai-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `funding-and-pitching-ai-ventures-m1.html` has no COURSE_ID constant
@@ -1430,6 +1461,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m1.html` has no COURSE_ID constant
@@ -1440,6 +1477,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `vertex-ai-data-agents-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m3.html` has no COURSE_ID constant
@@ -1462,7 +1507,7 @@
 
 ## Summary
 
-**531 error(s) require attention:**
+**526 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1512,7 +1557,6 @@
 1. Registry module file `am-3-m6.html` missing from ``
 1. Registry module file `am-3-m7.html` missing from ``
 1. Registry module file `am-3-m8.html` missing from ``
-1. Registry course `how_large_language_models_work` references `/ai-academy/modules/how_large_language_models_work/` which does not exist
 1. Registry module file `am-6-m1.html` missing from ``
 1. Registry module file `am-6-m2.html` missing from ``
 1. Registry module file `am-6-m3.html` missing from ``
@@ -1921,12 +1965,16 @@
 1. Course `applied` is linked in courses.html but not defined in electives-hub or registry
 1. Course `code` is linked in courses.html but not defined in electives-hub or registry
 1. Course `coded` is linked in courses.html but not defined in electives-hub or registry
+1. Course `computer` is linked in courses.html but not defined in electives-hub or registry
 1. Course `conversational` is linked in courses.html but not defined in electives-hub or registry
 1. Course `creating` is linked in courses.html but not defined in electives-hub or registry
+1. Course `deploying` is linked in courses.html but not defined in electives-hub or registry
 1. Course `evaluation` is linked in courses.html but not defined in electives-hub or registry
+1. Course `explainable` is linked in courses.html but not defined in electives-hub or registry
 1. Course `funding` is linked in courses.html but not defined in electives-hub or registry
 1. Course `gpt` is linked in courses.html but not defined in electives-hub or registry
 1. Course `how` is linked in courses.html but not defined in electives-hub or registry
+1. Course `how_large_language_models_work` is linked in courses.html but not defined in electives-hub or registry
 1. Course `make` is linked in courses.html but not defined in electives-hub or registry
 1. Course `photography` is linked in courses.html but not defined in electives-hub or registry
 1. Course `prompt` is linked in courses.html but not defined in electives-hub or registry
@@ -1987,11 +2035,3 @@
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m8.html`

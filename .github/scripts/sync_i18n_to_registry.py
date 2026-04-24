@@ -88,7 +88,7 @@ def main() -> None:
 
         print(f"  {f.name}: adding {len(missing)} missing keys")
         for t in missing:
-            data[t] = t   # English placeholder — matches add_course.py convention
+            data[t] = t   # English placeholder — translators replace with real localisation
 
         if args.apply:
             f.write_text(

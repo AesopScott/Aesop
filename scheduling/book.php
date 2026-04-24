@@ -91,6 +91,25 @@ logBooking(
 $joinUrl = $result['onlineMeeting']['joinUrl'] ?? null;
 $friendly = (new DateTime('@' . $ts))->setTimezone($ownerTz)->format('l, F j \a\t g:ia T');
 
+// Notify Scott of the new booking
+$notifyBody  = "New meeting booked:\n\n";
+$notifyBody .= "Name:  $name\n";
+$notifyBody .= "Email: $email\n";
+$notifyBody .= "Time:  $friendly\n";
+if ($note)    $notifyBody .= "Note:  $note\n";
+if ($joinUrl) $notifyBody .= "\nJoin: $joinUrl\n";
+
+graphPost('/me/sendMail', [
+    'message' => [
+        'subject' => "New booking: $name — $friendly",
+        'body'    => ['contentType' => 'text', 'content' => $notifyBody],
+        'toRecipients' => [[
+            'emailAddress' => ['address' => OWNER_EMAIL, 'name' => OWNER_NAME],
+        ]],
+    ],
+    'saveToSentItems' => false,
+]);
+
 echo json_encode([
     'success'  => true,
     'time'     => $friendly,

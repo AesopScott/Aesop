@@ -2,7 +2,7 @@
 """
 notify_registration.py — Email notification after course auto-registration.
 
-Reads aip/registration-report.json (written by add_course.py) and
+Reads aip/registration-report.json (written by reconcile_all.py) and
 aip/audit-report.md (written by audit_courses.py), then sends a summary
 email to the configured recipient.
 

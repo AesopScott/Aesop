@@ -7,9 +7,8 @@ aip/audit-report.md (written by audit_courses.py), then sends a summary
 email to the configured recipient.
 
 Required environment variables:
-  NOTIFY_EMAIL_USER   Sender Gmail address (e.g. bot@aesopacademy.org)
-  NOTIFY_EMAIL_PASS   Gmail App Password for that account
-  NOTIFY_EMAIL_TO     Recipient address (default: ravenshroud@gmail.com)
+  BREVO_SMTP_KEY   Brevo SMTP key (from app.brevo.com → SMTP & API → SMTP tab)
+  NOTIFY_EMAIL_TO  Recipient address (default: ravenshroud@gmail.com)
 
 Usage:
     python .github/scripts/notify_registration.py
@@ -28,8 +27,11 @@ REPORT_JSON = REPO / "aip" / "registration-report.json"
 AUDIT_MD    = REPO / "aip" / "audit-report.md"
 SITE_BASE   = "https://aesopacademy.org"
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 465
+SMTP_HOST   = "smtp-relay.brevo.com"
+SMTP_PORT   = 587
+SMTP_USER   = "a78a3c001@smtp-brevo.com"
+FROM_NAME   = "AESOP AI Academy"
+FROM_ADDR   = "noreply@aesopacademy.org"
 
 
 def load_report() -> dict:
@@ -143,26 +145,27 @@ def build_html(courses: list[dict], audit_summary: str) -> str:
 
 
 def send_email(subject: str, html_body: str, text_body: str) -> None:
-    user    = os.environ.get("NOTIFY_EMAIL_USER")
-    passwd  = os.environ.get("NOTIFY_EMAIL_PASS")
-    to_addr = os.environ.get("NOTIFY_EMAIL_TO", "ravenshroud@gmail.com")
+    smtp_key = os.environ.get("BREVO_SMTP_KEY")
+    to_addr  = os.environ.get("NOTIFY_EMAIL_TO", "ravenshroud@gmail.com")
 
-    if not user or not passwd:
-        print("NOTIFY_EMAIL_USER / NOTIFY_EMAIL_PASS not set — skipping email.")
+    if not smtp_key:
+        print("BREVO_SMTP_KEY not set — skipping email.")
         sys.exit(0)
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"]    = f"AESOP Bot <{user}>"
+    msg["From"]    = f"{FROM_NAME} <{FROM_ADDR}>"
     msg["To"]      = to_addr
     msg.attach(MIMEText(text_body, "plain"))
     msg.attach(MIMEText(html_body, "html"))
 
-    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-        server.login(user, passwd)
-        server.sendmail(user, to_addr, msg.as_string())
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(SMTP_USER, smtp_key)
+        server.sendmail(FROM_ADDR, to_addr, msg.as_string())
 
-    print(f"  ✓ Notification sent to {to_addr}")
+    print(f"  ✓ Notification sent via Brevo to {to_addr}")
 
 
 def main() -> None:

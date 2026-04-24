@@ -1,0 +1,115 @@
+name: Self-Heal Failed Workflows
+
+on:
+  workflow_run:
+    workflows:
+      - "Register Unregistered Courses"
+      - "Auto-Activate Courses"
+      - "Update Stats"
+      - "AIP Autopatch"
+      - "AIP Generate"
+      - "K12 Autopatch"
+      - "K12 Research"
+      - "Index Corpus"
+      - "Truncation Repair"
+      - "Backup Firebase"
+    types: [completed]
+
+concurrency:
+  group: self-heal-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  heal:
+    # Only run when the triggering workflow actually failed
+    if: github.event.workflow_run.conclusion == 'failure'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AIP_COMMIT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Determine repair attempt number
+        id: attempt
+        env:
+          GH_TOKEN: ${{ secrets.AIP_COMMIT_TOKEN }}
+        run: |
+          # Count how many self-heal commits already exist for this workflow
+          WORKFLOW_FILE="${{ github.event.workflow_run.path }}"
+          WORKFLOW_FILE="${WORKFLOW_FILE##*/}"
+          COUNT=$(git log --oneline --grep="self-heal" -n 10 | wc -l | tr -d ' ')
+          ATTEMPT=$((COUNT + 1))
+          echo "attempt=$ATTEMPT" >> $GITHUB_OUTPUT
+          echo "workflow_file=$WORKFLOW_FILE" >> $GITHUB_OUTPUT
+
+      - name: Run self-heal agent
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AIP_COMMIT_TOKEN:  ${{ secrets.AIP_COMMIT_TOKEN }}
+          GH_TOKEN:          ${{ secrets.AIP_COMMIT_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python .github/scripts/self_heal.py \
+            --run-id "${{ github.event.workflow_run.id }}" \
+            --workflow-file "${{ steps.attempt.outputs.workflow_file }}" \
+            --attempt "${{ steps.attempt.outputs.attempt }}"
+
+      - name: Send failure notification if unfixable
+        if: always()
+        env:
+          BREVO_SMTP_KEY:  ${{ secrets.BREVO_SMTP_KEY }}
+          NOTIFY_EMAIL_TO: ${{ secrets.NOTIFY_EMAIL_TO }}
+        run: |
+          # Only email if self-heal wrote an unfixable report
+          if [ -f "aip/self-heal-report.json" ]; then
+            python - <<'EOF'
+import json, os, smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+report = json.loads(open("aip/self-heal-report.json").read())
+key    = os.environ.get("BREVO_SMTP_KEY")
+to     = os.environ.get("NOTIFY_EMAIL_TO", "ravenshroud@gmail.com")
+
+if not key:
+    print("No BREVO_SMTP_KEY — skipping notification.")
+    exit()
+
+subject = f"[AESOP] ⚠️ Workflow repair failed: {report['workflow']}"
+body = f"""Self-heal could not automatically repair a failed workflow.
+
+Workflow:  {report['workflow']}
+Run ID:    {report['run_id']}
+Attempts:  {report['attempt']}
+Diagnosis: {report['diagnosis']}
+Reason:    {report['reason']}
+
+Manual intervention required.
+View the failed run: https://github.com/{os.environ.get('GITHUB_REPOSITORY','AesopScott/Aesop')}/actions/runs/{report['run_id']}
+"""
+
+msg = MIMEMultipart("alternative")
+msg["Subject"] = subject
+msg["From"]    = "AESOP AI Academy <noreply@aesopacademy.org>"
+msg["To"]      = to
+msg.attach(MIMEText(body, "plain"))
+
+with smtplib.SMTP("smtp-relay.brevo.com", 587) as s:
+    s.ehlo(); s.starttls()
+    s.login("a78a3c001@smtp-brevo.com", key)
+    s.sendmail("noreply@aesopacademy.org", to, msg.as_string())
+
+print(f"Unfixable notification sent to {to}")
+EOF
+          fi

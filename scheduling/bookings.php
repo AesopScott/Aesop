@@ -16,21 +16,36 @@ $stmt = getDB()->query(
 );
 $rows = $stmt->fetchAll();
 
-// Fetch Teams join URLs from Graph for each booking
+// Fetch Teams join URLs — patch to add Teams if missing
 foreach ($rows as &$r) {
     $r['join_url']  = null;
     $r['graph_err'] = null;
-    if ($r['outlook_event_id']) {
-        $eid = rawurlencode($r['outlook_event_id']);
-        $ev  = graphGet('/me/events/' . $eid . '?$select=onlineMeeting,onlineMeetingUrl,isOnlineMeeting');
-        if (isset($ev['error'])) {
-            $r['graph_err'] = $ev['error']['code'] . ': ' . $ev['error']['message'];
+    if (!$r['outlook_event_id']) continue;
+
+    $eid = rawurlencode($r['outlook_event_id']);
+    $ev  = graphGet('/me/events/' . $eid . '?$select=onlineMeeting,onlineMeetingUrl,isOnlineMeeting');
+
+    if (isset($ev['error'])) {
+        $r['graph_err'] = $ev['error']['code'] . ': ' . $ev['error']['message'];
+        continue;
+    }
+
+    $joinUrl = $ev['onlineMeeting']['joinUrl'] ?? $ev['onlineMeetingUrl'] ?? null;
+
+    // If no Teams link yet, patch the event to add one
+    if (!$joinUrl) {
+        $patch = graphPatch('/me/events/' . $eid, [
+            'isOnlineMeeting'       => true,
+            'onlineMeetingProvider' => 'teamsForBusiness',
+        ]);
+        if (isset($patch['error'])) {
+            $r['graph_err'] = 'patch: ' . $patch['error']['code'] . ': ' . $patch['error']['message'];
         } else {
-            $r['join_url'] = $ev['onlineMeeting']['joinUrl']
-                          ?? $ev['onlineMeetingUrl']
-                          ?? null;
+            $joinUrl = $patch['onlineMeeting']['joinUrl'] ?? $patch['onlineMeetingUrl'] ?? null;
         }
     }
+
+    $r['join_url'] = $joinUrl;
 }
 unset($r);
 

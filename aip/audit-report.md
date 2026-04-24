@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 20:43 UTC
+**Generated:** 2026-04-24 23:56 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 526 · **Warnings:** 937
+**Errors:** 526 · **Warnings:** 953
 
 ---
 
@@ -983,7 +983,7 @@
 
 ## Module File Integrity
 
-### Warnings (517)
+### Warnings (533)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1416,6 +1416,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `security-auditing-ai-generated-code-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `security-auditing-ai-generated-code-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `security-auditing-ai-generated-code-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `synthetic-data-and-self-improvement-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `synthetic-data-and-self-improvement-m2.html` has no COURSE_ID constant
@@ -1461,6 +1469,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-hardware-race-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m3.html` has no COURSE_ID constant

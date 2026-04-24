@@ -21,7 +21,7 @@ $data = httpPost(
         'code'          => $_GET['code'],
         'redirect_uri'  => AZURE_REDIRECT_URI,
         'grant_type'    => 'authorization_code',
-        'scope'         => $accountId === 1 ? 'Calendars.ReadWrite OnlineMeetings.ReadWrite offline_access' : 'Calendars.Read offline_access',
+        'scope'         => $accountId === 1 ? 'Calendars.ReadWrite OnlineMeetings.ReadWrite Mail.Send offline_access' : 'Calendars.Read offline_access',
     ]
 );
 

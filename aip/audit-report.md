@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 05:31 UTC
+**Generated:** 2026-04-24 06:14 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 388 · **Warnings:** 731
+**Errors:** 439 · **Warnings:** 837
 
 ---
 
@@ -16,7 +16,7 @@
 
 ## Course Registry
 
-### Errors (317)
+### Errors (419)
 
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -50,12 +50,12 @@
 - 🔴 **MISSING_MODULE**: Registry module file `building-m6.html` missing from `/ai-academy/modules/building-with-ai/`
 - 🔴 **MISSING_MODULE**: Registry module file `building-m7.html` missing from `/ai-academy/modules/building-with-ai/`
 - 🔴 **MISSING_MODULE**: Registry module file `building-m8.html` missing from `/ai-academy/modules/building-with-ai/`
-- 🔴 **MISSING_MODULE**: Registry module file `cp18-m1.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `cp18-m2.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `cp18-m3.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `cp18-m4.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `cp18-m5.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `cp18-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `cp6-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `cp6-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `cp6-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `cp6-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `cp6-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `cp6-m6.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-2-m1.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-2-m2.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `am-2-m3.html` missing from ``
@@ -129,14 +129,6 @@
 - 🔴 **MISSING_MODULE**: Registry module file `ap-8-m6.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ap-8-m7.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ap-8-m8.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m1.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m2.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m3.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m4.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m5.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m6.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m7.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ap-9-m8.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-2-m1.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-2-m2.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-2-m3.html` missing from ``
@@ -273,81 +265,194 @@
 - 🔴 **MISSING_MODULE**: Registry module file `dv-12-m6.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `dv-12-m7.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `dv-12-m8.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m1.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m2.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m3.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m4.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m5.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m6.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m7.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-18-m8.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m1.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m2.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m3.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m4.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m5.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m6.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m7.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m8.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m9.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m10.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m11.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m12.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m13.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m14.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m15.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m16.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m17.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m18.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m19.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m20.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m21.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m22.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m23.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m24.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m25.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m26.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m27.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m28.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m29.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m30.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m31.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m32.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m33.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m34.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m35.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m36.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m37.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m38.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m39.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m40.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m41.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m42.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m43.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m44.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m45.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m46.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m47.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m48.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m49.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m50.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m51.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m52.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m53.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `dv-27-m54.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-bias-and-fairness-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-bias-and-fairness-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-bias-and-fairness-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-bias-and-fairness-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-bias-and-fairness-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-bias-and-fairness-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-privacy-and-security-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-privacy-and-security-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-privacy-and-security-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-privacy-and-security-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-future-of-work-ai-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-future-of-work-ai-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-future-of-work-ai-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-future-of-work-ai-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-in-journalism-and-media-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-tools-for-small-business-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-computer-vision-in-daily-life-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-explainable-ai-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-explainable-ai-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-explainable-ai-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-explainable-ai-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-and-fake-information-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-and-fake-information-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-and-fake-information-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-and-fake-information-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-and-fake-information-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-and-fake-information-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-coded-unfair-ai-bias-exposed-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-coded-unfair-ai-bias-exposed-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-coded-unfair-ai-bias-exposed-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-coded-unfair-ai-bias-exposed-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-coded-unfair-ai-bias-exposed-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-coded-unfair-ai-bias-exposed-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-creating-with-ai-tools-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-creating-with-ai-tools-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-creating-with-ai-tools-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-creating-with-ai-tools-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-creating-with-ai-tools-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-creating-with-ai-tools-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-how-ai-actually-works-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-how-ai-actually-works-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-how-ai-actually-works-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-how-ai-actually-works-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-how-ai-actually-works-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-how-ai-actually-works-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-make-it-yours-creating-with-ai-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-make-it-yours-creating-with-ai-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-make-it-yours-creating-with-ai-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-make-it-yours-creating-with-ai-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-make-it-yours-creating-with-ai-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-make-it-yours-creating-with-ai-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-robot-speak-talk-to-ai-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-robot-speak-talk-to-ai-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-robot-speak-talk-to-ai-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-robot-speak-talk-to-ai-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-robot-speak-talk-to-ai-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-robot-speak-talk-to-ai-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-talking-to-ai-prompt-writing-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-talking-to-ai-prompt-writing-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-talking-to-ai-prompt-writing-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-talking-to-ai-prompt-writing-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-talking-to-ai-prompt-writing-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-talking-to-ai-prompt-writing-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-truth-detectives-ai-and-fake-info-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-truth-detectives-ai-and-fake-info-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-truth-detectives-ai-and-fake-info-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-truth-detectives-ai-and-fake-info-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-truth-detectives-ai-and-fake-info-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-truth-detectives-ai-and-fake-info-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-whats-really-inside-ai-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-whats-really-inside-ai-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-whats-really-inside-ai-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-whats-really-inside-ai-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-whats-really-inside-ai-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-whats-really-inside-ai-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-accessibility-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-accessibility-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-accessibility-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-accessibility-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-data-literacy-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-data-literacy-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-data-literacy-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-data-literacy-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-work-and-automation-realities-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-ethics-foundations-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-decision-making-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-decision-making-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-decision-making-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-decision-making-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-governance-regulation-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-governance-regulation-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-governance-regulation-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-governance-regulation-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-music-and-audio-generation-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-for-everyone-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-basics-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m5.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m6.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m7.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-ai-safety-and-alignment-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-deepfakes-and-synthetic-media-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-deepfakes-and-synthetic-media-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-deepfakes-and-synthetic-media-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-deepfakes-and-synthetic-media-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-human-ai-interaction-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-human-ai-interaction-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-human-ai-interaction-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-human-ai-interaction-m4.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-sustainable-ai-m1.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-sustainable-ai-m2.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-sustainable-ai-m3.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `aip-sustainable-ai-m4.html` missing from ``
 
 
 ## Cross-References
 
-### Errors (15)
+### Errors (20)
 
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `applied` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `code` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `coded` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `conversational` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `evaluation` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `funding` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `gpt` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `how` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `make` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `photography` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `rag` is linked in courses.html but not defined in electives-hub or registry
@@ -355,80 +460,187 @@
 - 🔴 **ORPHAN_LINK**: Course `security` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `synthetic` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `the` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `vertex` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `whats` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `working` is linked in courses.html but not defined in electives-hub or registry
 
 
 ## Live Site (aesopacademy.org)
 
-### Errors (56)
+### Warnings (386)
 
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m1.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m2.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m4.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m5.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m6.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m7.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m8.html`
-
-### Warnings (292)
-
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-and-climate/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-in-society/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-agents-vertex-ai/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-with-ai/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/how-large-language-models-work/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/the-context-window-race/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/the-future-of-intelligence/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/vertex-ai-data-agents/`
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-accessibility-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-accessibility-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-accessibility-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-accessibility-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-and-fake-information-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-and-fake-information-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-and-fake-information-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-and-fake-information-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-and-fake-information-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-and-fake-information-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-bias-and-fairness-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-bias-and-fairness-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-bias-and-fairness-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-bias-and-fairness-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-bias-and-fairness-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-bias-and-fairness-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-data-literacy-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-data-literacy-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-data-literacy-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-data-literacy-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-decision-making-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-decision-making-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-decision-making-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-decision-making-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-ethics-foundations-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-governance-regulation-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-governance-regulation-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-governance-regulation-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-governance-regulation-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-in-journalism-and-media-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-music-and-audio-generation-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-privacy-and-security-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-privacy-and-security-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-privacy-and-security-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-privacy-and-security-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-basics-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-and-alignment-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-safety-for-everyone-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-tools-for-small-business-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-work-and-automation-realities-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-coded-unfair-ai-bias-exposed-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-coded-unfair-ai-bias-exposed-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-coded-unfair-ai-bias-exposed-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-coded-unfair-ai-bias-exposed-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-coded-unfair-ai-bias-exposed-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-coded-unfair-ai-bias-exposed-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m7.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-computer-vision-in-daily-life-m8.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-creating-with-ai-tools-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-creating-with-ai-tools-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-creating-with-ai-tools-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-creating-with-ai-tools-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-creating-with-ai-tools-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-creating-with-ai-tools-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-deepfakes-and-synthetic-media-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-deepfakes-and-synthetic-media-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-deepfakes-and-synthetic-media-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-deepfakes-and-synthetic-media-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-explainable-ai-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-explainable-ai-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-explainable-ai-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-explainable-ai-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-future-of-work-ai-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-future-of-work-ai-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-future-of-work-ai-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-future-of-work-ai-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-how-ai-actually-works-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-how-ai-actually-works-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-how-ai-actually-works-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-how-ai-actually-works-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-how-ai-actually-works-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-how-ai-actually-works-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-human-ai-interaction-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-human-ai-interaction-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-human-ai-interaction-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-human-ai-interaction-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-make-it-yours-creating-with-ai-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-make-it-yours-creating-with-ai-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-make-it-yours-creating-with-ai-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-make-it-yours-creating-with-ai-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-make-it-yours-creating-with-ai-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-make-it-yours-creating-with-ai-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-robot-speak-talk-to-ai-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-robot-speak-talk-to-ai-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-robot-speak-talk-to-ai-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-robot-speak-talk-to-ai-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-robot-speak-talk-to-ai-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-robot-speak-talk-to-ai-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-sustainable-ai-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-sustainable-ai-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-sustainable-ai-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-sustainable-ai-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-talking-to-ai-prompt-writing-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-talking-to-ai-prompt-writing-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-talking-to-ai-prompt-writing-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-talking-to-ai-prompt-writing-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-talking-to-ai-prompt-writing-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-talking-to-ai-prompt-writing-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-truth-detectives-ai-and-fake-info-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-truth-detectives-ai-and-fake-info-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-truth-detectives-ai-and-fake-info-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-truth-detectives-ai-and-fake-info-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-truth-detectives-ai-and-fake-info-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-truth-detectives-ai-and-fake-info-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-whats-really-inside-ai-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-whats-really-inside-ai-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-whats-really-inside-ai-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-whats-really-inside-ai-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-whats-really-inside-ai-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-whats-really-inside-ai-m6.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgam-2-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgam-2-m2.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgam-2-m3.html` — <urlopen error [Errno -2] Name or service not known>
@@ -501,14 +713,6 @@
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-8-m6.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-8-m7.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-8-m8.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m1.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m2.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m3.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m4.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m5.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m6.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m7.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-9-m8.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m2.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m3.html` — <urlopen error [Errno -2] Name or service not known>
@@ -613,12 +817,12 @@
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgbu-9-m6.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgbu-9-m7.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgbu-9-m8.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp18-m1.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp18-m2.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp18-m3.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp18-m4.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp18-m5.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp18-m6.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp6-m1.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp6-m2.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp6-m3.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp6-m4.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp6-m5.html` — <urlopen error [Errno -2] Name or service not known>
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgcp6-m6.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-11-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-11-m2.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-11-m3.html` — <urlopen error [Errno -2] Name or service not known>
@@ -635,68 +839,6 @@
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-12-m6.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-12-m7.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-12-m8.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m1.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m2.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m3.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m4.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m5.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m6.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m7.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-18-m8.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m1.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m10.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m11.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m12.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m13.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m14.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m15.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m16.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m17.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m18.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m19.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m2.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m20.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m21.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m22.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m23.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m24.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m25.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m26.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m27.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m28.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m29.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m3.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m30.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m31.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m32.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m33.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m34.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m35.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m36.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m37.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m38.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m39.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m4.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m40.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m41.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m42.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m43.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m44.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m45.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m46.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m47.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m48.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m49.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m5.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m50.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m51.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m52.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m53.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m54.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m6.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m7.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m8.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-27-m9.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-6-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-6-m2.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgdv-6-m3.html` — <urlopen error [Errno -2] Name or service not known>
@@ -717,7 +859,7 @@
 
 ## Module File Integrity
 
-### Warnings (439)
+### Warnings (451)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -750,6 +892,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-education-m9.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-fake-information-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-fake-information-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-fake-information-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-fake-information-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-fake-information-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-fake-information-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-finance-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-finance-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-media-m1.html` has no COURSE_ID constant
@@ -1003,6 +1149,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `code-audit-workflows-team-standards-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `code-audit-workflows-team-standards-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `code-audit-workflows-team-standards-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `coded-unfair-ai-bias-exposed-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `conversational-ai-chatbots-m3.html` has no COURSE_ID constant
@@ -1048,6 +1198,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `m1-advanced-v18.5-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `m2-advanced-v4-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
@@ -1163,7 +1317,7 @@
 
 ## Summary
 
-**388 error(s) require attention:**
+**439 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1197,12 +1351,12 @@
 1. Registry module file `building-m6.html` missing from `/ai-academy/modules/building-with-ai/`
 1. Registry module file `building-m7.html` missing from `/ai-academy/modules/building-with-ai/`
 1. Registry module file `building-m8.html` missing from `/ai-academy/modules/building-with-ai/`
-1. Registry module file `cp18-m1.html` missing from ``
-1. Registry module file `cp18-m2.html` missing from ``
-1. Registry module file `cp18-m3.html` missing from ``
-1. Registry module file `cp18-m4.html` missing from ``
-1. Registry module file `cp18-m5.html` missing from ``
-1. Registry module file `cp18-m6.html` missing from ``
+1. Registry module file `cp6-m1.html` missing from ``
+1. Registry module file `cp6-m2.html` missing from ``
+1. Registry module file `cp6-m3.html` missing from ``
+1. Registry module file `cp6-m4.html` missing from ``
+1. Registry module file `cp6-m5.html` missing from ``
+1. Registry module file `cp6-m6.html` missing from ``
 1. Registry module file `am-2-m1.html` missing from ``
 1. Registry module file `am-2-m2.html` missing from ``
 1. Registry module file `am-2-m3.html` missing from ``
@@ -1276,14 +1430,6 @@
 1. Registry module file `ap-8-m6.html` missing from ``
 1. Registry module file `ap-8-m7.html` missing from ``
 1. Registry module file `ap-8-m8.html` missing from ``
-1. Registry module file `ap-9-m1.html` missing from ``
-1. Registry module file `ap-9-m2.html` missing from ``
-1. Registry module file `ap-9-m3.html` missing from ``
-1. Registry module file `ap-9-m4.html` missing from ``
-1. Registry module file `ap-9-m5.html` missing from ``
-1. Registry module file `ap-9-m6.html` missing from ``
-1. Registry module file `ap-9-m7.html` missing from ``
-1. Registry module file `ap-9-m8.html` missing from ``
 1. Registry module file `ar-2-m1.html` missing from ``
 1. Registry module file `ar-2-m2.html` missing from ``
 1. Registry module file `ar-2-m3.html` missing from ``
@@ -1420,75 +1566,188 @@
 1. Registry module file `dv-12-m6.html` missing from ``
 1. Registry module file `dv-12-m7.html` missing from ``
 1. Registry module file `dv-12-m8.html` missing from ``
-1. Registry module file `dv-18-m1.html` missing from ``
-1. Registry module file `dv-18-m2.html` missing from ``
-1. Registry module file `dv-18-m3.html` missing from ``
-1. Registry module file `dv-18-m4.html` missing from ``
-1. Registry module file `dv-18-m5.html` missing from ``
-1. Registry module file `dv-18-m6.html` missing from ``
-1. Registry module file `dv-18-m7.html` missing from ``
-1. Registry module file `dv-18-m8.html` missing from ``
-1. Registry module file `dv-27-m1.html` missing from ``
-1. Registry module file `dv-27-m2.html` missing from ``
-1. Registry module file `dv-27-m3.html` missing from ``
-1. Registry module file `dv-27-m4.html` missing from ``
-1. Registry module file `dv-27-m5.html` missing from ``
-1. Registry module file `dv-27-m6.html` missing from ``
-1. Registry module file `dv-27-m7.html` missing from ``
-1. Registry module file `dv-27-m8.html` missing from ``
-1. Registry module file `dv-27-m9.html` missing from ``
-1. Registry module file `dv-27-m10.html` missing from ``
-1. Registry module file `dv-27-m11.html` missing from ``
-1. Registry module file `dv-27-m12.html` missing from ``
-1. Registry module file `dv-27-m13.html` missing from ``
-1. Registry module file `dv-27-m14.html` missing from ``
-1. Registry module file `dv-27-m15.html` missing from ``
-1. Registry module file `dv-27-m16.html` missing from ``
-1. Registry module file `dv-27-m17.html` missing from ``
-1. Registry module file `dv-27-m18.html` missing from ``
-1. Registry module file `dv-27-m19.html` missing from ``
-1. Registry module file `dv-27-m20.html` missing from ``
-1. Registry module file `dv-27-m21.html` missing from ``
-1. Registry module file `dv-27-m22.html` missing from ``
-1. Registry module file `dv-27-m23.html` missing from ``
-1. Registry module file `dv-27-m24.html` missing from ``
-1. Registry module file `dv-27-m25.html` missing from ``
-1. Registry module file `dv-27-m26.html` missing from ``
-1. Registry module file `dv-27-m27.html` missing from ``
-1. Registry module file `dv-27-m28.html` missing from ``
-1. Registry module file `dv-27-m29.html` missing from ``
-1. Registry module file `dv-27-m30.html` missing from ``
-1. Registry module file `dv-27-m31.html` missing from ``
-1. Registry module file `dv-27-m32.html` missing from ``
-1. Registry module file `dv-27-m33.html` missing from ``
-1. Registry module file `dv-27-m34.html` missing from ``
-1. Registry module file `dv-27-m35.html` missing from ``
-1. Registry module file `dv-27-m36.html` missing from ``
-1. Registry module file `dv-27-m37.html` missing from ``
-1. Registry module file `dv-27-m38.html` missing from ``
-1. Registry module file `dv-27-m39.html` missing from ``
-1. Registry module file `dv-27-m40.html` missing from ``
-1. Registry module file `dv-27-m41.html` missing from ``
-1. Registry module file `dv-27-m42.html` missing from ``
-1. Registry module file `dv-27-m43.html` missing from ``
-1. Registry module file `dv-27-m44.html` missing from ``
-1. Registry module file `dv-27-m45.html` missing from ``
-1. Registry module file `dv-27-m46.html` missing from ``
-1. Registry module file `dv-27-m47.html` missing from ``
-1. Registry module file `dv-27-m48.html` missing from ``
-1. Registry module file `dv-27-m49.html` missing from ``
-1. Registry module file `dv-27-m50.html` missing from ``
-1. Registry module file `dv-27-m51.html` missing from ``
-1. Registry module file `dv-27-m52.html` missing from ``
-1. Registry module file `dv-27-m53.html` missing from ``
-1. Registry module file `dv-27-m54.html` missing from ``
+1. Registry module file `aip-ai-bias-and-fairness-m1.html` missing from ``
+1. Registry module file `aip-ai-bias-and-fairness-m2.html` missing from ``
+1. Registry module file `aip-ai-bias-and-fairness-m3.html` missing from ``
+1. Registry module file `aip-ai-bias-and-fairness-m4.html` missing from ``
+1. Registry module file `aip-ai-bias-and-fairness-m5.html` missing from ``
+1. Registry module file `aip-ai-bias-and-fairness-m6.html` missing from ``
+1. Registry module file `aip-ai-privacy-and-security-m1.html` missing from ``
+1. Registry module file `aip-ai-privacy-and-security-m2.html` missing from ``
+1. Registry module file `aip-ai-privacy-and-security-m3.html` missing from ``
+1. Registry module file `aip-ai-privacy-and-security-m4.html` missing from ``
+1. Registry module file `aip-future-of-work-ai-m1.html` missing from ``
+1. Registry module file `aip-future-of-work-ai-m2.html` missing from ``
+1. Registry module file `aip-future-of-work-ai-m3.html` missing from ``
+1. Registry module file `aip-future-of-work-ai-m4.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m1.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m2.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m3.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m4.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m5.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m6.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m7.html` missing from ``
+1. Registry module file `aip-ai-in-journalism-and-media-m8.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m1.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m2.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m3.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m4.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m5.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m6.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m7.html` missing from ``
+1. Registry module file `aip-ai-tools-for-small-business-m8.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m1.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m2.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m3.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m4.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m5.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m6.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m7.html` missing from ``
+1. Registry module file `aip-computer-vision-in-daily-life-m8.html` missing from ``
+1. Registry module file `aip-explainable-ai-m1.html` missing from ``
+1. Registry module file `aip-explainable-ai-m2.html` missing from ``
+1. Registry module file `aip-explainable-ai-m3.html` missing from ``
+1. Registry module file `aip-explainable-ai-m4.html` missing from ``
+1. Registry module file `aip-ai-and-fake-information-m1.html` missing from ``
+1. Registry module file `aip-ai-and-fake-information-m2.html` missing from ``
+1. Registry module file `aip-ai-and-fake-information-m3.html` missing from ``
+1. Registry module file `aip-ai-and-fake-information-m4.html` missing from ``
+1. Registry module file `aip-ai-and-fake-information-m5.html` missing from ``
+1. Registry module file `aip-ai-and-fake-information-m6.html` missing from ``
+1. Registry module file `aip-coded-unfair-ai-bias-exposed-m1.html` missing from ``
+1. Registry module file `aip-coded-unfair-ai-bias-exposed-m2.html` missing from ``
+1. Registry module file `aip-coded-unfair-ai-bias-exposed-m3.html` missing from ``
+1. Registry module file `aip-coded-unfair-ai-bias-exposed-m4.html` missing from ``
+1. Registry module file `aip-coded-unfair-ai-bias-exposed-m5.html` missing from ``
+1. Registry module file `aip-coded-unfair-ai-bias-exposed-m6.html` missing from ``
+1. Registry module file `aip-creating-with-ai-tools-m1.html` missing from ``
+1. Registry module file `aip-creating-with-ai-tools-m2.html` missing from ``
+1. Registry module file `aip-creating-with-ai-tools-m3.html` missing from ``
+1. Registry module file `aip-creating-with-ai-tools-m4.html` missing from ``
+1. Registry module file `aip-creating-with-ai-tools-m5.html` missing from ``
+1. Registry module file `aip-creating-with-ai-tools-m6.html` missing from ``
+1. Registry module file `aip-how-ai-actually-works-m1.html` missing from ``
+1. Registry module file `aip-how-ai-actually-works-m2.html` missing from ``
+1. Registry module file `aip-how-ai-actually-works-m3.html` missing from ``
+1. Registry module file `aip-how-ai-actually-works-m4.html` missing from ``
+1. Registry module file `aip-how-ai-actually-works-m5.html` missing from ``
+1. Registry module file `aip-how-ai-actually-works-m6.html` missing from ``
+1. Registry module file `aip-make-it-yours-creating-with-ai-m1.html` missing from ``
+1. Registry module file `aip-make-it-yours-creating-with-ai-m2.html` missing from ``
+1. Registry module file `aip-make-it-yours-creating-with-ai-m3.html` missing from ``
+1. Registry module file `aip-make-it-yours-creating-with-ai-m4.html` missing from ``
+1. Registry module file `aip-make-it-yours-creating-with-ai-m5.html` missing from ``
+1. Registry module file `aip-make-it-yours-creating-with-ai-m6.html` missing from ``
+1. Registry module file `aip-robot-speak-talk-to-ai-m1.html` missing from ``
+1. Registry module file `aip-robot-speak-talk-to-ai-m2.html` missing from ``
+1. Registry module file `aip-robot-speak-talk-to-ai-m3.html` missing from ``
+1. Registry module file `aip-robot-speak-talk-to-ai-m4.html` missing from ``
+1. Registry module file `aip-robot-speak-talk-to-ai-m5.html` missing from ``
+1. Registry module file `aip-robot-speak-talk-to-ai-m6.html` missing from ``
+1. Registry module file `aip-talking-to-ai-prompt-writing-m1.html` missing from ``
+1. Registry module file `aip-talking-to-ai-prompt-writing-m2.html` missing from ``
+1. Registry module file `aip-talking-to-ai-prompt-writing-m3.html` missing from ``
+1. Registry module file `aip-talking-to-ai-prompt-writing-m4.html` missing from ``
+1. Registry module file `aip-talking-to-ai-prompt-writing-m5.html` missing from ``
+1. Registry module file `aip-talking-to-ai-prompt-writing-m6.html` missing from ``
+1. Registry module file `aip-truth-detectives-ai-and-fake-info-m1.html` missing from ``
+1. Registry module file `aip-truth-detectives-ai-and-fake-info-m2.html` missing from ``
+1. Registry module file `aip-truth-detectives-ai-and-fake-info-m3.html` missing from ``
+1. Registry module file `aip-truth-detectives-ai-and-fake-info-m4.html` missing from ``
+1. Registry module file `aip-truth-detectives-ai-and-fake-info-m5.html` missing from ``
+1. Registry module file `aip-truth-detectives-ai-and-fake-info-m6.html` missing from ``
+1. Registry module file `aip-whats-really-inside-ai-m1.html` missing from ``
+1. Registry module file `aip-whats-really-inside-ai-m2.html` missing from ``
+1. Registry module file `aip-whats-really-inside-ai-m3.html` missing from ``
+1. Registry module file `aip-whats-really-inside-ai-m4.html` missing from ``
+1. Registry module file `aip-whats-really-inside-ai-m5.html` missing from ``
+1. Registry module file `aip-whats-really-inside-ai-m6.html` missing from ``
+1. Registry module file `aip-ai-accessibility-m1.html` missing from ``
+1. Registry module file `aip-ai-accessibility-m2.html` missing from ``
+1. Registry module file `aip-ai-accessibility-m3.html` missing from ``
+1. Registry module file `aip-ai-accessibility-m4.html` missing from ``
+1. Registry module file `aip-ai-data-literacy-m1.html` missing from ``
+1. Registry module file `aip-ai-data-literacy-m2.html` missing from ``
+1. Registry module file `aip-ai-data-literacy-m3.html` missing from ``
+1. Registry module file `aip-ai-data-literacy-m4.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m1.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m2.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m3.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m4.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m5.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m6.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m7.html` missing from ``
+1. Registry module file `aip-ai-work-and-automation-realities-m8.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m1.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m2.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m3.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m4.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m5.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m6.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m7.html` missing from ``
+1. Registry module file `aip-ai-ethics-foundations-m8.html` missing from ``
+1. Registry module file `aip-ai-decision-making-m1.html` missing from ``
+1. Registry module file `aip-ai-decision-making-m2.html` missing from ``
+1. Registry module file `aip-ai-decision-making-m3.html` missing from ``
+1. Registry module file `aip-ai-decision-making-m4.html` missing from ``
+1. Registry module file `aip-ai-governance-regulation-m1.html` missing from ``
+1. Registry module file `aip-ai-governance-regulation-m2.html` missing from ``
+1. Registry module file `aip-ai-governance-regulation-m3.html` missing from ``
+1. Registry module file `aip-ai-governance-regulation-m4.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m1.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m2.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m3.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m4.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m5.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m6.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m7.html` missing from ``
+1. Registry module file `aip-ai-music-and-audio-generation-m8.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m1.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m2.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m3.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m4.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m5.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m6.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m7.html` missing from ``
+1. Registry module file `aip-ai-safety-for-everyone-m8.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m1.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m2.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m3.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m4.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m5.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m6.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m7.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-basics-m8.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m1.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m2.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m3.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m4.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m5.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m6.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m7.html` missing from ``
+1. Registry module file `aip-ai-safety-and-alignment-m8.html` missing from ``
+1. Registry module file `aip-deepfakes-and-synthetic-media-m1.html` missing from ``
+1. Registry module file `aip-deepfakes-and-synthetic-media-m2.html` missing from ``
+1. Registry module file `aip-deepfakes-and-synthetic-media-m3.html` missing from ``
+1. Registry module file `aip-deepfakes-and-synthetic-media-m4.html` missing from ``
+1. Registry module file `aip-human-ai-interaction-m1.html` missing from ``
+1. Registry module file `aip-human-ai-interaction-m2.html` missing from ``
+1. Registry module file `aip-human-ai-interaction-m3.html` missing from ``
+1. Registry module file `aip-human-ai-interaction-m4.html` missing from ``
+1. Registry module file `aip-sustainable-ai-m1.html` missing from ``
+1. Registry module file `aip-sustainable-ai-m2.html` missing from ``
+1. Registry module file `aip-sustainable-ai-m3.html` missing from ``
+1. Registry module file `aip-sustainable-ai-m4.html` missing from ``
 1. Course `ai` is linked in courses.html but not defined in electives-hub or registry
 1. Course `applied` is linked in courses.html but not defined in electives-hub or registry
 1. Course `code` is linked in courses.html but not defined in electives-hub or registry
+1. Course `coded` is linked in courses.html but not defined in electives-hub or registry
 1. Course `conversational` is linked in courses.html but not defined in electives-hub or registry
 1. Course `evaluation` is linked in courses.html but not defined in electives-hub or registry
 1. Course `funding` is linked in courses.html but not defined in electives-hub or registry
 1. Course `gpt` is linked in courses.html but not defined in electives-hub or registry
+1. Course `how` is linked in courses.html but not defined in electives-hub or registry
+1. Course `make` is linked in courses.html but not defined in electives-hub or registry
 1. Course `photography` is linked in courses.html but not defined in electives-hub or registry
 1. Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 1. Course `rag` is linked in courses.html but not defined in electives-hub or registry
@@ -1496,60 +1755,6 @@
 1. Course `security` is linked in courses.html but not defined in electives-hub or registry
 1. Course `synthetic` is linked in courses.html but not defined in electives-hub or registry
 1. Course `the` is linked in courses.html but not defined in electives-hub or registry
+1. Course `vertex` is linked in courses.html but not defined in electives-hub or registry
+1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m1.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m2.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m4.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m5.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m6.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m7.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/how_large_language_models_work/how_large_language_models_work-m8.html`

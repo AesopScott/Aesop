@@ -26,10 +26,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Scan and register unregistered courses
-        run: python .github/scripts/add_course.py --apply
+      - name: Reconcile every UI surface to disk truth
+        # Orchestrates per-surface reconcilers in dependency order.
+        # Replaces the legacy add_course.py --apply, which was
+        # append-only and was the source of the drift we repeatedly
+        # had to clean up manually. reconcile_all.py is idempotent
+        # and driven by disk-folder presence as the source of truth.
+        run: python .github/scripts/reconcile_all.py --apply
 
-      - name: Commit registration changes (if any)
+      - name: Commit reconciliation changes (if any)
         run: |
           git config user.name "Course Registration Bot"
           git config user.email "bot@aesopacademy.org"
@@ -42,7 +47,7 @@ jobs:
             aip/registration-report.json
           for f in i18n/courses.*.json; do git add "$f"; done
           git diff --staged --quiet && echo "Nothing to commit." || (
-            git commit -m "Auto-register: add unregistered courses to all locations"
+            git commit -m "Auto-reconcile: sync all surfaces to disk truth"
             git pull --rebase -X theirs origin main
             git push
           )

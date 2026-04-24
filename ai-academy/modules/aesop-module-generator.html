@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.0 | 2026-04-23 -->
+<!-- v1.0.1 | 2026-04-23 -->
 <!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
@@ -47,11 +47,6 @@ textarea{resize:vertical;min-height:80px;}
 .btn-download:hover{opacity:0.85;}
 .output-preview{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:1rem;font-size:0.75rem;font-family:monospace;color:rgba(255,255,255,0.5);max-height:300px;overflow-y:auto;white-space:pre-wrap;line-height:1.5;}
 .api-key-note{font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:0.4rem;}
-.tier-radios{display:flex;gap:1.5rem;}
-.tier-radio{display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.9rem;padding:0.5rem 0.75rem;border-radius:8px;border:1px solid rgba(255,255,255,0.08);transition:all 0.15s;}
-.tier-radio:hover{border-color:var(--gold);}
-.tier-radio.selected{border-color:var(--gold);background:rgba(201,160,90,0.1);color:var(--gold);}
-.tier-radio input[type=radio]{accent-color:var(--gold);width:16px;height:16px;}
 .mod-info{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:0.75rem 1rem;font-size:0.82rem;color:rgba(255,255,255,0.5);margin-top:0.5rem;display:none;}
 .mod-info.visible{display:block;}
 .mod-info strong{color:var(--gold-light);}
@@ -140,14 +135,6 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Tier</div>
-    <div class="tier-chips">
-      <div class="tier-chip" data-tier="intro" onclick="selectTier(this)">Introduction</div>
-      <div class="tier-chip" data-tier="basic" onclick="selectTier(this)">Basic</div>
-      <div class="tier-chip" data-tier="advanced" onclick="selectTier(this)">Advanced</div>
-    </div>
-  </div>
 
   <div class="card">
     <div class="card-title" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onclick="toggleGuidance()">
@@ -380,17 +367,20 @@ function renderLanguageChipsFromRegistry() {
 
 let REGISTRY_META = {};
 
+const AGE_GROUP_LABELS = { youth: 'Youth', young_adult: 'Young Adult', professional: 'Professional' };
+
 function populateCourseDropdown() {
   const sel = document.getElementById('courseSelect');
   const prev = sel.value;
   sel.innerHTML = '<option value="">— Select course —</option>';
   [...COURSES].filter(c => c && c.id && c.name && c.modules && c.modules.length).sort((a, b) => a.name.localeCompare(b.name)).forEach(c => {
     const o = document.createElement('option');
-    o.value = c.id; o.textContent = c.name;
-    if (isLive(c.id)) { o.textContent += ' ⟡'; o.style.color = '#ef4444'; } // mark live courses red
+    const ageLabel = AGE_GROUP_LABELS[c.ageGroup] ? ' [' + AGE_GROUP_LABELS[c.ageGroup] + ']' : '';
+    o.value = c.id; o.textContent = c.name + ageLabel;
+    if (isLive(c.id)) { o.textContent += ' ⟡'; o.style.color = '#ef4444'; }
     sel.appendChild(o);
   });
-  if (prev) sel.value = prev; // restore selection if still available
+  if (prev) sel.value = prev;
 }
 
 async function loadCoursesData() {
@@ -418,10 +408,7 @@ async function init() {
   await loadCoursesData();
   populateCourseDropdown();
   renderRecentBuilds();
-  // Default to Advanced
-  selectedTier = 'advanced';
-  const advRadio = document.querySelector('input[value="advanced"]');
-  if (advRadio) advRadio.closest('.tier-radio').classList.add('selected');
+  selectedTier = 'advanced'; // always advanced — tier UI removed
   // Populate LIVE_COURSES from registry, then re-render dropdown so markers appear
   loadLiveCoursesFromRegistry().then(() => populateCourseDropdown());
 }
@@ -489,11 +476,6 @@ function checkActivateReady() {
   }
 }
 
-function selectTier(input) {
-  selectedTier = input.value;
-  document.querySelectorAll('.tier-radio').forEach(r => r.classList.remove('selected'));
-  input.closest('.tier-radio').classList.add('selected');
-}
 
 function selectLang(btn) {
   selectedLang = btn.dataset.lang;

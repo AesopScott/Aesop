@@ -29,7 +29,7 @@ jobs:
       - name: Scan and register unregistered courses
         run: python .github/scripts/add_course.py --apply
 
-      - name: Commit changes (if any)
+      - name: Commit registration changes (if any)
         run: |
           git config user.name "Course Registration Bot"
           git config user.email "bot@aesopacademy.org"
@@ -39,9 +39,31 @@ jobs:
             ai-academy/modules/course-registry.json \
             ai-academy/dashboard.html \
             i18n/courses.*.json \
-            stats.json
+            stats.json \
+            aip/registration-report.json
           git diff --staged --quiet && echo "Nothing to commit." || (
             git commit -m "Auto-register: add unregistered courses to all locations"
             git pull --rebase origin main
             git push
           )
+
+      - name: Run course audit
+        # Continue even if audit finds issues — we still want the notification
+        continue-on-error: true
+        run: python .github/scripts/audit_courses.py
+
+      - name: Commit audit report
+        run: |
+          git add aip/audit-report.md || true
+          git diff --staged --quiet && echo "No audit report changes." || (
+            git commit -m "Auto-audit: update course audit report"
+            git pull --rebase origin main
+            git push
+          )
+
+      - name: Send registration notification
+        env:
+          NOTIFY_EMAIL_USER: ${{ secrets.NOTIFY_EMAIL_USER }}
+          NOTIFY_EMAIL_PASS: ${{ secrets.NOTIFY_EMAIL_PASS }}
+          NOTIFY_EMAIL_TO:   ${{ secrets.NOTIFY_EMAIL_TO }}
+        run: python .github/scripts/notify_registration.py

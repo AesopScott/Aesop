@@ -204,13 +204,11 @@ def save_json(path: Path, data) -> None:
 
 def find_unregistered() -> list[dict]:
     """
-    Return a list of course dicts for every module directory that:
-      1. Has written module HTML files
-      2. Has all expected modules present (file count matches courses-data.json)
-      3. Is missing from one or more registration locations
+    Return a list of course dicts for every module directory that has at least
+    one written HTML file and is missing from any registration location.
 
-    Courses not yet in courses-data.json are skipped — they need
-    add_coming_soon_course.py run first to define the expected module count.
+    No prerequisite steps required — if a course isn't in courses-data.json
+    yet, metadata is extracted from the HTML files and it's added automatically.
     """
     registry       = load_json(REGISTRY) if REGISTRY.exists() else {}
     cdata          = load_json(COURSES_DATA) if COURSES_DATA.exists() else {"courses": []}
@@ -218,7 +216,7 @@ def find_unregistered() -> list[dict]:
     dashboard_html = read_text(DASHBOARD)
 
     registered_ids   = set(registry.keys())
-    courses_data_map = {c["id"]: c for c in cdata.get("courses", [])}
+    courses_data_ids = {c["id"] for c in cdata.get("courses", [])}
     dashboard_ids    = set(re.findall(r"id:'([^']+)'", dashboard_html))
 
     en_json = I18N_DIR / "courses.en.json"
@@ -238,39 +236,26 @@ def find_unregistered() -> list[dict]:
 
         course_id = d.name
 
-        # Course must be in courses-data.json so we know the expected module count
-        cd_entry = courses_data_map.get(course_id)
-        if cd_entry is None:
-            print(f"  ⚠  {course_id}: not in courses-data.json — skipping "
-                  f"(run add_coming_soon_course.py first to define it)")
-            continue
-
-        # Only register once every expected module file exists
-        expected = len(cd_entry.get("modules", []))
-        actual   = len(module_files)
-        if actual < expected:
-            print(f"  ○  {course_id}: {actual}/{expected} modules written — waiting for completion")
-            continue
-
         # Check which locations are missing this course
-        missing_registry  = course_id not in registered_ids
-        missing_html      = course_id not in courses_html
-        missing_dashboard = course_id not in dashboard_ids
+        missing_courses_data = course_id not in courses_data_ids
+        missing_registry     = course_id not in registered_ids
+        missing_html         = course_id not in courses_html
+        missing_dashboard    = course_id not in dashboard_ids
 
-        # Extract data from HTML (name needed early for i18n check)
+        # Extract data from HTML (name needed for i18n check)
         m1_html      = read_text(module_files[0])
         name         = extract_course_name(course_id, m1_html)
         missing_i18n = name not in en_data
 
         # Skip if fully registered in every location
-        if not any([missing_registry, missing_html, missing_dashboard, missing_i18n]):
+        if not any([missing_courses_data, missing_registry,
+                    missing_html, missing_dashboard, missing_i18n]):
             continue
 
-        desc           = extract_description(m1_html)
-        modules        = extract_modules(course_id, module_files)
+        desc                   = extract_description(m1_html)
+        modules                = extract_modules(course_id, module_files)
         sub_word, mega_section = infer_category(course_id)
 
-        # Assign icon and bar color based on offset
         icon_offset += 1
         icon      = ICONS[icon_offset % len(ICONS)]
         bar_color = BAR_COLORS[icon_offset % len(BAR_COLORS)]
@@ -287,10 +272,11 @@ def find_unregistered() -> list[dict]:
             "mega_section": mega_section,
             "url":          f"/ai-academy/modules/{course_id}/",
             "missing": {
-                "registry":  missing_registry,
-                "html":      missing_html,
-                "dashboard": missing_dashboard,
-                "i18n":      missing_i18n,
+                "courses_data": missing_courses_data,
+                "registry":     missing_registry,
+                "html":         missing_html,
+                "dashboard":    missing_dashboard,
+                "i18n":         missing_i18n,
             }
         })
 
@@ -298,6 +284,22 @@ def find_unregistered() -> list[dict]:
 
 
 # ── Registration steps ─────────────────────────────────────────────────────────
+
+def register_courses_data(course: dict, cdata: dict) -> None:
+    """Add or update this course in courses-data.json."""
+    existing = next((c for c in cdata.get("courses", []) if c["id"] == course["id"]), None)
+    if existing:
+        existing["live"] = True
+        return
+    cdata.setdefault("courses", []).append({
+        "id":          course["id"],
+        "name":        course["name"],
+        "icon":        course["icon"],
+        "description": course["desc"],
+        "live":        True,
+        "modules":     course["modules"],
+    })
+
 
 def next_dv_id(html: str) -> int:
     nums = [int(m) for m in re.findall(r'id="dv-(\d+)"', html)]
@@ -472,11 +474,16 @@ def main() -> None:
         return
 
     # Load mutable state once
+    cdata     = load_json(COURSES_DATA)
     html      = read_text(COURSES_HTML)
     dash_html = read_text(DASHBOARD)
 
     for c in courses:
         print(f"Registering {c['id']}…")
+
+        if c["missing"]["courses_data"]:
+            register_courses_data(c, cdata)
+            print(f"  ✓ courses-data.json")
 
         if c["missing"]["html"]:
             html = register_courses_html(c, html)
@@ -491,6 +498,7 @@ def main() -> None:
             print(f"  ✓ i18n files (13 languages)")
 
     # Write updated files
+    save_json(COURSES_DATA, cdata)
     COURSES_HTML.write_text(html, encoding="utf-8")
     DASHBOARD.write_text(dash_html, encoding="utf-8")
 
@@ -500,7 +508,23 @@ def main() -> None:
     if run_script("build_stats.py"):
         print("  ✓ stats.json rebuilt")
 
+    # Write registration report for the notification script
+    report_path = REPO / "aip" / "registration-report.json"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    save_json(report_path, {
+        "registered": [
+            {
+                "id":      c["id"],
+                "name":    c["name"],
+                "n_mods":  c["n_mods"],
+                "url":     c["url"],
+                "desc":    c["desc"],
+            }
+            for c in courses
+        ]
+    })
     print(f"\n✓ Done. {len(courses)} course(s) registered.")
+    print(f"  Report written to aip/registration-report.json")
 
 
 if __name__ == "__main__":

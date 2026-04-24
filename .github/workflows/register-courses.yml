@@ -1,0 +1,49 @@
+name: Register Unregistered Courses
+
+on:
+  schedule:
+    - cron: '30 * * * *'   # Every hour at :30 (offset from auto-activate at :15)
+  push:
+    branches: [main]
+    paths:
+      - 'ai-academy/modules/**/*.html'   # Triggered when new module files land
+  workflow_dispatch:
+
+concurrency:
+  group: register-courses
+  cancel-in-progress: true
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.AIP_COMMIT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scan and register unregistered courses
+        run: python .github/scripts/add_course.py --apply
+
+      - name: Commit changes (if any)
+        run: |
+          git config user.name "Course Registration Bot"
+          git config user.email "bot@aesopacademy.org"
+          git add \
+            ai-academy/courses.html \
+            ai-academy/modules/courses-data.json \
+            ai-academy/modules/course-registry.json \
+            ai-academy/dashboard.html \
+            i18n/courses.*.json \
+            stats.json
+          git diff --staged --quiet && echo "Nothing to commit." || (
+            git commit -m "Auto-register: add unregistered courses to all locations"
+            git pull --rebase origin main
+            git push
+          )

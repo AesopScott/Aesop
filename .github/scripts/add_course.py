@@ -1,226 +1,520 @@
 #!/usr/bin/env python3
 """
-add_course.py — Complete "add a course" superscript for Aesop AI Academy.
+add_course.py — Zero-prompt course registration scanner.
 
-Collects all course info once, then updates every location that must know
-about the course:
+Scans ai-academy/modules/ for course directories that have written module
+HTML files but are not yet fully registered in every required location.
+For each gap found, extracts metadata directly from the HTML files and
+fills all registration locations automatically.
 
-  1. courses-data.json          (module metadata for the generator tool)
-  2. courses.html               (public courses page — panel + mega-menu)
-  3. dashboard.html             (K-12 teacher dashboard)
-  4. i18n/courses.*.json        (all 13 language files — English placeholder)
-  5. course-registry.json       (rebuilt by build_registry.py)
-  6. stats.json                 (rebuilt by build_stats.py)
+Locations updated:
+  1. courses-data.json        module metadata + live flag
+  2. courses.html             panel + mega-menu entry (marked Live)
+  3. dashboard.html           K-12 teacher dashboard COURSES array
+  4. i18n/courses.*.json      all 13 language files (English placeholder)
+  5. course-registry.json     rebuilt by build_registry.py
+  6. stats.json               rebuilt by build_stats.py
 
 Usage:
-    python .github/scripts/add_course.py
-
-The script adds the course as Coming Soon. Run auto_activate_courses.py
-after module HTML files have been written to mark it live.
+    python .github/scripts/add_course.py           # dry-run (no changes)
+    python .github/scripts/add_course.py --apply   # apply all changes
 """
 
+import argparse
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-# ── Repo paths ─────────────────────────────────────────────────────────────────
-REPO = Path(__file__).resolve().parent.parent.parent
-SCRIPTS = REPO / ".github" / "scripts"
+# ── Paths ──────────────────────────────────────────────────────────────────────
+REPO         = Path(__file__).resolve().parents[2]
+SCRIPTS      = REPO / ".github" / "scripts"
+MODULES_DIR  = REPO / "ai-academy" / "modules"
+COURSES_HTML = REPO / "ai-academy" / "courses.html"
+COURSES_DATA = MODULES_DIR / "courses-data.json"
+REGISTRY     = MODULES_DIR / "course-registry.json"
+DASHBOARD    = REPO / "ai-academy" / "dashboard.html"
+I18N_DIR     = REPO / "i18n"
+STATS_JSON   = REPO / "stats.json"
 
-# ── Import helpers from sibling scripts ────────────────────────────────────────
-sys.path.insert(0, str(SCRIPTS))
-from add_coming_soon_course import (
-    slugify,
-    next_dv_id,
-    build_panel,
-    insert_mega_menu_entry,
-    COURSES_HTML,
-    COURSES_DATA,
-    CATEGORY_TO_MEGA_CAT,
-)
-from add_dashboard_course import add_to_dashboard, BAR_COLORS
-from add_i18n_course import add_to_i18n
+I18N_FILES = [
+    "courses.ar.json", "courses.de.json", "courses.en.json",
+    "courses.es.json", "courses.fa.json", "courses.fr.json",
+    "courses.hi.json", "courses.ja.json", "courses.ko.json",
+    "courses.ru.json", "courses.sw.json", "courses.ur.json",
+    "courses.zh.json",
+]
 
-BUILD_REGISTRY = SCRIPTS / "build_registry.py"
-BUILD_STATS    = SCRIPTS / "build_stats.py"
+# Icon pool — cycled for new courses
+ICONS = ["🧩", "🌐", "💡", "🔬", "📊", "🚀", "🎯", "⚙️", "🔭", "🖥️",
+         "🤝", "🎨", "💼", "📡", "🛡️", "🧠", "⚡", "🔮"]
+
+BAR_COLORS = ["teal", "purple", "green", "amber", "navy", "red", "blue", "gold"]
+
+# Maps keywords in course IDs → category label and mega-menu section
+CATEGORY_MAP = {
+    "governance":   ("Society",      "📚 Core Courses"),
+    "society":      ("Society",      "📚 Core Courses"),
+    "ethics":       ("Ethics",       "📚 Core Courses"),
+    "bias":         ("Ethics",       "📚 Core Courses"),
+    "fairness":     ("Ethics",       "📚 Core Courses"),
+    "creativity":   ("Art & Design", "🎨 Art"),
+    "graphic":      ("Art & Design", "🎨 Art"),
+    "design":       ("Art & Design", "🎨 Art"),
+    "art":          ("Art & Design", "🎨 Art"),
+    "game":         ("Art & Design", "🎨 Art"),
+    "music":        ("Art & Design", "🎨 Art"),
+    "photo":        ("Art & Design", "🎨 Art"),
+    "video":        ("Art & Design", "🎨 Art"),
+    "business":     ("Business",     "💼 Business"),
+    "venture":      ("Business",     "💼 Business"),
+    "pitch":        ("Business",     "💼 Business"),
+    "funding":      ("Business",     "💼 Business"),
+    "marketing":    ("Business",     "💼 Business"),
+    "finance":      ("Business",     "💼 Business"),
+    "leadership":   ("Business",     "💼 Business"),
+    "founder":      ("Business",     "💼 Business"),
+    "procurement":  ("Business",     "💼 Business"),
+    "model":        ("AI Models",    "📡 AI Models"),
+    "llm":          ("AI Models",    "📡 AI Models"),
+    "alignment":    ("AI Models",    "📡 AI Models"),
+    "multimodal":   ("AI Progress",  "🔭 AI Progress"),
+    "context":      ("AI Progress",  "🔭 AI Progress"),
+    "hardware":     ("AI Progress",  "🔭 AI Progress"),
+    "reasoning":    ("AI Progress",  "🔭 AI Progress"),
+    "synthetic":    ("AI Progress",  "🔭 AI Progress"),
+    "agent":        ("Development",  "⚙️ Development"),
+    "build":        ("Development",  "⚙️ Development"),
+    "security":     ("Development",  "⚙️ Development"),
+    "deploy":       ("Development",  "⚙️ Development"),
+    "evaluation":   ("Development",  "⚙️ Development"),
+    "testing":      ("Development",  "⚙️ Development"),
+    "prompt":       ("Development",  "⚙️ Development"),
+    "rag":          ("Development",  "⚙️ Development"),
+    "api":          ("Development",  "⚙️ Development"),
+    "fine":         ("Development",  "⚙️ Development"),
+    "code":         ("Development",  "⚙️ Development"),
+    "job":          ("Society",      "📚 Core Courses"),
+    "work":         ("Society",      "📚 Core Courses"),
+    "automation":   ("Society",      "📚 Core Courses"),
+    "media":        ("Society",      "📚 Core Courses"),
+    "misinformation": ("Society",    "📚 Core Courses"),
+    "healthcare":   ("Society",      "📚 Core Courses"),
+    "education":    ("Society",      "📚 Core Courses"),
+    "climate":      ("Society",      "📚 Core Courses"),
+    "psychology":   ("Society",      "📚 Core Courses"),
+    "consciousness": ("Society",     "📚 Core Courses"),
+    "national":     ("Society",      "📚 Core Courses"),
+    "career":       ("Society",      "📚 Core Courses"),
+}
 
 
-# ── Prompt helper ──────────────────────────────────────────────────────────────
-def prompt(label: str, default: str = "") -> str:
-    suffix = f" [{default}]" if default else ""
-    val = input(f"  {label}{suffix}: ").strip()
-    return val or default
+# ── HTML extraction ────────────────────────────────────────────────────────────
+
+def read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8", errors="replace")
+    except Exception:
+        return ""
 
 
-# ── Input collection ───────────────────────────────────────────────────────────
-def collect_inputs() -> dict:
-    print("\n╔══════════════════════════════════════════════════╗")
-    print("║       Aesop AI Academy — Add a New Course        ║")
-    print("╚══════════════════════════════════════════════════╝\n")
+def extract_course_name(course_id: str, m1_html: str) -> str:
+    """Extract course name from lesson-kicker in m1.html, or title-case the folder name."""
+    match = re.search(r'class="lesson-kicker">([^·<]+)', m1_html)
+    if match:
+        return match.group(1).strip()
+    # Fallback: title-case folder name, stripping "ai-" prefix only if the
+    # result still makes sense (keep it for "AI Governance" etc.)
+    name = course_id.replace("-", " ").replace("_", " ").title()
+    # Capitalise "Ai" → "AI"
+    name = re.sub(r'\bAi\b', 'AI', name)
+    return name
 
-    name = prompt("Course name")
-    if not name:
-        print("Course name is required.")
-        sys.exit(1)
 
-    slug = prompt("URL slug", slugify(name))
-    desc = prompt("Short description (1-2 sentences for courses.html)")
-    category = prompt(
-        f"Category ({', '.join(CATEGORY_TO_MEGA_CAT.keys())})", "Development"
+def extract_description(m1_html: str) -> str:
+    """Pull the tagline from the intro page of m1.html."""
+    # Intro page tagline is inside the first .lesson-hero block
+    intro_match = re.search(
+        r'id="p-intro".*?<div class="tagline">(.*?)</div>',
+        m1_html, re.DOTALL
     )
-    icon = prompt("Icon emoji", "📘")
-    n_mods = int(prompt("Number of modules", "8"))
+    if intro_match:
+        desc = re.sub(r'<[^>]+>', '', intro_match.group(1)).strip()
+        if desc:
+            return desc
+    # Fallback: first tagline in the file
+    match = re.search(r'class="tagline">(.*?)</div>', m1_html, re.DOTALL)
+    if match:
+        return re.sub(r'<[^>]+>', '', match.group(1)).strip()
+    return ""
 
-    print(f"\n  Enter {n_mods} module titles (and optional subtitles).")
-    print("  Format:  Title | Subtitle   (subtitle optional)\n")
+
+def extract_modules(course_id: str, module_files: list[Path]) -> list[dict]:
+    """Extract module title + subtitle from each module HTML file."""
     modules = []
-    for i in range(1, n_mods + 1):
-        raw = input(f"    M{i}: ").strip()
-        if "|" in raw:
-            parts = raw.split("|", 1)
-            modules.append({"n": i, "title": parts[0].strip(), "sub": parts[1].strip()})
-        else:
-            modules.append({"n": i, "title": raw})
+    for i, mf in enumerate(module_files, 1):
+        html = read_text(mf)
+        # First lesson's <h1> is the module title
+        lesson_h1 = re.search(
+            r'class="lesson-kicker">[^<]*·\s*Lesson\s*1.*?<h1>(.*?)</h1>',
+            html, re.DOTALL
+        )
+        title = ""
+        if lesson_h1:
+            title = re.sub(r'<[^>]+>', '', lesson_h1.group(1)).strip()
 
-    print()
-    course_num   = prompt("Course number for sub-label (e.g., 8)")
-    sub_category = prompt("Sub-label category word (e.g., Ethics, Careers)", category.title())
-    sub_label    = f"Course {course_num} — {sub_category}"
+        # Tagline on lesson 1 is the subtitle
+        lesson_section = re.search(
+            r'class="lesson-kicker">[^<]*·\s*Lesson\s*1.*?class="tagline">(.*?)</div>',
+            html, re.DOTALL
+        )
+        sub = ""
+        if lesson_section:
+            sub = re.sub(r'<[^>]+>', '', lesson_section.group(1)).strip()
 
-    print()
-    bar = prompt(f"Dashboard progress bar color ({', '.join(BAR_COLORS)})", "teal")
-    url = prompt("Dashboard URL path", f"/ai-academy/{slug}.html")
+        if not title:
+            title = f"Module {i}"
 
-    return {
-        "name":        name,
-        "slug":        slug,
-        "desc":        desc,
-        "category":    category,
-        "icon":        icon,
-        "n_mods":      n_mods,
-        "modules":     modules,
-        "sub_label":   sub_label,
-        "bar":         bar,
-        "url":         url,
-    }
+        entry = {"n": i, "title": title}
+        if sub:
+            entry["sub"] = sub
+        modules.append(entry)
+    return modules
 
 
-# ── Step runners ───────────────────────────────────────────────────────────────
-def step_courses_html(info: dict) -> int:
-    """Add panel + mega-menu entry to courses.html. Returns the dv panel number."""
-    html = COURSES_HTML.read_text(encoding="utf-8")
+def infer_category(course_id: str) -> tuple[str, str]:
+    """Return (sub_label_word, mega_menu_section) based on course ID keywords."""
+    lower = course_id.lower()
+    for kw, (sub, section) in CATEGORY_MAP.items():
+        if kw in lower:
+            return sub, section
+    return "Elective", "📚 Core Courses"
+
+
+# ── Find unregistered courses ──────────────────────────────────────────────────
+
+def load_json(path: Path) -> dict | list:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def save_json(path: Path, data) -> None:
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def find_unregistered() -> list[dict]:
+    """
+    Return a list of course dicts for every module directory that has
+    written HTML files but is missing from one or more registration locations.
+    """
+    registry      = load_json(REGISTRY) if REGISTRY.exists() else {}
+    cdata         = load_json(COURSES_DATA) if COURSES_DATA.exists() else {"courses": []}
+    courses_html  = read_text(COURSES_HTML)
+    dashboard_html = read_text(DASHBOARD)
+
+    registered_ids    = set(registry.keys())
+    courses_data_ids  = {c["id"] for c in cdata.get("courses", [])}
+    # Extract slugs referenced in courses.html (both panel IDs and mega-menu entries)
+    html_panel_ids    = set(re.findall(r'id="dv-\d+"', courses_html))  # panel containers
+    html_course_slugs = set(re.findall(r"data-panel=\"dv-\d+\"", courses_html))
+    dashboard_ids     = set(re.findall(r"id:'([^']+)'", dashboard_html))
+
+    results = []
+    icon_offset = len([v for v in registry.values()
+                       if isinstance(v, dict) and v.get("status") == "live"])
+
+    for d in sorted(MODULES_DIR.iterdir()):
+        if not d.is_dir() or d.name.startswith("."):
+            continue
+
+        module_files = sorted(d.glob(f"{d.name}-m*.html"))
+        if not module_files:
+            continue
+
+        course_id = d.name
+
+        # Check which locations are missing this course
+        missing_registry     = course_id not in registered_ids
+        missing_courses_data = course_id not in courses_data_ids
+        # For courses.html: check if slug appears anywhere in panels/menu
+        missing_html = course_id not in courses_html
+        missing_dashboard = course_id not in dashboard_ids
+        # i18n: check english file
+        en_json = I18N_DIR / "courses.en.json"
+        en_data = load_json(en_json) if en_json.exists() else {}
+        # We'll detect missing i18n by whether the course name key is absent —
+        # extracted after we get the name below
+
+        # Skip if fully registered everywhere
+        if not any([missing_registry, missing_courses_data,
+                    missing_html, missing_dashboard]):
+            continue
+
+        # Extract data from HTML
+        m1_html  = read_text(module_files[0])
+        name     = extract_course_name(course_id, m1_html)
+        desc     = extract_description(m1_html)
+        modules  = extract_modules(course_id, module_files)
+        sub_word, mega_section = infer_category(course_id)
+
+        # Assign icon and bar color based on offset
+        icon_offset += 1
+        icon      = ICONS[icon_offset % len(ICONS)]
+        bar_color = BAR_COLORS[icon_offset % len(BAR_COLORS)]
+
+        # Check i18n now that we have the name
+        missing_i18n = name not in en_data
+
+        if not any([missing_registry, missing_courses_data,
+                    missing_html, missing_dashboard, missing_i18n]):
+            continue
+
+        results.append({
+            "id":          course_id,
+            "name":        name,
+            "desc":        desc,
+            "modules":     modules,
+            "n_mods":      len(module_files),
+            "icon":        icon,
+            "bar":         bar_color,
+            "sub_word":    sub_word,
+            "mega_section": mega_section,
+            "url":         f"/ai-academy/modules/{course_id}/",
+            "missing": {
+                "registry":     missing_registry,
+                "courses_data": missing_courses_data,
+                "html":         missing_html,
+                "dashboard":    missing_dashboard,
+                "i18n":         missing_i18n,
+            }
+        })
+
+    return results
+
+
+# ── Registration steps ─────────────────────────────────────────────────────────
+
+def register_courses_data(course: dict, cdata: dict) -> None:
+    if any(c["id"] == course["id"] for c in cdata.get("courses", [])):
+        return
+    cdata.setdefault("courses", []).append({
+        "id":          course["id"],
+        "name":        course["name"],
+        "icon":        course["icon"],
+        "description": course["desc"],
+        "live":        True,
+        "modules":     course["modules"],
+    })
+
+
+def next_dv_id(html: str) -> int:
+    nums = [int(m) for m in re.findall(r'id="dv-(\d+)"', html)]
+    return max(nums, default=0) + 1
+
+
+def build_live_panel(dv: int, course: dict) -> str:
+    n_mods = course["n_mods"]
+    name   = course["name"]
+    desc   = course["desc"]
+    icon   = course["icon"]
+    url    = course["url"]
+
+    mod_rows = ""
+    for m in course["modules"]:
+        sub_html = f'<div class="core-mod__sub">{m["sub"]}</div>' if m.get("sub") else ""
+        mod_rows += (
+            f'          <div class="core-mod">'
+            f'<div class="core-mod__num">M{m["n"]}</div>'
+            f'<div class="core-mod__info">'
+            f'<div class="core-mod__title">{m["title"]}</div>'
+            f'{sub_html}</div></div>\n'
+        )
+
+    return f"""
+      <div class="core-panel" id="dv-{dv}">
+        <div class="core-panel__header">
+          <span class="core-panel__icon">{icon}</span>
+          <div class="core-panel__meta">
+            <div class="core-panel__title">{name}</div>
+            <div class="core-panel__desc">{desc}</div>
+          </div>
+          <div class="core-panel__badges">
+            <span class="core-badge-live">Live</span>
+            <span class="core-badge-mods">{n_mods} Modules</span>
+          </div>
+        </div>
+        <div class="core-modules-label">Course modules</div>
+        <div class="core-modules-grid">
+{mod_rows.rstrip()}
+        </div>
+        <a class="core-panel__cta" href="{url}">Enter Course →</a>
+      </div>
+"""
+
+
+def register_courses_html(course: dict, html: str) -> str:
+    """Add panel + mega-menu button. Returns updated HTML."""
+    if course["id"] in html:
+        return html  # already present somewhere
+
     dv = next_dv_id(html)
 
-    panel = build_panel(
-        dv, info["slug"], info["name"], info["desc"],
-        info["category"], info["icon"], info["n_mods"], info["modules"], dv,
+    # Insert panel before closing tag of the dv section
+    last_dv_match = list(re.finditer(r'id="dv-\d+"', html))
+    if last_dv_match:
+        last_dv_pos = last_dv_match[-1].start()
+        close_pos   = html.find("    </div>", last_dv_pos)
+        if close_pos != -1:
+            panel = build_live_panel(dv, course)
+            html  = html[:close_pos] + panel + html[close_pos:]
+
+    # Add mega-menu button in the right section, alphabetically
+    section_label = course["mega_section"]
+    cat_pos = html.find(f'<div class="mega-cat">{section_label}</div>')
+    if cat_pos != -1:
+        next_cat = html.find('<div class="mega-cat">', cat_pos + len(section_label))
+        section_end = next_cat if next_cat != -1 else html.find('</div>', cat_pos + 30)
+        section = html[cat_pos:section_end]
+
+        btn_pat = re.compile(r'        <button class="mega-link[^"]*"[^>]*>([^<]+)</button>')
+        buttons = list(btn_pat.finditer(section))
+
+        new_btn = (
+            f'        <button class="mega-link mega-link--live" '
+            f'data-panel="dv-{dv}" onclick="megaSelect(this,\'dv-{dv}\')">'
+            f'{course["name"]}</button>'
+        )
+
+        insert_offset = None
+        for btn in buttons:
+            if btn.group(1).lower() > course["name"].lower():
+                insert_offset = btn.start()
+                break
+        if insert_offset is None:
+            insert_offset = len(section) if not buttons else buttons[-1].end() + 1
+
+        abs_insert = cat_pos + insert_offset
+        html = html[:abs_insert] + new_btn + "\n" + html[abs_insert:]
+
+    return html
+
+
+def register_dashboard(course: dict, html: str) -> str:
+    """Add course to dashboard.html COURSES array. Returns updated HTML."""
+    if course["id"] in html:
+        return html
+
+    courses_match = re.search(r"(const COURSES\s*=\s*\[)(.*?)(\s*\];)", html, re.DOTALL)
+    if not courses_match:
+        return html
+
+    new_entry = (
+        f"      {{ id:'{course['id']}', title:'{course['name']}', "
+        f"sub:'{course['name']}', icon:'{course['icon']}', "
+        f"bar:'{course['bar']}', modules:{course['n_mods']}, "
+        f"url:'{course['url']}' }},"
     )
-
-    # Insert panel before the closing tag of the dv section
-    last_dv = max(m.start() for m in re.finditer(r'id="dv-\d+"', html))
-    close_pos = html.find("    </div>", last_dv)
-    if close_pos == -1:
-        print("  ERROR: Could not find insertion point in courses.html")
-        sys.exit(1)
-
-    html = html[:close_pos] + panel + html[close_pos:]
-    html = insert_mega_menu_entry(html, dv, info["name"], info["category"])
-
-    COURSES_HTML.write_text(html, encoding="utf-8")
-    print(f"  ✓ courses.html — panel dv-{dv} + mega-menu entry added")
-    return dv
+    insert_pos = courses_match.start(3)
+    return html[:insert_pos] + "\n" + new_entry + html[insert_pos:]
 
 
-def step_courses_data(info: dict, dv: int) -> None:
-    """Append stub entry to courses-data.json."""
-    raw = COURSES_DATA.read_text(encoding="utf-8-sig")
-    data = json.loads(raw)
+def register_i18n(course: dict) -> None:
+    """Add course name + description to all 13 i18n files."""
+    keys = {course["name"]: course["name"]}
+    if course["desc"]:
+        keys[course["desc"]] = course["desc"]
 
-    if any(c.get("id") == info["slug"] for c in data.get("courses", [])):
-        print(f"  ⚠  '{info['slug']}' already in courses-data.json — skipping.")
-        return
-
-    data["courses"].append({
-        "id":          info["slug"],
-        "name":        info["name"],
-        "icon":        info["icon"],
-        "category":    info["category"],
-        "panelId":     f"dv-{dv}",
-        "description": info["desc"],
-        "live":        False,
-        "modules":     info["modules"],
-    })
-    COURSES_DATA.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    print(f"  ✓ courses-data.json — '{info['slug']}' stub added")
+    for filename in I18N_FILES:
+        path = I18N_DIR / filename
+        if not path.exists():
+            continue
+        data = load_json(path)
+        changed = False
+        for key, val in keys.items():
+            if key not in data:
+                data[key] = val
+                changed = True
+        if changed:
+            save_json(path, data)
 
 
-def step_dashboard(info: dict) -> None:
-    """Add course to K-12 dashboard."""
-    add_to_dashboard(
-        course_id=info["slug"],
-        title=info["name"],
-        sub=info["sub_label"],
-        icon=info["icon"],
-        bar=info["bar"],
-        n_mods=info["n_mods"],
-        url=info["url"],
-    )
-
-
-def step_i18n(info: dict) -> None:
-    """Add translatable strings to all 13 i18n files."""
-    print("  Adding i18n strings…")
-    add_to_i18n(
-        sub_label=info["sub_label"],
-        title=info["name"],
-        desc=info["desc"],
-    )
-
-
-def step_rebuild(script: Path, label: str) -> None:
-    """Run a rebuild script and report the result."""
+def run_script(name: str) -> bool:
     result = subprocess.run(
-        [sys.executable, str(script)],
+        [sys.executable, str(SCRIPTS / name)],
         capture_output=True, text=True
     )
-    if result.returncode == 0:
-        print(f"  ✓ {label} rebuilt successfully")
-    else:
-        print(f"  ✗ {label} failed:")
-        print(result.stdout[-500:] if result.stdout else "")
-        print(result.stderr[-500:] if result.stderr else "")
+    if result.returncode != 0:
+        print(f"  ✗ {name} failed:")
+        print((result.stdout + result.stderr)[-400:])
+        return False
+    return True
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 def main() -> None:
-    info = collect_inputs()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--apply", action="store_true",
+                        help="Apply changes (default: dry-run)")
+    args = parser.parse_args()
 
-    print("\n── Updating all course locations ──────────────────────\n")
+    courses = find_unregistered()
 
-    dv = step_courses_html(info)        # 1 + 2: courses.html (panel + mega-menu)
-    step_courses_data(info, dv)         # 3: courses-data.json
-    step_dashboard(info)                # 4: dashboard.html
-    step_i18n(info)                     # 5: i18n/*.json (13 files)
-    step_rebuild(BUILD_REGISTRY, "course-registry.json")   # 6: registry
-    step_rebuild(BUILD_STATS,    "stats.json")              # 7: stats
+    if not courses:
+        print("✓ All module directories are fully registered. Nothing to do.")
+        return
 
-    print(f"""
-╔══════════════════════════════════════════════════╗
-║  '{info["name"]}' added as Coming Soon  ║
-╚══════════════════════════════════════════════════╝
+    print(f"Found {len(courses)} course(s) with registration gaps:\n")
+    for c in courses:
+        missing = [k for k, v in c["missing"].items() if v]
+        print(f"  {c['id']}")
+        print(f"    Name:    {c['name']}")
+        print(f"    Modules: {c['n_mods']}")
+        print(f"    Missing: {', '.join(missing)}")
+        if not args.apply:
+            print(f"    Desc:    {c['desc'][:80]}…" if len(c['desc']) > 80 else f"    Desc:    {c['desc']}")
+        print()
 
-Next steps:
-  1. Use the Module Generator to write the {info["n_mods"]} module HTML files.
-  2. Run:  python .github/scripts/auto_activate_courses.py --apply
-     (marks the course live once all modules are written)
-  3. Translate non-English strings in i18n/courses.*.json when ready.
-  4. Commit and push.
-""")
+    if not args.apply:
+        print("Dry-run complete. Run with --apply to register these courses.")
+        return
+
+    # Load mutable state once
+    cdata      = load_json(COURSES_DATA)
+    html       = read_text(COURSES_HTML)
+    dash_html  = read_text(DASHBOARD)
+
+    for c in courses:
+        print(f"Registering {c['id']}…")
+
+        if c["missing"]["courses_data"]:
+            register_courses_data(c, cdata)
+            print(f"  ✓ courses-data.json")
+
+        if c["missing"]["html"]:
+            html = register_courses_html(c, html)
+            print(f"  ✓ courses.html (panel + mega-menu)")
+
+        if c["missing"]["dashboard"]:
+            dash_html = register_dashboard(c, dash_html)
+            print(f"  ✓ dashboard.html")
+
+        if c["missing"]["i18n"]:
+            register_i18n(c)
+            print(f"  ✓ i18n files (13 languages)")
+
+    # Write updated files
+    save_json(COURSES_DATA, cdata)
+    COURSES_HTML.write_text(html, encoding="utf-8")
+    DASHBOARD.write_text(dash_html, encoding="utf-8")
+
+    # Rebuild derived files
+    if run_script("build_registry.py"):
+        print("  ✓ course-registry.json rebuilt")
+    if run_script("build_stats.py"):
+        print("  ✓ stats.json rebuilt")
+
+    print(f"\n✓ Done. {len(courses)} course(s) registered.")
 
 
 if __name__ == "__main__":

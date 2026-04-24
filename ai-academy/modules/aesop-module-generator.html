@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- v1.0.21 | 2026-04-23 -->
+<!-- v1.0.0 | 2026-04-23 -->
+<!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
 <!-- v1.0.0 | 2026-04-14 -->
@@ -63,6 +64,16 @@ textarea{resize:vertical;min-height:80px;}
 #syncBanner a{color:#fff;text-decoration:underline;}
 #syncBanner.warn{display:block;}
 #syncBanner.ok{display:block;background:#1D9E75;}
+.recent-builds-list{display:flex;flex-direction:column;gap:0.5rem;}
+.rb-item{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:0.83rem;}
+.rb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.rb-dot.complete{background:#1D9E75;}
+.rb-dot.partial{background:#c9a05a;}
+.rb-dot.error{background:#e05c5c;}
+.rb-dot.in-progress{background:#60a5fa;animation:pulse 1.5s ease-in-out infinite;}
+.rb-name{font-weight:600;color:rgba(255,255,255,0.85);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rb-meta{color:rgba(255,255,255,0.35);font-size:0.75rem;white-space:nowrap;}
+.rb-empty{color:rgba(255,255,255,0.25);font-size:0.85rem;font-style:italic;}
 </style>
 </head>
 <body>
@@ -202,6 +213,12 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 
+  <div class="card" id="recentBuildsCard" style="margin-top:1rem;">
+    <div class="card-title">Recent Builds</div>
+    <div id="recentBuildsList" class="recent-builds-list">
+      <div class="rb-empty">No builds yet — run Build Full Course to start tracking.</div>
+    </div>
+  </div>
 
 </div>
 
@@ -400,6 +417,7 @@ async function loadCoursesData() {
 async function init() {
   await loadCoursesData();
   populateCourseDropdown();
+  renderRecentBuilds();
   // Default to Advanced
   selectedTier = 'advanced';
   const advRadio = document.querySelector('input[value="advanced"]');
@@ -1556,6 +1574,76 @@ function refreshModuleDropdown() {
   });
 }
 
+// ── Recent Builds History ──────────────────────────────────────────────────
+// Tracks the last 5 full-course builds across all courses.
+// Key: "modgen_recent_builds" → [ {id, cid, name, tier, lang, langName,
+//   totalMods, resumeFrom, completedMods, startedAt, completedAt, status} ]
+const RECENT_BUILDS_KEY = 'modgen_recent_builds';
+const RECENT_BUILDS_MAX = 5;
+function getRecentBuilds() {
+  try { return JSON.parse(localStorage.getItem(RECENT_BUILDS_KEY)) || []; } catch(e) { return []; }
+}
+function recordBuildStart(cid, name, tier, lang, langName, totalMods, resumeFrom) {
+  const id = cid + '_' + Date.now();
+  const builds = getRecentBuilds();
+  builds.unshift({ id, cid, name, tier, lang, langName, totalMods, resumeFrom,
+    completedMods: 0, startedAt: new Date().toISOString(), completedAt: null, status: 'in-progress' });
+  if (builds.length > RECENT_BUILDS_MAX) builds.length = RECENT_BUILDS_MAX;
+  localStorage.setItem(RECENT_BUILDS_KEY, JSON.stringify(builds));
+  renderRecentBuilds();
+  return id;
+}
+function recordBuildUpdate(id, patch) {
+  if (!id) return;
+  const builds = getRecentBuilds();
+  const b = builds.find(x => x.id === id);
+  if (b) { Object.assign(b, patch); localStorage.setItem(RECENT_BUILDS_KEY, JSON.stringify(builds)); }
+  renderRecentBuilds();
+}
+function recordBuildComplete(id, status, completedMods) {
+  if (!id) return;
+  const builds = getRecentBuilds();
+  const b = builds.find(x => x.id === id);
+  if (b) { Object.assign(b, { status, completedMods, completedAt: new Date().toISOString() }); localStorage.setItem(RECENT_BUILDS_KEY, JSON.stringify(builds)); }
+  renderRecentBuilds();
+}
+function renderRecentBuilds() {
+  const el = document.getElementById('recentBuildsList');
+  if (!el) return;
+  const builds = getRecentBuilds();
+  if (!builds.length) {
+    el.innerHTML = '<div class="rb-empty">No builds yet — run Build Full Course to start tracking.</div>';
+    return;
+  }
+  el.innerHTML = builds.map(b => {
+    const dotClass = b.status === 'complete' ? 'complete' : b.status === 'partial' ? 'partial' : b.status === 'error' ? 'error' : 'in-progress';
+    const label = b.status === 'complete' ? '✓' : b.status === 'partial' ? '◑' : b.status === 'error' ? '✗' : '⟳';
+    const langTag = (b.lang && b.lang !== 'en') ? ' · ' + _rbEsc(b.langName) : '';
+    const requested = b.totalMods - (b.resumeFrom || 1) + 1;
+    const modsTag = b.status === 'in-progress'
+      ? b.completedMods + '/' + requested + ' mods'
+      : b.status === 'complete'
+        ? b.totalMods + ' mods'
+        : b.completedMods + '/' + requested + ' mods';
+    const when = b.completedAt ? _rbAge(b.completedAt) : (b.startedAt ? 'started ' + _rbAge(b.startedAt) : '');
+    return '<div class="rb-item">'
+      + '<span class="rb-dot ' + dotClass + '" title="' + b.status + '"></span>'
+      + '<span class="rb-name" title="' + _rbEsc(b.name) + '">' + label + ' ' + _rbEsc(b.name) + '</span>'
+      + '<span class="rb-meta">' + _rbEsc(b.tier) + langTag + ' · ' + modsTag + (when ? ' · ' + when : '') + '</span>'
+      + '</div>';
+  }).join('');
+}
+function _rbAge(iso) {
+  const s = Math.round((Date.now() - new Date(iso)) / 1000);
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+function _rbEsc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 let chainRunning = false;
 // AbortController for the in-flight API request. Set by buildFullCourse() per
 // module and aborted by stopChain() when the user hits Stop. `null` when idle.
@@ -1659,6 +1747,8 @@ async function buildFullCourse() {
 
   const chainStart = Date.now();
   let allSaved = true;
+  let buildId = null;
+  let completedMods = 0;
 
   try {
   showLog('');
@@ -1667,6 +1757,7 @@ async function buildFullCourse() {
   if (resumeFrom > 1) log('Resuming from Module ' + resumeFrom + ' (skipping M1–M' + (resumeFrom - 1) + ')');
   log('');
   await obsidianCheckpoint('course-start', { course: course.name, tier: tc.label, totalMods, lang: selectedLangName, resumeFrom });
+  buildId = recordBuildStart(cid, course.name, tc.label, selectedLang || 'en', selectedLangName, totalMods, resumeFrom);
 
   for (let mn = resumeFrom; mn <= totalMods; mn++) {
     if (!chainRunning) { log('Stopped.'); break; }
@@ -1760,6 +1851,8 @@ async function buildFullCourse() {
       const savePath = langPrefix + chainFolderName + '/' + filename;
       log('Saved: ' + savePath);
       setModSaved(cid, mn, content.length);
+      completedMods++;
+      recordBuildUpdate(buildId, { completedMods });
       await obsidianCheckpoint('mod-complete', { n: mn, title: mod.title, chars: content.length.toLocaleString(), secs: modSecs });
 
       // Update output area with latest
@@ -1865,6 +1958,9 @@ async function buildFullCourse() {
     chainBtn.textContent = 'Build Full Course';
     if (stopBtn) { stopBtn.disabled = true; stopBtn.style.display = 'none'; }
     if (allSaved) document.getElementById('resumeFrom').value = 1;
+    const requested = totalMods - resumeFrom + 1;
+    const finalStatus = !allSaved ? 'error' : (completedMods >= requested ? 'complete' : 'partial');
+    recordBuildComplete(buildId, finalStatus, completedMods);
   }
 }
 

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/graph.php';
 
 // Simple token gate — pass ?token=... in the URL
 $token = $_GET['token'] ?? '';
@@ -15,6 +16,17 @@ $stmt = getDB()->query(
 );
 $rows = $stmt->fetchAll();
 
+// Fetch Teams join URLs from Graph for each booking
+foreach ($rows as &$r) {
+    $r['join_url'] = null;
+    if ($r['outlook_event_id']) {
+        $eid = rawurlencode($r['outlook_event_id']);
+        $ev  = graphGet('/me/events/' . $eid . '?$select=onlineMeeting');
+        $r['join_url'] = $ev['onlineMeeting']['joinUrl'] ?? null;
+    }
+}
+unset($r);
+
 header('Content-Type: text/html; charset=utf-8');
 ?><!DOCTYPE html>
 <html lang="en">
@@ -28,10 +40,14 @@ header('Content-Type: text/html; charset=utf-8');
           box-shadow: 0 1px 4px rgba(0,0,0,.08); overflow: hidden; }
   th { background: #1e293b; color: #fff; text-align: left; padding: .6rem 1rem; font-size: .8rem;
        letter-spacing: .05em; text-transform: uppercase; }
-  td { padding: .65rem 1rem; border-bottom: 1px solid #e2e8f0; font-size: .875rem; }
+  td { padding: .65rem 1rem; border-bottom: 1px solid #e2e8f0; font-size: .875rem; vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #f1f5f9; }
   .count { color: #64748b; font-size: .875rem; margin-bottom: 1rem; }
+  .join-btn { display: inline-block; padding: .3rem .75rem; background: #6366f1; color: #fff;
+              border-radius: 6px; text-decoration: none; font-size: .8rem; white-space: nowrap; }
+  .join-btn:hover { background: #4f46e5; }
+  .no-link { color: #94a3b8; font-size: .8rem; }
 </style>
 </head>
 <body>
@@ -46,6 +62,7 @@ header('Content-Type: text/html; charset=utf-8');
       <th>Email</th>
       <th>Start (<?= OWNER_TIMEZONE ?>)</th>
       <th>End</th>
+      <th>Teams Link</th>
       <th>Booked at</th>
     </tr>
   </thead>
@@ -57,6 +74,13 @@ header('Content-Type: text/html; charset=utf-8');
       <td><a href="mailto:<?= htmlspecialchars($r['guest_email']) ?>"><?= htmlspecialchars($r['guest_email']) ?></a></td>
       <td><?= htmlspecialchars($r['start_time']) ?></td>
       <td><?= htmlspecialchars($r['end_time']) ?></td>
+      <td>
+        <?php if ($r['join_url']): ?>
+          <a class="join-btn" href="<?= htmlspecialchars($r['join_url']) ?>" target="_blank">Join</a>
+        <?php else: ?>
+          <span class="no-link">—</span>
+        <?php endif; ?>
+      </td>
       <td><?= htmlspecialchars($r['created_at']) ?></td>
     </tr>
   <?php endforeach; ?>

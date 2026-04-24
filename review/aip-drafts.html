@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-23 -->
+<!-- v1.0.6 | 2026-04-23 -->
 <!-- v1.0.13 | 2026-04-23 — add Run Youth Now button -->
 <!-- v1.1.0 | 2026-04-14 -->
 <html lang="en">
@@ -731,12 +731,21 @@ async function loadDrafts() {
   const container = document.getElementById('drafts-container');
 
   try {
-    // Load from GitHub raw content so reads stay in sync with API writes
-    const RAW = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main`;
-    const bust = `?t=${Date.now()}`;
-    const indexRes = await fetch(`${RAW}/${DRAFTS_PATH}/index.json${bust}`);
-    if (!indexRes.ok) throw new Error(`Could not load draft index (${indexRes.status})`);
-    const fileList = await indexRes.json();
+    // Try GitHub Contents API first (always fresh, works after API writes).
+    // Falls back to local relative paths if the repo is private / no token.
+    async function fetchDraftFile(path) {
+      if (GH_TOKEN) {
+        const r = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`);
+        if (r.ok) {
+          const j = await r.json();
+          return JSON.parse(atob(j.content.replace(/\n/g, '')));
+        }
+      }
+      const r = await fetch(`../${path}`);
+      return r.json();
+    }
+
+    const fileList = await fetchDraftFile(`${DRAFTS_PATH}/index.json`);
 
     const jsonFiles = fileList.filter(f => f.endsWith('.json') && f !== 'index.json');
     if (jsonFiles.length === 0) {
@@ -746,10 +755,8 @@ async function loadDrafts() {
       return;
     }
 
-    // Fetch each draft JSON from GitHub raw (cache-busted)
     const drafts = await Promise.all(jsonFiles.map(async f => {
-      const res = await fetch(`${RAW}/${DRAFTS_PATH}/${f}${bust}`);
-      const data = await res.json();
+      const data = await fetchDraftFile(`${DRAFTS_PATH}/${f}`);
       data._filename = f;
       data._sha = '';  // SHA fetched on-demand for write operations
       return data;

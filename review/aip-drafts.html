@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- v1.0.0 | 2026-04-23 -->
-<!-- v1.0.12 | 2026-04-23 — default filter to Pending -->
+<!-- v1.0.1 | 2026-04-23 -->
+<!-- v1.0.13 | 2026-04-23 — add Run Youth Now button -->
 <!-- v1.1.0 | 2026-04-14 -->
 <html lang="en">
 <head>
@@ -642,6 +642,11 @@
       ▶ Run Now
     </button>
     <div id="agent-status"></div>
+    <button class="btn-run-agent" id="runK12Btn" onclick="runK12Agent()" style="border-color:var(--gold);color:var(--gold);">
+      <span class="run-spinner"></span>
+      ▶ Run Youth Now
+    </button>
+    <div id="k12-agent-status"></div>
   </div>
 </header>
 
@@ -922,6 +927,53 @@ function ghFetch(path, opts = {}) {
 }
 
 // ── RUN AGENT ─────────────────────────────────────────────────────────────────
+async function runK12Agent() {
+  if (!await ensurePAT('Enter GitHub PAT to trigger the K-12 research agent:')) {
+    showToast('Action cancelled — PAT required.');
+    return;
+  }
+
+  const btn = document.getElementById('runK12Btn');
+  const status = document.getElementById('k12-agent-status');
+
+  btn.disabled = true;
+  btn.classList.add('running');
+  status.textContent = 'Dispatching K-12 workflow…';
+  status.className = '';
+
+  try {
+    const res = await ghFetch(
+      `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/k12-research.yml/dispatches`,
+      { method: 'POST', body: JSON.stringify({ ref: 'main' }) }
+    );
+
+    if (res.status === 401) {
+      clearPAT();
+      throw new Error('PAT rejected (401) — please try again with a fresh token.');
+    }
+    if (res.status === 404) {
+      throw new Error('Workflow not found — check k12-research.yml exists on main.');
+    }
+    if (!res.ok) {
+      throw new Error(`GitHub returned ${res.status}`);
+    }
+
+    status.textContent = '✓ K-12 agent dispatched — results land in ~2 min.';
+    status.className = 'ok';
+    showToast('K-12 Research Agent triggered successfully.');
+
+    await pollLatestRun(status, 'k12-research.yml');
+
+  } catch (err) {
+    status.textContent = '✗ ' + err.message;
+    status.className = 'err';
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('running');
+  }
+}
+
 async function runAgent() {
   if (!await ensurePAT('Enter GitHub PAT to trigger the research agent:')) {
     showToast('Action cancelled — PAT required.');
@@ -960,7 +1012,7 @@ async function runAgent() {
     showToast('AIP Research Agent triggered successfully.');
 
     // Poll for the run to appear and show its status
-    await pollLatestRun(status);
+    await pollLatestRun(status, 'aip-generate.yml');
 
   } catch (err) {
     status.textContent = '✗ ' + err.message;
@@ -972,7 +1024,7 @@ async function runAgent() {
   }
 }
 
-async function pollLatestRun(statusEl) {
+async function pollLatestRun(statusEl, workflow = 'aip-generate.yml') {
   // Wait a moment for GitHub to register the dispatch
   await new Promise(r => setTimeout(r, 3000));
 
@@ -980,7 +1032,7 @@ async function pollLatestRun(statusEl) {
     await new Promise(r => setTimeout(r, 5000));
     try {
       const res = await ghFetch(
-        `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/aip-generate.yml/runs?per_page=1`
+        `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/${workflow}/runs?per_page=1`
       );
       if (!res.ok) break;
       const data = await res.json();

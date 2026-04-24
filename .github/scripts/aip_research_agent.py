@@ -489,6 +489,7 @@ For EACH topic, return a JSON object with exactly these fields:
 - "synopsis": 2-sentence course description written for a professional audience
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for professional AI literacy
+- "learning_outcome": 1 sentence — what can the professional DO or DECIDE after taking this course?
 - "is_model_topic": true if the course is specifically about one or more named AI models, tools, or integrations
 
 For topics marked ⚑ MODEL TOPIC: design hands-on courses that get professionals productive with the specific tool immediately. Cover: what it does and doesn't do, how it compares, practical workflows, real use cases, limitations, and either advanced features or integration with other tools.

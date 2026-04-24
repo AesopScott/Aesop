@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- v1.0.0 | 2026-04-23 -->
-<!-- v1.2.0 | 2026-04-24 — three-track pipeline: Professional, Young Adult, Youth -->
+<!-- v1.0.1 | 2026-04-23 -->
+<!-- v1.3.0 | 2026-04-23 — enhanced cards: meta badges, learning outcome, nearest-existing, module count -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -272,7 +272,53 @@
     font-size: 28px;
     color: #8ab0ac;
     line-height: 1.65;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
+  }
+
+  .card-outcome {
+    font-size: 22px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 32px;
+    padding-left: 16px;
+    border-left: 2px solid var(--teal);
+  }
+
+  .card-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 32px;
+    align-items: center;
+  }
+
+  .card-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .card-badge--tier-beginner  { background: rgba(26,122,110,0.15); border: 1px solid rgba(26,122,110,0.4); color: #23a090; }
+  .card-badge--tier-intermediate { background: rgba(200,149,10,0.12); border: 1px solid rgba(200,149,10,0.35); color: var(--gold); }
+  .card-badge--tier-advanced  { background: rgba(109,40,217,0.12); border: 1px solid rgba(109,40,217,0.35); color: var(--ya-light); }
+  .card-badge--demand         { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+  .card-badge--demand-high    { background: rgba(26,122,110,0.12); border: 1px solid rgba(26,122,110,0.35); color: #3dd6c0; }
+  .card-badge--model          { background: rgba(200,149,10,0.12); border: 1px solid rgba(200,149,10,0.3); color: var(--gold); }
+  .card-badge--age            { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+
+  .card-nearest {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border-left: 2px solid var(--border);
   }
 
   .modules-label {
@@ -864,7 +910,6 @@ function renderDrafts() {
 
 function renderCard(draft, idx) {
   const isPending  = draft.status === 'pending';
-  const isApproved = draft.status === 'approved';
 
   const modules = (draft.modules || []).map((m, i) =>
     `<div class="module-tag">${escHtml(m)}</div>`
@@ -874,6 +919,24 @@ function renderCard(draft, idx) {
     <button class="btn-approve" onclick="setStatus('${draft._filename}', 'approved')">✓ Approve</button>
     <button class="btn-reject"  onclick="setStatus('${draft._filename}', 'rejected')">✗ Reject</button>
   ` : `<span class="status-badge ${draft.status}">${draft.status.toUpperCase()}</span>`;
+
+  // Meta badges
+  const tierClass = {beginner:'beginner', intermediate:'intermediate', advanced:'advanced'}[(draft.tier||'').toLowerCase()] || 'beginner';
+  const tierBadge = draft.tier ? `<span class="card-badge card-badge--tier-${tierClass}">${escHtml(draft.tier)}</span>` : '';
+  const ageBadge  = draft.age_band ? `<span class="card-badge card-badge--age">Ages ${escHtml(draft.age_band)}</span>` : '';
+  const demand    = draft.demand_score;
+  const demandBadge = demand != null ? `<span class="card-badge ${demand >= 8 ? 'card-badge--demand-high' : 'card-badge--demand'}">⚡ ${demand}/10 demand</span>` : '';
+  const modelBadge  = draft.is_model_topic ? `<span class="card-badge card-badge--model">🔧 Tool-specific</span>` : '';
+  const metaRow = (tierBadge || ageBadge || demandBadge || modelBadge)
+    ? `<div class="card-meta-row">${tierBadge}${ageBadge}${demandBadge}${modelBadge}</div>` : '';
+
+  // Learning outcome
+  const outcome = draft.learning_outcome
+    ? `<div class="card-outcome">🎯 ${escHtml(draft.learning_outcome)}</div>` : '';
+
+  // Nearest existing (dedup context)
+  const nearest = draft.nearest_existing && draft.nearest_existing !== 'none' && draft.nearest_existing !== 'unknown'
+    ? `<div class="card-nearest">Nearest existing: ${escHtml(draft.nearest_existing)}${draft.corpus_score != null ? ` (sim: ${draft.corpus_score})` : ''}</div>` : '';
 
   return `
     <div class="draft-card ${draft.status}" id="card-${draft._filename}" style="animation-delay:${idx * 0.05}s">
@@ -885,7 +948,10 @@ function renderCard(draft, idx) {
         <div class="card-date">${escHtml(draft.generated || '')}</div>
       </div>
       <div class="card-synopsis">${escHtml(draft.synopsis || '')}</div>
-      <div class="modules-label">Modules</div>
+      ${outcome}
+      ${metaRow}
+      ${nearest}
+      <div class="modules-label">Modules (${(draft.modules||[]).length})</div>
       <div class="modules-list" style="counter-reset:module">${modules}</div>
       <div class="card-actions">${actions}</div>
     </div>

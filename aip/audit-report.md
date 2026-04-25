@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-24 23:56 UTC
+**Generated:** 2026-04-25 00:03 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 526 · **Warnings:** 953
+**Errors:** 527 · **Warnings:** 953
 
 ---
 
@@ -474,7 +474,7 @@
 
 ## Cross-References
 
-### Errors (26)
+### Errors (27)
 
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `applied` is linked in courses.html but not defined in electives-hub or registry
@@ -500,6 +500,7 @@
 - 🔴 **ORPHAN_LINK**: Course `talking` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `the` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `vertex` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `voice` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `whats` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `working` is linked in courses.html but not defined in electives-hub or registry
 
@@ -1523,7 +1524,7 @@
 
 ## Summary
 
-**526 error(s) require attention:**
+**527 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -2001,6 +2002,7 @@
 1. Course `talking` is linked in courses.html but not defined in electives-hub or registry
 1. Course `the` is linked in courses.html but not defined in electives-hub or registry
 1. Course `vertex` is linked in courses.html but not defined in electives-hub or registry
+1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`

@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-25 01:07 UTC
+**Generated:** 2026-04-25 01:38 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 527 · **Warnings:** 953
+**Errors:** 528 · **Warnings:** 969
 
 ---
 
@@ -507,8 +507,9 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (48)
+### Errors (49)
 
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-alignment-for-everyone/ai-alignment-for-everyone-m5.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
@@ -984,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (533)
+### Warnings (549)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -994,6 +995,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-m3.html` has no COURSE_ID constant
@@ -1373,6 +1382,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `make-it-yours-creating-with-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `model-evaluation-and-benchmarks-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `m1-advanced-v18.5-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `m2-advanced-v4-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
@@ -1524,7 +1541,7 @@
 
 ## Summary
 
-**527 error(s) require attention:**
+**528 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -2005,6 +2022,7 @@
 1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-alignment-for-everyone/ai-alignment-for-everyone-m5.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`

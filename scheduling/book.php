@@ -87,7 +87,7 @@ $event = [
         ],
     ],
     'allowNewTimeProposals' => false,
-    'responseRequested'     => true,
+    'responseRequested'     => false,
 ];
 
 if ($joinUrl) {

@@ -81,6 +81,10 @@ $event = [
             'emailAddress' => ['address' => $email, 'name' => $name],
             'type'         => 'required',
         ],
+        [
+            'emailAddress' => ['address' => OWNER_EMAIL, 'name' => OWNER_NAME],
+            'type'         => 'required',
+        ],
     ],
     'allowNewTimeProposals' => false,
     'responseRequested'     => true,
@@ -107,13 +111,41 @@ logBooking(
     $slotEnd->setTimezone($ownerTz)->format('Y-m-d H:i:s')
 );
 
-// Notify Scott of the new booking
+// Notify Scott with an .ics attachment so it renders as a meeting invite
+$uid        = strtoupper(bin2hex(random_bytes(16))) . '@aesopacademy.org';
+$icsStart   = $slotStart->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+$icsEnd     = $slotEnd->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+$icsStamp   = gmdate('Ymd\THis\Z');
+$icsSummary = 'AESOP AI Academy Meeting — ' . $friendly;
+$icsDesc    = "Guest: $name ($email)" . ($note ? "\\nNote: $note" : '') . ($joinUrl ? "\\nJoin: $joinUrl" : '');
+$icsLoc     = $joinUrl ? 'Microsoft Teams' : 'AESOP AI Academy';
+
+$icsContent = implode("\r\n", [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//AESOP AI Academy//Scheduler//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
+    'BEGIN:VEVENT',
+    'UID:' . $uid,
+    'DTSTAMP:' . $icsStamp,
+    'DTSTART:' . $icsStart,
+    'DTEND:' . $icsEnd,
+    'SUMMARY:' . $icsSummary,
+    'DESCRIPTION:' . $icsDesc,
+    'LOCATION:' . $icsLoc,
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
+]);
+
 $notifyBody  = "New meeting booked:\n\n";
 $notifyBody .= "Name:  $name\n";
 $notifyBody .= "Email: $email\n";
 $notifyBody .= "Time:  $friendly\n";
 if ($note)    $notifyBody .= "Note:  $note\n";
 if ($joinUrl) $notifyBody .= "\nJoin: $joinUrl\n";
+$notifyBody .= "\nThe meeting is attached as a calendar invite.";
 
 $mailResult = graphPost('/me/sendMail', [
     'message' => [
@@ -122,6 +154,14 @@ $mailResult = graphPost('/me/sendMail', [
         'toRecipients' => [
             ['emailAddress' => ['address' => OWNER_EMAIL,            'name' => OWNER_NAME]],
             ['emailAddress' => ['address' => 'ravenshroud@gmail.com', 'name' => OWNER_NAME]],
+        ],
+        'attachments' => [
+            [
+                '@odata.type'  => '#microsoft.graph.fileAttachment',
+                'name'         => 'meeting.ics',
+                'contentType'  => 'text/calendar; method=REQUEST',
+                'contentBytes' => base64_encode($icsContent),
+            ],
         ],
     ],
     'saveToSentItems' => false,

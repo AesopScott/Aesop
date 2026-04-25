@@ -81,10 +81,6 @@ $event = [
             'emailAddress' => ['address' => $email, 'name' => $name],
             'type'         => 'required',
         ],
-        [
-            'emailAddress' => ['address' => OWNER_EMAIL, 'name' => OWNER_NAME],
-            'type'         => 'required',
-        ],
     ],
     'allowNewTimeProposals' => false,
     'responseRequested'     => true,

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-23 -->
+<!-- v1.0.3 | 2026-04-26 -->
 <!-- v1.3.0 | 2026-04-23 — enhanced cards: meta badges, learning outcome, nearest-existing, module count -->
 <html lang="en">
 <head>
@@ -25,6 +25,8 @@
     --muted: #5a7a76;
     --ya: #6D28D9;
     --ya-light: #8B5CF6;
+    --cyber: #dc2626;
+    --cyber-light: #f87171;
     --pending: #C8950A;
     --approved: #1A7A6E;
     --rejected: #7a3030;
@@ -470,6 +472,12 @@
     color: #fff;
   }
 
+  #view-cyber-btn.active {
+    background: var(--cyber);
+    border-color: var(--cyber-light);
+    color: #fff;
+  }
+
   #view-youth-btn.active {
     background: var(--gold-dim);
     border-color: var(--gold);
@@ -711,6 +719,11 @@
       ▶ Run Youth
     </button>
     <div id="k12-agent-status"></div>
+    <button class="btn-run-agent" id="runCyberBtn" onclick="runCyberAgent()" style="border-color:var(--cyber-light);color:var(--cyber-light);">
+      <span class="run-spinner"></span>
+      ▶ Run Cybersecurity
+    </button>
+    <div id="cyber-agent-status"></div>
   </div>
 </header>
 
@@ -723,6 +736,7 @@
     <button class="view-btn active" id="view-drafts-btn" onclick="switchView('drafts')">Professional<span class="btn-count" id="pro-count">…</span></button>
     <button class="view-btn" id="view-ya-btn" onclick="switchView('ya')" style="border-color:var(--ya-light);color:var(--ya-light);">Young Adult<span class="btn-count" id="ya-count">…</span></button>
     <button class="view-btn" id="view-youth-btn" onclick="switchView('youth')" style="border-color:var(--gold);color:var(--gold);">Youth<span class="btn-count" id="youth-count">…</span></button>
+    <button class="view-btn" id="view-cyber-btn" onclick="switchView('cyber')" style="border-color:var(--cyber-light);color:var(--cyber-light);">Cybersecurity<span class="btn-count" id="cyber-count">…</span></button>
     <button class="view-btn" id="view-dev-btn" onclick="switchView('dev')">In Development<span class="btn-count" id="dev-count">…</span></button>
   </div>
 
@@ -785,6 +799,25 @@
     </div>
   </div>
 
+  <!-- ── CYBERSECURITY DRAFTS VIEW ── -->
+  <div id="cyber-view" style="display:none">
+    <div class="stats-bar">
+      <div class="stat"><div class="stat-num" id="cyberstat-total">—</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-num pending" id="cyberstat-pending">—</div><div class="stat-label">Pending</div></div>
+      <div class="stat"><div class="stat-num approved" id="cyberstat-approved">—</div><div class="stat-label">Approved</div></div>
+      <div class="stat"><div class="stat-num rejected" id="cyberstat-rejected">—</div><div class="stat-label">Rejected</div></div>
+    </div>
+    <div class="filters" id="cyber-filters">
+      <button class="filter-btn" onclick="setCyberFilter('all', this)">All</button>
+      <button class="filter-btn active" onclick="setCyberFilter('pending', this)">Pending</button>
+      <button class="filter-btn" onclick="setCyberFilter('approved', this)">Approved</button>
+      <button class="filter-btn" onclick="setCyberFilter('rejected', this)">Rejected</button>
+    </div>
+    <div id="cyber-container">
+      <div class="state-msg">Loading cybersecurity drafts…</div>
+    </div>
+  </div>
+
   <!-- ── IN DEVELOPMENT VIEW ── -->
   <div id="dev-view" style="display:none">
     <div class="dev-stats-bar">
@@ -815,9 +848,10 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const REPO_OWNER      = 'AesopScott';
 const REPO_NAME       = 'Aesop';
-const DRAFTS_PATH     = 'aip/drafts';
-const YA_DRAFTS_PATH  = 'aip/ya-drafts';
-const K12_DRAFTS_PATH = 'aip/k12-drafts';
+const DRAFTS_PATH      = 'aip/drafts';
+const YA_DRAFTS_PATH   = 'aip/ya-drafts';
+const K12_DRAFTS_PATH  = 'aip/k12-drafts';
+const CYBER_DRAFTS_PATH = 'aip/cyber-drafts';
 // GitHub PAT — only needed for write operations (approve/reject)
 let GH_TOKEN = sessionStorage.getItem('aip_gh_token') || '';
 
@@ -833,6 +867,10 @@ let yaLoaded          = false;
 let allYouthDrafts    = [];
 let currentYouthFilter = 'pending';
 let youthLoaded        = false;
+// Cybersecurity
+let allCyberDrafts    = [];
+let currentCyberFilter = 'pending';
+let cyberLoaded        = false;
 
 let moduleCounter = 0;
 
@@ -976,8 +1014,9 @@ function clearPAT() {
 async function setStatus(filename, newStatus) {
   const isYA    = currentView === 'ya';
   const isYouth = currentView === 'youth';
-  const draftsArr = isYA ? allYADrafts : isYouth ? allYouthDrafts : allDrafts;
-  const draftPath = isYA ? YA_DRAFTS_PATH : isYouth ? K12_DRAFTS_PATH : DRAFTS_PATH;
+  const isCyber = currentView === 'cyber';
+  const draftsArr = isYA ? allYADrafts : isYouth ? allYouthDrafts : isCyber ? allCyberDrafts : allDrafts;
+  const draftPath = isYA ? YA_DRAFTS_PATH : isYouth ? K12_DRAFTS_PATH : isCyber ? CYBER_DRAFTS_PATH : DRAFTS_PATH;
   const draft = draftsArr.find(d => d._filename === filename);
   if (!draft) return;
 
@@ -1027,9 +1066,10 @@ async function setStatus(filename, newStatus) {
     const data = await res.json();
     draft._sha = data.content.sha; // update SHA for future writes
 
-    if (isYA)    { updateYAStats();    renderYADrafts();    }
+    if (isYA)         { updateYAStats();    renderYADrafts();    }
     else if (isYouth) { updateYouthStats(); renderYouthDrafts(); }
-    else         { updateStats();      renderDrafts();      }
+    else if (isCyber) { updateCyberStats(); renderCyberDrafts(); }
+    else              { updateStats();      renderDrafts();      }
     showToast(`"${draft.title}" marked as ${newStatus}.`);
 
   } catch (err) {
@@ -1207,6 +1247,127 @@ async function loadYouthDrafts() {
     youthLoaded = true;
   } catch (err) {
     container.innerHTML = `<div class="state-msg">Error loading youth drafts: <span>${err.message}</span></div>`;
+  }
+}
+
+// ── CYBERSECURITY DRAFTS ──────────────────────────────────────────────────────
+function updateCyberStats() {
+  const total    = allCyberDrafts.length;
+  const pending  = allCyberDrafts.filter(d => d.status === 'pending').length;
+  const approved = allCyberDrafts.filter(d => d.status === 'approved').length;
+  const rejected = allCyberDrafts.filter(d => d.status === 'rejected').length;
+  document.getElementById('cyberstat-total').textContent    = total;
+  document.getElementById('cyberstat-pending').textContent  = pending;
+  document.getElementById('cyberstat-approved').textContent = approved;
+  document.getElementById('cyberstat-rejected').textContent = rejected;
+  document.getElementById('cyber-count').textContent        = pending > 0 ? pending : total;
+}
+
+function setCyberFilter(filter, btn) {
+  currentCyberFilter = filter;
+  document.querySelectorAll('#cyber-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCyberDrafts();
+}
+
+function renderCyberDrafts() {
+  const container = document.getElementById('cyber-container');
+  const filtered = allCyberDrafts.filter(d => currentCyberFilter === 'all' || d.status === currentCyberFilter);
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="state-msg">No <span>${currentCyberFilter}</span> cybersecurity drafts.</div>`;
+    return;
+  }
+  container.style.counterReset = 'module';
+  container.innerHTML = filtered.map((d, i) => renderCard(d, i)).join('');
+}
+
+async function loadCyberDrafts() {
+  const container = document.getElementById('cyber-container');
+  try {
+    async function fetchCyberFile(path) {
+      if (GH_TOKEN) {
+        const r = await ghFetch(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`);
+        if (r.ok) {
+          const j = await r.json();
+          return JSON.parse(atob(j.content.replace(/\n/g, '')));
+        }
+      }
+      const r = await fetch(`../${path}`);
+      return r.json();
+    }
+    const fileList = await fetchCyberFile(`${CYBER_DRAFTS_PATH}/index.json`);
+    const jsonFiles = fileList.filter(f => f.endsWith('.json') && f !== 'index.json');
+    if (jsonFiles.length === 0) {
+      container.innerHTML = '<div class="state-msg">No cybersecurity drafts yet — run the Cybersecurity agent first.</div>';
+      updateCyberStats();
+      return;
+    }
+    const drafts = await Promise.all(jsonFiles.map(async f => {
+      const data = await fetchCyberFile(`${CYBER_DRAFTS_PATH}/${f}`);
+      data._filename = f;
+      data._sha = '';
+      return data;
+    }));
+    drafts.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      return (b.generated || '').localeCompare(a.generated || '');
+    });
+    allCyberDrafts = drafts;
+    updateCyberStats();
+    renderCyberDrafts();
+    cyberLoaded = true;
+  } catch (err) {
+    container.innerHTML = `<div class="state-msg">Error loading cybersecurity drafts: <span>${err.message}</span></div>`;
+  }
+}
+
+async function runCyberAgent() {
+  if (!await ensurePAT('Enter GitHub PAT to trigger the Cybersecurity research agent:')) {
+    showToast('Action cancelled — PAT required.');
+    return;
+  }
+
+  const btn    = document.getElementById('runCyberBtn');
+  const status = document.getElementById('cyber-agent-status');
+
+  btn.disabled = true;
+  btn.classList.add('running');
+  status.textContent = 'Dispatching Cybersecurity workflow…';
+  status.className = '';
+
+  try {
+    const res = await ghFetch(
+      `/repos/${REPO_OWNER}/${REPO_NAME}/actions/workflows/cyber-research.yml/dispatches`,
+      { method: 'POST', body: JSON.stringify({ ref: 'main' }) }
+    );
+
+    if (res.status === 401) {
+      clearPAT();
+      throw new Error('PAT rejected (401) — please try again with a fresh token.');
+    }
+    if (res.status === 403) {
+      clearPAT();
+      throw new Error('PAT needs "Actions: Read and write" permission.');
+    }
+    if (res.status === 404) {
+      throw new Error('Workflow not found — check cyber-research.yml exists on main.');
+    }
+    if (!res.ok) throw new Error(`GitHub returned ${res.status}`);
+
+    status.textContent = '✓ Cybersecurity agent dispatched — results land in ~2 min.';
+    status.className = 'ok';
+    showToast('Cybersecurity Research Agent triggered successfully.');
+
+    await pollLatestRun(status, 'cyber-research.yml');
+
+  } catch (err) {
+    status.textContent = '✗ ' + err.message;
+    status.className = 'err';
+    showToast('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('running');
   }
 }
 
@@ -1435,10 +1596,12 @@ function switchView(view) {
   document.getElementById('view-drafts-btn').classList.toggle('active', view === 'drafts');
   document.getElementById('view-ya-btn').classList.toggle('active', view === 'ya');
   document.getElementById('view-youth-btn').classList.toggle('active', view === 'youth');
+  document.getElementById('view-cyber-btn').classList.toggle('active', view === 'cyber');
   document.getElementById('view-dev-btn').classList.toggle('active', view === 'dev');
   document.getElementById('drafts-view').style.display = view === 'drafts' ? '' : 'none';
   document.getElementById('ya-view').style.display     = view === 'ya'     ? '' : 'none';
   document.getElementById('youth-view').style.display  = view === 'youth'  ? '' : 'none';
+  document.getElementById('cyber-view').style.display  = view === 'cyber'  ? '' : 'none';
   document.getElementById('dev-view').style.display    = view === 'dev'    ? '' : 'none';
 
   if (view === 'drafts') {
@@ -1449,6 +1612,9 @@ function switchView(view) {
   } else if (view === 'youth') {
     document.getElementById('page-title').textContent = 'Youth Course Proposals';
     if (!youthLoaded) loadYouthDrafts();
+  } else if (view === 'cyber') {
+    document.getElementById('page-title').textContent = 'Cybersecurity Course Proposals';
+    if (!cyberLoaded) loadCyberDrafts();
   } else {
     document.getElementById('page-title').textContent = 'In Development Courses';
     if (devCourses.length === 0) loadDevCourses();
@@ -1496,6 +1662,7 @@ function parseDevCourses(html) {
     else if (cat.startsWith('Art'))         group = 'Art';
     else if (cat.startsWith('Business'))    group = 'Business';
     else if (cat.startsWith('Development')) group = 'Development';
+    else if (cat.startsWith('Cyber'))       group = 'Cybersecurity';
     else if (cat.startsWith('AIP'))         group = 'AIP Draft';
 
     courses.push({ id, icon: icon.trim(), category: cat.trim(), title: title.trim(),

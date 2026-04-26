@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-25 01:38 UTC
+**Generated:** 2026-04-26 13:36 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 528 · **Warnings:** 969
+**Errors:** 527 · **Warnings:** 969
 
 ---
 
@@ -507,9 +507,8 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (49)
+### Errors (48)
 
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-alignment-for-everyone/ai-alignment-for-everyone-m5.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
@@ -1541,7 +1540,7 @@
 
 ## Summary
 
-**528 error(s) require attention:**
+**527 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -2022,7 +2021,6 @@
 1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-alignment-for-everyone/ai-alignment-for-everyone-m5.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`

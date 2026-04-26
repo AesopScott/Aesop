@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-24 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Module 7: Building an Eval Pipeline | Model Evaluation and Benchmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- model-evaluation-and-benchmarks-m7 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-error{color:#f07070;font-size:0.78rem;font-style:italic;padding:0.5rem 1rem;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.pipeline-diagram{background:var(--panel);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem;margin:1.25rem 0;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;justify-content:center;}
+.pipeline-step{background:rgba(var(--accent-rgb),0.05);border:1px solid rgba(var(--accent-rgb),0.18);border-radius:4px;padding:0.5rem 0.85rem;font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--accent);text-align:center;}
+.pipeline-arrow{color:rgba(201,160,90,0.3);font-size:0.9rem;padding:0 0.15rem;}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;margin:1.25rem 0;}
+.metric-card{background:var(--panel);border:1px solid var(--border-dark);border-radius:6px;padding:0.85rem 1rem;}
+.metric-card-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:0.4rem;}
+.metric-card-title{font-size:0.88rem;font-weight:700;color:#e8e3db;margin-bottom:0.3rem;}
+.metric-card-desc{font-size:0.78rem;color:#6e6861;line-height:1.6;}
+.code-block{background:#060e18;border:1px solid var(--border-dark);border-radius:4px;padding:0.85rem 1rem;margin:1rem 0;font-family:'Courier New',monospace;font-size:0.78rem;line-height:1.7;color:#a89f93;overflow-x:auto;}
+.code-block .kw{color:var(--accent);}
+.code-block .fn{color:#7dd3fc;}
+.code-block .str{color:#86efac;}
+.code-block .cm{color:#4a5a6a;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,.lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.lesson-hero h1{font-size:1.5rem;}.pipeline-diagram{flex-direction:column;}.pipeline-arrow{transform:rotate(90deg);}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══ L1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 1</div>
+      <h1>Pipeline Architecture and Core Components</h1>
+      <div class="tagline">From ad-hoc spot-checks to reproducible, automated evaluation infrastructure</div>
+      <div class="lesson-question">What separates a real eval pipeline from a spreadsheet of vibes?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Context — The Cost of Informal Evaluation">
+        <p class="story-text">In May 2023, Google's Bard launched with a factual error in its very first public demo — the model incorrectly stated that the James Webb Space Telescope had taken the first images of an exoplanet outside our solar system. The error, caught immediately by astronomers on social media, erased <em>roughly $100 billion</em> in Alphabet's market cap within two days. Google's evaluation process had not surfaced this specific failure before release. The incident became a landmark case study in what happens when pre-deployment evals lack systematic coverage of factual claims in high-stakes subject matter.</p>
+        <p class="story-text">Building a formal eval pipeline does not guarantee zero errors. But it converts the question "did we check this?" from a matter of memory into a matter of record.</p>
+      </div>
+
+      <div class="section-heading">What Is an Eval Pipeline?</div>
+      <div class="section-body">
+        <p>An <em>eval pipeline</em> is an automated, versioned, repeatable system that takes a model (or model version), runs it against a defined dataset of prompts, measures outputs against defined criteria, and produces structured reports — all without requiring manual review of every output.</p>
+        <p>The key distinction from ad-hoc testing is <strong>automation plus reproducibility</strong>. You can re-run yesterday's pipeline on today's model and trust the comparison is apples-to-apples. You can run it in CI/CD before every deployment. You can hand it to a colleague who has never seen your codebase and they will get the same numbers.</p>
+      </div>
+
+      <div class="pipeline-diagram">
+        <div class="pipeline-step">Dataset<br>Registry</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Model<br>Runner</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Scorer /<br>Judge</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Aggregator</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Report &amp;<br>Alerting</div>
+      </div>
+
+      <div class="section-heading">The Five Core Components</div>
+      <div class="section-body">
+        <p>Every serious eval pipeline — whether it is Anthropic's internal Claude evals, OpenAI's Evals framework (open-sourced in March 2023), or Microsoft's PromptFlow — implements variations on the same five components.</p>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-card-label">Component 1</div>
+          <div class="metric-card-title">Dataset Registry</div>
+          <div class="metric-card-desc">Versioned storage of prompt/expected-output pairs. Tracks provenance — who created each item, when, from what source. Supports splits (train/dev/test) and tags (domain, difficulty, safety-category).</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Component 2</div>
+          <div class="metric-card-title">Model Runner</div>
+          <div class="metric-card-desc">Handles API calls, batching, rate-limit retry logic, and deterministic sampling settings (temperature=0 or fixed seed). Outputs raw completions with metadata: latency, token counts, model version string.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Component 3</div>
+          <div class="metric-card-title">Scorer / Judge</div>
+          <div class="metric-card-desc">Compares completions against criteria. May be exact-match, regex, reference-based (BLEU, ROUGE), embedding similarity, or an LLM-as-judge call that returns a structured score. This is where most pipeline design work lives.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Component 4</div>
+          <div class="metric-card-title">Aggregator</div>
+          <div class="metric-card-desc">Collects per-item scores, computes summary statistics (mean, p10/p90, pass-rate per tag), detects regressions against a stored baseline, and flags statistically significant changes.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Component 5</div>
+          <div class="metric-card-title">Report &amp; Alerting</div>
+          <div class="metric-card-desc">Generates human-readable outputs (dashboard, JSON artifact, Slack alert) and optionally blocks deployment via a CI gate if a regression threshold is exceeded.</div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">OpenAI Evals: A Reference Implementation</div>
+      <div class="section-body">
+        <p>When OpenAI open-sourced its Evals framework on March 15, 2023, it provided a public reference architecture. An eval is defined as a YAML file specifying the dataset path, the completion function (which model and parameters to use), and the eval class (e.g., <em>Match</em>, <em>ModelGradedEval</em>, <em>FuzzyMatch</em>). The framework handles the runner, scorer, and aggregator automatically.</p>
+        <p>The community quickly contributed over 300 evals within the first month — covering subjects from SQL generation accuracy to medical triage prioritization. This illustrated that the hard part of a pipeline is not the plumbing but the <strong>dataset curation and scoring criteria design</strong>.</p>
+      </div>
+
+      <div class="code-block"><span class="cm"># Minimal OpenAI Evals-style YAML structure</span>
+<span class="kw">eval_id</span>: factual-qa-v1
+<span class="kw">class</span>: evals.eval:<span class="fn">ModelGradedEval</span>
+<span class="kw">args</span>:
+  <span class="kw">completion_fns</span>: [<span class="str">gpt-4o</span>]
+  <span class="kw">samples_jsonl</span>: <span class="str">data/factual_qa/samples.jsonl</span>
+  <span class="kw">eval_prompt</span>: <span class="str">prompts/factual_grader.txt</span>
+  <span class="kw">choice_strings</span>: [<span class="str">A</span>, <span class="str">B</span>, <span class="str">C</span>]  <span class="cm"># correct / partial / wrong</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Design Principle</div>
+        <p>The pipeline is only as trustworthy as its slowest-changing component. Dataset registries drift when examples are edited without versioning. Scorers drift when the judge model is swapped without documentation. Build every component with the assumption that someone will need to reproduce a specific historical run eighteen months from now.</p>
+      </div>
+
+      <div class="section-heading">Key Terms</div>
+      <div class="key-term"><span class="kt-term">Eval harness</span><span class="kt-def">The surrounding infrastructure that orchestrates running a model against test cases — distinct from the test cases themselves. EleutherAI's lm-evaluation-harness is a widely used open-source example.</span></div>
+      <div class="key-term"><span class="kt-term">Completion function</span><span class="kt-def">In pipeline terminology, the callable that takes a prompt and returns a model output — abstracting over API provider, local model, or cached response.</span></div>
+      <div class="key-term"><span class="kt-term">CI gate</span><span class="kt-def">A pipeline step that blocks a build or deployment if eval scores fall below a defined threshold — converting evaluation from informational to blocking.</span></div>
+      <div class="key-term"><span class="kt-term">Regression baseline</span><span class="kt-def">The stored eval results from a prior model version used as the comparison point for detecting capability degradation.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn primary" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">Pipeline Architecture and Core Components</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">Which incident demonstrated the cost of inadequate pre-deployment factual evaluation at scale?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">GPT-4's incorrect bar passage rate claim in the GPT-4 technical report</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Google Bard's James Webb Space Telescope error in its February 2023 launch demo</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Meta's Galactica model being taken down after generating false scientific citations</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Microsoft Bing Chat's aggressive persona responses in early 2023 user sessions</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Bard demo error — falsely claiming Webb took the first exoplanet images — erased roughly $100B in Alphabet's market cap within 48 hours, making it a canonical example of inadequate factual eval coverage before a high-visibility launch.</div>
+        <div class="quiz-feedback wrong">Not quite. Review the Google Bard launch incident from February 2023 and the market impact of a single factual error in a public demo.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">What is the primary distinction between an eval pipeline and ad-hoc spot-checking?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Pipelines use larger test sets than ad-hoc checks</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Pipelines always use LLM-as-judge scoring, ad-hoc checks use humans</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">Pipelines are automated and reproducible; ad-hoc checks are not</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Pipelines only run in CI/CD environments, ad-hoc checks run locally</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Automation plus reproducibility is the defining property — the same pipeline on the same dataset and model version must produce the same result regardless of who runs it or when.</div>
+        <div class="quiz-feedback wrong">Not quite. The core distinction is automation and reproducibility, not dataset size, scoring method, or environment.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">In a five-component eval pipeline (Dataset Registry → Model Runner → Scorer → Aggregator → Report), where does "detecting regressions against a stored baseline" occur?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Dataset Registry</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Model Runner</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Scorer / Judge</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Aggregator</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Aggregator collects per-item scores, computes summary statistics, and compares them against a stored baseline to detect regressions — before passing results to the Report &amp; Alerting component.</div>
+        <div class="quiz-feedback wrong">Not quite. The Aggregator is responsible for regression detection. The Scorer just produces per-item scores; the Aggregator is what compares them to historical baselines.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-4">
+        <div class="quiz-q">What did the community response to OpenAI Evals' open-sourcing in March 2023 reveal about eval pipeline design?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">That LLM-as-judge is the only viable scoring method at scale</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">That the hard work is dataset curation and scoring criteria, not the plumbing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">That YAML-based pipeline definitions are superior to Python-based ones</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">That CI gates are the most important component in any eval system</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Over 300 community evals were contributed in the first month, demonstrating that the infrastructure framework is reusable — the bottleneck is always thoughtful dataset construction and precise scoring criteria.</div>
+        <div class="quiz-feedback wrong">Not quite. The key insight from the rapid community adoption was that building the harness is the easy part; defining what good looks like (dataset + criteria) is where expertise is required.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-5">
+        <div class="quiz-q">A "CI gate" in an eval pipeline context means:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">A human review checkpoint required before any model is released</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">A separate model that validates the outputs of the primary model</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-5')">An automated step that blocks deployment if eval scores fall below a threshold</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">A configuration interface for setting evaluation parameters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A CI gate converts evaluation from informational to blocking — the deployment simply cannot proceed if the model fails to meet defined performance thresholds, removing the option to ship and hope.</div>
+        <div class="quiz-feedback wrong">Not quite. A CI gate is an automated quality gate in a continuous integration pipeline that prevents deployment when eval scores fall below thresholds.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Back to Lesson 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1: Designing Your Pipeline Architecture</h1>
+      <div class="tagline">Conversation practice · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Scenario</h4>
+        <p>You are a senior ML engineer at a fintech company. Your team ships a customer-facing summarization model that condenses transaction histories into plain-English spending reports. The model is updated monthly. Currently, evaluation is informal — a product manager reads 20 outputs before each release and gives a thumbs-up or thumbs-down.</p>
+        <p>Your task: design the five core components of a proper eval pipeline for this specific use case. Discuss each component with your AI mentor below.</p>
+        <div class="lab-prompt">Start by describing what your Dataset Registry should contain for a transaction summarization eval. What kinds of prompt/output pairs should be included, and how should they be tagged?</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>Eval Pipeline Mentor</span>
+          <div class="chat-badge">Lab 1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. You're building an eval pipeline for a transaction summarization model at a fintech company. Let's work through the five core components together, starting with the Dataset Registry. What should go into it for your specific use case — what kinds of examples, and how would you tag them?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Describe your Dataset Registry design..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ L2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 2</div>
+      <h1>Dataset Construction and Curation</h1>
+      <div class="tagline">Building test sets that actually find failures before your users do</div>
+      <div class="lesson-question">How do you build an eval dataset that stays honest as your model improves?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Case Study — BIG-Bench and Contamination">
+        <p class="story-text">When Google Brain published the BIG-Bench benchmark in 2022 — 204 tasks contributed by 450 researchers — one of its central findings was sobering: for many tasks, <em>models that had likely seen benchmark data during training outperformed their true capability</em>. The BIG-Bench authors introduced a dedicated "canary string" mechanism: a unique token sequence embedded in evaluation data, designed to let practitioners check whether a given model's training corpus contained the test set.</p>
+        <p class="story-text">The lesson was not that benchmarks are useless. It was that <strong>dataset construction requires explicit contamination hygiene</strong> — tracking data provenance from the moment of creation, not retroactively after a model surprises you with suspicious scores.</p>
+      </div>
+
+      <div class="section-heading">The Three Failure Modes of Eval Datasets</div>
+      <div class="section-body">
+        <p>Most eval datasets fail in one of three ways: they are <em>too easy</em> (the model always passes, giving no signal), <em>contaminated</em> (the model has seen the data during training, inflating scores), or <em>misaligned</em> (the tasks don't reflect what the model actually does in production). Each requires a different remedy.</p>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-card-label">Failure Mode 1</div>
+          <div class="metric-card-title">Saturation</div>
+          <div class="metric-card-desc">Model scores ≥95% on the dataset. The eval no longer distinguishes between model versions. Fix: add harder adversarial examples, increase difficulty stratification, retire easy items.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Failure Mode 2</div>
+          <div class="metric-card-title">Contamination</div>
+          <div class="metric-card-desc">Test items appear in training data, inflating scores. Fix: use canary strings, hold-out splits with strict access controls, and dynamic eval generation with post-training cutoff dates.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Failure Mode 3</div>
+          <div class="metric-card-title">Distributional Mismatch</div>
+          <div class="metric-card-desc">Dataset prompts don't reflect real production traffic. Fix: sample directly from production logs (with PII scrubbing), use realistic user personas, and audit for format and length distribution.</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Dataset Construction Principles</div>
+      <div class="section-body">
+        <p><strong>Stratified coverage.</strong> A good eval dataset is not a random sample — it is a stratified one. Define axes of variation that matter for your use case: task type, domain, length, complexity, and edge-case categories (ambiguous inputs, adversarial phrasing, multilingual). Ensure each stratum has adequate representation.</p>
+        <p><strong>Difficulty calibration.</strong> Include items at multiple difficulty levels. The industry norm — used by HELM, MMLU, and others — is to ensure the model scores somewhere between 20% and 80% at each difficulty tier, preserving maximum signal. Items with pass rates below 5% or above 95% across model versions should be flagged for replacement.</p>
+        <p><strong>Golden references vs. reference-free.</strong> For tasks with clear correct answers (factual QA, code execution), maintain a golden reference answer per item. For open-ended generation, reference-free scoring (fluency, coherence ratings) or LLM-as-judge is preferable — but requires calibration of the judge itself against human ratings.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Practice — Anthropic's Approach</div>
+        <p>Anthropic has publicly described maintaining "red-team datasets" that are never used for training, only for eval — analogous to a held-out test set in a traditional ML workflow. These datasets are updated quarterly with new adversarial examples generated by human red-teamers. The update cadence matters: a static safety eval dataset becomes stale as models learn to handle the specific attack patterns it contains.</p>
+      </div>
+
+      <div class="section-heading">Data Labeling and Annotation Quality</div>
+      <div class="section-body">
+        <p>Ground truth labels in eval datasets are only as reliable as the annotation process that produced them. The Scale AI / RLHF contamination disclosures of 2023 — where contractors admitted to completing tasks without genuine review — highlighted that annotation quality is a first-class infrastructure problem, not a preprocessing footnote.</p>
+        <p>Standard practice for high-stakes eval datasets includes <strong>inter-annotator agreement measurement</strong> (Cohen's κ ≥ 0.6 is a common threshold for acceptable consistency), <strong>annotation guidelines with worked examples</strong>, and <strong>calibration tasks</strong> seeded throughout annotation batches to detect annotator drift.</p>
+        <p>For LLM-generated labels — increasingly common for scale — measure agreement between the LLM judge and a human gold-standard set before deploying the judge at scale. A judge that disagrees with humans on 25% of examples produces unreliable aggregate scores.</p>
+      </div>
+
+      <div class="section-heading">Versioning and Governance</div>
+      <div class="section-body">
+        <p>Treat eval datasets as first-class versioned artifacts. Every item should carry: a unique ID, a creation timestamp, the author or source, a split assignment (dev/test), tag metadata, and a version history of any edits. This enables auditing — if a model's score on "safety-category:jailbreak" jumps 8 points between releases, you can determine whether the improvement reflects genuine capability gain or dataset changes.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Canary string</span><span class="kt-def">A unique token sequence embedded in eval data to detect whether the data appears in a model's training corpus.</span></div>
+      <div class="key-term"><span class="kt-term">Saturation</span><span class="kt-def">When a model achieves near-perfect scores on a benchmark, making it unable to distinguish between model versions — the benchmark has lost discriminative power.</span></div>
+      <div class="key-term"><span class="kt-term">Inter-annotator agreement</span><span class="kt-def">A statistical measure of how consistently different annotators assign the same label to the same item. Cohen's κ is the most common metric.</span></div>
+      <div class="key-term"><span class="kt-term">Distributional mismatch</span><span class="kt-def">A gap between the distribution of eval prompts and real production traffic, making eval scores a poor predictor of real-world performance.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Lesson 2 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Dataset Construction and Curation</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">What mechanism did the BIG-Bench benchmark introduce to address training data contamination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">A hold-out test split that was never published publicly</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">A canary string — a unique token sequence embedded in eval data</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">A cryptographic hash of each test item stored separately from model checkpoints</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Post-hoc n-gram overlap analysis between training and test corpora</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BIG-Bench introduced canary strings — unique token sequences embedded in the benchmark data — so practitioners could grep model training corpora to check for contamination.</div>
+        <div class="quiz-feedback wrong">Not quite. BIG-Bench's specific contamination mechanism was the canary string: a distinctive token sequence that makes it possible to detect whether test data ended up in a training corpus.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">A model scores 97% on your eval dataset, and the score is identical across the last four model versions. What does this indicate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The model is performing optimally and the eval can be retired</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The dataset is contaminated and scores must be discarded</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">The dataset has saturated and no longer distinguishes between model versions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">The scoring rubric is biased toward the current model family</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A near-perfect score that doesn't vary across versions means the dataset has saturated — it has lost discriminative power and needs harder examples to provide useful signal.</div>
+        <div class="quiz-feedback wrong">Not quite. When scores are very high and don't vary across model versions, this is a saturation problem — the eval can no longer tell the versions apart. It needs harder items.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">What is the standard minimum acceptable Cohen's κ for inter-annotator agreement in high-stakes eval datasets?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">0.3</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">0.45</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">0.6</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">0.85</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cohen's κ ≥ 0.6 is the widely-cited threshold for "substantial agreement" — below this, annotation inconsistency introduces enough noise to undermine the reliability of the eval dataset's ground truth labels.</div>
+        <div class="quiz-feedback wrong">Not quite. The standard threshold for acceptable inter-annotator agreement (Cohen's κ) in high-stakes eval annotation work is 0.6.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-4">
+        <div class="quiz-q">According to Anthropic's publicly described approach, how frequently are red-team eval datasets updated?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">With every model checkpoint</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Annually, after each major model release</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Quarterly, with new adversarial examples from human red-teamers</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Only when a safety incident is reported in production</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Anthropic has described updating safety red-team datasets quarterly — the rationale being that a static dataset becomes stale as models learn to handle the specific attack patterns it contains.</div>
+        <div class="quiz-feedback wrong">Not quite. Anthropic's described cadence is quarterly updates, driven by the insight that models adapt to known attack patterns and static eval datasets lose signal over time.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-5">
+        <div class="quiz-q">What is the primary remedy for a distributional mismatch between your eval dataset and production traffic?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Increasing the size of the eval dataset</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-5')">Sampling directly from production logs (with PII scrubbing) to build representative eval items</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Using LLM-as-judge instead of reference-based scoring</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Adding difficulty stratification to the existing dataset</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The most direct fix for distributional mismatch is grounding the eval dataset in real production traffic — sampling actual user prompts (with PII removed) to ensure the eval reflects what the model encounters in the real world.</div>
+        <div class="quiz-feedback wrong">Not quite. Distributional mismatch is best addressed by sourcing eval items from actual production logs — making the eval distribution match the deployment distribution.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2: Dataset Audit and Repair</h1>
+      <div class="tagline">Conversation practice · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Scenario</h4>
+        <p>You've inherited an eval dataset for a legal document classification model. The dataset was built 18 months ago by a contractor. Initial audit reveals: 450 items total, no tagging, no version history, a 98% pass rate on your current model, and the original prompts were sourced from a legal Q&amp;A website that was scraped into a popular open LLM training set.</p>
+        <p>Diagnose what's wrong with this dataset and propose a remediation plan, component by component.</p>
+        <div class="lab-prompt">Start by diagnosing which of the three failure modes (saturation, contamination, distributional mismatch) are present in this dataset, and explain your reasoning for each.</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>Dataset Audit Mentor</span>
+          <div class="chat-badge">Lab 2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">You've inherited a problematic eval dataset: 450 untagged items, no version history, 98% pass rate, and likely training contamination. Let's work through a systematic diagnosis. Which failure modes do you see, and how would you argue for each based on the evidence?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Diagnose the failure modes present..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ L3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 3</div>
+      <h1>Scoring Systems and LLM-as-Judge</h1>
+      <div class="tagline">Choosing the right measurement tool for each evaluation task</div>
+      <div class="lesson-question">When should you trust a model to grade another model — and when is that a catastrophic idea?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Case Study — MT-Bench and the LLM-as-Judge Methodology">
+        <p class="story-text">In June 2023, researchers at UC Berkeley published MT-Bench — a multi-turn conversational benchmark evaluated entirely by GPT-4 as the judge. The paper, "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena," measured not just model quality but <em>judge quality</em>: how well GPT-4's ratings correlated with human expert ratings across eight task categories. The finding was striking: GPT-4's agreement with human experts (85.1% average) exceeded the agreement between two different groups of human experts (81.2%). The paper also documented systematic biases — GPT-4 exhibited <strong>verbosity bias</strong> (preferring longer responses) and <strong>self-enhancement bias</strong> (rating GPT-4 outputs higher than equally good outputs from other models).</p>
+        <p class="story-text">MT-Bench established that LLM-as-judge is viable at scale — but only when its biases are <em>measured, documented, and mitigated</em>.</p>
+      </div>
+
+      <div class="section-heading">The Scoring Spectrum</div>
+      <div class="section-body">
+        <p>Scoring methods exist on a spectrum from fully deterministic to fully model-based. The choice depends on the task type, the cost of false positives, and whether reference answers exist.</p>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-card-label">Most Deterministic</div>
+          <div class="metric-card-title">Exact Match / Regex</div>
+          <div class="metric-card-desc">Binary: the output either contains the expected string or it doesn't. Zero ambiguity. Best for: closed-form answers, specific entity extraction, code that must produce exact output. Limitation: fragile to paraphrase and formatting variation.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Reference-Based</div>
+          <div class="metric-card-title">BLEU / ROUGE / BERTScore</div>
+          <div class="metric-card-desc">Measures overlap between output and a reference answer. BLEU: n-gram precision (machine translation). ROUGE: recall-oriented (summarization). BERTScore: semantic similarity via embeddings. Better than exact match for natural language; worse than human judgment for nuance.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Execution-Based</div>
+          <div class="metric-card-title">Code Execution / Unit Tests</div>
+          <div class="metric-card-desc">Run generated code and check functional correctness. Used by HumanEval (OpenAI, 2021) and MBPP. Pass@k metric: does at least one of k samples solve the problem? Highly reliable for code; requires a sandbox execution environment.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Model-Based</div>
+          <div class="metric-card-title">LLM-as-Judge</div>
+          <div class="metric-card-desc">A separate LLM scores outputs on defined criteria. Flexible for open-ended generation, multi-dimensional quality. Requires: structured output format, calibration against human labels, documented bias audit, versioned judge model. Most expensive; highest coverage.</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Designing an LLM-as-Judge System</div>
+      <div class="section-body">
+        <p><strong>Single-answer grading vs. pairwise comparison.</strong> Single-answer grading asks the judge to score one response on a rubric (e.g., 1–5 on accuracy, helpfulness, safety). Pairwise comparison shows the judge two responses and asks which is better. Pairwise comparison generally produces more reliable relative rankings; single-answer grading is more useful for tracking absolute quality over time.</p>
+        <p><strong>Structured output is mandatory.</strong> A judge prompt that asks for free-text reasoning followed by a score is unreliable at scale — parsing errors accumulate. The industry standard (used by both MT-Bench and Anthropic's eval infrastructure) is to require JSON output with explicit field names and a chain-of-thought reasoning field before the score field. This forces the model to reason before committing, improving calibration.</p>
+        <p><strong>Position bias mitigation.</strong> In pairwise comparisons, LLM judges show a significant preference for the response that appears first in the prompt — a documented artifact of attention patterns. The standard mitigation is to <em>run each pair twice with positions swapped</em> and average the results, discarding pairs where the judge contradicts itself.</p>
+      </div>
+
+      <div class="code-block"><span class="cm"># LLM-as-Judge prompt template (structured output pattern)</span>
+<span class="kw">JUDGE_PROMPT</span> = <span class="str">"""
+You are evaluating an AI assistant's response to the following query.
+
+Query: {query}
+Response: {response}
+
+Score the response on each dimension from 1-5:
+- accuracy: Does it state only true, verifiable facts?
+- helpfulness: Does it directly address what was asked?
+- safety: Does it avoid harmful or misleading content?
+
+Respond ONLY with valid JSON:
+{
+  "reasoning": "...",
+  "accuracy": &lt;int 1-5&gt;,
+  "helpfulness": &lt;int 1-5&gt;,
+  "safety": &lt;int 1-5&gt;
+}
+"""</span></div>
+
+      <div class="section-heading">Known Judge Biases and Mitigations</div>
+      <div class="section-body">
+        <p>The MT-Bench paper catalogued several systematic biases that appear consistently across LLM judges. Being aware of them is not sufficient — mitigation must be built into the scoring infrastructure.</p>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-card-label">Bias Type</div>
+          <div class="metric-card-title">Verbosity Bias</div>
+          <div class="metric-card-desc">Judge prefers longer responses regardless of content quality. Mitigation: normalize score by response length; add explicit rubric instruction: "Length alone does not indicate quality."</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Bias Type</div>
+          <div class="metric-card-title">Self-Enhancement Bias</div>
+          <div class="metric-card-desc">A judge model rates outputs from its own model family higher. Mitigation: use a different judge model than the model under evaluation; cross-validate with multiple judge models.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Bias Type</div>
+          <div class="metric-card-title">Position Bias</div>
+          <div class="metric-card-desc">In pairwise, judge favors the first-presented response. Mitigation: run each comparison twice with swapped positions; discard contradictory results.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Bias Type</div>
+          <div class="metric-card-title">Sycophancy Bias</div>
+          <div class="metric-card-desc">Judge rewards responses that match its own style or "agree" with implicit preferences. Mitigation: calibrate judge against human gold labels on a held-out set before deploying at scale.</div>
+        </div>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">When NOT to Use LLM-as-Judge</div>
+        <p>For safety-critical evaluations — detecting harmful outputs, measuring refusal rates, testing for jailbreak success — LLM-as-judge introduces unacceptable risk of false negatives. A judge model can be manipulated by the same adversarial prompts that fool the primary model. Safety evals should use deterministic classifiers (fine-tuned classifiers on labeled harm data), human review, or both.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Pass@k</span><span class="kt-def">A code evaluation metric: the probability that at least one of k model-generated samples for a given problem is functionally correct. Used by HumanEval and related benchmarks.</span></div>
+      <div class="key-term"><span class="kt-term">Verbosity bias</span><span class="kt-def">The tendency of LLM judges to rate longer responses more favorably, independent of actual quality — documented in the MT-Bench study.</span></div>
+      <div class="key-term"><span class="kt-term">Position bias</span><span class="kt-def">In pairwise LLM-as-judge evaluations, the tendency to prefer the response presented first in the prompt.</span></div>
+      <div class="key-term"><span class="kt-term">Self-enhancement bias</span><span class="kt-def">An LLM judge's tendency to rate outputs from its own model family higher than objectively equivalent outputs from other models.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Lesson 3 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Scoring Systems and LLM-as-Judge</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">In the MT-Bench study, GPT-4 as judge showed 85.1% agreement with human experts. What was the human expert agreement with each other?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">91.3%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">88.7%</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">81.2%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">74.5%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The MT-Bench paper found that GPT-4's 85.1% agreement with human experts actually exceeded the 81.2% agreement between two separate groups of human experts — a key finding supporting the viability of LLM-as-judge methodology.</div>
+        <div class="quiz-feedback wrong">Not quite. Human-expert-to-human-expert agreement was 81.2% — lower than GPT-4's 85.1% agreement with humans. This was a central finding of the MT-Bench paper.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">What is the standard mitigation for position bias in pairwise LLM-as-judge comparisons?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Always present the longer response first</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Randomize position for each comparison independently</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Run each pair twice with positions swapped and average the results</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Use single-answer grading instead of pairwise comparison</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The standard mitigation is to run each comparison twice with positions swapped and average — and to discard pairs where the judge contradicts itself (giving inconsistent verdicts across the two orderings).</div>
+        <div class="quiz-feedback wrong">Not quite. The standard mitigation for position bias is to run each comparison twice with the response order swapped, then average results and flag contradictions.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">Which scoring method is most appropriate for evaluating code generation tasks?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">ROUGE-L overlap with reference code solutions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">LLM-as-judge with a code quality rubric</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Execution-based scoring with unit tests (pass@k)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">BERTScore using a code-specific embedding model</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Execution-based scoring — running the generated code against unit tests and measuring pass@k — is the gold standard for code evaluation. It measures functional correctness directly, not surface similarity to a reference solution.</div>
+        <div class="quiz-feedback wrong">Not quite. For code generation, execution-based scoring (pass@k) is the most reliable method — it tests whether the code actually works, not how similar it looks to a reference.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-4">
+        <div class="quiz-q">Why should LLM-as-judge NOT be used as the primary scorer for safety evaluations?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">It is too expensive to run at the scale required for safety testing</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">Safety rubrics are too complex for LLM judges to parse reliably</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">A judge model can be manipulated by the same adversarial prompts that fool the primary model</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">LLM judges cannot distinguish between refusal and compliance reliably</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The core vulnerability is that an LLM judge shares the same attack surface as the primary model — adversarial prompts designed to bypass safety guardrails can also fool the judge into rating unsafe outputs as safe.</div>
+        <div class="quiz-feedback wrong">Not quite. The critical problem is that adversarial inputs that successfully bypass the primary model's safety filters often also fool the LLM judge — making it an unreliable detector of exactly the failures you most need to catch.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-5">
+        <div class="quiz-q">What is the primary advantage of requiring structured JSON output from an LLM judge over free-text scoring?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">JSON forces the judge to use a larger context window</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">JSON output eliminates verbosity bias in LLM judges</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-5')">It prevents parsing failures at scale and forces reasoning before the score is committed</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">It makes the judge prompt shorter and reduces API costs</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Structured JSON output with a required reasoning field before the score field prevents parsing errors that accumulate at scale, and the chain-of-thought pattern (reason first, then score) improves calibration by forcing deliberation.</div>
+        <div class="quiz-feedback wrong">Not quite. The two key benefits of structured JSON are: (1) eliminating parsing failures at scale, and (2) a reasoning field before the score field forces the model to deliberate before committing, improving calibration.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3: Designing a Judge Prompt</h1>
+      <div class="tagline">Conversation practice · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Scenario</h4>
+        <p>Your team evaluates a customer service chatbot that handles billing disputes, technical support, and account management. You need to design an LLM-as-judge scoring system for response quality. The judge must score on accuracy, tone (professional but empathetic), and resolution effectiveness.</p>
+        <p>You must also identify which interactions should NOT use LLM-as-judge at all, and design mitigations for at least two known judge biases.</p>
+        <div class="lab-prompt">Start by drafting the JSON output schema for your judge prompt. What fields do you need, and why does the reasoning field need to come before the score fields?</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>Scoring Design Mentor</span>
+          <div class="chat-badge">Lab 3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Let's design an LLM-as-judge system for a customer service chatbot. You need to score accuracy, tone, and resolution effectiveness. Start with the output schema — what JSON fields do you need, and why should the reasoning field precede the numerical scores?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Draft your JSON schema and reasoning..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ L4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 7 · Lesson 4</div>
+      <h1>Regression Detection and CI/CD Integration</h1>
+      <div class="tagline">Making evaluation blocking, automated, and actionable in production deployment workflows</div>
+      <div class="lesson-question">How do you turn eval results from a report into a deployment decision?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Case Study — GPT-4 Capability Regression, March 2023">
+        <p class="story-text">In June 2023, a widely-discussed paper from Stanford and UC Berkeley documented that GPT-4's performance on specific tasks had measurably declined between March and June 2023. On a "is this number prime?" classification task, GPT-4's accuracy fell from <em>97.6% to 2.4%</em> over that period. On a code generation task, the percentage of directly executable code dropped from 52% to 10%. OpenAI's public API served different model versions under the same "gpt-4" identifier without versioned API endpoints, making it impossible for external users to pin to a specific checkpoint.</p>
+        <p class="story-text">The incident — later disputed by OpenAI in terms of its interpretation but never fully resolved — illustrated two non-negotiable pipeline requirements: <strong>model versioning must be explicit in eval records</strong>, and <strong>continuous monitoring must run against pinned model checkpoints</strong>, not floating aliases.</p>
+      </div>
+
+      <div class="section-heading">Regression Detection Fundamentals</div>
+      <div class="section-body">
+        <p>A regression is a measurable decline in a metric relative to a defined baseline — usually the last released model version or a pinned "golden" checkpoint. Detecting regressions requires three things: a baseline score stored with full metadata (model version, eval dataset version, date), a current score on the same dataset version, and a statistical test to determine whether the difference is meaningful.</p>
+        <p>The naive approach — flag any negative delta — produces excessive false alarms. A 0.3% accuracy drop on a 100-item dataset is almost certainly within sampling noise. The standard approach is to use a <strong>McNemar's test</strong> for paired binary outcomes or a <strong>bootstrap confidence interval</strong> for continuous metrics, and to set a minimum absolute delta threshold (e.g., ≥2 percentage points AND p &lt; 0.05).</p>
+      </div>
+
+      <div class="section-heading">Statistical Significance in Eval Results</div>
+      <div class="section-body">
+        <p>Eval datasets are finite samples. A dataset of 200 items has a standard error on a 75% pass rate of approximately ±3 percentage points. This means a measured decline from 75% to 73% is not statistically distinguishable from noise at conventional significance levels. Teams that don't account for this end up either ignoring real regressions (threshold too high) or blocking good releases on noise (threshold too low).</p>
+        <p>Best practice, used in production eval systems at companies including Cohere and AI21 Labs, is to:</p>
+        <p><strong>1.</strong> Set primary alert thresholds at 2–3× the standard error of the metric.</p>
+        <p><strong>2.</strong> Require regression confirmation on a separate holdout slice before blocking deployment.</p>
+        <p><strong>3.</strong> Track multiple metrics simultaneously — a model that regresses on one metric while improving on two others may still represent a net improvement.</p>
+      </div>
+
+      <div class="section-heading">CI/CD Integration Patterns</div>
+      <div class="section-body">
+        <p>The standard integration pattern for LLM eval in a CI/CD pipeline uses three gates at different stages of the deployment pipeline:</p>
+      </div>
+
+      <div class="pipeline-diagram">
+        <div class="pipeline-step">PR Merge<br>(fast eval)</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Staging Deploy<br>(full eval suite)</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Canary Release<br>(online eval)</div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">Full Production<br>(monitoring)</div>
+      </div>
+
+      <div class="section-body">
+        <p><strong>Gate 1 — PR merge (fast eval):</strong> A lightweight eval suite running 50–100 high-signal items with deterministic scoring. Target: under 2 minutes. Catches obvious regressions before code merges. Used by teams at Anthropic (described in their model card methodology) and widely adopted in open-source LLM development.</p>
+        <p><strong>Gate 2 — Staging deploy (full eval suite):</strong> The complete eval pipeline including LLM-as-judge scoring. Target: under 30 minutes. This gate sees every eval dimension and produces the formal regression report. Blocks staging-to-production promotion if regressions exceed thresholds.</p>
+        <p><strong>Gate 3 — Canary + production monitoring:</strong> Online eval on live traffic, comparing the new model version against the baseline on a sample of real requests (with consent and PII controls). This catches distributional shift — regressions on query types that don't appear in offline eval datasets.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real Implementation — Weights &amp; Biases Evaluations</div>
+        <p>Weights &amp; Biases launched its LLM evaluation feature in 2023 with explicit support for the CI gate pattern: eval runs are tracked as W&amp;B runs with model version metadata, and the W&amp;B SDK provides a native GitHub Actions integration that reads eval results and returns a pass/fail exit code to the CI runner. This is the pattern many teams adopt for integrating eval into existing MLOps infrastructure without building custom tooling.</p>
+      </div>
+
+      <div class="section-heading">Alerting and Escalation Design</div>
+      <div class="section-body">
+        <p>Not all regressions are equal. A 5% regression on "formatting correctness" in a summarization model is operationally different from a 5% regression on "refusal rate for harmful requests" in a safety-critical deployment. Alerting systems must map metric categories to severity levels and escalation paths.</p>
+        <p>The practical standard is a three-tier alert system: <em>informational</em> (logged, no action required — small metric movements within noise), <em>warning</em> (Slack notification to the model team — significant movement requiring investigation), and <em>blocking</em> (deployment halt — regression on safety or core-capability metrics above defined thresholds). The mapping of metrics to tiers must be documented and reviewed at least quarterly.</p>
+      </div>
+
+      <div class="section-heading">Model Version Pinning</div>
+      <div class="section-body">
+        <p>The GPT-4 capability regression incident highlighted that floating model aliases — identifiers that map to different underlying checkpoints over time — are incompatible with reproducible eval pipelines. Every eval record must store the precise model version string, the API endpoint, any system prompt version, and the temperature/sampling parameters used. These four pieces together define a "model configuration" — and regressions can only be meaningfully attributed to model changes if the configuration is fully pinned.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">McNemar's test</span><span class="kt-def">A statistical test for paired binary outcomes — appropriate for comparing two model versions on the same set of binary (pass/fail) eval items.</span></div>
+      <div class="key-term"><span class="kt-term">Bootstrap confidence interval</span><span class="kt-def">A resampling method for estimating the uncertainty in an eval metric — provides confidence bounds without assuming a specific distribution.</span></div>
+      <div class="key-term"><span class="kt-term">Canary release</span><span class="kt-def">A deployment pattern where a new model version receives a small percentage of production traffic (e.g., 5%) while online metrics are monitored before full rollout.</span></div>
+      <div class="key-term"><span class="kt-term">Floating alias</span><span class="kt-def">A model identifier (e.g., "gpt-4") that maps to different underlying checkpoints over time — incompatible with reproducible eval comparison because it makes it impossible to determine which model produced historical scores.</span></div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Lesson 4 Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ═══ Q4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Regression Detection and CI/CD Integration</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">In the Stanford/UC Berkeley study on GPT-4 capability changes (June 2023), what happened to accuracy on the prime number classification task between March and June 2023?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">It improved from 45% to 97.6%</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">It fell from 97.6% to 2.4%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">It remained stable at approximately 92%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">It fluctuated between 60–75% with no clear trend</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The paper documented an extraordinary drop from 97.6% to 2.4% on prime number classification — one of the most dramatic specific examples of model capability drift documented in that period, illustrating why pinned model versioning is essential.</div>
+        <div class="quiz-feedback wrong">Not quite. The paper documented a dramatic decline from 97.6% to 2.4% accuracy on the prime classification task — a 95+ percentage point drop that highlighted the risks of floating model aliases and lack of version pinning.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">Why is flagging any negative metric delta a poor approach to regression detection?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Because negative deltas always indicate training data changes, not model changes</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Because small deltas on finite eval datasets are within sampling noise and will produce excessive false alarms</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Because eval metrics naturally decrease over time as datasets become saturated</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Because it prevents detecting improvements that offset regressions on other metrics</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A 200-item dataset with 75% pass rate has a standard error of ~±3 percentage points. A measured drop of 2% is well within this noise range — flagging it as a regression would produce constant false alarms and erode trust in the alerting system.</div>
+        <div class="quiz-feedback wrong">Not quite. The problem with flagging any negative delta is statistical: small eval datasets have meaningful sampling noise, and tiny negative movements are often not distinguishable from random variation rather than genuine capability regression.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">In a three-gate CI/CD eval pipeline (PR merge → staging → canary), what is the target runtime for the Gate 1 (PR merge) fast eval?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Under 2 minutes</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Under 10 minutes</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Under 30 minutes</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Under 2 hours</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The PR-merge fast eval targets under 2 minutes — using a small set of high-signal, deterministically-scored items. If it takes longer, developers will disable or bypass it. Gate 2 (staging) can afford the full 30-minute suite since it runs less frequently.</div>
+        <div class="quiz-feedback wrong">Not quite. Gate 1 (PR merge fast eval) must complete in under 2 minutes to be viable in a normal development workflow. Anything slower will be disabled or ignored by the development team.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-4">
+        <div class="quiz-q">What four pieces of information together define a "model configuration" for reproducible eval records?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Model name, training data version, fine-tuning steps, and evaluation date</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">Model version string, API endpoint, system prompt version, and temperature/sampling parameters</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Model provider, model size, quantization level, and deployment region</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Git commit hash, Docker image ID, dataset version, and scorer version</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A reproducible eval requires pinning all four: the exact model version string, the specific API endpoint (not a floating alias), the system prompt version (which affects behavior significantly), and the sampling parameters (temperature, top-p, seed).</div>
+        <div class="quiz-feedback wrong">Not quite. The four components of a pinned "model configuration" are: the precise model version string, the API endpoint, the system prompt version, and the temperature/sampling parameters. Together they uniquely identify what generated the outputs.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-5">
+        <div class="quiz-q">In a three-tier alert system for eval regressions, which tier should a 5% regression in "refusal rate for harmful requests" trigger?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Informational — logged with no action required</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Warning — Slack notification requiring investigation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-5')">Blocking — deployment halt</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">The tier depends on whether the regression occurred on safety or capability metrics</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Safety metrics like refusal rates for harmful requests should map to the blocking tier — a regression here represents a direct increase in harm risk and is categorically different from a regression in formatting quality or stylistic metrics.</div>
+        <div class="quiz-feedback wrong">Not quite. A regression in harmful request refusal rate is a safety-critical metric and must map to the blocking tier — this is exactly the type of metric that justifies a hard deployment halt regardless of improvements elsewhere.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4: Building a Regression Detection Spec</h1>
+      <div class="tagline">Conversation practice · minimum 3 exchanges to complete</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Scenario</h4>
+        <p>You are the ML infrastructure lead at a healthcare information company. Your AI assistant answers patient questions about symptoms, medications, and care instructions. The model is updated bi-weekly. You need to design a regression detection and CI/CD gating specification before the next update ships.</p>
+        <p>You must define: your three CI gates and their pass/fail criteria, your three-tier alert system with metric-to-tier mappings, and how you will handle floating alias risk given you use an API-based model provider.</p>
+        <div class="lab-prompt">Start with the most safety-critical component: your blocking gate criteria. What specific metrics, thresholds, and statistical tests define a "do not ship" decision for a healthcare AI assistant?</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>CI/CD Gating Mentor</span>
+          <div class="chat-badge">Lab 4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">You're designing a regression detection specification for a healthcare AI assistant — a high-stakes deployment where false negatives (missed regressions) can cause real patient harm. Let's start with your blocking gate criteria. What metrics, at what thresholds, with what statistical tests, should constitute a hard "do not ship" decision?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Define your blocking gate criteria..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 7 Test</h1>
+      <div class="tagline">Building an Eval Pipeline — 15 questions · 80% to pass</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. Which component of an eval pipeline is responsible for storing versioned prompt/expected-output pairs with provenance metadata?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Model Runner</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Dataset Registry</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Aggregator</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">CI Gate</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Dataset Registry is the versioned, provenance-tracked store of prompt/expected-output pairs — the foundation that all other pipeline components depend on.</div>
+        <div class="quiz-feedback wrong">Incorrect. The Dataset Registry stores versioned eval items with provenance. Review Module 7 Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. Google Bard's February 2023 launch error — incorrectly stating which telescope first imaged an exoplanet — erased approximately how much market value from Alphabet?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">$12 billion</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">$40 billion</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">$100 billion</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">$200 billion</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The Bard demo error erased roughly $100 billion in Alphabet market cap within 48 hours — the landmark case illustrating the cost of inadequate pre-deployment factual eval coverage.</div>
+        <div class="quiz-feedback wrong">Incorrect. The Bard error erased approximately $100 billion from Alphabet's market cap. Review Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. What innovation did BIG-Bench introduce specifically to address training data contamination?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Canary strings — unique token sequences embedded in eval data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Encrypted test items decrypted only at eval time</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">A separate contamination-free dataset released six months after the main benchmark</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">n-gram deduplication against Common Crawl</button>
+        </div>
+        <div class="quiz-feedback right">Correct. BIG-Bench introduced canary strings — distinctive token sequences that let practitioners check whether benchmark data appears in training corpora.</div>
+        <div class="quiz-feedback wrong">Incorrect. BIG-Bench's contamination solution was canary strings. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. A model scores 98% on an eval dataset and scores haven't changed across five model versions. This describes which dataset failure mode?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Contamination</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Distributional mismatch</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Saturation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Annotation drift</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When scores are consistently near-perfect and don't differentiate between model versions, the dataset has saturated — it has no remaining discriminative power.</div>
+        <div class="quiz-feedback wrong">Incorrect. Near-perfect, non-differentiating scores indicate saturation. Review Lesson 2's three failure modes.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. In the MT-Bench study, which two systematic biases were documented in GPT-4 as a judge?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Anchoring bias and recency bias</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Verbosity bias and self-enhancement bias</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Formatting bias and domain-knowledge bias</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Position bias and sycophancy bias</button>
+        </div>
+        <div class="quiz-feedback right">Correct. MT-Bench specifically documented verbosity bias (preferring longer responses) and self-enhancement bias (rating GPT-4 family outputs higher) as the two primary systematic biases.</div>
+        <div class="quiz-feedback wrong">Incorrect. MT-Bench documented verbosity bias and self-enhancement bias as the two main systematic biases in GPT-4 as judge. Review Lesson 3.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. The Pass@k metric in code evaluation measures:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The percentage of test cases a model passes on the first attempt</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">The probability that at least one of k generated samples solves the problem correctly</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The average number of retries required before generating a correct solution</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The top-k accuracy of code retrieval from a reference library</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Pass@k is the probability that at least one of k sampled solutions is functionally correct — used by HumanEval and other code benchmarks to account for stochastic generation.</div>
+        <div class="quiz-feedback wrong">Incorrect. Pass@k measures whether at least one of k samples solves the problem — a probabilistic measure for stochastic code generation. Review Lesson 3.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. What statistical test is appropriate for comparing two model versions on paired binary (pass/fail) eval items?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Student's t-test</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Chi-squared test</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">McNemar's test</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">ANOVA</button>
+        </div>
+        <div class="quiz-feedback right">Correct. McNemar's test is specifically designed for paired binary outcomes — comparing two classifiers (or model versions) on the same set of items, where each item has a binary pass/fail outcome.</div>
+        <div class="quiz-feedback wrong">Incorrect. McNemar's test is the appropriate test for paired binary outcomes in model comparison. Review Lesson 4.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. In a three-gate CI/CD eval pipeline, which gate runs the FULL eval suite including LLM-as-judge scoring?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Gate 1 (PR merge fast eval)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Gate 2 (staging deploy)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Gate 3 (canary release)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">All three gates run the full suite</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Gate 2 (staging deploy) runs the complete eval suite, targeting under 30 minutes. Gate 1 runs a fast 50–100 item deterministic subset; Gate 3 runs online eval on live traffic.</div>
+        <div class="quiz-feedback wrong">Incorrect. The full eval suite including LLM-as-judge runs at Gate 2 (staging). Review Lesson 4's CI/CD integration patterns.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Which approach does OpenAI Evals use to define an evaluation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">A YAML file specifying the dataset path, completion function, and eval class</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A Python class inheriting from a base Evaluator with abstract score() method</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A JSON schema defining input format and expected output format</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A Jupyter notebook with standardized cell structure</button>
+        </div>
+        <div class="quiz-feedback right">Correct. OpenAI Evals uses YAML configuration files specifying the dataset path, the completion function (model + parameters), and the eval class (Match, ModelGradedEval, etc.).</div>
+        <div class="quiz-feedback wrong">Incorrect. OpenAI Evals uses YAML files to define evaluations declaratively. Review Lesson 1's reference implementation section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. The GPT-4 capability regression study highlighted what specific infrastructure requirement for reproducible eval comparison?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Models must be locally hosted, not accessed via API</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Eval records must store precise model version strings, not floating aliases</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Eval datasets must be refreshed before every comparison</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">LLM-as-judge scoring must not be used for capability regression detection</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The inability to pin to specific checkpoints under a floating alias ("gpt-4") made it impossible to determine exactly which model version was responsible for observed capability changes.</div>
+        <div class="quiz-feedback wrong">Incorrect. The lesson was explicit model version pinning — not floating aliases. Review Lesson 4's model versioning section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. For which category of eval task should LLM-as-judge absolutely NOT be the primary scorer?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Multi-turn conversational quality assessment</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Open-ended creative writing quality</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Safety evaluations including jailbreak detection and harmful content classification</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Customer satisfaction scoring for support conversation transcripts</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Safety evals must not rely primarily on LLM-as-judge because the judge shares the same adversarial attack surface as the primary model — adversarial prompts that bypass safety filters can also fool the judge.</div>
+        <div class="quiz-feedback wrong">Incorrect. Safety evaluations (jailbreak detection, harm classification) are the category where LLM-as-judge is most dangerous. Review Lesson 3's callout on when NOT to use LLM-as-judge.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. What is the minimum acceptable Cohen's κ for inter-annotator agreement in high-stakes eval dataset annotation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">0.3</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">0.45</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">0.6</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">0.9</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cohen's κ ≥ 0.6 ("substantial agreement") is the standard threshold — below this, annotation inconsistency introduces enough noise to make ground truth labels unreliable as eval benchmarks.</div>
+        <div class="quiz-feedback wrong">Incorrect. The standard threshold for acceptable inter-annotator agreement (Cohen's κ) is 0.6. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. A "floating alias" (like "gpt-4") in model versioning is problematic for eval pipelines because:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">It increases API latency during eval runs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">It prevents using the model for LLM-as-judge scoring</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">The underlying checkpoint can change without notice, making historical score comparisons unreliable</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">It does not support structured JSON output required for automated scoring</button>
+        </div>
+        <div class="quiz-feedback right">Correct. When the model behind an alias changes without notification, you cannot determine whether a score change in your eval reflects a genuine capability shift or a provider-side model update — destroying reproducibility.</div>
+        <div class="quiz-feedback wrong">Incorrect. Floating aliases break eval reproducibility because the underlying model can change silently. Review Lesson 4's model version pinning section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. What is the primary purpose of including a "reasoning" field BEFORE the score fields in an LLM-as-judge JSON output schema?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">To provide audit logs for regulatory compliance</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">To allow the score to be overridden by human reviewers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">To force the model to deliberate before committing a score, improving calibration</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">To reduce token usage by front-loading the most important content</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Requiring the reasoning field first implements a chain-of-thought pattern — the model must articulate its evaluation reasoning before committing to numerical scores, which consistently improves calibration against human ratings.</div>
+        <div class="quiz-feedback wrong">Incorrect. The reasoning-first pattern forces deliberation before commitment, improving score calibration. Review Lesson 3's scoring system design section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. In a three-tier alert system for eval regressions, which regression should trigger a deployment halt (blocking tier)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">A 3% regression in response formatting consistency</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">A 5% regression in average response length</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">A 2% regression in stylistic coherence scores</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">A 5% regression in refusal rate for harmful requests</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Refusal rate for harmful requests is a safety-critical metric that maps to the blocking tier. A regression here directly increases the probability of harm to users and warrants an unconditional deployment halt.</div>
+        <div class="quiz-feedback wrong">Incorrect. Safety metrics like refusal rates for harmful content must map to the blocking tier — they represent direct harm risk, not quality-of-life degradation. Review Lesson 4's alerting design section.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-l1')">Restart Module</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var COURSE_ID='model-evaluation-and-benchmarks';
+var MODULE_ID='mod-m7';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert ML engineer and eval pipeline architect mentoring a fintech engineer building their first formal eval pipeline. The student is designing a five-component eval pipeline (Dataset Registry, Model Runner, Scorer/Judge, Aggregator, Report & Alerting) for a transaction summarization model. Guide them through each component with practical, specific advice. Ask probing questions about their design choices. Push back if they miss important considerations like data versioning, tag schemas, or contamination risk. Be encouraging but rigorous. Keep responses under 150 words.',
+  l2:'You are a senior ML researcher specializing in dataset quality and curation. The student has inherited a problematic eval dataset for a legal document classification model: 450 untagged items, no version history, 98% pass rate, and likely training contamination from web-scraped legal Q&A. Guide them through diagnosing all three failure modes (saturation, contamination, distributional mismatch) and building a systematic remediation plan. Ask them to justify their reasoning. Keep responses focused and under 150 words.',
+  l3:'You are an LLM evaluation systems expert. The student is designing an LLM-as-judge scoring system for a customer service chatbot covering billing disputes, tech support, and account management. Guide them through: JSON output schema design (reasoning field before scores), identifying which interaction types should NOT use LLM-as-judge, and building mitigations for at least two judge biases (verbosity, self-enhancement, position, sycophancy). Be specific about implementation. Keep responses under 150 words.',
+  l4:'You are a production ML infrastructure lead specializing in CI/CD eval integration and safety-critical deployments. The student is designing a regression detection spec for a healthcare AI assistant. Guide them through: defining blocking gate criteria with specific metrics and statistical tests, building a three-tier alert system with metric-to-tier mappings, and addressing floating alias risk with an API-based provider. Emphasize the asymmetry between safety and quality regressions. Keep responses under 150 words.'
+};
+
+var _fallbackResponses={
+  l1:[
+    "Good start. For a transaction summarization pipeline, your Dataset Registry should contain realistic financial scenarios: rent payments, subscription charges, irregular transfers, multi-currency. Tag by transaction type, customer segment, and complexity level. What's your plan for preventing these examples from leaking into future model training runs?",
+    "Versioning strategy matters here. Every time you edit an example, you need a new item ID, not an in-place edit. Otherwise you can't audit why a model's score changed between releases. How would you structure the tag schema — flat tags or hierarchical?",
+    "Think about edge cases that live users actually hit: transactions with ambiguous merchants, international charges with FX conversion, disputed amounts. Are those represented in your registry? The distribution of your eval set should mirror the distribution of production queries."
+  ],
+  l2:[
+    "Good diagnosis. You have clear evidence for all three failure modes: 98% pass rate with no variance = saturation. Web-scraped legal Q&A in a common training corpus = almost certain contamination. Contractor-built 18 months ago with no production sampling = likely distributional mismatch. Which one do you address first, and why?",
+    "Contamination is the most urgent to quantify before you do anything else — if the data is compromised, any score you've collected so far is unreliable as a baseline. Can you describe a practical method to estimate the contamination level given you don't have access to the model's training corpus?",
+    "For remediation priority: fix contamination first (build a clean holdout), then address saturation (add harder adversarial items), then fix distribution (sample from production logs with PII scrubbing). What tagging schema would you introduce when you rebuild this dataset from scratch?"
+  ],
+  l3:[
+    "Good schema design instinct. The reasoning field before scores is the critical architectural decision — it's a chain-of-thought forcing function. The model can't commit to a number without articulating why. Now, which types of customer service interactions should bypass LLM-as-judge entirely in your system?",
+    "Exactly right — billing fraud suspicion and account security events should use deterministic classifiers or human review, not LLM-as-judge. Now tell me: for the verbosity bias specific to your customer service context, what rubric instruction text would you add to counteract the tendency to prefer longer responses?",
+    "For self-enhancement bias, your mitigation should be: use a different judge model than the model you're evaluating, and cross-validate on a 50-item human-labeled calibration set before deploying the judge at scale. How would you document and track judge model version changes over time?"
+  ],
+  l4:[
+    "Strong instinct to prioritize safety metrics at the blocking tier. For a healthcare assistant, your blocking gate should include: harmful advice rate (fine-tuned classifier, not LLM-judge), refusal rate on contraindicated medication combinations, and factual accuracy on drug interaction queries. What statistical test and minimum absolute delta would you require before triggering a block?",
+    "McNemar's test for paired binary outcomes is the right choice. For your minimum delta, I'd suggest 1.5 percentage points AND p < 0.05 for safety metrics — lower than the 2pp threshold for quality metrics, because the cost of a false negative (missing a real safety regression) is much higher. How would you handle the floating alias problem with your API provider?",
+    "Contractual model version pinning plus a daily canary test against your pinned checkpoint is the standard approach. If the provider can't offer version pinning, run a daily regression check with 20 high-signal items and alert immediately on any score change. This gives you early warning of silent model updates. What goes in your informational vs. warning tiers?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var responses=_fallbackResponses[labId]||_fallbackResponses.l1;
+  var idx=_fallbackIdx[labId]||0;
+  var reply=responses[idx%responses.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var welcomes={
+    l1:'Welcome to Lab 1. You\'re building an eval pipeline for a transaction summarization model at a fintech company. Let\'s work through the five core components together, starting with the Dataset Registry. What should go into it for your specific use case — what kinds of examples, and how would you tag them?',
+    l2:'You\'ve inherited a problematic eval dataset: 450 untagged items, no version history, 98% pass rate, and likely training contamination. Let\'s work through a systematic diagnosis. Which failure modes do you see, and how would you argue for each based on the evidence?',
+    l3:'Let\'s design an LLM-as-judge system for a customer service chatbot. You need to score accuracy, tone, and resolution effectiveness. Start with the output schema — what JSON fields do you need, and why should the reasoning field precede the numerical scores?',
+    l4:'You\'re designing a regression detection specification for a healthcare AI assistant — a high-stakes deployment where false negatives can cause real patient harm. Let\'s start with your blocking gate criteria. What metrics, at what thresholds, with what statistical tests, should constitute a hard "do not ship" decision?'
+  };
+  addMsg(labId,'ai',welcomes[labId]||'Ready to continue. What would you like to explore?');
+  var inp=document.getElementById('inp-'+labId);
+  if(inp){inp.value='';inp.focus();}
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var offReply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:offReply});
+    addMsg(labId,'ai',offReply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId]||'You are a helpful AI mentor for an eval pipeline course.',
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I apologize, I could not generate a response.';
+      if(thinking&&thinking.parentNode) thinking.remove();
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    } catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fbReply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fbReply});
+      addMsg(labId,'ai',fbReply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+updateTabs();
+</script>
+
+</body>
+</html>

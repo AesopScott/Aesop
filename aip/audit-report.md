@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-26 15:49 UTC
+**Generated:** 2026-04-26 16:49 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 527 · **Warnings:** 969
+**Errors:** 528 · **Warnings:** 969
 
 ---
 
@@ -474,7 +474,7 @@
 
 ## Cross-References
 
-### Errors (27)
+### Errors (28)
 
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `applied` is linked in courses.html but not defined in electives-hub or registry
@@ -491,6 +491,7 @@
 - 🔴 **ORPHAN_LINK**: Course `how` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `how_large_language_models_work` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `make` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `performing` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `photography` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `rag` is linked in courses.html but not defined in electives-hub or registry
@@ -1540,7 +1541,7 @@
 
 ## Summary
 
-**527 error(s) require attention:**
+**528 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -2009,6 +2010,7 @@
 1. Course `how` is linked in courses.html but not defined in electives-hub or registry
 1. Course `how_large_language_models_work` is linked in courses.html but not defined in electives-hub or registry
 1. Course `make` is linked in courses.html but not defined in electives-hub or registry
+1. Course `performing` is linked in courses.html but not defined in electives-hub or registry
 1. Course `photography` is linked in courses.html but not defined in electives-hub or registry
 1. Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 1. Course `rag` is linked in courses.html but not defined in electives-hub or registry

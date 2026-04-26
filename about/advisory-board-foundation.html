@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-26 -->
+<!-- v1.0.3 | 2026-04-26 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -405,6 +405,27 @@ body {
   color: var(--ink-muted);
   line-height: 1.7;
 }
+.fa-bio-full {
+  display: block;
+  margin-top: 0.15rem;
+}
+.fa-read-more {
+  display: inline-block;
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--teal-dark);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+.fa-read-more:hover { color: var(--gold); }
+[data-theme="dark"] .fa-read-more { color: var(--teal); }
+[data-theme="dark"] .fa-read-more:hover { color: var(--gold-light); }
 .fa-roles {
   padding: 0.75rem 1.5rem;
   border-top: 1px solid var(--border);
@@ -517,6 +538,59 @@ body {
 [data-theme="dark"] .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
 [data-theme="dark"] .mission-pillar-text p { color: rgba(255,255,255,0.65); }
 
+/* ── FOUNDERS TOC ── */
+.founders-toc {
+  padding: 0 12.5%;
+  margin-bottom: 3.5rem;
+}
+.founders-toc-inner {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.75rem 1.5rem;
+}
+.founders-toc-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+.founders-toc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  list-style: none;
+}
+.founders-toc-list li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.3rem 0;
+  border-bottom: 1.5px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.founders-toc-list li a:hover {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+.founders-toc-list li a::before {
+  content: '⭐';
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+[data-theme="dark"] .founders-toc-inner {
+  background: var(--white);
+  border-color: var(--border);
+}
+[data-theme="dark"] .founders-toc-list li a { color: var(--ink-light); }
+[data-theme="dark"] .founders-toc-list li a:hover { color: var(--gold-light); border-bottom-color: var(--gold-light); }
+
 @media (max-width: 900px) {
   .distinction-grid { grid-template-columns: 1fr; }
   .mission-pillars { grid-template-columns: 1fr; }
@@ -584,6 +658,14 @@ body {
 
 <!-- PAGE BODY -->
 <div class="page-body">
+
+  <!-- FOUNDERS TOC -->
+  <div class="founders-toc" id="foundersToc" style="display:none">
+    <div class="founders-toc-inner">
+      <div class="founders-toc-label">Jump to a Founder</div>
+      <ul class="founders-toc-list" id="foundersTocList"></ul>
+    </div>
+  </div>
 
   <!-- INTRO -->
   <div class="intro-block">
@@ -715,9 +797,24 @@ body {
     var avatarHtml = m.hasPhoto
       ? '<img src="/about/advisory-board-photos/' + esc(m.id) + '.jpg" alt="' + esc(m.name) + '" loading="lazy">'
       : esc(m.emoji || '🌟');
-    var bioShort = (m.bio || '').split('\n\n')[0];
-    if (bioShort.length > 220) bioShort = bioShort.slice(0, 217) + '…';
-    return '<div class="fa-card">' +
+    var fullBio = (m.bio || '').trim();
+    var firstPara = fullBio.split('\n\n')[0];
+    var needsExpand = fullBio.length > firstPara.length || firstPara.length > 220;
+    var bioShortText = firstPara.length > 220 ? firstPara.slice(0, 217) + '…' : firstPara;
+    // Escape full bio text, then convert paragraph breaks to HTML
+    var bioFullHtml = esc(fullBio).replace(/\n\n/g, '<br><br>');
+    var readMoreBtn = needsExpand
+      ? '<button class="fa-read-more" type="button" onclick="(function(btn){' +
+          'var card=btn.closest(\'.fa-card\');' +
+          'var s=card.querySelector(\'.fa-bio-short\');' +
+          'var f=card.querySelector(\'.fa-bio-full\');' +
+          'var open=f.style.display!==\'none\';' +
+          's.style.display=open?\'\':\' none\';' +
+          'f.style.display=open?\'none\':\'\';' +
+          'btn.textContent=open?\'Read more ↓\':\'Show less ↑\';' +
+        '})(this)">Read more ↓</button>'
+      : '';
+    return '<div class="fa-card" id="founder-' + esc(m.id) + '">' +
       '<div class="fa-card-top">' +
         '<div class="fa-avatar">' + avatarHtml + '</div>' +
         '<div>' +
@@ -726,7 +823,11 @@ body {
           '<div class="fa-title">' + esc(m.title) + ' &middot; ' + esc(m.organization) + '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="fa-bio">' + esc(bioShort) + '</div>' +
+      '<div class="fa-bio">' +
+        '<span class="fa-bio-short">' + esc(bioShortText) + '</span>' +
+        '<span class="fa-bio-full" style="display:none">' + bioFullHtml + '</span>' +
+        readMoreBtn +
+      '</div>' +
       '<div class="fa-roles">' +
         '<span class="fa-role-tag fa-role-tag--brand">Brand Board</span>' +
         '<span class="fa-role-tag fa-role-tag--education">Education Board</span>' +
@@ -745,9 +846,18 @@ body {
       var grid = document.getElementById('foundationGrid');
       var members = (data.members || []).filter(function(m) { return m.board === 'foundation'; });
       if (!members.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;"><p style="font-size:0.95rem;color:var(--ink-muted);">Foundation Advisors are being appointed. Check back soon.</p></div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;"><p style="font-size:0.95rem;color:var(--ink-muted);">Founders Board members are being appointed. Check back soon.</p></div>';
       } else {
         grid.innerHTML = members.map(buildCard).join('');
+        // Build TOC
+        var toc = document.getElementById('foundersToc');
+        var tocList = document.getElementById('foundersTocList');
+        if (toc && tocList && members.length > 1) {
+          tocList.innerHTML = members.map(function(m) {
+            return '<li><a href="#founder-' + esc(m.id) + '">' + esc(m.name) + '</a></li>';
+          }).join('');
+          toc.style.display = '';
+        }
       }
     })
     .catch(function() {

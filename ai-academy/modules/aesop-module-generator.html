@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-24 -->
+<!-- v1.0.6 | 2026-04-26 -->
 <!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
 <!-- v1.0.6 | 2026-04-17 -->
@@ -444,7 +444,9 @@ function onModuleChange() {
   const course = COURSES.find(c => c.id === cid);
   if (!course || !course.modules) return;
   const mod = course.modules.find(m => m.n === mn);
-  el.innerHTML = '<strong>' + mod.title + '</strong><br>' + mod.sub;
+  const isYouthCourse = course.ageGroup === 'youth';
+  el.innerHTML = '<strong>' + mod.title + '</strong><br>' + mod.sub +
+    (isYouthCourse ? '<br><span style="color:#4fcf8a;font-size:0.78rem;font-weight:700;margin-top:0.4rem;display:inline-block;">🌱 Youth Mode Active — writing for ages 8–15, core target age 12</span>' : '');
   el.classList.add('visible');
   checkActivateReady();
 }
@@ -793,7 +795,11 @@ function buildSystemPrompt(course, mod, tier, tc, lang, langName) {
   const modPrefix = MODULE_PREFIX_MAP[cid] || cid.substring(0,3);
   const moduleId = modPrefix + '-m' + mod.n;
 
-  const narrativeRule = tier === 'intro'
+  const isYouth = course.ageGroup === 'youth';
+
+  const narrativeRule = isYouth
+    ? '~60% narrative. Every lesson opens with a real documented case BEFORE naming any concept. Use specific years, names, events — not hypotheticals. Story is the on-ramp; explanation follows.'
+    : tier === 'intro'
     ? '~80% narrative. Named characters. Story creates the problem before any concept is named.'
     : tier === 'basic'
     ? '~50% narrative. Story frames each concept as a question the protagonist wrestles with.'
@@ -927,6 +933,48 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     '',
     'NARRATIVE RULE: ' + narrativeRule,
     '',
+    ...(isYouth ? [
+      '═══ YOUTH COURSE MODE — AGES 8–15, CORE TARGET: AGE 12 ═══',
+      '',
+      '— AUDIENCE —',
+      'Design for a 12-year-old capable thinker. This is a transitional learner: abstract reasoning is',
+      'emerging but needs concrete anchors; identity is forming; peer respect matters more than adult approval.',
+      'Treat the learner as serious, curious, and developing — not as a child to be protected, not as an adult.',
+      '',
+      '— TONE —',
+      'Intelligent but not academic. No condescension, no hype, no "fun facts!" energy.',
+      'Humor is welcome when earned. Cultural references must be current and unforced.',
+      'Never simplify ideas — simplify language instead. The concepts can be hard; the sentences should be clear.',
+      '',
+      '— LESSON STRUCTURE (MANDATORY FOR ALL 4 LESSONS) —',
+      '1. OPEN WITH A REAL CASE. Every lesson MUST begin with a documented, specific real-world event',
+      '   (specific date, named people, named system) BEFORE introducing any concept. No hypotheticals.',
+      '   The case creates the question; the lesson answers it.',
+      '2. ETHICAL QUESTION. Every lesson must surface at least one genuine ethical question with no clean answer.',
+      '   Do not resolve it. Let the learner sit with the tension.',
+      '3. IDENTITY FRAMING. Include at least one moment per lesson that explicitly positions the learner',
+      '   as someone who now understands something consequential: "You can now see what most people miss."',
+      '   or "Knowing this changes how you read every headline about AI."',
+      '4. SESSION LENGTH. Target 30–35 minutes per lesson. Do not write more than 4 content sections per lesson.',
+      '',
+      '— AGE-BAND ADJUSTMENTS (build into the base content, do not separate) —',
+      'Ages 8–11 scaffold: Every abstract concept must have a concrete anchor IMMEDIATELY preceding it.',
+      '  Include natural pause points (end of each section) where a younger reader can stop without losing thread.',
+      '  Vocabulary: define any term that a 4th-grader would not know, in-line and without breaking flow.',
+      'Ages 13–15 elevation: Framing should include explicit real-world stakes ("this affects policy decisions',
+      '  made right now"). Ethical questions should be left more open. Tone should be closer to peer-level.',
+      '  At least one lesson should reference what decisions in this domain look like at an institutional level.',
+      '',
+      '— LABS —',
+      'Labs should put the learner in a role with real stakes: investigator, auditor, designer, or critic.',
+      'The lab AI persona should be a knowledgeable peer, not a teacher. It challenges, asks back, does not lecture.',
+      'Lab prompts should be open-ended and require the learner to take a position — not recall a fact.',
+      '',
+      '— QUIZ —',
+      'Quiz questions should test reasoning, not memorization. At least 2 of 4 questions per lesson',
+      'should require applying a concept to a new scenario — not restating a definition.',
+      '',
+    ] : []),
     '═══ EXACT HTML STRUCTURE ═══',
     'The file must contain exactly these top-level elements (hub ignores DOCTYPE/html/body but keep for standalone testing):',
     '',
@@ -997,13 +1045,19 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
       '</div>',
       '',
       '── Voice requirements for the intro story ──',
-      '1. Civilization-framing. Start with a historical parallel that mirrors the current AI situation in this course\'s domain.',
-      '2. Stakes-setting but not doom. Neither "AI is magic" nor "AI is terrifying."',
+      isYouth
+        ? '1. YOUTH: Open with a real incident the learner might have encountered — a viral story, a news event, a thing that happened to someone their age or in a school — that connects directly to this course topic. Specific date, specific detail.'
+        : '1. Civilization-framing. Start with a historical parallel that mirrors the current AI situation in this course\'s domain.',
+      isYouth
+        ? '2. YOUTH: Stakes-setting at a scale they can feel — not civilizational, but personal and social. What does knowing this help them do? What problem does it give them language for?'
+        : '2. Stakes-setting but not doom. Neither "AI is magic" nor "AI is terrifying."',
       '3. Concrete specifics over abstractions — years, events, named people, named products.',
       '4. MUST be distinct from the L1 Opening Scene story-scene. The Intro zooms OUT (whole domain, why this course exists). The L1 Opening Scene zooms IN (a specific illustrative case).',
       '5. Three paragraphs, 150–220 words total.',
       '6. Flowing prose, no bullet lists.',
-      '7. Trust the reader as a capable adult. No condescension, no hype.',
+      isYouth
+        ? '7. YOUTH: Write as a knowledgeable peer, not an instructor. Voice should feel like a slightly older person who figured something out and wants to share it — not a textbook.'
+        : '7. Trust the reader as a capable adult. No condescension, no hype.',
       '',
       ''
     ] : []),

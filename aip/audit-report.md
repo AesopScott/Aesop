@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-27 04:29 UTC
+**Generated:** 2026-04-27 16:49 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 536 · **Warnings:** 997
+**Errors:** 536 · **Warnings:** 1010
 
 ---
 
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (585)
+### Warnings (598)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1178,6 +1178,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-misinformation-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m3.html` has no COURSE_ID constant
@@ -1413,6 +1419,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m3.html` has no COURSE_ID constant
@@ -1555,6 +1567,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m3.html` has no COURSE_ID constant

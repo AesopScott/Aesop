@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-26 16:49 UTC
+**Generated:** 2026-04-27 01:45 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 528 · **Warnings:** 969
+**Errors:** 528 · **Warnings:** 985
 
 ---
 
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (549)
+### Warnings (565)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1373,6 +1373,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `how-large-language-models-work-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `how-large-language-models-work-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `how-large-language-models-work-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
@@ -1393,6 +1401,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `m1-advanced-v18.5-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `m2-advanced-v4-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `photography-and-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `photography-and-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `photography-and-ai-m3.html` has no COURSE_ID constant

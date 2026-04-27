@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-26 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Image Generation Models – M6: ControlNet and Guided Generation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- image-generation-models-m6 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-error{color:#f07070;font-size:0.78rem;font-style:italic;padding:0.5rem 1rem;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1.25rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+.diagram-box{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin:1.25rem 0;font-size:0.82rem;}
+.diagram-box .diag-title{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+.diag-row{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;flex-wrap:wrap;}
+.diag-node{background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.3rem 0.7rem;border-radius:3px;font-size:0.75rem;font-weight:600;white-space:nowrap;}
+.diag-node.gold{background:rgba(201,160,90,0.08);border-color:rgba(201,160,90,0.25);color:var(--gold);}
+.diag-node.blue{background:rgba(56,189,248,0.06);border-color:rgba(56,189,248,0.2);color:#38bdf8;}
+.diag-node.green{background:rgba(79,207,138,0.06);border-color:rgba(79,207,138,0.2);color:#4fcf8a;}
+.diag-arrow{color:var(--muted);font-size:0.85rem;}
+.condtype-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.85rem;margin:1.25rem 0;}
+.condtype-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1rem 1.1rem;}
+.condtype-card .ct-icon{font-size:1.4rem;margin-bottom:0.5rem;}
+.condtype-card .ct-name{font-size:0.78rem;font-weight:700;color:#e8e3db;margin-bottom:0.3rem;}
+.condtype-card .ct-desc{font-size:0.75rem;line-height:1.6;color:#6e6861;}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════ L1 ═══════════════════ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 1</div>
+      <h1>What ControlNet Actually Is</h1>
+      <div class="tagline">From unconstrained diffusion to spatially precise generation — the architecture that changed professional workflows.</div>
+      <div class="lesson-question">Why couldn't text prompts alone give artists the spatial control they needed, and how did a single paper solve it?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Context — February 2023">
+        <p class="story-text">By early 2023, Stable Diffusion had become the dominant open-source image model, but <em>professional artists had a recurring complaint</em>: you could describe a pose in a prompt, but the model would interpret it loosely. A figure leaning left might end up leaning right. A hand gesture described in words might render as a blob. Text, it turned out, was a fundamentally ambiguous spatial language.</p>
+        <p class="story-text">Lvmin Zhang and Maneesh Agrawala at Stanford released <em>ControlNet</em> on February 10, 2023. The paper — "Adding Conditional Control to Text-to-Image Diffusion Models" — showed that a trainable copy of the encoder portion of a frozen diffusion model could be conditioned on arbitrary spatial signals without retraining the original model. Within days, the community had built working implementations on top of Stable Diffusion 1.5.</p>
+      </div>
+
+      <div class="section-heading">The Core Problem: Text Is Spatially Ambiguous</div>
+      <div class="section-body">
+        <p>Diffusion models are conditioned on text embeddings through cross-attention. The embedding captures <em>semantic content</em> — what a scene contains — but struggles with <em>spatial layout</em>. The token "left arm raised" has no inherent pixel coordinate. The model distributes probability across many plausible arm positions, and the one it samples depends on noise initialization, not your intent.</p>
+        <p>This matters enormously for professional use cases: architectural visualization requires precise floor plans, fashion design requires garments on specific pose templates, animation requires frame-to-frame pose consistency. None of these can be reliably delivered by text alone.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">The Pre-ControlNet Workaround</div>
+        <p>Before ControlNet, practitioners used inpainting, img2img with high denoising strength, and iterative manual corrections. A single "correct the pose" workflow could take dozens of iterations. ControlNet collapsed that to a single inference pass.</p>
+      </div>
+
+      <div class="section-heading">ControlNet's Architectural Insight</div>
+      <div class="section-body">
+        <p>ControlNet's breakthrough was structural. Rather than fine-tuning the original model (which would overwrite learned knowledge) or training a separate model from scratch (which would lose the original's quality), Zhang and Agrawala made a <em>trainable copy of the encoder blocks</em> of a frozen UNet.</p>
+        <p>The frozen original model continues to generate — its weights never change. The trainable copy receives the conditioning signal (a pose skeleton image, an edge map, a depth map, etc.) and produces feature residuals. These residuals are added back into the original model's decoder via <em>zero convolutions</em> — 1×1 convolution layers initialized to exactly zero weight and zero bias.</p>
+        <p>The zero-initialization is critical: at the start of training, the ControlNet adds nothing, so the original model's outputs are perfectly preserved. Gradients can then train the ControlNet copy without risking catastrophic interference with the frozen model's learned representations.</p>
+      </div>
+
+      <div class="diagram-box">
+        <div class="diag-title">ControlNet Signal Flow (Simplified)</div>
+        <div class="diag-row">
+          <div class="diag-node gold">Condition Image<br><span style="font-weight:400;font-size:0.68rem;">(pose / edges / depth)</span></div>
+          <div class="diag-arrow">→</div>
+          <div class="diag-node">Trainable Encoder Copy</div>
+          <div class="diag-arrow">→</div>
+          <div class="diag-node blue">Zero Conv Residuals</div>
+        </div>
+        <div class="diag-row" style="margin-top:0.3rem;">
+          <div class="diag-node gold">Text Prompt</div>
+          <div class="diag-arrow">→</div>
+          <div class="diag-node">Frozen UNet Encoder</div>
+          <div class="diag-arrow">→</div>
+          <div class="diag-node">Frozen UNet Decoder</div>
+          <div class="diag-arrow">+</div>
+          <div class="diag-node blue">Residuals</div>
+          <div class="diag-arrow">→</div>
+          <div class="diag-node green">Output Image</div>
+        </div>
+      </div>
+
+      <div class="section-heading">What "Guided Generation" Means</div>
+      <div class="section-body">
+        <p>Guided generation is the broader category: any technique that constrains diffusion sampling using a signal beyond the text prompt. ControlNet is one mechanism; others include <em>classifier guidance</em> (using a classifier's gradient to steer sampling toward a label), <em>classifier-free guidance</em> (the standard CFG scale), and later methods like IP-Adapter or T2I-Adapter.</p>
+        <p>What distinguishes ControlNet is its use of <em>structural conditioning</em> — it guides layout, pose, and geometry rather than style or content category. The conditioning image acts as a spatial blueprint the model must respect while still exercising creative freedom within that structure.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Zero Convolution</span><span class="kt-def">A 1×1 convolution layer with weights and biases initialized to zero, ensuring no interference with the frozen base model at the start of ControlNet training.</span></div>
+      <div class="key-term"><span class="kt-term">Structural Conditioning</span><span class="kt-def">Using a spatial signal (edges, pose, depth) to constrain the geometric layout of generated images while leaving style and texture to the base model.</span></div>
+      <div class="key-term"><span class="kt-term">Frozen Encoder</span><span class="kt-def">The original UNet whose weights are locked during ControlNet training, preserving the base model's learned image quality.</span></div>
+      <div class="key-term"><span class="kt-term">Residual Injection</span><span class="kt-def">Adding ControlNet's feature outputs to the frozen decoder's activations, allowing spatial guidance without retraining the decoder.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Scale of Adoption</div>
+        <p>The ControlNet paper's GitHub repository accumulated over 25,000 stars within two months of release. Within six months, every major Stable Diffusion web interface — AUTOMATIC1111, ComfyUI, InvokeAI — had integrated ControlNet support. The architecture became the de facto standard for spatially controlled diffusion generation.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ Q1 ═══════════════════ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <h1>Lesson 1 Quiz</h1>
+      <div class="tagline">What ControlNet Actually Is</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">What fundamental limitation of text prompts did ControlNet address?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Text prompts cannot describe artistic styles</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Text prompts are spatially ambiguous and cannot reliably specify layout or pose</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Text prompts are too long for cross-attention mechanisms</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Text prompts do not support negative conditioning</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Text embeddings capture semantic content but not pixel-level spatial arrangement — a described pose could render many ways depending on noise initialization.</div>
+        <div class="quiz-feedback wrong">Not quite. The core issue is spatial ambiguity: text cannot reliably encode where in the image specific elements should appear.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">Why are zero convolutions important to ControlNet's design?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">They compress the conditioning image to match the UNet's latent resolution</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">They prevent the conditioning image from being affected by noise</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">They initialize to zero so the ControlNet adds nothing at first, preserving the base model's outputs at training start</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">They reduce the number of trainable parameters in the ControlNet copy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Zero initialization ensures the frozen model's outputs are completely undisturbed at the beginning — gradients can then train the ControlNet without catastrophic interference.</div>
+        <div class="quiz-feedback wrong">The key role of zero convolutions is initialization: at training start they output zero, so the frozen model is unaffected. This protects learned image quality while allowing ControlNet to learn.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">ControlNet was released in February 2023 by researchers at which institution?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">MIT CSAIL</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Stability AI</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Stanford University</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Google DeepMind</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Lvmin Zhang and Maneesh Agrawala at Stanford released the ControlNet paper on February 10, 2023.</div>
+        <div class="quiz-feedback wrong">ControlNet came from Stanford — specifically from Lvmin Zhang and Maneesh Agrawala, whose paper appeared on February 10, 2023.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-4">
+        <div class="quiz-q">In ControlNet's architecture, which part of the original UNet is copied to form the trainable branch?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">The decoder blocks</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">The encoder blocks</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">The cross-attention layers only</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">The text embedding projection layer</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The encoder portion is copied to form the trainable ControlNet branch; its outputs (residuals) are injected into the frozen decoder.</div>
+        <div class="quiz-feedback wrong">ControlNet copies the encoder blocks, not the decoder. The residuals produced are then added into the original model's decoder at corresponding skip-connection points.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ LAB 1 ═══════════════════ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <h1>Lab 1 — ControlNet Architecture Explorer</h1>
+      <div class="tagline">Discuss the zero-convolution design and why frozen weights matter with your AI tutor.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You have just learned how ControlNet's trainable encoder copy and zero convolutions allow spatial conditioning without retraining the base model. Use this chat to deepen your understanding. Ask why zero initialization is so important, what would happen if the base model weren't frozen, or how residual injection differs from fine-tuning.</p>
+        <div class="lab-prompt">Starter questions: "What would break if the zero convolutions were initialized randomly?" · "Why is it better to copy only the encoder and not the full UNet?" · "How does ControlNet compare to LoRA as an adaptation method?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">ControlNet Architecture</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you understand ControlNet's architecture — specifically the zero-convolution design, the frozen/trainable weight split, and how residual injection works. What would you like to explore first?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about zero convolutions, frozen weights, residual injection…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ L2 ═══════════════════ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 2</div>
+      <h1>Conditioning Types: Edges, Depth, Pose, and Beyond</h1>
+      <div class="tagline">The signal you feed ControlNet determines what aspect of structure it enforces — and each type has a distinct extraction pipeline.</div>
+      <div class="lesson-question">What conditioning type should you choose, and what preprocessor does each one require?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Real Deployment Context">
+        <p class="story-text">When game studio <em>Scenario.gg</em> integrated ControlNet into its asset generation pipeline in mid-2023, the team had to make a concrete choice for each asset category: use Canny edge detection for hard-surface props, OpenPose for character consistency, and depth maps for environmental layouts. <em>Each conditioning type required a different preprocessor</em> running on the input reference image before the diffusion model even started.</p>
+        <p class="story-text">The choice mattered: Canny preserves sharp outlines but ignores depth order; depth maps encode foreground/background relationships but blur fine details. Getting it wrong produced outputs that looked correct at a glance but failed quality review — furniture floating in front of walls, characters with broken silhouettes.</p>
+      </div>
+
+      <div class="section-heading">The Major Conditioning Types</div>
+      <div class="section-body">
+        <p>Each ControlNet model is trained on a specific type of conditioning signal. A ControlNet trained on Canny edges cannot meaningfully process a depth map — the signal format is entirely different. You must match the conditioning type to the trained ControlNet weights.</p>
+      </div>
+
+      <div class="condtype-grid">
+        <div class="condtype-card">
+          <div class="ct-icon">📐</div>
+          <div class="ct-name">Canny Edge Detection</div>
+          <div class="ct-desc">Extracts sharp edges from a reference image using the Canny algorithm. Best for hard-surface objects, architecture, and line art. Encodes where edges are but not depth order.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">🦴</div>
+          <div class="ct-name">OpenPose</div>
+          <div class="ct-desc">Detects human body keypoints (shoulders, elbows, wrists, knees, etc.) and draws them as a skeleton overlay. Controls pose without constraining appearance or clothing.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">🏔</div>
+          <div class="ct-name">Depth (MiDaS / ZoeDepth)</div>
+          <div class="ct-desc">Estimates per-pixel depth from a monocular image. Encodes foreground/background relationships and 3D scene structure. Essential for correct spatial layering.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">🎨</div>
+          <div class="ct-name">HED / SoftEdge</div>
+          <div class="ct-desc">Holistically-nested edge detection produces softer, more natural edge maps than Canny. Better for organic subjects like faces and plants where hard lines would look artificial.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">🗺</div>
+          <div class="ct-name">Normal Map</div>
+          <div class="ct-desc">Encodes surface orientation as RGB values. Preserves fine 3D surface detail — wrinkles, folds, surface texture direction — better than depth alone.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">🖼</div>
+          <div class="ct-name">Segmentation (SPADE / ADE20K)</div>
+          <div class="ct-desc">Color-codes regions by semantic class (sky, road, building). Controls the spatial layout of content categories rather than geometry — fundamental for scene-level composition.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">📝</div>
+          <div class="ct-name">Scribble / Sketch</div>
+          <div class="ct-desc">Accepts rough hand-drawn outlines as conditioning. Trained to tolerate imprecise input — useful for rapid ideation where a precise reference image is not available.</div>
+        </div>
+        <div class="condtype-card">
+          <div class="ct-icon">🌊</div>
+          <div class="ct-name">Lineart (Anime / Realistic)</div>
+          <div class="ct-desc">Specialized edge extraction tuned for anime or realistic illustration lineart. Preserves stylistic line weight variation that Canny would flatten.</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Preprocessors vs. ControlNet Weights</div>
+      <div class="section-body">
+        <p>The pipeline has two stages that users frequently confuse. The <em>preprocessor</em> transforms your input image into the conditioning signal format — it runs on CPU or GPU before inference. The <em>ControlNet weights</em> are then conditioned on that signal during diffusion sampling.</p>
+        <p>In AUTOMATIC1111's ControlNet extension, you can select "Preview annotator result" to see exactly what signal the preprocessor is producing. If the skeleton joints are misaligned or the edge map is too noisy, you fix that at the preprocessor stage — not by adjusting the diffusion sampler.</p>
+        <p>When using your own artwork directly as the conditioning input (rather than a reference photo), you may bypass the preprocessor entirely — setting it to "None" — if the image is already in the correct format (e.g., you're using a hand-drawn skeleton diagram).</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Conditioning Strength Parameter</div>
+        <p>Every ControlNet implementation exposes a conditioning weight (often called "Control Weight" or "Guidance Strength"), typically ranging 0–2. At 1.0 the conditioning is at full strength. Higher values enforce the structure more rigidly but can produce artifacts. Lower values allow the diffusion model more creative freedom. For pose control, 0.8–1.0 is typical; for depth control, 0.5–0.8 often produces more natural results.</p>
+      </div>
+
+      <div class="section-heading">Multiple ControlNets Simultaneously</div>
+      <div class="section-body">
+        <p>One of ControlNet's underappreciated features is composability: you can run multiple ControlNets simultaneously on the same diffusion inference. A real-world example from the architecture visualization pipeline at Woods Bagot (documented in their 2023 internal workflow report) combined depth conditioning for scene layout with Canny conditioning for facade detail. Each ControlNet's residuals are added independently into the decoder.</p>
+        <p>The risk of stacking ControlNets is conflicting guidance: if the depth and edge signals disagree about where an element belongs, the model produces artifacts at the conflict region. Practitioners typically set one ControlNet at higher weight for primary structure and a second at lower weight for detail enhancement.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">Preprocessor</span><span class="kt-def">Software that transforms a reference image into the specific conditioning format expected by a given ControlNet model (e.g., running Canny on a photo to produce an edge map).</span></div>
+      <div class="key-term"><span class="kt-term">OpenPose</span><span class="kt-def">A computer vision model that detects human body keypoints and produces skeleton visualizations used as pose conditioning for ControlNet.</span></div>
+      <div class="key-term"><span class="kt-term">Control Weight</span><span class="kt-def">A scalar (0–2) controlling how strongly the ControlNet's residuals influence the frozen model's decoder activations during sampling.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The IP-Adapter Extension</div>
+        <p>In 2023, Tencent's AI lab released IP-Adapter, which extends the guided-generation concept to image prompting — using a reference image's visual features (via CLIP image encoder) as a conditioning signal alongside ControlNet structural conditioning. This allowed practitioners to combine "this exact pose" (ControlNet) with "this visual style from this reference image" (IP-Adapter) in a single inference pass.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+      <button class="pnav-btn" onclick="goPage('p-q2')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ Q2 ═══════════════════ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <h1>Lesson 2 Quiz</h1>
+      <div class="tagline">Conditioning Types: Edges, Depth, Pose, and Beyond</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">You need to control a character's body position without constraining their clothing or appearance. Which conditioning type is most appropriate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Canny edges</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">OpenPose skeleton</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Depth map</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Segmentation mask</button>
+        </div>
+        <div class="quiz-feedback right">Correct. OpenPose extracts body keypoints as a skeleton, encoding pose geometry while leaving appearance, clothing, and style entirely to the diffusion model.</div>
+        <div class="quiz-feedback wrong">OpenPose is the right choice here. It encodes body joint positions without encoding appearance details — the diffusion model fills in clothing, lighting, and style freely.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">What does the preprocessor step do in a ControlNet pipeline?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">It fine-tunes the ControlNet weights for a specific image</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">It converts the text prompt into a spatial layout</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">It transforms the input reference image into the conditioning signal format (e.g., edge map, skeleton) the ControlNet expects</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">It adjusts the diffusion sampler's step count based on image complexity</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The preprocessor runs before diffusion begins, extracting the specific signal type (Canny edges, depth values, keypoints) the ControlNet model was trained to accept.</div>
+        <div class="quiz-feedback wrong">The preprocessor's job is signal extraction: it takes your reference image and produces the specific format (edge map, depth map, skeleton) that the ControlNet weights expect as input.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">Which conditioning type is best suited to control the spatial layout of semantic content categories (sky, buildings, ground) rather than geometric structure?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Normal map</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">HED soft edges</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Canny edges</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Segmentation mask</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Segmentation masks color-code regions by semantic class, giving the model layout instructions at the content-category level rather than at the geometric-edge level.</div>
+        <div class="quiz-feedback wrong">Segmentation is the right answer. It assigns semantic labels (sky, road, building) to image regions, allowing layout control over what type of content appears where.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-4">
+        <div class="quiz-q">A practitioner is stacking two ControlNets — depth for primary structure, Canny for detail. What is the recommended approach to weighting them?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Set depth at higher weight for primary structure, Canny at lower weight for detail enhancement</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Set both to maximum weight (2.0) to ensure full control</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Apply both at equal weight and let the model arbitrate conflicts</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Always set depth weight to zero when using Canny simultaneously</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Conflicting guidance from two ControlNets causes artifacts at conflict regions. The recommended practice is to establish a priority hierarchy with different weights.</div>
+        <div class="quiz-feedback wrong">When stacking ControlNets, a weight hierarchy is essential. The primary structural signal gets higher weight; secondary detail conditioning runs at lower weight to avoid conflicting guidance artifacts.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ LAB 2 ═══════════════════ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <h1>Lab 2 — Conditioning Type Selection</h1>
+      <div class="tagline">Work through real scenarios and choose the right conditioning type for each use case.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've learned the major ControlNet conditioning types and what each encodes. Now practice choosing the right one for real creative and production scenarios. Describe your use case and get guidance on the best conditioning type, why it fits, and what preprocessor to use.</p>
+        <div class="lab-prompt">Try: "I'm generating architectural floor-plan-based renders for a client" · "I need 10 character poses for an animation but want the same character design" · "I'm doing a product shoot where the product must appear at the same depth as in a reference photo"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Conditioning Type Selection</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to Lab 2. Describe your image generation use case and I'll help you choose the right ControlNet conditioning type, explain which preprocessor to use, and discuss the tradeoffs. What's your scenario?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Describe your use case or ask about a specific conditioning type…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ L3 ═══════════════════ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 3</div>
+      <h1>Guidance Scale, Classifier-Free Guidance, and Sampling Control</h1>
+      <div class="tagline">Every guided diffusion inference involves multiple overlapping control parameters — understanding how they interact is the difference between results that work and results that don't.</div>
+      <div class="lesson-question">When the guidance scale fights the ControlNet weight, which wins — and why does it matter?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="The CFG Confusion Problem">
+        <p class="story-text">In mid-2023, numerous users on the Stable Diffusion Reddit and Discord communities reported a consistent problem: their ControlNet pose conditioning was being "ignored" at certain settings. After extensive community investigation, the cause became clear — they were running <em>CFG Scale at 15 or higher</em> while also using ControlNet at full weight. The extremely high text-guidance was overpowering the structural conditioning, producing images that satisfied the text prompt but violated the pose constraint.</p>
+        <p class="story-text">This wasn't a bug. It was a fundamental property of how classifier-free guidance and ControlNet residuals interact in the sampling process. Understanding the interaction is <em>non-negotiable</em> for reliable guided generation.</p>
+      </div>
+
+      <div class="section-heading">Classifier-Free Guidance (CFG) Reviewed</div>
+      <div class="section-body">
+        <p>Recall from earlier modules that classifier-free guidance (Ho &amp; Salimans, 2021) runs two forward passes per denoising step: one conditioned on the text prompt, one unconditional. The predicted noise for each is combined:</p>
+        <p style="font-family:'Crimson Pro',serif;font-size:0.95rem;color:#a89f93;padding:0.5rem 1rem;margin:0.75rem 0;border-left:2px solid rgba(201,160,90,0.2);">ε_guided = ε_uncond + w × (ε_cond − ε_uncond)</p>
+        <p>where <em>w</em> is the CFG scale (guidance weight). At w=1 the model ignores the text entirely; at w=7.5 (a common default) it strongly favors the text direction; at w=15+ it aggressively pushes toward text adherence, often at the cost of image quality (oversaturation, artifacts) and — crucially — at the cost of ControlNet signal integrity.</p>
+      </div>
+
+      <div class="section-heading">How ControlNet Interacts with CFG</div>
+      <div class="section-body">
+        <p>ControlNet residuals are added to the frozen decoder's activations before the CFG combination step. This means the text guidance signal is applied on top of an already structure-conditioned representation. At normal CFG scales (7–9), the ControlNet structure is preserved. At very high CFG scales (12+), the text gradient dominates and can suppress the structural signal.</p>
+        <p>Empirically, most practitioners find the sweet spot for combined text + ControlNet conditioning at <em>CFG 6–9</em> and ControlNet weight <em>0.8–1.1</em>. Moving outside these ranges requires compensating adjustments.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">ControlNet's Guidance Mode</div>
+        <p>Advanced ControlNet implementations expose a "Guidance Start" and "Guidance End" parameter — controlling at which fraction of the denoising trajectory the ControlNet is active. Starting the ControlNet at 0.0 (from the very first step) enforces structure globally; starting at 0.3 lets the model establish its own broad composition first, then constraints are applied. For stylized generation, delayed start often produces more aesthetically pleasing results.</p>
+      </div>
+
+      <div class="section-heading">DDIM, DDPM, DPM++: Does the Sampler Matter?</div>
+      <div class="section-body">
+        <p>Different samplers traverse the denoising trajectory differently. For ControlNet work, the sampler choice has real effects:</p>
+        <p><strong>DDIM</strong> — deterministic (with fixed seed), good for iterative adjustment because changing one parameter produces predictable differences. Reliable for ControlNet but requires more steps (20–50) for quality.</p>
+        <p><strong>DPM++ 2M Karras</strong> — the most widely recommended sampler for ControlNet work as of 2023. Achieves high quality in 20–30 steps, handles ControlNet conditioning well at moderate CFG scales.</p>
+        <p><strong>Euler a</strong> — stochastic (ancestral sampling), produces more variation between runs. For ControlNet work where you need consistency across seeds, deterministic samplers are preferable.</p>
+        <p>The Automatic1111 community's large-scale sampler comparison study (posted to r/StableDiffusion in August 2023, with over 2,000 upvotes) found DPM++ 2M Karras + 25 steps + CFG 7 to be the most reliable baseline for ControlNet workflows across diverse conditioning types.</p>
+      </div>
+
+      <div class="section-heading">Timestep-Based Guidance Scheduling</div>
+      <div class="section-body">
+        <p>A more advanced technique — available in ComfyUI's ControlNet node — is conditioning strength scheduling: varying the ControlNet weight as a function of the denoising timestep. Applying strong conditioning early (when coarse structure is being established) and tapering it off late (when fine details are being added) can produce images that respect structure but avoid over-constrained textures.</p>
+        <p>Researchers at KAIST published work in late 2023 showing that timestep-aware conditioning scheduling reduced artifact rates by approximately 23% compared to constant-weight ControlNet conditioning on pose-conditioned generation tasks.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">CFG Scale</span><span class="kt-def">The guidance weight (w) in classifier-free guidance, controlling how strongly text conditioning steers the diffusion process. Values of 6–9 are standard for ControlNet-combined workflows.</span></div>
+      <div class="key-term"><span class="kt-term">Guidance Start / End</span><span class="kt-def">ControlNet parameters defining at what fraction of the denoising trajectory the spatial conditioning becomes active — enabling fine control over when structure is enforced.</span></div>
+      <div class="key-term"><span class="kt-term">DPM++ 2M Karras</span><span class="kt-def">A multi-step diffusion sampler using Karras noise scheduling. The community-recommended default for ControlNet workflows due to quality-per-step efficiency.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Practical Parameter Defaults</div>
+        <p>For robust ControlNet results across conditioning types: CFG Scale 7–8 · DPM++ 2M Karras · 25 steps · ControlNet weight 0.85–1.0 · Guidance start 0.0 · Guidance end 1.0. Adjust ControlNet weight first before touching CFG scale when troubleshooting.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+      <button class="pnav-btn" onclick="goPage('p-q3')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ Q3 ═══════════════════ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <h1>Lesson 3 Quiz</h1>
+      <div class="tagline">Guidance Scale, CFG, and Sampling Control</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">Users reported ControlNet pose conditioning being "ignored" when CFG Scale was set to 15+. What is the correct explanation for this?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">High CFG scale corrupts the ControlNet's zero convolution weights</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">Very high CFG causes the text guidance gradient to dominate and suppress the structural conditioning signal</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">High CFG scale causes the preprocessor to produce incorrect edge maps</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">CFG scale above 10 disables ControlNet residual injection</button>
+        </div>
+        <div class="quiz-feedback right">Correct. ControlNet residuals are added before the CFG combination. At very high CFG scales, the text-guidance gradient overwhelms the structural information in the conditioning signal.</div>
+        <div class="quiz-feedback wrong">The mechanism is gradient dominance: CFG applies its text-guidance signal on top of the structure-conditioned activations. At extreme CFG values, the text signal overwhelms the ControlNet's structural contribution.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">Which sampler was most widely recommended by the Stable Diffusion community for ControlNet workflows as of 2023?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Euler ancestral (Euler a)</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">DDPM</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">DPM++ 2M Karras</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">PLMS</button>
+        </div>
+        <div class="quiz-feedback right">Correct. DPM++ 2M Karras achieves high quality in 20–30 steps and handles ControlNet conditioning reliably — the community's r/StableDiffusion comparison study identified it as the top recommendation.</div>
+        <div class="quiz-feedback wrong">DPM++ 2M Karras was the community consensus pick. It balances step efficiency with quality and handles ControlNet conditioning well at standard CFG values.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">What does setting ControlNet "Guidance Start" to 0.3 achieve compared to 0.0?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It increases conditioning strength by 30%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It applies ControlNet only to the first 30% of denoising steps</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">It allows the model to establish its own broad composition for the first 30% of the trajectory before structural conditioning is applied</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It delays preprocessing by 30% of the sampling time</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A delayed guidance start gives the diffusion model freedom in early denoising steps to establish composition, with ControlNet constraints applied only in the middle-to-late trajectory. Often produces more aesthetically natural results for stylized images.</div>
+        <div class="quiz-feedback wrong">Guidance Start 0.3 means ControlNet is inactive for the first 30% of denoising steps. The model freely develops broad structure before the spatial constraint kicks in — useful for stylized generation.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-4">
+        <div class="quiz-q">A KAIST study found that timestep-aware conditioning scheduling reduced artifact rates by approximately how much compared to constant-weight ControlNet conditioning?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">8%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">50%</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">23%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">67%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The KAIST research on timestep-aware conditioning scheduling showed approximately 23% reduction in artifact rates on pose-conditioned generation tasks.</div>
+        <div class="quiz-feedback wrong">The KAIST figure was approximately 23%. Timestep scheduling — stronger conditioning early, tapering off late — reduced over-constrained texture artifacts on pose-conditioned tasks.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ LAB 3 ═══════════════════ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <h1>Lab 3 — Guidance Parameter Tuning</h1>
+      <div class="tagline">Diagnose parameter interactions and find the right settings for your ControlNet workflow.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You understand how CFG scale, ControlNet weight, guidance start/end, and sampler choice interact. Use this lab to work through parameter tuning scenarios. Describe what's going wrong with your generation and your current settings, and get specific parameter adjustment advice.</p>
+        <div class="lab-prompt">Try: "My ControlNet pose is being ignored — CFG 12, weight 1.0" · "I'm getting oversaturated colors with ControlNet depth, what should I adjust?" · "How do I balance two ControlNets so neither dominates?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Guidance Parameter Tuning</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to Lab 3. Tell me what's happening with your ControlNet generation — what conditioning type you're using, your current CFG scale, ControlNet weight, and sampler — and I'll help you diagnose the issue and find the right parameter combination.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Describe your settings and what's going wrong…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ L4 ═══════════════════ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 6 · Lesson 4</div>
+      <h1>Production Workflows and Emerging Guidance Techniques</h1>
+      <div class="tagline">How real pipelines integrate ControlNet, what came after it, and where guided generation is heading.</div>
+      <div class="lesson-question">How do professional studios actually deploy ControlNet at scale, and what limitations are driving the next generation of guidance methods?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Adobe Firefly and Commercial Deployment — 2023">
+        <p class="story-text">When Adobe integrated generative AI into Photoshop in 2023, one of the key technical decisions was how to handle spatial control. Adobe's implementation, documented in their technical blog posts from September 2023, used a variant of <em>structural conditioning</em> derived from ControlNet-style architecture — the user's existing canvas layers provided spatial layout signals that constrained where generated content could appear.</p>
+        <p class="story-text">Adobe's commercial constraint was different from the open-source context: they needed outputs that were <em>predictable, licensable, and production-safe</em> at scale. This shaped their implementation choices — tighter conditioning bounds, lower CFG ranges, and conservative guidance schedules that prioritized consistency over creative variation.</p>
+      </div>
+
+      <div class="section-heading">Real Production Pipeline Patterns</div>
+      <div class="section-body">
+        <p>Professional studios using ControlNet at scale have converged on several pipeline patterns, documented in case studies from Scenario.gg, Freepik AI, and game studios publishing workflow reports in 2023–2024:</p>
+        <p><strong>Batch pose variation:</strong> Generate a library of OpenPose skeletons programmatically (from 3D mocap data or parametric pose generation), then batch-process them through ControlNet to produce large character pose libraries. Studios report 10–20× speed improvement over manual pose iteration.</p>
+        <p><strong>Depth-anchored inpainting:</strong> Use ControlNet depth conditioning to fix spatial relationships in a scene while using inpainting to vary specific elements. The depth constraint prevents inpainted content from "floating" incorrectly in 3D space.</p>
+        <p><strong>Edge-guided style transfer:</strong> Extract Canny or HED edges from a source image, then use ControlNet to regenerate in a different style. This preserves compositional structure across style translations — used heavily in concept art → production art pipelines.</p>
+      </div>
+
+      <div class="section-heading">T2I-Adapter: A Lighter Alternative</div>
+      <div class="section-body">
+        <p>Mou et al. at Tencent AI Lab released T2I-Adapter in 2023 — a lighter conditioning mechanism that uses a small adapter network (approximately 77M parameters vs. ControlNet's ~361M) to inject spatial conditioning. T2I-Adapter is faster and uses less VRAM, making it attractive for edge deployment or real-time applications.</p>
+        <p>The tradeoff is fidelity: T2I-Adapter's conditioning is less precise than ControlNet's for complex poses or fine structural detail. For rapid prototyping and lower-resolution generation, it's often preferred. For final production output where spatial precision is critical, ControlNet remains the standard.</p>
+      </div>
+
+      <div class="section-heading">IP-Adapter: Style and Reference Conditioning</div>
+      <div class="section-body">
+        <p>IP-Adapter (Ye et al., Tencent AI Lab, 2023) extended the conditioning concept to image-based style prompting. Instead of a spatial signal, it uses the CLIP image features of a reference image — inserted via a separate cross-attention module — to condition on visual appearance rather than structure. Combined with ControlNet structural conditioning, this gives practitioners a "this pose, this style" workflow in a single inference pass.</p>
+        <p>IP-Adapter Plus (a later variant) achieved improved fidelity by using multiple CLIP tokens rather than a single aggregated embedding, better preserving fine visual details from the reference image.</p>
+      </div>
+
+      <div class="section-heading">Limitations and What Comes Next</div>
+      <div class="section-body">
+        <p>ControlNet has documented limitations. Hand and face accuracy remains problematic because OpenPose's keypoint representation is too coarse for these regions. A separate <strong>OpenPose with face and hand keypoints</strong> model exists but increases preprocessing complexity. For photorealistic faces, most pipelines add a dedicated face restoration model (GFPGAN, CodeFormer) as a post-processing step rather than relying solely on ControlNet conditioning.</p>
+        <p>The diffusion transformer architectures (FLUX, Stable Diffusion 3) present a new challenge: ControlNet's design was specific to UNet architectures. In 2024, work on ControlNet-style conditioning for transformer-based diffusion models emerged — with different injection mechanisms since transformers lack the skip-connection structure that ControlNet's residual injection exploits. Black Forest Labs released a ControlNet variant for FLUX.1 in August 2024, documenting that the residual injection needed to target attention feature maps rather than encoder skip connections.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Real-Time ControlNet</div>
+        <p>StreamDiffusion (December 2023) demonstrated near-real-time ControlNet generation by combining aggressive parallelization, CFG-free training, and reduced step counts. This enabled live drawing-to-image applications where ControlNet conditioning updates at interactive rates — demonstrated at under 100ms per frame on a single A100 GPU with sketch conditioning.</p>
+      </div>
+
+      <div class="key-term"><span class="kt-term">T2I-Adapter</span><span class="kt-def">A lighter spatial conditioning method (77M params) from Tencent AI Lab offering faster inference than ControlNet at the cost of some precision — preferred for real-time or VRAM-constrained applications.</span></div>
+      <div class="key-term"><span class="kt-term">IP-Adapter</span><span class="kt-def">An image prompting method that conditions on CLIP features of a reference image, allowing visual style and appearance guidance separate from structural (ControlNet) conditioning.</span></div>
+      <div class="key-term"><span class="kt-term">Face Restoration</span><span class="kt-def">Post-processing models (GFPGAN, CodeFormer) applied after diffusion generation to correct face artifacts — commonly used alongside ControlNet because OpenPose conditioning is too coarse for accurate face rendering.</span></div>
+
+      <div class="gold-callout">
+        <div class="callout-label">The State of Guided Generation</div>
+        <p>As of 2024, guided generation has split into structural conditioning (ControlNet, T2I-Adapter, for spatial layout), appearance conditioning (IP-Adapter, reference nets, for visual style), and motion conditioning (for video models — AnimateDiff, CogVideoX control extensions). Each addresses a different axis of creative control. The practical art of guided generation is composing these signals correctly — knowing which axis each conditioning type controls and how to weight them against each other and against text guidance.</p>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+      <button class="pnav-btn" onclick="goPage('p-q4')">Lesson Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ Q4 ═══════════════════ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <h1>Lesson 4 Quiz</h1>
+      <div class="tagline">Production Workflows and Emerging Guidance Techniques</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">T2I-Adapter is approximately how large in parameters compared to ControlNet?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Approximately the same size</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">Approximately 77M vs. ControlNet's ~361M — about one-fifth the size</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">Larger — about 500M parameters</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">About half the size at ~180M parameters</button>
+        </div>
+        <div class="quiz-feedback right">Correct. T2I-Adapter at ~77M parameters is approximately one-fifth the size of ControlNet (~361M), enabling faster inference and lower VRAM requirements at the cost of spatial precision.</div>
+        <div class="quiz-feedback wrong">T2I-Adapter is about 77M parameters versus ControlNet's ~361M — roughly one-fifth the size. This is the key reason it's preferred for real-time or memory-constrained applications.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">What fundamental architectural challenge did ControlNet face when adapting to transformer-based diffusion models like FLUX?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Transformer models cannot process conditioning images</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Transformers lack the skip-connection structure ControlNet's residual injection exploits — conditioning had to target attention feature maps instead</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Transformer models use different noise schedules that break zero-convolution initialization</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">ControlNet requires UNet decoders with exactly the same channel dimensions as its trainable copy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. UNet architectures have encoder skip connections that ControlNet injects into. Transformers don't have this structure, so the FLUX ControlNet variant targets attention feature maps instead.</div>
+        <div class="quiz-feedback wrong">The issue is structural: ControlNet was designed to inject residuals into UNet skip connections. Transformers don't have those. Black Forest Labs solved this for FLUX by targeting attention feature maps instead.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">IP-Adapter conditions on which type of signal to guide appearance rather than structure?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Depth map features from a MiDaS preprocessor</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Canny edge features from a reference image</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">CLIP image features from a reference image, inserted via a separate cross-attention module</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Text-encoded style descriptions processed through CLIP's text encoder</button>
+        </div>
+        <div class="quiz-feedback right">Correct. IP-Adapter uses CLIP's image encoder to extract visual features from a reference image and injects them via a dedicated cross-attention module — separate from the text cross-attention pathway.</div>
+        <div class="quiz-feedback wrong">IP-Adapter uses CLIP image features — not depth or edges. These features represent the reference image's visual appearance (not structure) and are injected through a dedicated cross-attention pathway.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-4">
+        <div class="quiz-q">Why do most professional ControlNet pipelines add GFPGAN or CodeFormer as post-processing steps when generating images with human faces?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">OpenPose keypoint conditioning is too coarse to accurately capture facial geometry, leading to face artifacts that require dedicated restoration models to fix</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">GFPGAN is required to convert ControlNet's output format to standard image formats</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Face restoration models increase generation resolution to match ControlNet's internal working resolution</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">ControlNet zero convolutions corrupt face features during training, requiring post-hoc correction</button>
+        </div>
+        <div class="quiz-feedback right">Correct. OpenPose's body keypoint representation lacks the granularity needed for accurate face rendering. Face restoration models (GFPGAN, CodeFormer) are applied as post-processing to fix the resulting artifacts.</div>
+        <div class="quiz-feedback wrong">The root cause is OpenPose's coarseness — body keypoints don't provide enough facial geometry information for the model to render faces accurately. Face restoration models correct this as a post-processing step.</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ LAB 4 ═══════════════════ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <h1>Lab 4 — Production Pipeline Design</h1>
+      <div class="tagline">Design a complete guided generation workflow for a real professional use case.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Task</h4>
+        <p>You've learned the full ControlNet ecosystem: architecture, conditioning types, parameter tuning, and production deployment patterns. Now design a complete pipeline for a specific professional scenario. Your tutor will critique your choices, identify gaps, and push you to think about failure modes and alternatives.</p>
+        <div class="lab-prompt">Try: "Design a pipeline for generating consistent character poses for a mobile game" · "How would I build a real-time sketch-to-render tool for an architect?" · "What would an e-commerce product photography pipeline using ControlNet look like?"</div>
+      </div>
+      <div class="lab-chat">
+        <div class="lab-chat-header">
+          <span>AI Tutor</span>
+          <div class="chat-badge">Pipeline Design</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4. Describe a professional use case — what you're generating, for what purpose, at what scale — and I'll help you design a complete guided generation pipeline. We'll work through conditioning type selection, parameter choices, potential failure modes, and alternatives. What's your scenario?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Describe your production scenario…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MODULE TEST ═══════════════════ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <h1>Module 6 Test</h1>
+      <div class="tagline">ControlNet and Guided Generation · 15 questions · Pass at 80%</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. ControlNet was published in February 2023 by Lvmin Zhang and Maneesh Agrawala. What was the title of their paper?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Guided Diffusion via Spatial Control Networks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Adding Conditional Control to Text-to-Image Diffusion Models</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">ControlNet: Spatial Conditioning for Stable Diffusion</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Structural Guidance for Generative Image Synthesis</button>
+        </div>
+        <div class="quiz-feedback right">Correct.</div>
+        <div class="quiz-feedback wrong">The paper is titled "Adding Conditional Control to Text-to-Image Diffusion Models."</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. In ControlNet's architecture, zero convolutions are initialized with weight and bias values of exactly:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Random normal (mean 0, std 0.01)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Zero (both weight and bias)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Identity (weight = 1, bias = 0)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Copied from the frozen encoder's corresponding layer</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Both weight and bias are initialized to exactly zero, ensuring no interference with the frozen model at training start.</div>
+        <div class="quiz-feedback wrong">Zero convolutions have weight = 0 AND bias = 0, so they output exactly zero initially — preserving the frozen model's outputs completely.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. Which part of the original UNet is frozen (not updated during ControlNet training)?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Only the text cross-attention layers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Only the decoder blocks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">The entire original UNet (encoder, middle block, and decoder)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Only the encoder blocks</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The entire original UNet is frozen. The trainable copy is a separate branch attached to the encoder side.</div>
+        <div class="quiz-feedback wrong">The full original UNet is frozen — encoder, middle block, and decoder. Only the separately instantiated ControlNet encoder copy is trained.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. Which conditioning type encodes foreground/background relationships and 3D scene structure from a monocular image?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Canny edges</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">OpenPose skeleton</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Depth map (MiDaS / ZoeDepth)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">HED soft edges</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Depth estimation models like MiDaS produce per-pixel depth values encoding 3D spatial structure.</div>
+        <div class="quiz-feedback wrong">Depth maps encode per-pixel distance from camera, capturing 3D scene structure and foreground/background layering. Canny and HED only capture 2D edge structure.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. You need to apply rough hand-drawn outlines as ControlNet conditioning input. Which conditioning type is specifically designed to tolerate imprecise input?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Canny edges</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Scribble / Sketch</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Normal map</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Segmentation mask</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Scribble ControlNet models are specifically trained on rough, imprecise input to tolerate the variation of hand-drawn outlines.</div>
+        <div class="quiz-feedback wrong">The Scribble/Sketch conditioning type is trained to handle rough input. Canny requires precise reference imagery; it would produce very different results from hand-drawn lines.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. In the classifier-free guidance formula, what does the variable "w" represent?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The ControlNet weight parameter</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">The CFG scale (guidance weight) controlling text adherence strength</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The width of the UNet's latent channels</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The number of denoising steps</button>
+        </div>
+        <div class="quiz-feedback right">Correct. In ε_guided = ε_uncond + w × (ε_cond − ε_uncond), w is the CFG scale.</div>
+        <div class="quiz-feedback wrong">w is the CFG guidance weight — the multiplier on the difference between conditioned and unconditioned noise predictions.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. What is the community-documented consequence of running CFG Scale at 15+ while using ControlNet at full weight?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The preprocessor produces inverted edge maps</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Text guidance dominates and the structural conditioning signal is suppressed</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Zero convolution weights become corrupted</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">The sampler enters an infinite loop</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Very high CFG pushes so strongly toward the text condition that ControlNet's structural residuals are overpowered.</div>
+        <div class="quiz-feedback wrong">Extreme CFG causes text gradient dominance, suppressing ControlNet's structural contribution. The image satisfies the text prompt but ignores the spatial conditioning.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. Which sampler was identified as the community-recommended default for ControlNet workflows based on a large r/StableDiffusion comparison study?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">DDIM</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Euler ancestral</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">DPM++ 2M Karras</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">PLMS</button>
+        </div>
+        <div class="quiz-feedback right">Correct. DPM++ 2M Karras at 25 steps and CFG 7 was the consensus recommendation from the community comparison study.</div>
+        <div class="quiz-feedback wrong">DPM++ 2M Karras was the community consensus. It balances step efficiency and quality and handles ControlNet conditioning reliably.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Setting ControlNet "Guidance End" to 0.7 means:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">ControlNet conditioning stops at 70% through the denoising trajectory, letting the model freely refine fine details in the last 30% of steps</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">ControlNet weight is reduced to 70% of its set value</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">The conditioning image is applied only to 70% of the latent channels</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">ControlNet is active for the last 70% of denoising steps only</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Guidance End 0.7 deactivates ControlNet at the 70% mark, allowing the final 30% of denoising to proceed without structural constraints — often producing finer, more natural details.</div>
+        <div class="quiz-feedback wrong">Guidance End 0.7 means ControlNet stops at 70% of the trajectory. The model is free to refine textures and details without structural constraint in the remaining steps.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. T2I-Adapter was released by which research group?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Stability AI</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Stanford Vision Lab</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Tencent AI Lab</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Google Research</button>
+        </div>
+        <div class="quiz-feedback right">Correct. T2I-Adapter and IP-Adapter were both produced by Tencent AI Lab researchers in 2023.</div>
+        <div class="quiz-feedback wrong">T2I-Adapter came from Tencent AI Lab (Mou et al., 2023), as did IP-Adapter.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. IP-Adapter Plus improves on IP-Adapter by:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Using a larger CLIP model (ViT-L instead of ViT-B)</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Using multiple CLIP tokens rather than a single aggregated embedding, better preserving fine visual details</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Adding a depth conditioning branch alongside the CLIP image conditioning</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Replacing cross-attention injection with zero-convolution residuals</button>
+        </div>
+        <div class="quiz-feedback right">Correct. IP-Adapter Plus uses multiple CLIP tokens to represent the reference image rather than a single pooled embedding, capturing more detail.</div>
+        <div class="quiz-feedback wrong">IP-Adapter Plus uses multiple CLIP tokens instead of one aggregated embedding — this allows finer visual detail from the reference image to influence the generation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Why is face restoration (GFPGAN, CodeFormer) commonly added as a post-processing step in ControlNet workflows involving human subjects?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">ControlNet introduces color banding artifacts specifically in skin tones</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">ControlNet's zero convolutions degrade face features during the training process</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">OpenPose keypoint conditioning is too coarse to accurately represent facial geometry, leading to face rendering artifacts</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Face regions are excluded from ControlNet's residual injection to preserve identity</button>
+        </div>
+        <div class="quiz-feedback right">Correct. OpenPose body keypoints don't capture facial geometry with sufficient granularity — face restoration models fix the resulting artifacts in post-processing.</div>
+        <div class="quiz-feedback wrong">OpenPose is designed for body joints, not fine facial geometry. Its coarse representation of the face region leads to artifacts that face restoration models (GFPGAN, CodeFormer) are applied to correct.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. Black Forest Labs adapted ControlNet for FLUX.1 in 2024. What was the key architectural difference from UNet-based ControlNet?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Residual injection targeted attention feature maps rather than skip connections, since transformers lack UNet-style skip-connection structure</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Zero convolutions were replaced with learned normalization layers</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">The trainable copy encompassed the full transformer rather than just encoder blocks</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">FLUX ControlNet used depth conditioning only due to transformer architecture constraints</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Diffusion transformers don't have UNet skip connections, so the FLUX ControlNet variant injects into attention feature maps instead.</div>
+        <div class="quiz-feedback wrong">The key adaptation was targeting attention feature maps for injection — transformers don't have the encoder skip connections that UNet-based ControlNet relies on.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. A professional architectural visualization pipeline uses two ControlNets simultaneously — depth for scene layout and Canny for facade detail. Which weighting approach is correct?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Both at weight 2.0 for maximum structural control</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Depth at higher weight for primary structure, Canny at lower weight to avoid conflicting guidance artifacts</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Canny at higher weight because detail takes priority in final renders</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Both at equal weight so the model can resolve conflicts itself</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Establishing a priority hierarchy — primary conditioning at higher weight, secondary at lower — prevents conflicting guidance artifacts where the two signals disagree.</div>
+        <div class="quiz-feedback wrong">When stacking ControlNets, a weight hierarchy is essential. Primary structure (depth) gets higher weight; secondary detail (Canny) gets lower weight to prevent conflict artifacts.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. StreamDiffusion (December 2023) demonstrated near-real-time ControlNet generation by combining which techniques?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">4-bit quantization and reduced latent resolution</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Aggressive parallelization, CFG-free training, and reduced step counts</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Replacing the UNet with a small MLP and using lookup table guidance</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Precomputed ControlNet residuals cached across frames</button>
+        </div>
+        <div class="quiz-feedback right">Correct. StreamDiffusion combined aggressive parallelization, CFG-free training, and reduced step counts to achieve interactive-rate ControlNet generation at under 100ms per frame on an A100.</div>
+        <div class="quiz-feedback wrong">StreamDiffusion's approach was parallelization + CFG-free training + step reduction — achieving under 100ms per frame with sketch conditioning on a single A100 GPU.</div>
+      </div>
+
+      <div class="mt-score" id="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l1')">↺ Review Module</button>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='image-generation-models';
+var MODULE_ID='ima-m6';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  if(!box) return;
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are an expert AI tutor for AESOP AI Academy, teaching the Image Generation Models course, Module 6 on ControlNet and Guided Generation. The student has just learned about ControlNet\'s architecture: the trainable encoder copy, frozen UNet, zero convolutions initialized to zero weight and bias, and residual injection into the decoder. Help them understand WHY zero initialization matters (preserving frozen model output at training start), the difference between fine-tuning and ControlNet\'s approach, how residual injection differs from full model training, and why only the encoder is copied rather than the full UNet. Be precise about the mechanism. Use analogies when helpful. Keep responses to 2-4 sentences. Stay strictly on this topic.',
+  l2:'You are an expert AI tutor for AESOP AI Academy, teaching the Image Generation Models course, Module 6. The student has learned about ControlNet conditioning types: Canny edges, OpenPose skeleton, depth maps (MiDaS/ZoeDepth), HED/SoftEdge, normal maps, segmentation, scribble, and lineart. Help them choose the right conditioning type for specific professional use cases. Explain what each preprocessor does and what format it produces. Discuss tradeoffs between types. When a user describes a scenario, recommend a conditioning type and explain the preprocessor pipeline. Keep responses focused and practical. 2-4 sentences.',
+  l3:'You are an expert AI tutor for AESOP AI Academy, teaching the Image Generation Models course, Module 6. The student has learned about CFG scale, ControlNet weight, guidance start/end, and sampler selection. Help them diagnose parameter issues: why high CFG suppresses ControlNet conditioning, how to balance multiple ControlNets, when to use guidance start/end, and which samplers work best. If a user describes their settings and the problem they\'re seeing, give specific parameter adjustment advice. Recommended defaults: CFG 7-8, DPM++ 2M Karras, 25 steps, ControlNet weight 0.85-1.0. Keep responses concrete and specific.',
+  l4:'You are an expert AI tutor for AESOP AI Academy, teaching the Image Generation Models course, Module 6. The student has learned about production ControlNet workflows, T2I-Adapter, IP-Adapter, and emerging guidance techniques. Help them design complete guided generation pipelines for professional use cases. When they describe a scenario, walk through: conditioning type selection, preprocessor pipeline, parameter settings, failure modes to anticipate, and alternatives (T2I-Adapter vs ControlNet, adding IP-Adapter for style control). Be practical and specific. Critique their pipeline choices constructively. Keep responses 3-5 sentences.'
+};
+
+var _fallbackReplies={
+  l1:[
+    'Zero convolutions are initialized to exactly zero weight and bias. This means at the very start of training, the ControlNet branch outputs zero — so the frozen model behaves exactly as if ControlNet weren\'t there. Only as training progresses do the zero convolutions learn to pass meaningful signals through.',
+    'The key reason only the encoder is copied (not the full UNet) is that structural information flows forward through the encoder — depth, edges, and pose are high-level spatial features that influence decoder decisions. Copying only the encoder captures this spatial signal source without duplicating unnecessary capacity.',
+    'ControlNet differs from LoRA in scope: LoRA adds low-rank update matrices throughout the frozen model\'s existing weights, modifying their behavior. ControlNet adds an entirely separate encoder branch with its own weights, leaving the original model completely untouched. This is why ControlNet can learn completely new conditioning types while LoRA is better for style adaptation.'
+  ],
+  l2:[
+    'For architectural floor-plan renders, depth conditioning is typically the best choice — it encodes the 3D spatial relationships between walls, floors, and ceilings that define architectural space. Pair it with MiDaS as the preprocessor on your reference renders.',
+    'For consistent character poses across 10 animation frames, OpenPose is the right conditioning type. Extract the skeleton from your reference pose, then use that skeleton as conditioning across all frames. The model will apply consistent pose geometry while allowing clothing and lighting to vary based on your prompt.',
+    'Canny edge conditioning is best when you have a hard-surface object with precise outlines that must be preserved. Set the Canny thresholds (low: 100, high: 200 are common defaults) via the preprocessor preview, then verify the edge map captures the detail you need before running full inference.'
+  ],
+  l3:[
+    'If your ControlNet pose is being ignored with CFG 12 and weight 1.0, the CFG is too high. Drop to CFG 7-8 first — the text guidance is overpowering your structural conditioning. Keep ControlNet weight at 1.0 initially; only lower it if the structure is over-constraining your results.',
+    'Oversaturated colors with depth conditioning at high CFG is a classic artifact of CFG fighting the depth signal. Lower CFG to 7, switch to DPM++ 2M Karras if you aren\'t already, and try ControlNet weight 0.7-0.85. The depth signal should then guide structure without the color saturation artifacts.',
+    'For balancing two ControlNets, establish a clear hierarchy: your primary structural signal (usually depth) at weight 0.9-1.0, and your secondary detail signal (Canny or HED) at weight 0.4-0.6. Equal weighting causes conflict artifacts at regions where the two signals disagree about element placement.'
+  ],
+  l4:[
+    'For a mobile game character pose library pipeline: use OpenPose conditioning on programmatically generated 3D skeleton renders, batch process at CFG 7 / DPM++ 2M Karras / 25 steps / weight 0.9. Add GFPGAN post-processing for face correction. Main failure mode: hand artifacts — consider masking hands and inpainting separately with higher ControlNet weight on that region.',
+    'A real-time sketch-to-render pipeline for architects: use Scribble conditioning at lower weight (0.6-0.7) to tolerate rough input, with guidance start 0.0 and guidance end 0.8. T2I-Adapter may be more appropriate than full ControlNet here given the real-time requirement — it\'s faster and uses less VRAM at the cost of some precision.',
+    'For e-commerce product photography: combine depth conditioning (to keep the product at the correct spatial depth as the reference) with IP-Adapter (to transfer the brand visual style). Set depth ControlNet at weight 0.85, IP-Adapter at 0.5-0.6. Main failure mode: depth maps from product photos can be inaccurate for flat or highly reflective surfaces — validate the preprocessor output carefully.'
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId]||['I\'m in offline practice mode. Try asking about the specific ControlNet concept from this lesson.'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var welcomes={
+    l1:'Welcome to Lab 1. I\'m here to help you understand ControlNet\'s architecture — specifically the zero-convolution design, the frozen/trainable weight split, and how residual injection works. What would you like to explore first?',
+    l2:'Welcome to Lab 2. Describe your image generation use case and I\'ll help you choose the right ControlNet conditioning type, explain which preprocessor to use, and discuss the tradeoffs. What\'s your scenario?',
+    l3:'Welcome to Lab 3. Tell me what\'s happening with your ControlNet generation — what conditioning type you\'re using, your current CFG scale, ControlNet weight, and sampler — and I\'ll help you diagnose the issue and find the right parameter combination.',
+    l4:'Welcome to Lab 4. Describe a professional use case — what you\'re generating, for what purpose, at what scale — and I\'ll help you design a complete guided generation pipeline. What\'s your scenario?'
+  };
+  addMsg(labId,'ai',welcomes[labId]||'Lab reset. What would you like to explore?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].slice(-12);
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId]||'You are an AI tutor for AESOP AI Academy. Stay on topic about ControlNet and guided generation.',
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I had trouble generating a response. Please try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,labId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+// Auto-resize textareas
+document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){
+  ta.addEventListener('input',function(){
+    this.style.height='auto';
+    this.style.height=Math.min(this.scrollHeight,100)+'px';
+  });
+});
+
+updateTabs();
+</script>
+</body>
+</html>

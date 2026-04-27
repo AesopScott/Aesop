@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-27 01:45 UTC
+**Generated:** 2026-04-27 03:30 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 528 · **Warnings:** 985
+**Errors:** 536 · **Warnings:** 995
 
 ---
 
@@ -178,14 +178,14 @@
 - 🔴 **MISSING_MODULE**: Registry module file `ar-9-m6.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-9-m7.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-9-m8.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m1.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m2.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m3.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m4.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m5.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m6.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m7.html` missing from ``
-- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m8.html` missing from ``
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m1.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m2.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m3.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m4.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m5.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m6.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m7.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_MODULE**: Registry module file `ar-11-m8.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
 - 🔴 **MISSING_MODULE**: Registry module file `ar-12-m1.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-12-m2.html` missing from ``
 - 🔴 **MISSING_MODULE**: Registry module file `ar-12-m3.html` missing from ``
@@ -508,7 +508,7 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (48)
+### Errors (56)
 
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
@@ -558,8 +558,16 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
 
-### Warnings (420)
+### Warnings (412)
 
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-accessibility-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgaip-ai-accessibility-m2.html` — <urlopen error [Errno -2] Name or service not known>
@@ -837,14 +845,6 @@
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-8-m6.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-8-m7.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgap-8-m8.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m1.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m2.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m3.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m4.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m5.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m6.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m7.html` — <urlopen error [Errno -2] Name or service not known>
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-11-m8.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-12-m1.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-12-m2.html` — <urlopen error [Errno -2] Name or service not known>
 - 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.orgar-12-m3.html` — <urlopen error [Errno -2] Name or service not known>
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (565)
+### Warnings (583)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1052,6 +1052,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-autonomous-systems-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-autonomous-systems-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-autonomous-systems-m3.html` has no COURSE_ID constant
@@ -1168,6 +1176,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-misinformation-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-misinformation-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-misinformation-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m3.html` has no COURSE_ID constant
@@ -1401,6 +1410,15 @@
 - 🟡 **NO_COURSE_ID**: Module file `m1-advanced-v18.5-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `m2-advanced-v4-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `performing-arts-and-ai-m3.html` has no COURSE_ID constant
@@ -1557,7 +1575,7 @@
 
 ## Summary
 
-**528 error(s) require attention:**
+**536 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1719,14 +1737,14 @@
 1. Registry module file `ar-9-m6.html` missing from ``
 1. Registry module file `ar-9-m7.html` missing from ``
 1. Registry module file `ar-9-m8.html` missing from ``
-1. Registry module file `ar-11-m1.html` missing from ``
-1. Registry module file `ar-11-m2.html` missing from ``
-1. Registry module file `ar-11-m3.html` missing from ``
-1. Registry module file `ar-11-m4.html` missing from ``
-1. Registry module file `ar-11-m5.html` missing from ``
-1. Registry module file `ar-11-m6.html` missing from ``
-1. Registry module file `ar-11-m7.html` missing from ``
-1. Registry module file `ar-11-m8.html` missing from ``
+1. Registry module file `ar-11-m1.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m2.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m3.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m4.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m5.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m6.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m7.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry module file `ar-11-m8.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
 1. Registry module file `ar-12-m1.html` missing from ``
 1. Registry module file `ar-12-m2.html` missing from ``
 1. Registry module file `ar-12-m3.html` missing from ``
@@ -2087,3 +2105,11 @@
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`

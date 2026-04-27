@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-27 03:30 UTC
+**Generated:** 2026-04-27 03:39 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 536 · **Warnings:** 995
+**Errors:** 536 · **Warnings:** 997
 
 ---
 
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (583)
+### Warnings (585)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1177,6 +1177,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-misinformation-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-misinformation-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-network-pentesting-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-psychology-and-behavior-m3.html` has no COURSE_ID constant
@@ -1411,6 +1412,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `m2-advanced-v4-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `advanced-m3-v3-20260408.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pentesting-ai-agents-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `pentesting-llm-applications-m3.html` has no COURSE_ID constant

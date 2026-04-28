@@ -61,9 +61,18 @@ def load_approved_drafts():
 
 
 def draft_already_in_html(html, draft_id):
-    """Check if a draft's panel ID already exists in courses.html."""
-    panel_id = f'id="aip-{draft_id}"'
-    return panel_id in html
+    """Check if a draft is already represented in courses.html.
+
+    Checks three patterns to prevent duplicates:
+    - id="aip-{draft_id}"         new-style panel div
+    - data-panel="aip-{draft_id}" nav button (catches nav-only duplicates)
+    - data-course="{draft_id}"    live course already has a full panel
+    """
+    return (
+        f'id="aip-{draft_id}"' in html
+        or f'data-panel="aip-{draft_id}"' in html
+        or f'data-course="{draft_id}"' in html
+    )
 
 
 def build_tab_button(draft):
@@ -139,11 +148,12 @@ def build_course_panel(draft, index):
 def insert_tab_button(html, tab_html, draft_title):
     """Insert mega-menu button alphabetically into the target mega-group."""
     CAT_MARKERS = {
-        # Current tier-based structure (post-restructure)
+        # Age-tier defaults (one staging group per tier)
         "Youth":          '<div class="mega-cat">🎓 Youth Courses</div>',
-        "Young Adult":    '<div class="mega-cat">🎨 Art &amp; Creativity</div>',
+        "Young Adult":    '<div class="mega-cat">🛠️ AI Tools &amp; Apps</div>',
         "Professional":   '<div class="mega-cat">📋 Strategy &amp; Org</div>',
-        # Sub-category aliases (for future use)
+        # Sub-category aliases — use these in draft JSON "mega_group" field for
+        # precise placement without having to edit courses.html manually
         "Strategy":       '<div class="mega-cat">📋 Strategy &amp; Org</div>',
         "AI Models":      '<div class="mega-cat">📡 AI Models &amp; Research</div>',
         "AI Frontier":    '<div class="mega-cat">🔭 AI Frontier</div>',
@@ -152,7 +162,9 @@ def insert_tab_button(html, tab_html, draft_title):
         "Society":        '<div class="mega-cat">🌐 Society &amp; Domain</div>',
         "Applied":        '<div class="mega-cat">🚀 Applied Foundations</div>',
         "Business":       '<div class="mega-cat">💡 Business Essentials</div>',
-        # Legacy aliases (pre-restructure, kept for safety)
+        "Cybersecurity":  '<div class="mega-cat">🔒 Cybersecurity</div>',
+        "AI Tools":       '<div class="mega-cat">🛠️ AI Tools &amp; Apps</div>',
+        # Legacy alias
         "Core Courses":   '<div class="mega-cat">📋 Strategy &amp; Org</div>',
     }
     marker = CAT_MARKERS.get(TARGET_CATEGORY,
@@ -230,13 +242,27 @@ def sync_to_courses_data(drafts):
             for i, m in enumerate(raw_modules)
         ]
 
-        entry = {"id": draft_id, "name": draft["title"], "modules": modules}
-        if draft.get("audience"):
-            entry["audience"] = draft["audience"]
-        if draft.get("age_range"):
-            entry["age_range"] = draft["age_range"]
+        # Derive ageGroup from audience or category fields in the draft
+        audience = draft.get("audience", "")
+        category = draft.get("category", "")
+        if audience == "youth" or category == "Youth":
+            age_group = "youth"
+        elif audience in ("young-adult", "young_adult") or category == "Young Adult":
+            age_group = "young_adult"
+        else:
+            age_group = "professional"  # default for all pro/unspecified drafts
+
+        entry = {
+            "id": draft_id,
+            "name": draft["title"],
+            "ageGroup": age_group,
+            "live": False,
+            "modules": modules,
+        }
         if draft.get("category"):
             entry["category"] = draft["category"]
+        if draft.get("tier"):
+            entry["tier"] = draft["tier"]
         data.setdefault("courses", []).append(entry)
         existing_ids.add(draft_id)
         print(f"  + courses-data.json: {draft['title']} ({len(modules)} modules)")

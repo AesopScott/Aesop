@@ -55,6 +55,20 @@ def count_live_courses() -> int:
     )
 
 
+def count_dev_courses() -> int:
+    """Count courses in the registry whose status != 'live' (coming-soon / in development)."""
+    if not REGISTRY_PATH.exists():
+        return 0
+    with REGISTRY_PATH.open(encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        return 0
+    return sum(
+        1 for v in data.values()
+        if isinstance(v, dict) and v.get("status") != "live"
+    )
+
+
 def estimated_learners_this_week() -> int:
     """
     Placeholder until GA4 is wired up.
@@ -133,6 +147,8 @@ def main() -> int:
         # Registry missing or empty is a hard fail — keep previous value if we had one.
         courses_live = previous.get("coursesLive", 0)
 
+    courses_dev = count_dev_courses()
+
     learners = fetch_active_users()
     if learners is None:
         # Fall back to date-seeded estimate (25×7 ± 23-75) until GA4 is live.
@@ -141,12 +157,14 @@ def main() -> int:
     stats = {
         "learnersThisWeek": learners,
         "coursesLive": courses_live,
+        "coursesInDev": courses_dev,
         "languages": len(LANGUAGES),
         "supportedLanguages": LANGUAGES,
         "updatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source": {
             "learnersThisWeek": "GA4 activeUsers, last 7 days" if os.environ.get("GA4_PROPERTY_ID") else "estimated (25×7 ± daily variance)",
             "coursesLive": "course-registry.json where status=='live'",
+            "coursesInDev": "course-registry.json where status!='live'",
             "languages": "canonical list in build_stats.py",
         },
     }
@@ -155,6 +173,7 @@ def main() -> int:
     print(f"[stats] wrote {STATS_PATH}")
     print(f"  learnersThisWeek = {learners}")
     print(f"  coursesLive      = {courses_live}")
+    print(f"  coursesInDev     = {courses_dev}")
     print(f"  languages        = {len(LANGUAGES)}  ({', '.join(LANGUAGES)})")
     return 0
 

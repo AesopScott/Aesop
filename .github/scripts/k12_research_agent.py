@@ -37,7 +37,7 @@ PINECONE_HOST     = os.environ.get("PINECONE_HOST", "")
 PINECONE_INDEX    = "aesop-academy"
 DRAFTS_DIR        = Path("aip/k12-drafts")
 DRAFTS_PER_RUN    = int(os.environ.get("DRAFTS_PER_RUN", "20"))
-GAP_THRESHOLD     = 0.72
+GAP_THRESHOLD     = 0.65
 
 AUDIENCE    = "youth"
 AGE_RANGE   = "8-16"
@@ -202,13 +202,17 @@ CATALOG_PATH = Path("ai-academy/modules/courses-data.json")
 
 
 def load_existing_draft_titles():
-    """Return list of titles for all existing K-12 drafts (for semantic dedup)."""
+    """Return titles for pending K-12 drafts only (for semantic dedup).
+
+    Approved drafts are already in courses-data.json (caught by catalog check).
+    Rejected drafts should not block re-proposal indefinitely.
+    """
     titles = []
     if DRAFTS_DIR.exists():
         for f in sorted(DRAFTS_DIR.glob("*.json")):
             try:
                 data = json.loads(f.read_text(encoding="utf-8"))
-                if isinstance(data, dict) and data.get("title"):
+                if isinstance(data, dict) and data.get("title") and data.get("status") == "pending":
                     titles.append(data["title"])
             except Exception:
                 continue

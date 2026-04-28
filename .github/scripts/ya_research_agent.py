@@ -52,13 +52,13 @@ def collect_all_signals():
     all_signals = []
 
     try:
-        trends = collect_trends(max_signals=30)
+        trends = collect_trends(max_signals=50)
         all_signals.extend(trends)
     except Exception as e:
         print(f"  WARNING: Google Trends collection failed: {e}")
 
     try:
-        reddit = collect_reddit(max_signals=30)
+        reddit = collect_reddit(max_signals=50)
         all_signals.extend(reddit)
     except Exception as e:
         print(f"  WARNING: Reddit collection failed: {e}")
@@ -79,7 +79,7 @@ def synthesize_topics(signals):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     signal_text = ""
-    for s in signals[:50]:
+    for s in signals[:80]:
         source_tag = f"[{s['source']}]"
         signal_text += f"- {source_tag} {s['topic']} (score: {s['score']})\n"
 
@@ -102,7 +102,7 @@ def synthesize_topics(signals):
 
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 COURSE TOPIC CANDIDATES for the YOUNG ADULT track — learners aged 17–25: college students, recent graduates, early-career workers, and independent builders.
+I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 40 COURSE TOPIC CANDIDATES for the YOUNG ADULT track — learners aged 17–25: college students, recent graduates, early-career workers, and independent builders.
 
 RAW SIGNALS:
 {signal_text}
@@ -487,8 +487,9 @@ def _call_claude_ya(client, prompt):
 
 def generate_drafts(gaps):
     """Generate YA course proposals in batches of BATCH_SIZE to avoid JSON truncation."""
-    total = min(len(gaps), DRAFTS_PER_RUN)
-    print(f"\nPhase 4: Generating {total} Young Adult course proposals (batches of {BATCH_SIZE})\n")
+    # Use all gaps found — DRAFTS_PER_RUN is a minimum target, not a cap
+    topics_to_draft = gaps
+    print(f"\nPhase 4: Generating {len(topics_to_draft)} Young Adult course proposals (batches of {BATCH_SIZE})\n")
 
     if not gaps:
         print("  No gaps found — skipping generation.")
@@ -497,8 +498,6 @@ def generate_drafts(gaps):
     existing_ids = load_existing_draft_ids()
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
-
-    topics_to_draft = gaps[:DRAFTS_PER_RUN]
     all_drafts = []
 
     for batch_start in range(0, len(topics_to_draft), BATCH_SIZE):

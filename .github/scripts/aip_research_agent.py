@@ -54,14 +54,14 @@ def collect_all_signals():
 
     # Google Trends
     try:
-        trends = collect_trends(max_signals=30)
+        trends = collect_trends(max_signals=50)
         all_signals.extend(trends)
     except Exception as e:
         print(f"  WARNING: Google Trends collection failed: {e}")
 
     # Reddit
     try:
-        reddit = collect_reddit(max_signals=30)
+        reddit = collect_reddit(max_signals=50)
         all_signals.extend(reddit)
     except Exception as e:
         print(f"  WARNING: Reddit collection failed: {e}")
@@ -84,7 +84,7 @@ def synthesize_topics(signals):
 
     # Format signals for Claude
     signal_text = ""
-    for s in signals[:50]:  # Cap context size
+    for s in signals[:80]:  # Cap context size
         source_tag = f"[{s['source']}]"
         signal_text += f"- {source_tag} {s['topic']} (score: {s['score']})\n"
 
@@ -107,7 +107,7 @@ def synthesize_topics(signals):
 
     prompt = f"""You are a curriculum analyst for AESOP AI Academy — a free AI literacy platform.
 
-I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 25 distinct COURSE TOPIC CANDIDATES for the PROFESSIONAL track — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+).
+I've collected real-world signals from Google Trends and Reddit showing what people are actively searching for and discussing about AI. Your job is to synthesize these into 40 distinct COURSE TOPIC CANDIDATES for the PROFESSIONAL track — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+).
 
 RAW SIGNALS:
 {signal_text}
@@ -535,8 +535,9 @@ def generate_drafts(gaps):
     20 proposals × 8 modules each exceeds 4000 tokens in one shot — batching
     keeps each response to ~3 courses worth of JSON, well within limits.
     """
-    total = min(len(gaps), DRAFTS_PER_RUN)
-    print(f"\nPhase 4: Generating {total} course proposals (batches of {BATCH_SIZE})\n")
+    # Use all gaps found — DRAFTS_PER_RUN is a minimum target, not a cap
+    topics_to_draft = gaps
+    print(f"\nPhase 4: Generating {len(topics_to_draft)} course proposals (batches of {BATCH_SIZE})\n")
 
     if not gaps:
         print("  No gaps found — skipping generation.")
@@ -545,8 +546,6 @@ def generate_drafts(gaps):
     existing_ids = load_existing_draft_ids()
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
-
-    topics_to_draft = gaps[:DRAFTS_PER_RUN]
     all_drafts = []
 
     # Process in batches so JSON output never exceeds max_tokens

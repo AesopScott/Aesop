@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-27 16:49 UTC
+**Generated:** 2026-04-27 19:17 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 536 · **Warnings:** 1010
+**Errors:** 536 · **Warnings:** 1031
 
 ---
 
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (598)
+### Warnings (619)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1465,6 +1465,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `running-models-locally-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `running-models-locally-m2.html` has no COURSE_ID constant
@@ -1567,7 +1573,22 @@
 - 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `voice-and-real-time-ai-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-ai-knows-about-you-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `what-s-coming-next-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m3.html` has no COURSE_ID constant

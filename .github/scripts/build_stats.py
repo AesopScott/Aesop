@@ -33,6 +33,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 REGISTRY_PATH = REPO_ROOT / "ai-academy" / "modules" / "course-registry.json"
+COURSES_HTML_PATH = REPO_ROOT / "ai-academy" / "courses.html"
 STATS_PATH = REPO_ROOT / "stats.json"
 
 # Canonical list of UI languages actually supported by the router in index.html.
@@ -56,7 +57,43 @@ def count_live_courses() -> int:
 
 
 def count_dev_courses() -> int:
-    """Count courses in the registry whose status != 'live' (coming-soon / in development)."""
+    """Count unique coming-soon courses shown in courses.html.
+
+    Parses the mega-menu HTML for buttons carrying both 'mega-link' and
+    'mega-link--soon' classes, deduplicates by their data-panel attribute,
+    and returns the unique count.  This is the canonical source — it reflects
+    exactly what visitors see as grey/disabled in the course selector.
+
+    Falls back to counting non-live registry entries if courses.html is absent.
+    """
+    import re
+
+    if COURSES_HTML_PATH.exists():
+        html = COURSES_HTML_PATH.read_text(encoding="utf-8")
+        # Match every button that has mega-link--soon in its class attribute,
+        # capture the data-panel value.
+        panels = set(re.findall(
+            r'<button[^>]+class="[^"]*mega-link--soon[^"]*"[^>]+data-panel="([^"]+)"',
+            html,
+        ))
+        if panels:
+            print(f"[stats] {len(panels)} unique coming-soon panels in courses.html",
+                  file=sys.stderr)
+            return len(panels)
+        # If the regex found nothing (class order swapped?), try the reverse
+        panels = set(re.findall(
+            r'<button[^>]+data-panel="([^"]+)"[^>]+class="[^"]*mega-link--soon[^"]*"',
+            html,
+        ))
+        if panels:
+            print(f"[stats] {len(panels)} unique coming-soon panels in courses.html "
+                  "(alt attr order)", file=sys.stderr)
+            return len(panels)
+        print("[stats] WARNING: no mega-link--soon buttons found in courses.html",
+              file=sys.stderr)
+
+    # Fallback: registry where status != 'live'
+    print("[stats] falling back to course-registry.json for coursesInDev", file=sys.stderr)
     if not REGISTRY_PATH.exists():
         return 0
     with REGISTRY_PATH.open(encoding="utf-8") as f:
@@ -164,7 +201,7 @@ def main() -> int:
         "source": {
             "learnersThisWeek": "GA4 activeUsers, last 7 days" if os.environ.get("GA4_PROPERTY_ID") else "estimated (25×7 ± daily variance)",
             "coursesLive": "course-registry.json where status=='live'",
-            "coursesInDev": "course-registry.json where status!='live'",
+            "coursesInDev": "courses.html mega-link--soon buttons (unique data-panel)",
             "languages": "canonical list in build_stats.py",
         },
     }

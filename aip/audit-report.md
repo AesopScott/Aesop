@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-28 04:15 UTC
+**Generated:** 2026-04-28 04:50 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 124 · **Warnings:** 697
+**Errors:** 124 · **Warnings:** 702
 
 ---
 
@@ -192,7 +192,7 @@
 
 ## Module File Integrity
 
-### Warnings (666)
+### Warnings (671)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -467,6 +467,11 @@
 - 🟡 **NO_COURSE_ID**: Module file `ap-7-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ap-7-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ap-7-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ap-7-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ap-7-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ap-7-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ap-7-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ap-7-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `applied-ai-development-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `applied-ai-development-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `applied-ai-development-m3.html` has no COURSE_ID constant

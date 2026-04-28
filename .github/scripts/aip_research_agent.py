@@ -454,31 +454,22 @@ def load_existing_draft_ids():
     return existing
 
 
-def generate_drafts(gaps):
-    """Use Claude to generate full course proposals for top gaps."""
-    print(f"\nPhase 4: Generating {min(len(gaps), DRAFTS_PER_RUN)} course proposals\n")
+BATCH_SIZE = 5  # proposals per API call — keeps JSON output well within max_tokens
 
-    if not gaps:
-        print("  No gaps found — skipping generation.")
-        return []
 
-    existing_ids = load_existing_draft_ids()
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-    topics_to_draft = gaps[:DRAFTS_PER_RUN]
+def _build_prompt(topics_batch, existing_note):
+    """Build the generation prompt for a batch of topics."""
     topic_details = "\n".join(
         f"- {t['topic']} (demand: {t.get('demand_score', '?')}/10, "
         f"corpus similarity: {t['corpus_score']:.2f}, "
         f"nearest existing: '{t['nearest_course']}', "
         f"signals from: {', '.join(t.get('signal_sources', ['unknown']))}"
         + (", ⚑ MODEL TOPIC" if t.get('is_model_topic') else "") + ")"
-        for t in topics_to_draft
+        for t in topics_batch
     )
-    existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
+    return f"""You are a curriculum designer for AESOP AI Academy — a free AI literacy platform.
 
-    prompt = f"""You are a curriculum designer for AESOP AI Academy — a free AI literacy platform.
-
-Generate {len(topics_to_draft)} course proposals for the PROFESSIONAL track — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+). These topics are UNDERREPRESENTED in our curriculum based on real demand signals:
+Generate {len(topics_batch)} course proposals for the PROFESSIONAL track — courses aimed at working adults, career professionals, managers, and domain experts (ages 25+). These topics are UNDERREPRESENTED in our curriculum based on real demand signals:
 
 {topic_details}
 
@@ -510,6 +501,9 @@ For topics marked ⚑ MODEL TOPIC: design hands-on courses that get professional
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
+
+def _call_claude(client, prompt):
+    """Call Claude with retry logic. Returns parsed list of draft dicts."""
     for attempt in range(4):
         try:
             response = client.messages.create(
@@ -531,20 +525,64 @@ Return ONLY a JSON array of objects. No preamble, no markdown fences."""
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw)
+    return json.loads(raw)
 
-    drafts = json.loads(raw)
-    print(f"  Generated {len(drafts)} proposals")
 
-    # Attach source tracking to each draft
-    for draft, gap in zip(drafts, topics_to_draft):
-        draft["source_signals"] = gap.get("signals", [])
-        draft["source_names"] = gap.get("signal_sources", [])
-        draft["demand_score"] = gap.get("demand_score", 0)
-        draft["corpus_score"] = gap.get("corpus_score", 0)
-        draft["nearest_existing"] = gap.get("nearest_course", "unknown")
-        draft["is_model_topic"] = gap.get("is_model_topic", False) or draft.get("is_model_topic", False)
+def generate_drafts(gaps):
+    """Use Claude to generate full course proposals for top gaps.
 
-    return drafts
+    Generates in batches of BATCH_SIZE to stay within max_tokens per call.
+    20 proposals × 8 modules each exceeds 4000 tokens in one shot — batching
+    keeps each response to ~3 courses worth of JSON, well within limits.
+    """
+    total = min(len(gaps), DRAFTS_PER_RUN)
+    print(f"\nPhase 4: Generating {total} course proposals (batches of {BATCH_SIZE})\n")
+
+    if not gaps:
+        print("  No gaps found — skipping generation.")
+        return []
+
+    existing_ids = load_existing_draft_ids()
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
+
+    topics_to_draft = gaps[:DRAFTS_PER_RUN]
+    all_drafts = []
+
+    # Process in batches so JSON output never exceeds max_tokens
+    for batch_start in range(0, len(topics_to_draft), BATCH_SIZE):
+        batch = topics_to_draft[batch_start:batch_start + BATCH_SIZE]
+        batch_num = batch_start // BATCH_SIZE + 1
+        total_batches = (len(topics_to_draft) + BATCH_SIZE - 1) // BATCH_SIZE
+        print(f"  Batch {batch_num}/{total_batches}: {len(batch)} topics...")
+
+        prompt = _build_prompt(batch, existing_note)
+        try:
+            batch_drafts = _call_claude(client, prompt)
+        except json.JSONDecodeError as e:
+            print(f"  ERROR: JSON decode failed on batch {batch_num}: {e} — skipping batch")
+            continue
+        except Exception as e:
+            print(f"  ERROR: batch {batch_num} failed: {e} — skipping batch")
+            continue
+
+        # Attach source tracking to each draft in this batch
+        for draft, gap in zip(batch_drafts, batch):
+            draft["source_signals"] = gap.get("signals", [])
+            draft["source_names"] = gap.get("signal_sources", [])
+            draft["demand_score"] = gap.get("demand_score", 0)
+            draft["corpus_score"] = gap.get("corpus_score", 0)
+            draft["nearest_existing"] = gap.get("nearest_course", "unknown")
+            draft["is_model_topic"] = gap.get("is_model_topic", False) or draft.get("is_model_topic", False)
+
+        all_drafts.extend(batch_drafts)
+        print(f"  Batch {batch_num} done — {len(batch_drafts)} proposals generated")
+
+        if batch_num < total_batches:
+            time.sleep(1)  # brief pause between batches
+
+    print(f"  Generated {len(all_drafts)} total proposals")
+    return all_drafts
 
 
 # ── PHASE 5: SAVE DRAFTS ────────────────────────────────────────────────────

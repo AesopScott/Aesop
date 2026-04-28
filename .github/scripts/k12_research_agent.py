@@ -395,27 +395,18 @@ def load_existing_draft_ids():
     return existing
 
 
-def generate_drafts(gaps):
-    print(f"\nPhase 4: Generating {min(len(gaps), DRAFTS_PER_RUN)} K-12 course proposals\n")
+BATCH_SIZE = 5  # proposals per API call — keeps JSON output well within max_tokens
 
-    if not gaps:
-        print("  No gaps found — skipping generation.")
-        return []
 
-    existing_ids = load_existing_draft_ids()
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-    topics_to_draft = gaps[:DRAFTS_PER_RUN]
+def _build_prompt_k12(topics_batch, existing_note):
     topic_details = "\n".join(
         f"- {t['topic']} (age band: {t.get('age_band','?')}, demand: {t.get('demand_score','?')}/10, "
         f"corpus similarity: {t['corpus_score']:.2f}, nearest existing: '{t['nearest_course']}')"
-        for t in topics_to_draft
+        for t in topics_batch
     )
-    existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
+    return f"""You are a curriculum designer for AESOP AI Academy — a free AI literacy platform.
 
-    prompt = f"""You are a curriculum designer for AESOP AI Academy — a free AI literacy platform.
-
-Your task: design {len(topics_to_draft)} complete course proposals for AI education aimed at students aged {AGE_RANGE}. These courses will be delivered through AESOP's story-driven engine, where learners make choices inside a narrative that teaches AI concepts through consequence and judgment — not just reading or watching.
+Your task: design {len(topics_batch)} complete course proposals for AI education aimed at students aged {AGE_RANGE}. These courses will be delivered through AESOP's story-driven engine, where learners make choices inside a narrative that teaches AI concepts through consequence and judgment — not just reading or watching.
 
 TOPICS TO DEVELOP (with age bands and demand signals):
 {topic_details}
@@ -445,11 +436,13 @@ For EACH topic, return a JSON object with exactly these fields:
 
 Return ONLY a JSON array of objects. No preamble, no markdown fences."""
 
+
+def _call_claude_k12(client, prompt):
     for attempt in range(4):
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=5000,
+                max_tokens=4000,
                 messages=[{"role": "user", "content": prompt}]
             )
             break
@@ -462,22 +455,59 @@ Return ONLY a JSON array of objects. No preamble, no markdown fences."""
                 raise
     else:
         raise RuntimeError("Anthropic API unavailable after 4 attempts — try again later.")
-
     raw = response.content[0].text.strip()
     raw = re.sub(r"^```json\s*", "", raw)
     raw = re.sub(r"\s*```$", "", raw)
+    return json.loads(raw)
 
-    drafts = json.loads(raw)
-    print(f"  Generated {len(drafts)} proposals")
 
-    for draft, gap in zip(drafts, topics_to_draft):
-        draft["source_signals"]  = gap.get("signals", [])
-        draft["source_names"]    = gap.get("signal_sources", [])
-        draft["demand_score"]    = gap.get("demand_score", 0)
-        draft["corpus_score"]    = gap.get("corpus_score", 0)
-        draft["nearest_existing"] = gap.get("nearest_course", "unknown")
+def generate_drafts(gaps):
+    """Generate K-12 course proposals in batches of BATCH_SIZE to avoid JSON truncation."""
+    total = min(len(gaps), DRAFTS_PER_RUN)
+    print(f"\nPhase 4: Generating {total} K-12 course proposals (batches of {BATCH_SIZE})\n")
 
-    return drafts
+    if not gaps:
+        print("  No gaps found — skipping generation.")
+        return []
+
+    existing_ids = load_existing_draft_ids()
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    existing_note = ", ".join(list(existing_ids)[:20]) if existing_ids else "none yet"
+
+    topics_to_draft = gaps[:DRAFTS_PER_RUN]
+    all_drafts = []
+
+    for batch_start in range(0, len(topics_to_draft), BATCH_SIZE):
+        batch = topics_to_draft[batch_start:batch_start + BATCH_SIZE]
+        batch_num = batch_start // BATCH_SIZE + 1
+        total_batches = (len(topics_to_draft) + BATCH_SIZE - 1) // BATCH_SIZE
+        print(f"  Batch {batch_num}/{total_batches}: {len(batch)} topics...")
+
+        prompt = _build_prompt_k12(batch, existing_note)
+        try:
+            batch_drafts = _call_claude_k12(client, prompt)
+        except json.JSONDecodeError as e:
+            print(f"  ERROR: JSON decode failed on batch {batch_num}: {e} — skipping batch")
+            continue
+        except Exception as e:
+            print(f"  ERROR: batch {batch_num} failed: {e} — skipping batch")
+            continue
+
+        for draft, gap in zip(batch_drafts, batch):
+            draft["source_signals"]  = gap.get("signals", [])
+            draft["source_names"]    = gap.get("signal_sources", [])
+            draft["demand_score"]    = gap.get("demand_score", 0)
+            draft["corpus_score"]    = gap.get("corpus_score", 0)
+            draft["nearest_existing"] = gap.get("nearest_course", "unknown")
+
+        all_drafts.extend(batch_drafts)
+        print(f"  Batch {batch_num} done — {len(batch_drafts)} proposals generated")
+
+        if batch_num < total_batches:
+            time.sleep(1)
+
+    print(f"  Generated {len(all_drafts)} total proposals")
+    return all_drafts
 
 
 # ── PHASE 5: SAVE DRAFTS ──────────────────────────────────────────────────────

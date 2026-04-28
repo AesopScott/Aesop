@@ -6,16 +6,21 @@ and parents from open, auth-free sources:
   - Hacker News    (Algolia API — education/AI queries)
   - Stack Overflow (Stack Exchange API — CS education tags)
   - RSS feeds      (EdSurge, TechCrunch AI, MIT Tech Review)
+  - Changelogs     (OpenAI, Google AI, Anthropic, etc. via RSS/Google News)
+  - YouTube        (Data API v3 — requires YOUTUBE_API_KEY, optional)
 
 Reddit replaced: Reddit now requires formal API approval.
 Returns signal dicts with topic, score, and source metadata.
 collect_trends_signals() (Google Trends) is unchanged below.
 """
 
+import os
 import re
 import time
 import requests
 import xml.etree.ElementTree as ET
+
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
 
 HEADERS = {
     "User-Agent": "AesopAcademy/1.0 (K-12 education research; contact@aesopacademy.org)",

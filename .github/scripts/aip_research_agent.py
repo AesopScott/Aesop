@@ -382,10 +382,25 @@ def check_gaps(candidates):
     """Check each candidate against Pinecone corpus — return real gaps."""
     print("\nPhase 3: Checking corpus coverage via Pinecone\n")
 
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index(PINECONE_INDEX, host=PINECONE_HOST)
-    stats = index.describe_index_stats()
-    total_vectors = stats["total_vector_count"]
+    if not PINECONE_API_KEY or not PINECONE_HOST:
+        print("  Pinecone not configured — treating all candidates as gaps")
+        for c in candidates:
+            c["corpus_score"] = 0.0
+            c["nearest_course"] = "pinecone_unavailable"
+        return candidates
+
+    try:
+        pc = Pinecone(api_key=PINECONE_API_KEY)
+        index = pc.Index(PINECONE_INDEX, host=PINECONE_HOST)
+        stats = index.describe_index_stats()
+        total_vectors = stats["total_vector_count"]
+    except Exception as e:
+        print(f"  WARNING: Pinecone initialization failed ({e}) — treating all candidates as gaps")
+        for c in candidates:
+            c["corpus_score"] = 0.0
+            c["nearest_course"] = "pinecone_unavailable"
+        return candidates
+
     print(f"  Corpus size: {total_vectors} vectors")
 
     if total_vectors == 0:

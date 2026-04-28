@@ -76,14 +76,21 @@ def draft_already_in_html(html, draft_id):
 
 
 def build_tab_button(draft):
-    """Build a mega-menu button for a draft (Coming Soon)."""
+    """Build a mega-menu button for a draft (Coming Soon).
+
+    Appends the module count in parentheses so the button label matches
+    the convention used across the rest of the course selector, e.g.
+    "Real or Generated: You Decide (6)".
+    """
     draft_id = draft["id"]
     title = draft["title"]
+    num_modules = len(draft.get("modules", []))
+    label = f"{title} ({num_modules})" if num_modules else title
     panel_id = f"aip-{draft_id}"
     return (
         f'        <button class="mega-link mega-link--soon" '
         f'data-panel="{panel_id}" onclick="megaSelect(this,\'{panel_id}\')">'
-        f'{title}</button>'
+        f'{label}</button>'
     )
 
 
@@ -145,33 +152,42 @@ def build_course_panel(draft, index):
       </div>"""
 
 
-def insert_tab_button(html, tab_html, draft_title):
-    """Insert mega-menu button alphabetically into the target mega-group."""
+def insert_tab_button(html, tab_html, draft_title, target_group=None):
+    """Insert mega-menu button alphabetically into the target mega-group.
+
+    target_group overrides TARGET_CATEGORY when the draft supplies a
+    ``mega_group`` field (e.g. "How AI Works", "Truth & Safety").
+    Falls back to TARGET_CATEGORY if target_group is None or empty.
+    """
     CAT_MARKERS = {
         # Age-tier defaults (one staging group per tier)
-        "Youth":          '<div class="mega-cat">🎓 Youth Courses</div>',
-        "Young Adult":    '<div class="mega-cat">🛠️ AI Tools &amp; Apps</div>',
-        "Professional":   '<div class="mega-cat">📋 Strategy &amp; Org</div>',
+        "Youth":           '<div class="mega-cat">🧠 How AI Works</div>',
+        "Young Adult":     '<div class="mega-cat">🛠️ AI Tools &amp; Apps</div>',
+        "Professional":    '<div class="mega-cat">📋 Strategy &amp; Org</div>',
+        # Youth sub-categories
+        "How AI Works":    '<div class="mega-cat">🧠 How AI Works</div>',
+        "Make & Create":   '<div class="mega-cat">✏️ Make &amp; Create</div>',
+        "Truth & Safety":  '<div class="mega-cat">🛡️ Truth &amp; Safety</div>',
         # Sub-category aliases — use these in draft JSON "mega_group" field for
         # precise placement without having to edit courses.html manually
-        "Strategy":       '<div class="mega-cat">📋 Strategy &amp; Org</div>',
-        "AI Models":      '<div class="mega-cat">📡 AI Models &amp; Research</div>',
-        "AI Frontier":    '<div class="mega-cat">🔭 AI Frontier</div>',
-        "Development":    '<div class="mega-cat">⚙️ Development</div>',
-        "Art":            '<div class="mega-cat">🎨 Art &amp; Creativity</div>',
-        "Society":        '<div class="mega-cat">🌐 Society &amp; Domain</div>',
-        "Applied":        '<div class="mega-cat">🚀 Applied Foundations</div>',
-        "Business":       '<div class="mega-cat">💡 Business Essentials</div>',
-        "Cybersecurity":  '<div class="mega-cat">🔒 Cybersecurity</div>',
-        "AI Tools":       '<div class="mega-cat">🛠️ AI Tools &amp; Apps</div>',
+        "Strategy":        '<div class="mega-cat">📋 Strategy &amp; Org</div>',
+        "AI Models":       '<div class="mega-cat">📡 AI Models &amp; Research</div>',
+        "AI Frontier":     '<div class="mega-cat">🔭 AI Frontier</div>',
+        "Development":     '<div class="mega-cat">⚙️ Development</div>',
+        "Art":             '<div class="mega-cat">🎨 Art &amp; Creativity</div>',
+        "Society":         '<div class="mega-cat">🌐 Society &amp; Domain</div>',
+        "Applied":         '<div class="mega-cat">🚀 Applied Foundations</div>',
+        "Business":        '<div class="mega-cat">💡 Business Essentials</div>',
+        "Cybersecurity":   '<div class="mega-cat">🔒 Cybersecurity</div>',
+        "AI Tools":        '<div class="mega-cat">🛠️ AI Tools &amp; Apps</div>',
         # Legacy alias
-        "Core Courses":   '<div class="mega-cat">📋 Strategy &amp; Org</div>',
+        "Core Courses":    '<div class="mega-cat">📋 Strategy &amp; Org</div>',
     }
-    marker = CAT_MARKERS.get(TARGET_CATEGORY,
-                              f'<div class="mega-cat">{TARGET_CATEGORY}</div>')
+    resolved = target_group or TARGET_CATEGORY
+    marker = CAT_MARKERS.get(resolved, f'<div class="mega-cat">{resolved}</div>')
     marker_pos = html.find(marker)
     if marker_pos == -1:
-        print(f"  ERROR: Could not find '{TARGET_CATEGORY}' mega-group in courses.html")
+        print(f"  ERROR: Could not find '{resolved}' mega-group in courses.html")
         return html
 
     # Group ends at the closing </div> before the next mega-group or mega-panel close
@@ -315,7 +331,8 @@ def main():
         tab_btn = build_tab_button(draft)
         panel = build_course_panel(draft, i)
 
-        html = insert_tab_button(html, tab_btn, title)
+        mega_group = draft.get("mega_group") or None
+        html = insert_tab_button(html, tab_btn, title, target_group=mega_group)
         html = insert_course_panel(html, panel)
         new_count += 1
 

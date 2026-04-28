@@ -171,7 +171,7 @@ RULES:
 - Avoid purely consumer/teen topics (those go in the Youth or Young Adult tracks)
 - Do NOT propose anything already in the draft queue or catalog listed above
 
-Return a JSON array of 25 objects:
+Return a JSON array of 40 objects:
 - "topic": clear course-worthy topic name (3-8 words)
 - "signals": array of the original signal texts that fed into this topic
 - "signal_sources": array of source names (e.g. ["google_trends", "reddit"])
@@ -184,7 +184,7 @@ Return ONLY the JSON array. No preamble, no markdown fences."""
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=4000,
+                max_tokens=8000,
                 messages=[{"role": "user", "content": prompt}]
             )
             break

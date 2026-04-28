@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-28 20:58 UTC
+**Generated:** 2026-04-28 21:49 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 124 · **Warnings:** 737
+**Errors:** 124 · **Warnings:** 744
 
 ---
 
@@ -192,8 +192,11 @@
 
 ## Module File Integrity
 
-### Warnings (706)
+### Warnings (713)
 
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m3.html` has no COURSE_ID constant
@@ -381,6 +384,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-governance-regulation-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-governance-regulation-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-governance-regulation-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-hype-critical-thinking-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-hype-critical-thinking-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-hype-critical-thinking-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-game-design-i-m3.html` has no COURSE_ID constant
@@ -491,6 +497,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-deep-dive-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-deep-dive-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-deep-dive-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-deep-dive-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-realities-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-realities-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-work-and-automation-realities-m3.html` has no COURSE_ID constant

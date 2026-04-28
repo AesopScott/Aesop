@@ -386,7 +386,7 @@ def build_card_html(article):
     return (
         f'<article class="news-card" data-id="{slug}">'
         f'<div class="news-card-header">'
-        f'<div class="news-card-emoji">{article.get("heroEmoji", "\U0001f4f0")}</div>'
+        f'<div class="news-card-emoji">{article.get("heroEmoji", "📰")}</div>'
         f'<div>'
         f'<div class="news-card-meta">'
         f'<span class="news-card-category">{esc(article.get("category", "General"))}</span>'

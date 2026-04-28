@@ -64,12 +64,48 @@ async function handleAdd(request, env) {
   const photoData = member.photo || null;
   delete member.photo;
 
-  // Assign stable ID if not provided
-  if (!member.id) {
-    member.id = member.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-                + '-' + Date.now();
-  }
+  // Match key: normalize the LinkedIn URL so trivial differences
+  // (trailing slash, tracking query string, casing) don't create
+  // duplicates. LinkedIn is required by the form, so this is reliable.
+  const linkKey = (m) => (m.linkedin || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\/+$/, '')   // drop trailing slash
+    .split('?')[0];        // drop query string (utm_*, etc.)
+
   member.addedAt = member.addedAt || new Date().toISOString();
+
+  // We may need the photo upload to know the member's id, but for an
+  // UPSERT we want to reuse the existing member's id rather than mint
+  // a new one. Resolve match first, then mint id if it's a new member,
+  // then upload the photo against the final id.
+  let isUpdate = false;
+  let resolvedId = member.id || null;
+
+  // Pull the file once up front to look for an existing entry by
+  // LinkedIn match. updateFile() below will fetch again — extra GET is
+  // cheap compared to dealing with race conditions across two writes.
+  let preexisting;
+  try {
+    const { data } = await ghGet(env.GITHUB_PAT);
+    const incomingKey = linkKey(member);
+    if (incomingKey) {
+      preexisting = (data.members || [])
+        .find(m => linkKey(m) === incomingKey);
+    }
+  } catch (err) {
+    // Non-fatal: fall through and let updateFile() report the GitHub
+    // error in the normal path.
+    console.error('Pre-check ghGet failed (non-fatal):', err);
+  }
+  if (preexisting) {
+    isUpdate   = true;
+    resolvedId = preexisting.id;
+  } else if (!resolvedId) {
+    resolvedId = member.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                 + '-' + Date.now();
+  }
+  member.id = resolvedId;
 
   // Upload photo to GitHub (non-fatal if it fails)
   if (photoData) {
@@ -83,9 +119,35 @@ async function handleAdd(request, env) {
 
   return updateFile(env, data => {
     data.members = data.members || [];
-    data.members.push(member);
+    const incomingKey = linkKey(member);
+    const idx = incomingKey
+      ? data.members.findIndex(m => linkKey(m) === incomingKey)
+      : -1;
+    if (idx >= 0) {
+      // UPDATE: preserve the existing entry's identity and curator-set
+      // fields (board membership, addedAt) while taking everything
+      // else from the new submission.
+      const existing = data.members[idx];
+      data.members[idx] = {
+        ...existing,
+        ...member,
+        id:       existing.id,                     // never reassign id
+        addedAt:  existing.addedAt || member.addedAt,
+        // Curator-controlled fields: only fall through to incoming
+        // value if the existing entry didn't have one.
+        board:    existing.board   ?? member.board,
+        boards:   existing.boards  ?? member.boards,
+        hasPhoto: (member.hasPhoto !== undefined)
+                    ? member.hasPhoto
+                    : existing.hasPhoto,
+      };
+    } else {
+      data.members.push(member);
+    }
     return data;
-  }, `Add advisory board member: ${member.name}`);
+  }, isUpdate
+       ? `Update advisory board member: ${member.name}`
+       : `Add advisory board member: ${member.name}`);
 }
 
 // ── REMOVE MEMBER ───────────────────────────────────────────────

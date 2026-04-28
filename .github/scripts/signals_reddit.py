@@ -2,18 +2,19 @@
 Multi-Source Community Signal Collector
 Filename kept as signals_reddit.py for import compatibility.
 
-Reddit now requires formal API approval for programmatic access.
-This module replaces Reddit with four open, auth-free alternatives:
-
-  - Hacker News    (Algolia search API — no auth, no rate limits)
-  - GitHub         (repository search API — no auth, 60 req/hr)
-  - Stack Overflow (Stack Exchange API — no auth, generous free tier)
-  - RSS feeds      (TechCrunch AI, VentureBeat, MIT Tech Review, The Verge AI)
+Sources (all auth-free unless noted):
+  - Hacker News      (Algolia search API)
+  - GitHub           (repository search API, 60 req/hr unauthenticated)
+  - Stack Overflow   (Stack Exchange API)
+  - RSS feeds        (TechCrunch AI, VentureBeat, MIT Tech Review, The Verge AI)
+  - Changelogs       (OpenAI, Google AI/Gemini, HuggingFace, Anthropic via Google News)
+  - YouTube          (Data API v3 — requires YOUTUBE_API_KEY env var, optional)
 
 Returns signal dicts identical in shape to the old Reddit signals so the
 pipeline (aip_research_agent.py, ya_research_agent.py) needs no changes.
 """
 
+import os
 import re
 import time
 import requests
@@ -22,6 +23,8 @@ import xml.etree.ElementTree as ET
 HEADERS = {
     "User-Agent": "AesopAcademy/1.0 (educational research bot; contact@aesopacademy.org)",
 }
+
+YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", "").strip()
 
 # ── HACKER NEWS ───────────────────────────────────────────────────────────────
 
@@ -80,6 +83,48 @@ RSS_FEEDS = [
     ("VentureBeat AI",  "https://venturebeat.com/category/ai/feed/"),
     ("MIT Tech Review", "https://www.technologyreview.com/feed/"),
     ("The Verge AI",    "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"),
+]
+
+# ── CHANGELOG / RELEASE FEEDS ─────────────────────────────────────────────────
+# Direct RSS where available; Google News RSS for those without native feeds.
+
+CHANGELOG_FEEDS = [
+    # Native RSS feeds (verified working)
+    ("OpenAI News",         "https://openai.com/news/rss.xml"),
+    ("Google AI Blog",      "https://blog.google/technology/ai/rss/"),
+    ("HuggingFace Blog",    "https://huggingface.co/blog/feed.xml"),
+    # Google News RSS (captures Anthropic, Meta AI, Mistral, etc.)
+    ("Anthropic News",      "https://news.google.com/rss/search?q=Anthropic+Claude+AI+announcement&hl=en-US&gl=US&ceid=US:en"),
+    ("Meta AI News",        "https://news.google.com/rss/search?q=Meta+AI+Llama+release&hl=en-US&gl=US&ceid=US:en"),
+    ("Mistral AI News",     "https://news.google.com/rss/search?q=Mistral+AI+model+release&hl=en-US&gl=US&ceid=US:en"),
+    ("Microsoft Copilot",   "https://news.google.com/rss/search?q=Microsoft+Copilot+AI+update&hl=en-US&gl=US&ceid=US:en"),
+]
+
+# ── YOUTUBE SEARCH QUERIES ────────────────────────────────────────────────────
+# Only used when YOUTUBE_API_KEY is set. Each query = 100 quota units.
+# Free tier = 10,000 units/day → 100 searches/day. We use ~20/run.
+
+YOUTUBE_QUERIES = [
+    "how to use Claude AI tutorial",
+    "ChatGPT tutorial for beginners 2025",
+    "AI tools for work productivity",
+    "LangChain tutorial 2025",
+    "generative AI course free",
+    "AI automation workflow tutorial",
+    "prompt engineering course",
+    "RAG tutorial large language model",
+    "AI agent build tutorial",
+    "Gemini AI tutorial Google",
+    "GitHub Copilot tutorial",
+    "AI for business professionals",
+    "CrewAI tutorial multi agent",
+    "n8n AI workflow automation",
+    "Cursor AI coding tutorial",
+    "Perplexity AI tutorial",
+    "Microsoft Copilot tutorial",
+    "Dify AI no code tutorial",
+    "Flowise AI tutorial",
+    "open source AI model tutorial",
 ]
 
 # ── SCORING HELPERS ───────────────────────────────────────────────────────────
@@ -271,6 +316,105 @@ def _collect_rss(max_per_feed=15):
     return signals
 
 
+# ── CHANGELOG COLLECTOR ───────────────────────────────────────────────────────
+
+def _collect_changelogs(max_per_feed=20):
+    """Collect signals from AI company release feeds and changelogs."""
+    signals = []
+    seen = set()
+    for source_name, url in CHANGELOG_FEEDS:
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            if resp.status_code != 200:
+                print(f"    [Changelog] {source_name} returned {resp.status_code}")
+                continue
+            root = ET.fromstring(resp.content)
+            items = root.findall(".//item")
+            if not items:
+                ns = {"a": "http://www.w3.org/2005/Atom"}
+                items = root.findall(".//a:entry", ns)
+            for item in items[:max_per_feed]:
+                el = item.find("title")
+                title = (el.text or "").strip() if el is not None else ""
+                if not title or not _is_ai_relevant(title):
+                    continue
+                key = _dedup_key(title)
+                if key in seen:
+                    continue
+                seen.add(key)
+                signals.append({
+                    "topic": title,
+                    "score": 200 + _edu_score(title) * 50,  # changelogs = high priority
+                    "source": "changelog",
+                    "source_detail": source_name,
+                    "signal_type": "product_release",
+                    "metadata": {"feed": source_name},
+                })
+        except Exception as e:
+            print(f"    [Changelog] {source_name} warning: {e}")
+    print(f"    [Changelog] {len(signals)} raw signals")
+    return signals
+
+
+# ── YOUTUBE COLLECTOR ─────────────────────────────────────────────────────────
+
+def _collect_youtube(max_per_query=5):
+    """
+    Collect signals from YouTube tutorial searches via Data API v3.
+    Skipped silently if YOUTUBE_API_KEY is not set.
+    Each search query costs 100 quota units (10,000 free/day).
+    """
+    if not YOUTUBE_API_KEY:
+        print("    [YouTube] YOUTUBE_API_KEY not set — skipping")
+        return []
+
+    signals = []
+    seen = set()
+    for query in YOUTUBE_QUERIES:
+        try:
+            resp = requests.get(
+                "https://www.googleapis.com/youtube/v3/search",
+                params={
+                    "part": "snippet",
+                    "q": query,
+                    "type": "video",
+                    "order": "viewCount",
+                    "relevanceLanguage": "en",
+                    "publishedAfter": "2024-01-01T00:00:00Z",
+                    "maxResults": max_per_query,
+                    "key": YOUTUBE_API_KEY,
+                },
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                print(f"    [YouTube] search '{query}' returned {resp.status_code}: {resp.text[:100]}")
+                continue
+            for item in resp.json().get("items", []):
+                title = (item.get("snippet", {}).get("title") or "").strip()
+                if not title or not _is_ai_relevant(title):
+                    continue
+                key = _dedup_key(title)
+                if key in seen:
+                    continue
+                seen.add(key)
+                signals.append({
+                    "topic": title,
+                    "score": 250 + _edu_score(title) * 60,  # YouTube = very high intent signal
+                    "source": "youtube",
+                    "source_detail": f"YouTube search: {query}",
+                    "signal_type": "tutorial_demand",
+                    "metadata": {
+                        "video_id": item.get("id", {}).get("videoId", ""),
+                        "channel": item.get("snippet", {}).get("channelTitle", ""),
+                    },
+                })
+            time.sleep(0.3)
+        except Exception as e:
+            print(f"    [YouTube] warning ({query}): {e}")
+    print(f"    [YouTube] {len(signals)} raw signals")
+    return signals
+
+
 # ── PUBLIC INTERFACE (unchanged from Reddit version) ─────────────────────────
 
 def collect_signals(max_signals=30):
@@ -278,13 +422,15 @@ def collect_signals(max_signals=30):
     Collect AI community signals from HN, GitHub, Stack Overflow, and RSS.
     Drop-in replacement for the old Reddit collect_signals().
     """
-    print("  [Multi-source] Collecting signals (HN + GitHub + SO + RSS)...")
+    print("  [Multi-source] Collecting signals (HN + GitHub + SO + RSS + Changelogs + YouTube)...")
 
     all_signals = []
     all_signals.extend(_collect_hn())
     all_signals.extend(_collect_github())
     all_signals.extend(_collect_stackoverflow())
     all_signals.extend(_collect_rss())
+    all_signals.extend(_collect_changelogs())
+    all_signals.extend(_collect_youtube())
 
     # Global dedup across sources
     seen = set()

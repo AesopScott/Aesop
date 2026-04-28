@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-28 01:46 UTC
+**Generated:** 2026-04-28 02:11 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 536 · **Warnings:** 1067
+**Errors:** 536 · **Warnings:** 1068
 
 ---
 
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (655)
+### Warnings (656)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1052,6 +1052,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-the-future-of-work-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-the-writer-s-voice-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-augmented-reconnaissance-m3.html` has no COURSE_ID constant

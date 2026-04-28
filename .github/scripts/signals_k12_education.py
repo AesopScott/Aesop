@@ -233,14 +233,111 @@ def _collect_rss_k12():
     return signals
 
 
+def _collect_changelogs_k12():
+    """Collect K-12-relevant AI product releases from changelog/news RSS feeds."""
+    signals = []
+    seen = set()
+    for source_name, url in CHANGELOG_FEEDS_K12:
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=15)
+            if resp.status_code != 200:
+                print(f"    [Changelog K-12] {source_name} returned {resp.status_code}")
+                continue
+            root = ET.fromstring(resp.content)
+            items = root.findall(".//item")
+            if not items:
+                ns = {"a": "http://www.w3.org/2005/Atom"}
+                items = root.findall(".//a:entry", ns)
+            for item in items[:20]:
+                el = item.find("title")
+                title = (el.text or "").strip() if el is not None else ""
+                if not title or not _is_youth_education_relevant(title):
+                    continue
+                key = _dedup_key(title)
+                if key in seen:
+                    continue
+                seen.add(key)
+                signals.append({
+                    "topic": title,
+                    "score": 200 + _score_youth_relevance(title) * 50,
+                    "source": "changelog_k12",
+                    "source_detail": source_name,
+                    "signal_type": "k12_product_release",
+                    "metadata": {"feed": source_name},
+                })
+        except Exception as e:
+            print(f"    [Changelog K-12] {source_name} warning: {e}")
+    print(f"    [Changelog K-12] {len(signals)} raw signals")
+    return signals
+
+
+def _collect_youtube_k12():
+    """
+    Collect K-12 AI education signals from YouTube tutorial searches.
+    Skipped silently if YOUTUBE_API_KEY is not set.
+    Each search query costs 100 quota units (10,000 free/day).
+    """
+    if not YOUTUBE_API_KEY:
+        print("    [YouTube K-12] YOUTUBE_API_KEY not set — skipping")
+        return []
+
+    signals = []
+    seen = set()
+    for query in YOUTUBE_QUERIES_K12:
+        try:
+            resp = requests.get(
+                "https://www.googleapis.com/youtube/v3/search",
+                params={
+                    "part": "snippet",
+                    "q": query,
+                    "type": "video",
+                    "order": "viewCount",
+                    "relevanceLanguage": "en",
+                    "publishedAfter": "2024-01-01T00:00:00Z",
+                    "maxResults": 5,
+                    "key": YOUTUBE_API_KEY,
+                },
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                print(f"    [YouTube K-12] search '{query}' returned {resp.status_code}: {resp.text[:100]}")
+                continue
+            for item in resp.json().get("items", []):
+                title = (item.get("snippet", {}).get("title") or "").strip()
+                if not title or not _is_youth_education_relevant(title):
+                    continue
+                key = _dedup_key(title)
+                if key in seen:
+                    continue
+                seen.add(key)
+                signals.append({
+                    "topic": title,
+                    "score": 250 + _score_youth_relevance(title) * 60,
+                    "source": "youtube_k12",
+                    "source_detail": f"YouTube search: {query}",
+                    "signal_type": "k12_tutorial_demand",
+                    "metadata": {
+                        "video_id": item.get("id", {}).get("videoId", ""),
+                        "channel": item.get("snippet", {}).get("channelTitle", ""),
+                    },
+                })
+            time.sleep(0.3)
+        except Exception as e:
+            print(f"    [YouTube K-12] warning ({query}): {e}")
+    print(f"    [YouTube K-12] {len(signals)} raw signals")
+    return signals
+
+
 def collect_signals(max_signals=30):
-    """Collect K-12 AI education signals from HN, Stack Overflow, and RSS."""
-    print("  [Multi-source K-12] Collecting signals (HN + SO + RSS)...")
+    """Collect K-12 AI education signals from HN, Stack Overflow, RSS, Changelogs, and YouTube."""
+    print("  [Multi-source K-12] Collecting signals (HN + SO + RSS + Changelogs + YouTube)...")
 
     all_signals = []
     all_signals.extend(_collect_hn_k12())
     all_signals.extend(_collect_so_k12())
     all_signals.extend(_collect_rss_k12())
+    all_signals.extend(_collect_changelogs_k12())
+    all_signals.extend(_collect_youtube_k12())
 
     seen = set()
     deduped = []

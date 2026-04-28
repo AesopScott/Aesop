@@ -444,12 +444,12 @@ DESIGN PRINCIPLES FOR YOUNG ADULT COURSES (17-25):
 
 MODULE COUNT RULES (important):
 - Topics marked ⚑ MODEL TOPIC: design a FOCUSED 5-module course (tool-specific, immediately actionable)
-- All other topics: design a full 8-module course
+- All other topics: design a full 6-module course
 
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-for-job-hunting")
 - "title": short, compelling course title that a 20-year-old would want to click (max 6 words)
-- "modules": array of module names — 5 modules for ⚑ MODEL TOPIC, 8 for everything else
+- "modules": array of module names — 5 modules for ⚑ MODEL TOPIC, 6 for everything else
 - "synopsis": 2-sentence description written for the learner directly (use "you")
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for young adults' AI literacy

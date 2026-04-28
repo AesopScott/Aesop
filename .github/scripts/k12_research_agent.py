@@ -427,7 +427,7 @@ DESIGN PRINCIPLES FOR YOUTH COURSES:
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-and-fake-news")
 - "title": short, compelling title a student would want to click (max 6 words)
-- "modules": array of 6 module names (each max 6 words) — design a focused 6-module arc
+- "modules": array of 4 module names (each max 6 words) — design a focused 4-module arc
 - "synopsis": 2-sentence description written for a student or their teacher
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "age_band": "8-10", "11-13", or "14-16"

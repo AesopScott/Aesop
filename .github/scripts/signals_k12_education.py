@@ -54,6 +54,40 @@ RSS_FEEDS_K12 = [
     ("MIT Tech Review", "https://www.technologyreview.com/feed/"),
 ]
 
+# ── CHANGELOG / RELEASE FEEDS ────────────────────────────────────────────────
+# AI company releases that affect tools kids/teachers actually use in classrooms
+
+CHANGELOG_FEEDS_K12 = [
+    ("OpenAI News",         "https://openai.com/news/rss.xml"),
+    ("Google AI Blog",      "https://blog.google/technology/ai/rss/"),
+    ("Khan Academy AI",     "https://news.google.com/rss/search?q=Khan+Academy+AI+Khanmigo+education&hl=en-US&gl=US&ceid=US:en"),
+    ("Anthropic Education", "https://news.google.com/rss/search?q=Anthropic+Claude+education+students&hl=en-US&gl=US&ceid=US:en"),
+    ("Google Classroom AI", "https://news.google.com/rss/search?q=Google+Classroom+AI+tools+teachers&hl=en-US&gl=US&ceid=US:en"),
+    ("Microsoft Education", "https://news.google.com/rss/search?q=Microsoft+Copilot+education+students&hl=en-US&gl=US&ceid=US:en"),
+    ("Scratch MIT News",    "https://news.google.com/rss/search?q=Scratch+MIT+coding+kids+AI&hl=en-US&gl=US&ceid=US:en"),
+]
+
+# ── YOUTUBE QUERIES (K-12 specific) ──────────────────────────────────────────
+# Only used when YOUTUBE_API_KEY is set. Each query = 100 quota units.
+
+YOUTUBE_QUERIES_K12 = [
+    "AI for kids explained",
+    "how does artificial intelligence work for children",
+    "ChatGPT for students school",
+    "coding for kids AI project",
+    "teach AI to middle school students",
+    "AI tools for teachers classroom",
+    "machine learning kids tutorial",
+    "Scratch AI coding kids",
+    "digital citizenship AI teens",
+    "AI ethics for high school",
+    "how to use AI safely for students",
+    "AI homework help students",
+    "generative AI classroom activity",
+    "AI bias explained kids",
+    "computer science for beginners students",
+]
+
 # Education-specific signal words
 EDUCATION_SIGNALS = [
     "student", "students", "school", "classroom", "teacher", "kids", "children",

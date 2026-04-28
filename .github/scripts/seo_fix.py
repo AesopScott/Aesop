@@ -31,9 +31,30 @@ ROOT           = Path(__file__).resolve().parents[2]   # repo root
 SKIP_DIR_NAMES = {".claude", "archive", "es_old", "board", "__pycache__"}
 ADMIN_PREFIXES = ("ai-academy/admin",)
 
+# Internal/draft files — excluded from SEO tag injection and sitemap
+SKIP_FILES = {
+    "aesop-academy-report-v1.2.html",
+    "ai-academy/start-here-preview.html",
+    "ai-academy/students.html",
+    "ai-academy/transcript.html",
+    "ai-academy/modules/aesop-module-generator.html",
+    "ai-academy/modules/ai-curriculum-module0.html",
+    "about/advisory-board-admin.html",
+    "about/advisoryboard-form.html",
+    "restaurant.html",
+    "resume.html",
+    "header-mockups.html",
+    "course-selector-mockups.html",
+    "find-skill-review.html",
+    "free-ai-education-cover.html",
+}
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def should_skip(path: Path) -> bool:
+    rel = path.relative_to(ROOT).as_posix()
+    if rel in SKIP_FILES:
+        return True
     for part in path.relative_to(ROOT).parts[:-1]:
         if part in SKIP_DIR_NAMES:
             return True

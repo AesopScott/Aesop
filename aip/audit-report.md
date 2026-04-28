@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-28 00:37 UTC
+**Generated:** 2026-04-28 01:08 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 536 · **Warnings:** 1062
+**Errors:** 536 · **Warnings:** 1067
 
 ---
 
@@ -985,7 +985,7 @@
 
 ## Module File Integrity
 
-### Warnings (650)
+### Warnings (655)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
@@ -1159,6 +1159,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-science-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-science-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-science-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-science-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-society-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-society-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-society-m3.html` has no COURSE_ID constant
@@ -1398,6 +1399,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `funding-and-pitching-ai-ventures-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `funding-and-pitching-ai-ventures-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `funding-and-pitching-ai-ventures-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `future-of-work-ai-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `future-of-work-ai-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `future-of-work-ai-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `future-of-work-ai-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m3.html` has no COURSE_ID constant

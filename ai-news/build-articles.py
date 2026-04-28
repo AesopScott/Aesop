@@ -7,6 +7,10 @@ import json, os, html as ht
 
 ARTICLES_DIR = os.path.join(os.path.dirname(__file__), 'articles')
 OUTPUT_DIR   = ARTICLES_DIR  # HTML lives next to JSON
+INDEX_HTML   = os.path.join(os.path.dirname(__file__), 'index.html')
+INDEX_JSON   = os.path.join(os.path.dirname(__file__), 'articles-index.json')
+FEED_START   = '<!-- SEO:STATIC-FEED-START -->'
+FEED_END     = '<!-- SEO:STATIC-FEED-END -->'
 
 TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -361,6 +365,100 @@ function copyLink(btn) {{
 def esc(s):
     return ht.escape(str(s))
 
+def format_date_long(date_str):
+    from datetime import datetime
+    d = datetime.strptime(date_str, '%Y-%m-%d')
+    return d.strftime('%A, %B ') + str(d.day) + d.strftime(', %Y')
+
+def build_card_html(article):
+    slug = article['id']
+    article_url = f'/ai-news/articles/{slug}.html'
+    body_html = ''.join(f'<p>{esc(p)}</p>' for p in article.get('body', []))
+    tags = article.get('tags', [])
+    tags_html = ''
+    if tags:
+        tags_html = '<div class="news-card-tags">' + ''.join(f'<span class="news-card-tag">{esc(t)}</span>' for t in tags) + '</div>'
+    sources = article.get('sources', [])
+    sources_html = ''
+    if sources:
+        links = ''.join(f'<a href="{esc(s["url"])}" target="_blank" rel="noopener" class="news-card-source-link">{esc(s["title"])}</a>' for s in sources)
+        sources_html = f'<div class="news-card-sources"><div class="news-card-sources-label">Sources</div>{links}</div>'
+    return (
+        f'<article class="news-card" data-id="{slug}">'
+        f'<div class="news-card-header">'
+        f'<div class="news-card-emoji">{article.get("heroEmoji", "\U0001f4f0")}</div>'
+        f'<div>'
+        f'<div class="news-card-meta">'
+        f'<span class="news-card-category">{esc(article.get("category", "General"))}</span>'
+        f'<span class="news-card-dot"></span>'
+        f'<span class="news-card-readtime">{esc(article.get("readTime", "3 min read"))}</span>'
+        f'</div>'
+        f'<h2>{esc(article.get("title", "Untitled"))}</h2>'
+        f'<p class="news-card-subtitle">{esc(article.get("subtitle", ""))}</p>'
+        f'</div>'
+        f'</div>'
+        f'<div class="news-card-expand">'
+        f'<span class="expand-text">Read full article</span>'
+        f'<span class="collapse-text">Collapse</span>'
+        f'<span class="news-card-expand-arrow">▾</span>'
+        f'<a href="{article_url}" class="news-card-share" title="Open shareable link">Share ↗</a>'
+        f'</div>'
+        f'<div class="news-card-body">{body_html}{tags_html}{sources_html}</div>'
+        f'</article>'
+    )
+
+def build_index():
+    if not os.path.exists(INDEX_JSON):
+        print('  WARNING: articles-index.json not found, skipping index build.')
+        return
+    with open(INDEX_JSON, 'r', encoding='utf-8') as f:
+        index = json.load(f)
+
+    base = os.path.dirname(__file__)
+    articles = []
+    for rel_path in index.get('articles', []):
+        json_path = os.path.join(base, rel_path)
+        if not os.path.exists(json_path):
+            continue
+        with open(json_path, 'r', encoding='utf-8') as f:
+            articles.append(json.load(f))
+
+    articles.sort(key=lambda a: a.get('date', ''), reverse=True)
+
+    by_date = {}
+    for article in articles:
+        by_date.setdefault(article.get('date', 'unknown'), []).append(article)
+
+    html_parts = ['\n']
+    for date in sorted(by_date.keys(), reverse=True):
+        items = by_date[date]
+        count_label = f'{len(items)} article' if len(items) == 1 else f'{len(items)} articles'
+        cards = ''.join(build_card_html(a) for a in items)
+        html_parts.append(
+            f'<section class="news-day">'
+            f'<div class="news-day-header">'
+            f'<span class="news-day-header-date">{format_date_long(date)}</span>'
+            f'<span class="news-day-header-count">{count_label}</span>'
+            f'</div>'
+            f'<div class="news-day-row">{cards}</div>'
+            f'</section>\n'
+        )
+    html_parts.append('')
+
+    with open(INDEX_HTML, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    if FEED_START not in content or FEED_END not in content:
+        print('  ERROR: SEO feed markers not found in index.html — skipping.')
+        return
+
+    before = content[:content.index(FEED_START) + len(FEED_START)]
+    after  = content[content.index(FEED_END):]
+    with open(INDEX_HTML, 'w', encoding='utf-8') as f:
+        f.write(before + ''.join(html_parts) + after)
+
+    print(f'  Pre-rendered {len(articles)} articles across {len(by_date)} days into index.html.')
+
 def url_encode(s):
     import urllib.parse
     return urllib.parse.quote(str(s), safe='')
@@ -423,7 +521,9 @@ def main():
         out = build_article(path)
         count += 1
         print(f'  Built: {os.path.basename(out)}')
-    print(f'\nDone — {count} HTML pages generated.')
+    print(f'\nDone -- {count} HTML pages generated.')
+    print('\nPre-rendering news index...')
+    build_index()
 
 if __name__ == '__main__':
     main()

@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-28 18:19 UTC
+**Generated:** 2026-04-28 19:53 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 124 · **Warnings:** 714
+**Errors:** 132 · **Warnings:** 730
 
 ---
 
@@ -96,8 +96,16 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (56)
+### Errors (64)
 
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m8.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
@@ -192,8 +200,16 @@
 
 ## Module File Integrity
 
-### Warnings (683)
+### Warnings (699)
 
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-agent-safety-when-things-go-wrong-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agents-in-the-wild-m3.html` has no COURSE_ID constant
@@ -344,6 +360,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-marketing-and-growth-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-for-product-development-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-small-business-managers-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-small-business-managers-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-small-business-managers-m3.html` has no COURSE_ID constant
@@ -882,7 +906,7 @@
 
 ## Summary
 
-**124 error(s) require attention:**
+**132 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -952,6 +976,14 @@
 1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-agent-safety-when-things-go-wrong/ai-agent-safety-when-things-go-wrong-m8.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`

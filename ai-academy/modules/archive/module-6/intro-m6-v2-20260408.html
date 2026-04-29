@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.2 | 2026-04-22 -->
+<!-- v1.0.4 | 2026-04-29 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -237,7 +237,29 @@ body { font-family: var(--font-body), sans-serif; background: #0a1118; color: #e
 function answer(btn,result,qId){var box=document.getElementById(qId);box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});btn.classList.add(result);box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});box.querySelector('.quiz-feedback.'+(result==='right'?'right':'wrong')).classList.add('show');if(result==='correct'){var lm=qId.match(/q\d+-l(\d+)/);if(lm){var lid='m1-l'+lm[1];if(!quizSignaled[lid]){quizSignaled[lid]=true;window.parent.postMessage({type:'quizComplete',lessonId:lid,groupId:GROUP_ID,score:1,total:4},'*');}}}}
 var mtTotal=8,mtCorrect=0,mtAnswered=0;
 function mtAnswer(btn,result,qId){answer(btn,result,qId);mtAnswered++;if(result==='correct')mtCorrect++;if(mtAnswered>=mtTotal){var el=document.getElementById('mt-score');el.style.display='block';var pct=Math.round((mtCorrect/mtTotal)*100);el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Excellent.':pct>=60?' — Good work. Review and retake anytime.':' — Keep studying and retake when ready.');}}
-var currentPageId='p-l1';var lessonSignaled={},quizSignaled={},labSignaled={};
+var currentPageId='p-l1';var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+// ── MEDIUM ENFORCEMENT GATE ─────────────────────────────────
+// Module Test locked until all 4 lessons visited AND all 4 quizzes answered.
+// State in localStorage only — Firestore only writes on modTestPassed.
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
+var lessonSignaled={},quizSignaled={},labSignaled={};
 var PAGE_TO_LESSON={};
 var GROUP_ID=1;
 function goPage(id){var prev=document.getElementById(currentPageId);var next=document.getElementById(id);if(!next)return;var pl=PAGE_TO_LESSON[currentPageId];if(pl&&!lessonSignaled[pl]){lessonSignaled[pl]=true;window.parent.postMessage({type:'lessonComplete',lessonId:pl,groupId:GROUP_ID},'*');}if(prev)prev.classList.remove('active');next.classList.add('active');currentPageId=id;updateTabs();window.scrollTo(0,0);var _sc=document.querySelector('.content');if(_sc)_sc.scrollTop=0;}
@@ -257,6 +279,8 @@ function chatKeydown(e,labId){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault(
 document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){ta.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});});
 (function(){var params=new URLSearchParams(window.location.search);var lp=params.get('lesson')||window.location.hash.replace('#','');var lm={'m1-test': 'p-mt'};if(lp&&lm[lp]){goPage(lm[lp]);}else{goPage('p-l1');}})();
 </script>
-<script src="/ai-academy/modules/admin-review.js"></script>
+<script src="/ai-academy/modules/admin-review.js">
+updateMtGate();
+</script>
 </body>
 </html>

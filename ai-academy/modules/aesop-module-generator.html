@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-28 -->
+<!-- v1.0.7 | 2026-04-29 -->
 <!-- v1.2.0 | 2026-04-27 — Verification gate in buildSystemPrompt -->
 <!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
@@ -847,6 +847,8 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
 .tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
 .tab-test:hover{color:rgba(201,160,90,0.5);}
 .tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-test.locked{opacity:0.3;cursor:not-allowed;pointer-events:auto;}
+.tab-test.locked::after{content:' 🔒';font-style:normal;}
 .content-area{flex:1;display:flex;flex-direction:column;}
 .page{display:none;flex:1;flex-direction:column;}
 .page.active{display:flex;}
@@ -1144,23 +1146,55 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     // Note: p-intro is NOT mapped to a lesson — it's a course introduction,
     // not a completion-eligible lesson. Only p-l1..p-l4 fire lessonComplete.
     'var PAGE_TO_LESSON={\'p-l1\':\'l1\',\'p-l2\':\'l2\',\'p-l3\':\'l3\',\'p-l4\':\'l4\'};',
+    'var PAGE_TO_QUIZ={\'p-q1\':\'q1\',\'p-q2\':\'q2\',\'p-q3\':\'q3\',\'p-q4\':\'q4\'};',
+    '',
+    '// ── MEDIUM ENFORCEMENT GATE ─────────────────────────────────',
+    '// Module Test is locked until all 4 lessons visited AND all 4 quizzes answered.',
+    '// Gate state is persisted in localStorage so a page refresh does not reset progress.',
+    '// Firestore is NOT written here — only on Module Test pass (existing modTestPassed flow).',
+    'var GATE_KEY=\'aesop-gate-\'+COURSE_ID+\'-\'+MODULE_ID;',
+    'var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());',
+    'function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}',
+    'function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}',
+    'function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}',
+    'var _LESSONS_REQ=[\'l1\',\'l2\',\'l3\',\'l4\'],_QUIZZES_REQ=[\'q1\',\'q2\',\'q3\',\'q4\'];',
+    'function _gateOpen(){',
+    '  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})',
+    '      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});',
+    '}',
+    'function updateMtGate(){',
+    '  var tab=document.querySelector(\'.tab-test[data-page="p-mt"]\');',
+    '  if(!tab) return;',
+    '  var open=_gateOpen();',
+    '  tab.classList.toggle(\'locked\',!open);',
+    '  tab.title=open?\'\':\'Complete all 4 lessons and their quizzes to unlock the Module Test.\';',
+    '}',
     '',
     '═══ REQUIRED JS FUNCTIONS ═══',
     '',
-    '// Navigation — signals lesson complete via postMessage',
+    '// Navigation — signals lesson complete via postMessage; tracks visits for gate',
     'function goPage(id){',
     '  var prev=document.getElementById(currentPageId);',
     '  var next=document.getElementById(id);',
     '  if(!next) return;',
+    '  // Gate: block MT if not yet unlocked',
+    '  if(id===\'p-mt\'&&!_gateOpen()){',
+    '    alert(\'Complete all 4 lessons and their quizzes first to unlock the Module Test.\');',
+    '    return;',
+    '  }',
     '  var pl=PAGE_TO_LESSON[currentPageId];',
     '  if(pl&&!lessonSignaled[pl]){',
     '    lessonSignaled[pl]=true;',
     '    window.parent.postMessage({type:\'lessonComplete\',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},\'*\');',
     '  }',
+    '  // Mark destination lesson as visited for gate',
+    '  var destLesson=PAGE_TO_LESSON[id];',
+    '  if(destLesson) _gateMarkLesson(destLesson);',
     '  if(prev) prev.classList.remove(\'active\');',
     '  next.classList.add(\'active\');',
     '  currentPageId=id;',
     '  updateTabs();',
+    '  updateMtGate();',
     '  window.scrollTo(0,0);var _sc=document.querySelector(\'.content\');if(_sc)_sc.scrollTop=0;',
     '}',
     '',
@@ -1171,13 +1205,16 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     '  });',
     '}',
     '',
-    '// Quiz answer — shows feedback',
+    '// Quiz answer — shows feedback; marks quiz answered for gate',
     'function answer(btn,result,qId){',
     '  var box=document.getElementById(qId);',
     '  box.querySelectorAll(\'.quiz-opt\').forEach(function(b){b.disabled=true;});',
     '  btn.classList.add(result);',
     '  box.querySelectorAll(\'.quiz-feedback\').forEach(function(fb){fb.classList.remove(\'show\');});',
     '  box.querySelector(\'.quiz-feedback.\'+(result===\'correct\'?\'right\':\'wrong\')).classList.add(\'show\');',
+    '  // Gate: mark current quiz page as answered',
+    '  var qGateId=PAGE_TO_QUIZ[currentPageId];',
+    '  if(qGateId){_gateMarkQuiz(qGateId);updateMtGate();}',
     '}',
     '',
     '// Module test — 15 questions, fires modTestPassed at >=80%',
@@ -1197,6 +1234,9 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
     '    }',
     '  }',
     '}',
+    '// IMPORTANT: At the very end of the <script> block, after all function definitions,',
+    '// you MUST call: updateMtGate();',
+    '// This restores the locked/unlocked state from localStorage on page load.',
     '',
     '// Chat — uses /aesop-api/proxy.php (NEVER playagame.ai)',
     'var chatHistories={l1:[],l2:[],l3:[],l4:[]};',

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.1 | 2026-04-27 -->
+<!-- v1.0.2 | 2026-04-29 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -45,6 +45,8 @@ body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-h
 .tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
 .tab-test:hover{color:rgba(201,160,90,0.5);}
 .tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-test.locked{opacity:0.3;cursor:not-allowed;pointer-events:auto;}
+.tab-test.locked::after{content:' 🔒';font-style:normal;}
 .content-area{flex:1;display:flex;flex-direction:column;}
 .page{display:none;flex:1;flex-direction:column;}
 .page.active{display:flex;}
@@ -1056,6 +1058,28 @@ var COURSE_ID='storytelling-with-ai';
 var MODULE_ID='sto-m1';
 var PROXY_URL='/aesop-api/proxy.php';
 var currentPageId='p-intro';
+var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+// ── MEDIUM ENFORCEMENT GATE ─────────────────────────────────
+// Module Test locked until all 4 lessons visited AND all 4 quizzes answered.
+// State in localStorage only — Firestore only writes on modTestPassed.
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
 var lessonSignaled={},quizSignaled={},labSignaled={};
 var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
 
@@ -1063,6 +1087,7 @@ function goPage(id){
   var prev=document.getElementById(currentPageId);
   var next=document.getElementById(id);
   if(!next) return;
+  if(id==='p-mt'&&!_gateOpen()){alert('Complete all 4 lessons and their quizzes first to unlock the Module Test.');return;}
   var pl=PAGE_TO_LESSON[currentPageId];
   if(pl&&!lessonSignaled[pl]){
     lessonSignaled[pl]=true;
@@ -1070,8 +1095,10 @@ function goPage(id){
   }
   if(prev) prev.classList.remove('active');
   next.classList.add('active');
+  var _dl=({'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'})[id];if(_dl)_gateMarkLesson(_dl);
   currentPageId=id;
   updateTabs();
+  updateMtGate();
   window.scrollTo(0,0);
   var sc=document.querySelector('.content');
   if(sc) sc.scrollTop=0;

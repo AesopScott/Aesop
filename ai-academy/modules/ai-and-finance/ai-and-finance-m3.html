@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.8 | 2026-04-27 -->
+<!-- v1.0.10 | 2026-04-29 -->
 <!-- v1.0.0 -->
 <html lang="en"><head>
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
@@ -1055,6 +1055,28 @@ var COURSE_ID='cp10';
 var MODULE_ID='cp1-m3';
 var PROXY_URL='/aesop-api/proxy.php';
 var currentPageId='p-l1';
+var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+// ── MEDIUM ENFORCEMENT GATE ─────────────────────────────────
+// Module Test locked until all 4 lessons visited AND all 4 quizzes answered.
+// State in localStorage only — Firestore only writes on modTestPassed.
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
 var lessonSignaled={},quizSignaled={},labSignaled={};
 var PAGE_TO_LESSON={'p-l1':'l1','p-l1-quiz':'l1','p-l1-lab':'l1','p-l2':'l2','p-l2-quiz':'l2','p-l2-lab':'l2','p-l3':'l3','p-l3-quiz':'l3','p-l3-lab':'l3','p-l4':'l4','p-l4-quiz':'l4','p-l4-lab':'l4'};
 var ACADEMY_GUARDRAIL='You are operating within the AESOP AI Academy. Stay strictly on the lab topic. If asked about anything else, redirect warmly.';
@@ -1077,6 +1099,7 @@ function goPage(id){
   var prev=document.getElementById(currentPageId);
   var next=document.getElementById(id);
   if(!next) return;
+  if(id==='p-mt'&&!_gateOpen()){alert('Complete all 4 lessons and their quizzes first to unlock the Module Test.');return;}
   var pl=PAGE_TO_LESSON[currentPageId];
   if(pl&&!lessonSignaled[pl]){
     lessonSignaled[pl]=true;
@@ -1100,6 +1123,7 @@ function answer(btn,result,qId){
   btn.classList.add(result);
   box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
   box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong')).classList.add('show');
+  var _qg=({'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'})[currentPageId];if(_qg){_gateMarkQuiz(_qg);updateMtGate();}
 }
 
 var mtTotal=15,mtCorrect=0,mtAnswered=0;
@@ -1199,6 +1223,8 @@ async function chatSend(labId){
 
 goPage('p-l1');
 </script>
-<script src="/ai-academy/modules/admin-review.js"></script>
+<script src="/ai-academy/modules/admin-review.js">
+updateMtGate();
+</script>
 </body>
 </html>

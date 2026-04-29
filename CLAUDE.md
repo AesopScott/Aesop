@@ -2,11 +2,10 @@
 
 ## Layout & Page Width
 
-- All page content areas must use **75% of the viewport width** (`width: 75%; margin: 0 auto`).
-- Set `max-width` to a large cap (e.g. `1800px`) to prevent runaway expansion on ultra-wide monitors.
+- Content sections use `padding: 0 12.5%` on left and right — not a fixed width or max-width constraint.
 - `body` minimum width: `900px`.
 - Never constrain content to narrow fixed widths (760–800px range is explicitly off-limits).
-- Full-bleed sections (hero banners, nav bars, footers) may span 100% width, but their *inner* content wrappers must follow the 75% rule.
+- Full-bleed sections (hero banners, nav bars, footers) span 100% width; their inner content uses the 12.5% padding rule.
 
 ## Design System
 

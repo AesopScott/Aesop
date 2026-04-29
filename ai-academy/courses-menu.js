@@ -56,46 +56,88 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// ─── Mega-search: filter courses by typing ──────────────────────────
+// ─── Mega-search: live typeahead results list ────────────────────────
 function megaSearchFilter(query) {
-  var term = query.trim().toLowerCase();
-  var buttons = document.querySelectorAll('.mega-link');
-  var visible = 0;
+  var term      = query.trim().toLowerCase();
+  var panel     = document.getElementById('megaPanel');
+  var resultsEl = document.getElementById('megaSearchResults');
+  var countEl   = document.getElementById('megaSearchCount');
 
-  buttons.forEach(function(btn) {
+  if (!term) {
+    // No query — restore the normal grid view
+    if (panel)     panel.classList.remove('mega-panel--searching');
+    if (resultsEl) resultsEl.innerHTML = '';
+    if (countEl)   countEl.textContent = '';
+    return;
+  }
+
+  // Switch to search mode: grid hides, results list shows
+  if (panel) panel.classList.add('mega-panel--searching');
+
+  // Collect matching buttons with their category label and live status
+  var results = [];
+  document.querySelectorAll('.mega-link').forEach(function(btn) {
     var text = btn.textContent.toLowerCase();
     var slug = (btn.getAttribute('data-course') || '').replace(/-/g, ' ');
-    var matches = !term || text.includes(term) || slug.includes(term);
-    btn.classList.toggle('mega-link--hidden', !matches);
-    if (matches) visible++;
+    if (text.includes(term) || slug.includes(term)) {
+      var group = btn.closest('.mega-group');
+      var catEl = group ? group.querySelector('.mega-cat') : null;
+      var cat   = catEl ? catEl.textContent.trim() : '';
+      results.push({
+        btn:   btn,
+        label: btn.textContent.trim(),
+        cat:   cat,
+        live:  btn.classList.contains('mega-link--live')
+      });
+    }
   });
 
-  // Hide group category headers when all their buttons are hidden
-  document.querySelectorAll('.mega-group').forEach(function(group) {
-    var anyVisible = group.querySelector('.mega-link:not(.mega-link--hidden)');
-    group.classList.toggle('mega-group--empty', !anyVisible);
-  });
+  // Render results list
+  if (!resultsEl) return;
 
-  // Show match count while searching
-  var countEl = document.getElementById('megaSearchCount');
+  if (results.length === 0) {
+    resultsEl.innerHTML =
+      '<div class="mega-no-results">No courses match "' +
+      query.trim().replace(/</g, '&lt;') + '"</div>';
+  } else {
+    resultsEl.innerHTML = results.map(function(r, i) {
+      return (
+        '<div class="mega-result-item" data-idx="' + i + '">' +
+          '<span class="mega-result-cat">' + r.cat + '</span>' +
+          '<span class="mega-result-name">' + r.label + '</span>' +
+          '<span class="mega-result-badge mega-result-badge--' +
+            (r.live ? 'live' : 'soon') + '">' +
+            (r.live ? 'Live' : 'Soon') +
+          '</span>' +
+        '</div>'
+      );
+    }).join('');
+
+    // Wire up click handlers after rendering
+    resultsEl.querySelectorAll('.mega-result-item').forEach(function(el, i) {
+      el.addEventListener('click', function() {
+        var r = results[i];
+        megaSelect(r.btn, r.btn.getAttribute('data-panel'));
+        // Clear search state
+        var inp = document.getElementById('megaSearch');
+        if (inp) { inp.value = ''; megaSearchFilter(''); }
+      });
+    });
+  }
+
   if (countEl) {
-    countEl.textContent = term ? visible + ' course' + (visible !== 1 ? 's' : '') : '';
+    countEl.textContent =
+      results.length + ' course' + (results.length !== 1 ? 's' : '');
   }
 }
 
-// Clear search when mega-menu closes
-(function() {
-  var _origClose = document.onclick;
-  document.addEventListener('click', function(e) {
-    if (!e.target.closest('.mega-panel') && !e.target.closest('.mega-trigger')) {
-      var searchInput = document.getElementById('megaSearch');
-      if (searchInput && searchInput.value) {
-        searchInput.value = '';
-        megaSearchFilter('');
-      }
-    }
-  });
-})();
+// Clear search when mega-menu closes (click outside)
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.mega-panel') && !e.target.closest('.mega-trigger')) {
+    var inp = document.getElementById('megaSearch');
+    if (inp && inp.value) { inp.value = ''; megaSearchFilter(''); }
+  }
+});
 
 // ─── Dark mode ──────────────────────────────────────────────────────
 (function () {

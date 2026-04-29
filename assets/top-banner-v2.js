@@ -58,9 +58,6 @@
     '  color: var(--gold, #c9a05a) !important; background: none !important;' +
     '  border-color: transparent !important; outline: none; }' +
     '.tb-brand:hover { border-right-color: rgba(255,255,255,0.14) !important; }' +
-'.tb-tagline { flex-shrink: 1; font-size: 0.72rem; font-style: italic; color: var(--gold, #c9a05a); opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; padding-left: 0.75rem; }' +
-'.tb-tagline-attr { opacity: 0.65; font-style: normal; font-size: 0.68rem; }' +
-'@media (max-width: 860px) { .tb-tagline { display: none; } }' +
     '.tb-pills a { display: inline-flex; align-items: center; gap: 0.4rem;' +
     '  flex-shrink: 0; background: rgba(255,255,255,0.08);' +
     '  color: #fff !important; padding: 0.4rem 0.9rem; border-radius: 2rem;' +
@@ -178,7 +175,6 @@
     '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
     '  <nav class="tb-pills" aria-label="Primary navigation">' +
     '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home">AESOP<em>AI Academy</em></a>' +
-'    <span class="tb-tagline">Life isn&#8217;t about finding yourself, Life is about creating yourself. <span class="tb-tagline-attr">&#8212;George Bernard Shaw</span></span>' +
     '    <a href="/ai-academy/courses.html#courses"><span class="ico" aria-hidden="true">\uD83D\uDCDA</span>Courses</a>' +
     '    <a href="/ai-news/"><span class="ico" aria-hidden="true">\uD83D\uDCF0</span>AI News</a>' +
     '    <a href="/ai-academy/students.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Students</a>' +

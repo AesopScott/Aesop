@@ -47,6 +47,56 @@ function openTab(btn, panelId) {
   megaSelect(btn, panelId);
 }
 
+// ─── Module count: prevent "(N)" from orphaning on its own line ─────
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.mega-link').forEach(function(btn) {
+    // Replace the last " (N)" with a non-breaking space so the
+    // module count stays glued to the last word before it.
+    btn.innerHTML = btn.innerHTML.replace(/ (\(\d+\))$/, ' $1');
+  });
+});
+
+// ─── Mega-search: filter courses by typing ──────────────────────────
+function megaSearchFilter(query) {
+  var term = query.trim().toLowerCase();
+  var buttons = document.querySelectorAll('.mega-link');
+  var visible = 0;
+
+  buttons.forEach(function(btn) {
+    var text = btn.textContent.toLowerCase();
+    var slug = (btn.getAttribute('data-course') || '').replace(/-/g, ' ');
+    var matches = !term || text.includes(term) || slug.includes(term);
+    btn.classList.toggle('mega-link--hidden', !matches);
+    if (matches) visible++;
+  });
+
+  // Hide group category headers when all their buttons are hidden
+  document.querySelectorAll('.mega-group').forEach(function(group) {
+    var anyVisible = group.querySelector('.mega-link:not(.mega-link--hidden)');
+    group.classList.toggle('mega-group--empty', !anyVisible);
+  });
+
+  // Show match count while searching
+  var countEl = document.getElementById('megaSearchCount');
+  if (countEl) {
+    countEl.textContent = term ? visible + ' course' + (visible !== 1 ? 's' : '') : '';
+  }
+}
+
+// Clear search when mega-menu closes
+(function() {
+  var _origClose = document.onclick;
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.mega-panel') && !e.target.closest('.mega-trigger')) {
+      var searchInput = document.getElementById('megaSearch');
+      if (searchInput && searchInput.value) {
+        searchInput.value = '';
+        megaSearchFilter('');
+      }
+    }
+  });
+})();
+
 // ─── Dark mode ──────────────────────────────────────────────────────
 (function () {
   var HTML = document.documentElement;

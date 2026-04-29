@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-29 04:04 UTC
+**Generated:** 2026-04-29 05:48 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 124 · **Warnings:** 799
+**Errors:** 125 · **Warnings:** 806
 
 ---
 
@@ -96,8 +96,9 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (56)
+### Errors (57)
 
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/agile-ai-side-projects/agile-ai-side-projects-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
@@ -192,8 +193,9 @@
 
 ## Module File Integrity
 
-### Warnings (768)
+### Warnings (775)
 
+- 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m3.html` has no COURSE_ID constant
@@ -747,6 +749,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `image-generation-models-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
@@ -967,7 +975,7 @@
 
 ## Summary
 
-**124 error(s) require attention:**
+**125 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1037,6 +1045,7 @@
 1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/agile-ai-side-projects/agile-ai-side-projects-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`

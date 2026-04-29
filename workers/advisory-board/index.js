@@ -117,7 +117,7 @@ async function handleAdd(request, env) {
     }
   }
 
-  return updateFile(env, data => {
+  const result = await updateFile(env, data => {
     data.members = data.members || [];
     const incomingKey = linkKey(member);
     const idx = incomingKey
@@ -148,6 +148,64 @@ async function handleAdd(request, env) {
   }, isUpdate
        ? `Update advisory board member: ${member.name}`
        : `Add advisory board member: ${member.name}`);
+
+  // Fire-and-forget notification — never blocks or fails the response
+  if (result.status === 200) {
+    sendApplicationNotification(member, isUpdate, env).catch(err =>
+      console.error('Notification email failed (non-fatal):', err)
+    );
+  }
+
+  return result;
+}
+
+// ── NOTIFY ADMIN ON NEW APPLICATION ────────────────────────────
+async function sendApplicationNotification(member, isUpdate, env) {
+  if (!env.BREVO_API_KEY) return; // secret not set — skip silently
+
+  const subject = isUpdate
+    ? `Advisory Board Profile Updated: ${member.name}`
+    : `New Advisory Board Application: ${member.name}`;
+
+  const boards = member.boards
+    ? (Array.isArray(member.boards) ? member.boards.join(', ') : member.boards)
+    : (member.board || 'unspecified');
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a2e;">
+      <div style="background:#0d1b2a;padding:1.5rem 2rem;border-radius:8px 8px 0 0;">
+        <h2 style="color:#c9a05a;margin:0;font-size:1.2rem;">AESOP AI Academy</h2>
+        <p style="color:rgba(255,255,255,0.65);margin:0.25rem 0 0;font-size:0.85rem;">Advisory Board Notification</p>
+      </div>
+      <div style="background:#f9f7f3;padding:1.75rem 2rem;border-radius:0 0 8px 8px;border:1px solid #e5e0d8;">
+        <h3 style="margin:0 0 1rem;color:#0d1b2a;">${isUpdate ? '📝 Profile Update' : '🎉 New Application'}</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+          <tr><td style="padding:0.4rem 0;color:#666;width:130px;">Name</td><td style="padding:0.4rem 0;font-weight:600;">${member.name}</td></tr>
+          <tr><td style="padding:0.4rem 0;color:#666;">Title</td><td style="padding:0.4rem 0;">${member.title || '—'}</td></tr>
+          <tr><td style="padding:0.4rem 0;color:#666;">Organization</td><td style="padding:0.4rem 0;">${member.organization || '—'}</td></tr>
+          <tr><td style="padding:0.4rem 0;color:#666;">Location</td><td style="padding:0.4rem 0;">${[member.city, member.country].filter(Boolean).join(', ') || '—'}</td></tr>
+          <tr><td style="padding:0.4rem 0;color:#666;">Board(s)</td><td style="padding:0.4rem 0;color:#c9a05a;font-weight:600;">${boards}</td></tr>
+          <tr><td style="padding:0.4rem 0;color:#666;">LinkedIn</td><td style="padding:0.4rem 0;"><a href="${member.linkedin}" style="color:#1a6b8a;">${member.linkedin}</a></td></tr>
+          <tr><td style="padding:0.4rem 0;color:#666;">Applied</td><td style="padding:0.4rem 0;">${new Date(member.addedAt).toLocaleString('en-US', { timeZone: 'America/Chicago', dateStyle: 'medium', timeStyle: 'short' })} CT</td></tr>
+        </table>
+        ${member.bio ? `<div style="margin-top:1.25rem;padding:1rem;background:#fff;border-radius:6px;border-left:3px solid #c9a05a;font-size:0.875rem;line-height:1.6;color:#333;">${member.bio}</div>` : ''}
+        <p style="margin-top:1.5rem;font-size:0.8rem;color:#999;">Submitted via aesopacademy.org/about/advisoryboard-form.html</p>
+      </div>
+    </div>`;
+
+  await fetch('https://api.brevo.com/v3/smtp/email', {
+    method:  'POST',
+    headers: {
+      'api-key':      env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender:      { name: 'AESOP Academy', email: 'noreply@aesopacademy.org' },
+      to:          [{ email: 'ravenshroud@gmail.com', name: 'Scott' }],
+      subject,
+      htmlContent: html,
+    }),
+  });
 }
 
 // ── REMOVE MEMBER ───────────────────────────────────────────────

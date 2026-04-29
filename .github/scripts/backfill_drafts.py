@@ -292,7 +292,19 @@ def main() -> int:
 
     print()
     print(f"Backfilled: {written}, failed: {failed}, total: {len(candidates)}")
-    return 0 if failed == 0 else 1
+    # Exit policy: we exit 0 as long as we wrote SOMETHING, even if a few
+    # drafts failed. The reason is operational — a non-zero exit causes
+    # the wrapping workflow's commit step to skip via `if: success()`,
+    # which throws away every successful draft on the runner. That cost
+    # is much higher than the convenience of a red badge for 1 bad LLM
+    # response. The CI workflow now uses `if: always()` on its commit
+    # step so this script could in principle exit non-zero, but the
+    # safer signal is still: the run is "successful" when at least one
+    # draft was backfilled, and the per-draft FAIL lines above are the
+    # forensic record.
+    if written == 0 and failed > 0:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

@@ -150,6 +150,19 @@
     '  .tb-pills { padding: 0.45rem 0.9rem; }' +
     '  .tb-pills a { padding: 0.35rem 0.75rem; font-size: 0.8rem; }' +
     '  .tb-stats { flex-direction: column; align-items: flex-start; }' +
+    '}' +
+    /* Cert chip — earned state gets a gold ring + gold text */
+    '.tb-pills a#tbCertChip.cert-earned {' +
+    '  border-color: rgba(255,215,0,0.55);' +
+    '  background: rgba(255,215,0,0.1);' +
+    '  color: #ffd700 !important;' +
+    '  font-weight: 700;' +
+    '}' +
+    '.tb-pills a#tbCertChip.cert-earned:hover,' +
+    '.tb-pills a#tbCertChip.cert-earned:focus-visible {' +
+    '  background: #ffd700;' +
+    '  color: #0f1923 !important;' +
+    '  border-color: #ffd700;' +
     '}';
 
   /* â”€â”€â”€ HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -162,6 +175,7 @@
     '    <a href="/ai-academy/students.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Students</a>' +
     '    <a href="/ai-academy/dashboard.html"><span class="ico" aria-hidden="true">\uD83C\uDF4E</span>Teachers / Parents</a>' +
     '    <a href="/seniors.html"><span class="ico" aria-hidden="true">🌟</span>Seniors</a>' +
+    '    <a href="/ai-academy/certifications.html" id="tbCertChip"><span class="ico" aria-hidden="true">🏅</span>Certifications</a>' +
     '    <a class="tb-pill-right-start" href="/about/mission.html"><span class="ico" aria-hidden="true">\u2726</span>Our Mission</a>' +
     '    <a href="/about/advisory-board-about.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Advisory Board</a>' +
     '    <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">\uD83D\uDCAC</span>Forums \u00B7 Discord</a>' +
@@ -287,6 +301,29 @@
           : cur === linkPath;                        // exact match for /page.html
         if (active) a.classList.add('is-active');
       });
+    })();
+
+    // Cert chip — update label/style based on localStorage level
+    (function initCertChip() {
+      try {
+        var CERT_NAMES   = ['','Spark','Seeker','Scholar','Analyst','Navigator','Specialist','Strategist','Visionary','Master','Architect'];
+        var CERT_EMOJIS  = ['','🌱','⚡','🔍','🎓','🧩','🛠️','🎯','🔮','🦅','👑'];
+        var CERT_PTS     = [0,0,10,25,50,80,100,150,200,250,400];
+        var CERT_FDN     = [0,1,1,1,1,1,2,2,2,3,3];
+        var fdn  = parseInt(localStorage.getItem('aesop-cert-fdn')  || '0');
+        var pts  = parseInt(localStorage.getItem('aesop-cert-mpts') || '0');
+        var level = 0;
+        for (var i = 1; i <= 10; i++) {
+          if (fdn >= CERT_FDN[i] && pts >= CERT_PTS[i]) level = i; else break;
+        }
+        var chip = document.getElementById('tbCertChip');
+        if (!chip) return;
+        if (level > 0) {
+          chip.classList.add('cert-earned');
+          chip.innerHTML = '<span class="ico" aria-hidden="true">' + CERT_EMOJIS[level] + '</span>L' + level + ' ' + CERT_NAMES[level];
+          chip.title = 'Your certification: Level ' + level + ' — ' + CERT_NAMES[level];
+        }
+      } catch (_) {}
     })();
   }
 

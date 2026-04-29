@@ -110,12 +110,17 @@
     '.tb-lang .lang-flag { line-height: 1; font-size: 0.85rem; }' +
     '.tb-lang .lang-btn .fi { display: inline-block; width: 1.1rem; height: 0.8rem; vertical-align: -1px; margin-right: 0.25rem; border-radius: 1px; background-size: cover; background-position: center; box-shadow: 0 0 0 1px rgba(255,255,255,0.12); }' +
     '.tb-lang .lang-divider { width: 1px; background: rgba(255,255,255,0.12); }' +
-    /* Report pill uses .tb-pills specificity so it overrides generic pill styling. */
-    '.tb-pills a.tb-report { background: rgba(239,68,68,0.12);' +
-    '  color: #fca5a5 !important; border-color: rgba(239,68,68,0.3); }' +
-    '.tb-pills a.tb-report:hover, .tb-pills a.tb-report:focus-visible {' +
+    /* Report pill — sits in tb-stats row, not tb-pills. */
+    'a.tb-report { display: inline-flex; align-items: center; gap: 0.4rem;' +
+    '  flex-shrink: 0; background: rgba(239,68,68,0.12);' +
+    '  color: #fca5a5 !important; border: 1px solid rgba(239,68,68,0.3);' +
+    '  padding: 0.3rem 0.8rem; border-radius: 2rem;' +
+    '  font-size: 0.8rem; font-weight: 600;' +
+    '  text-decoration: none; white-space: nowrap;' +
+    '  transition: background 0.15s, color 0.15s, border-color 0.15s; }' +
+    'a.tb-report:hover, a.tb-report:focus-visible {' +
     '  background: var(--red, #dc2626); color: #fff !important;' +
-    '  border-color: var(--red, #dc2626); }' +
+    '  border-color: var(--red, #dc2626); outline: none; }' +
     '.tb-darktoggle { flex-shrink: 0; background: rgba(255,255,255,0.06);' +
     '  border: 1px solid rgba(255,255,255,0.12); color: #fff;' +
     '  border-radius: 2rem; padding: 0.25rem 0.5rem;' +
@@ -179,7 +184,6 @@
     '    <a class="tb-pill-right-start" href="/about/mission.html"><span class="ico" aria-hidden="true">\u2726</span>Our Mission</a>' +
     '    <a href="/about/advisory-board-about.html"><span class="ico" aria-hidden="true">\uD83C\uDF93</span>Advisory Board</a>' +
     '    <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span class="ico" aria-hidden="true">\uD83D\uDCAC</span>Forums \u00B7 Discord</a>' +
-    '    <a href="/report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">\u2691</span>Report</a>' +
     '  </nav>' +
     '  <div class="tb-stats">' +
     '    <span class="tb-live"><span class="tb-live-dot" aria-hidden="true"></span>Live</span>' +
@@ -189,6 +193,7 @@
     '      <span class="tb-stat" data-stat="coursesInDev"><span class="tb-stat-num" data-stat-num>42</span><span class="tb-stat-lbl">In development</span></span>' +
     '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>7</span><span class="tb-stat-lbl">Languages</span></span>' +
     '    </div>' +
+    '    <a href="/report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">⚑</span>Report</a>' +
     '    <div class="tb-utilities">' +
     '      <div class="tb-lang lang-selector" id="langSelector" aria-label="Select language">' +
     '        <button class="lang-btn" data-lang="en" title="English"><span class="fi fi-us"></span> EN</button>' +

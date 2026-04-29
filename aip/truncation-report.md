@@ -1,12 +1,9 @@
 # File Truncation Repair Report
 
-- **Last checked:** 2026-04-29 06:06 UTC
-- **Last repair:** Never
-- Files scanned this run: **2**
+- **Last run:** 2026-04-29 10:21 UTC
+- Files scanned: **1398**
 - Truncated files found: **0**
 - Files repaired: **0**
 - Unresolved (no intact history): **0**
 
-## Latest Findings
-
-No truncation detected this run.
+No truncation detected.

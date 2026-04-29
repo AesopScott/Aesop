@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.10 | 2026-04-28 -->
+<!-- v1.0.11 | 2026-04-28 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -143,12 +143,23 @@
       document.getElementById('challengeQ').textContent = ch.q;
       document.getElementById('challengeA').textContent = ch.a;
 
-      // Progress from Firestore
+      // Progress — Firestore first, localStorage fill-in for anything missing.
+      // Foundations course and electives-hub both write to aesop-course-progress
+      // in localStorage on every module completion (Firebase auth not required).
       let progress = {};
       try {
         const snap = await getDoc(doc(db, 'learners', id));
         if (snap.exists()) progress = snap.data().courseProgress || {};
       } catch(e) { console.warn('Progress load error:', e); }
+
+      // Merge localStorage — fills gaps while Firebase auth is pending
+      try {
+        const local = JSON.parse(localStorage.getItem('aesop-course-progress') || '{}');
+        Object.entries(local).forEach(([cId, mods]) => {
+          if (!progress[cId]) progress[cId] = {};
+          Object.assign(progress[cId], mods);
+        });
+      } catch(_) {}
 
       // Find course to continue (latest started, not 100%)
       let continueUrl = '/ai-academy/courses.html';

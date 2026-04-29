@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.18 | 2026-04-28 -->
+<!-- v1.0.19 | 2026-04-28 -->
 <!-- v1.0.61 -->
 <html lang="en">
 <head>
@@ -1529,10 +1529,22 @@ function onLessonFrameLoad(iframe) {
 function markLessonComplete(lessonId) {
   if (!state.groupId || state.groupId === 0) return;
   state.completed[state.groupId].add(lessonId);
-  // ── PERSISTENCE HOOK (stub) ──────────────────────────────────────────
-  // Replace with Firebase write when auth is live:
-  //   db.collection('users').doc(userId).update({ [`completed.${state.groupId}`]: [...state.completed[state.groupId]] })
-  // ────────────────────────────────────────────────────────────────────
+
+  // ── Persist completed modules to localStorage ────────────────────────
+  // When all lessons in a module are done, write it to aesop-course-progress
+  // so students.html can display progress without requiring Firebase auth.
+  try {
+    const grp = AGE_GROUPS[state.groupId];
+    const mod = MODULES.find(m => m.lessons.some(l => l.id === lessonId));
+    if (mod && grp && moduleDone(grp, mod)) {
+      const stored = JSON.parse(localStorage.getItem('aesop-course-progress') || '{}');
+      if (!stored['ai-foundations']) stored['ai-foundations'] = {};
+      stored['ai-foundations'][mod.id] = true;
+      localStorage.setItem('aesop-course-progress', JSON.stringify(stored));
+    }
+  } catch (_) {}
+  // ── TODO: replace above with Firebase write when auth is live ────────
+
   renderSidebar();       // refresh progress bars + checkmarks
   renderModuleDetail();  // refresh lesson list checkmarks
 }

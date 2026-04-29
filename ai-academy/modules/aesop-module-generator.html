@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.4 | 2026-04-28 -->
+<!-- v1.0.5 | 2026-04-28 -->
 <!-- v1.2.0 | 2026-04-27 — Verification gate in buildSystemPrompt -->
 <!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
 <!-- v1.1.1 | 2026-04-18 — Stop button + 800s per-attempt abort timeout -->
@@ -2264,7 +2264,88 @@ async function manualActivate() {
       try { await runPostActivationStandardsUpdate(cid); } catch(e) { log('Standards update error: ' + e.message); }
     }
 
+    // ── One-in / one-out: prompt to deprecate a coming-soon course ──
+    if (repoFolderHandle) {
+      try { await promptDeprecateOne(cid); } catch(e) { log('Deprecation step error: ' + e.message); }
+    }
+
   }
+}
+
+// ── Deprecation picker ───────────────────────────────────────────────
+// Shows a modal listing all coming-soon courses. User picks one to
+// archive (status → 'deprecated') to keep the dev pipeline balanced.
+async function promptDeprecateOne(justActivatedCid) {
+  const comingSoon = Object.entries(REGISTRY)
+    .filter(([k, v]) => !k.startsWith('_') && v && v.status === 'coming-soon')
+    .sort((a, b) => (a[1].title || a[0]).localeCompare(b[1].title || b[0]));
+
+  if (comingSoon.length === 0) {
+    log('[One-in/one-out] No coming-soon courses to deprecate — pipeline is empty.');
+    return;
+  }
+
+  const opts = comingSoon.map(([k, v]) =>
+    `<option value="${k}">${v.title || k}</option>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#0d1a2e;border:1px solid #c9a05a;border-radius:10px;padding:2rem;max-width:480px;width:90%;color:#e8e3db;">
+      <div style="font-size:1.1rem;font-weight:700;color:#c9a05a;margin-bottom:0.5rem;">One in, one out</div>
+      <p style="font-size:0.88rem;opacity:0.75;margin-bottom:1.25rem;">
+        <strong>${REGISTRY[justActivatedCid]?.title || justActivatedCid}</strong> is now live.<br>
+        Select one coming-soon course to archive so the development pipeline stays balanced.
+      </p>
+      <select id="deprecatePicker" style="width:100%;padding:0.5rem;background:#0a1220;color:#e8e3db;border:1px solid #c9a05a;border-radius:5px;margin-bottom:1.25rem;">
+        ${opts}
+      </select>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+        <button id="deprecateSkip" style="padding:0.4rem 1rem;background:transparent;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);border-radius:5px;cursor:pointer;">Skip for now</button>
+        <button id="deprecateConfirm" style="padding:0.4rem 1rem;background:#c0384f;border:none;color:#fff;border-radius:5px;cursor:pointer;font-weight:700;">Archive selected</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  await new Promise(resolve => {
+    modal.querySelector('#deprecateSkip').onclick = () => {
+      log('[One-in/one-out] Skipped — pipeline balance not enforced this time.');
+      document.body.removeChild(modal);
+      resolve();
+    };
+    modal.querySelector('#deprecateConfirm').onclick = async () => {
+      const chosen = modal.querySelector('#deprecatePicker').value;
+      document.body.removeChild(modal);
+      if (!chosen) { resolve(); return; }
+      try {
+        if (REGISTRY[chosen]) REGISTRY[chosen].status = 'deprecated';
+
+        const rHandle = await repoFolderHandle.getFileHandle('course-registry.json', { create: false });
+        const rWritable = await rHandle.createWritable();
+        await rWritable.write(JSON.stringify(REGISTRY, null, 2));
+        await rWritable.close();
+
+        try {
+          const cdHandle = await repoFolderHandle.getFileHandle('ai-academy/modules/courses-data.json', { create: false })
+            .catch(() => repoFolderHandle.getFileHandle('courses-data.json', { create: false }));
+          const cdFile = await cdHandle.getFile();
+          const cdData = JSON.parse(await cdFile.text());
+          for (const c of (cdData.courses || [])) {
+            if (c.id === chosen) c.live = false;
+          }
+          const cdWritable = await cdHandle.createWritable();
+          await cdWritable.write(JSON.stringify(cdData, null, 2));
+          await cdWritable.close();
+        } catch(e) { /* non-fatal */ }
+
+        log('[One-in/one-out] Archived: ' + (REGISTRY[chosen]?.title || chosen) + ' → deprecated');
+      } catch(e) {
+        log('[One-in/one-out] Could not write deprecation: ' + e.message);
+      }
+      resolve();
+    };
+  });
 }
 
 // ── Write course-registry.json entry on activation ──────────────────

@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-29 21:56 UTC
+**Generated:** 2026-04-29 22:55 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 124 · **Warnings:** 840
+**Errors:** 124 · **Warnings:** 843
 
 ---
 
@@ -192,7 +192,7 @@
 
 ## Module File Integrity
 
-### Warnings (809)
+### Warnings (812)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m2.html` has no COURSE_ID constant
@@ -848,6 +848,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-for-developers-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-for-developers-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-that-works-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-that-works-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-that-works-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-that-works-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m3.html` has no COURSE_ID constant

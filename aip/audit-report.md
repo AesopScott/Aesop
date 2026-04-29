@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-29 02:39 UTC
+**Generated:** 2026-04-29 03:01 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 68 · **Warnings:** 755
+**Errors:** 124 · **Warnings:** 790
 
 ---
 
@@ -96,11 +96,103 @@
 
 ## Live Site (aesopacademy.org)
 
-✅ No issues found.
+### Errors (56)
+
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m1.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m2.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m3.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m4.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m5.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m6.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
+
+### Warnings (31)
+
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-agents-in-the-wild/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-alignment-for-everyone/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-and-the-future-of-work/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-and-the-writer-s-voice/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-augmented-reconnaissance/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-autonomous-systems/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-bias-and-fairness/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-in-science/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-job-market-impact/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-misinformation/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-network-pentesting/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-safety-and-alignment-basics/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-side-hustle-money/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-agents-vertex-ai/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-ai-agents-v-optimization/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-an-ai-first-business/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/deepfakes-and-synthetic-media/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/explainable-ai/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/future-of-work-ai/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/human-ai-interaction/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/image-generation-models/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/model-evaluation-and-benchmarks/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/pentesting-ai-agents/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/pentesting-llm-applications/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/storytelling-with-ai/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/the-context-window-race/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/vertex-ai-data-agents/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/what-ai-knows-about-you/`
+- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/working-with-the-anthropic-api/`
+
 
 ## Module File Integrity
 
-### Warnings (755)
+### Warnings (759)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m2.html` has no COURSE_ID constant
@@ -458,6 +550,8 @@
 - 🟡 **NO_COURSE_ID**: Module file `ar-8-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ar-8-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-agents-vertex-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-agents-vertex-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-agents-vertex-ai-m3.html` has no COURSE_ID constant
@@ -612,6 +706,8 @@
 - 🟡 **NO_COURSE_ID**: Module file `gemini-for-college-life-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gemini-for-college-life-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gemini-for-college-life-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `gemini-for-college-life-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `gemini-for-college-life-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `gpt-vs-claude-vs-gemini-m3.html` has no COURSE_ID constant
@@ -862,7 +958,7 @@
 
 ## Summary
 
-**68 error(s) require attention:**
+**124 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -932,3 +1028,59 @@
 1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-governance/governance-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-in-society/society-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-society/ai-in-society-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building-with-ai/building-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m1.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m2.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m3.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m4.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m5.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m6.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`

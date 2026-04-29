@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.19 | 2026-04-28 -->
+<!-- v1.0.20 | 2026-04-28 -->
 <!-- v1.0.61 -->
 <html lang="en">
 <head>
@@ -1541,9 +1541,12 @@ function markLessonComplete(lessonId) {
       if (!stored['ai-foundations']) stored['ai-foundations'] = {};
       stored['ai-foundations'][mod.id] = true;
       localStorage.setItem('aesop-course-progress', JSON.stringify(stored));
+      // Also push to Firestore so progress is durable across devices/browsers
+      if (typeof window.persistModToFirestore === 'function') {
+        window.persistModToFirestore('ai-foundations', mod.id);
+      }
     }
   } catch (_) {}
-  // ── TODO: replace above with Firebase write when auth is live ────────
 
   renderSidebar();       // refresh progress bars + checkmarks
   renderModuleDetail();  // refresh lesson list checkmarks
@@ -3101,22 +3104,36 @@ if (state.qaExam) {
 })();
 </script>
 
-<!-- Firebase SDK (exam result logging) -->
+<!-- Firebase SDK (module progress persistence) -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey:            "AIzaSyA-placeholder-replace-with-real-key",
+    apiKey:            "AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU",
     authDomain:        "playagame-f733d.firebaseapp.com",
     projectId:         "playagame-f733d",
     storageBucket:     "playagame-f733d.appspot.com",
-    messagingSenderId: "000000000000",
-    appId:             "1:000000000000:web:placeholder"
+    messagingSenderId: "610508714644",
+    appId:             "1:610508714644:web:63ca4374e5d5be1c81ba81"
   };
 
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // Called by markLessonComplete (regular script) when a full module is done.
+  // Writes to learners/{learnerId} so students.html can read progress from
+  // the cloud on any device, not just this browser.
+  window.persistModToFirestore = async function(courseId, moduleId) {
+    try {
+      const learnerId = localStorage.getItem('aesop-learner-id');
+      if (!learnerId) return; // no learner ID yet — localStorage fallback is fine
+      await setDoc(
+        doc(db, 'learners', learnerId),
+        { courseProgress: { [courseId]: { [moduleId]: true } } },
+        { merge: true }
+      );
+    } catch (_) {}
+  };
+</script>
 <script src="/assets/top-banner-v2.js?v=2"></script>

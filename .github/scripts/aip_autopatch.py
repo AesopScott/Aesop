@@ -104,14 +104,27 @@ def build_course_panel(draft, index):
     icon = ICONS[index % len(ICONS)]
     num_modules = len(modules)
 
-    # Build module grid
+    # Build module grid. Modules are either:
+    #   - bare strings  (legacy drafts pre-2026-04-28)
+    #   - objects with {title, sub, description}  (current schema)
+    # Subtitles render only for object-form modules.
     module_html = ""
-    for i, mod_title in enumerate(modules, 1):
+    for i, m in enumerate(modules, 1):
+        if isinstance(m, dict):
+            mod_title = m.get("title", "") or ""
+            mod_sub   = m.get("sub", "") or ""
+        else:
+            mod_title = str(m)
+            mod_sub   = ""
+        sub_html = (
+            f'<div class="core-mod__sub">{mod_sub}</div>' if mod_sub else ""
+        )
         module_html += f"""
           <div class="core-mod">
             <div class="core-mod__num">M{i}</div>
             <div class="core-mod__info">
               <div class="core-mod__title">{mod_title}</div>
+              {sub_html}
             </div>
           </div>"""
 
@@ -253,10 +266,19 @@ def sync_to_courses_data(drafts):
             continue
 
         raw_modules = draft.get("modules", [])
-        modules = [
-            {"n": i + 1, "title": m if isinstance(m, str) else m.get("title", ""), "sub": ""}
-            for i, m in enumerate(raw_modules)
-        ]
+        # Modules can be either bare strings (legacy schema) or objects
+        # with {title, sub, description} (current schema). Preserve sub
+        # when present so courses-data.json matches what ModGen will use.
+        modules = []
+        for i, m in enumerate(raw_modules):
+            if isinstance(m, dict):
+                modules.append({
+                    "n":     i + 1,
+                    "title": m.get("title", "") or "",
+                    "sub":   m.get("sub", "") or "",
+                })
+            else:
+                modules.append({"n": i + 1, "title": str(m), "sub": ""})
 
         # Derive ageGroup from audience or category fields in the draft
         audience = draft.get("audience", "")

@@ -449,7 +449,19 @@ MODULE COUNT RULES (important):
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-for-job-hunting")
 - "title": short, compelling course title that a 20-year-old would want to click (max 6 words)
-- "modules": array of module names — 5 modules for ⚑ MODEL TOPIC, 6 for everything else
+- "mega_group": which Young Adult nav section this belongs in. Pick EXACTLY one of:
+    "AI Tools"       — practical use of named AI tools (ChatGPT, Claude, Gemini, Perplexity, Notion AI, etc.)
+    "Make & Create"  — building, designing, coding, or making things with AI
+    "How AI Works"   — how AI systems function under the hood, demystified for the learner
+    "Truth & Safety" — misinformation, ethics, bias, privacy, scams, AI safety
+    "Strategy"       — career, productivity, study, life-skill applications of AI
+    "Society"        — AI's impact on jobs, healthcare, education, media, social life
+    "Business"       — entrepreneurship, freelancing, marketing, side projects with AI
+- "modules": array of module objects — 5 objects for ⚑ MODEL TOPIC, 6 objects for everything else.
+    Each module object MUST have these three fields:
+    {"title": "<short module name, max 8 words>",
+     "sub":   "<one-sentence subtitle, 6-12 words, framing what the module covers>",
+     "description": "<2-3 sentences explaining what the learner does, builds, or decides in this module>"}
 - "synopsis": 2-sentence description written for the learner directly (use "you")
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for young adults' AI literacy

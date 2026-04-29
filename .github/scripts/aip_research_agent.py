@@ -490,7 +490,21 @@ MODULE COUNT RULES (important):
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-in-healthcare")
 - "title": short, compelling course title (max 6 words)
-- "modules": array of module names — 5 modules for ⚑ MODEL TOPIC, 8 for everything else
+- "mega_group": which Professional nav section this course belongs in. Pick EXACTLY one of:
+    "AI Tools"       — courses about specific named AI tools, models, or integrations
+    "Strategy"       — leadership, governance, risk, organizational AI, careers
+    "AI Models"      — how foundation models work, comparisons, evaluation, benchmarks
+    "AI Frontier"    — emerging research, hardware, reasoning, what's coming next
+    "Development"    — building, deploying, integrating, agentic systems, prompt engineering
+    "Society"        — AI's domain impact: healthcare, education, finance, media, etc.
+    "Applied"        — applied-AI fundamentals, building blocks, end-to-end
+    "Business"       — business strategy, marketing, ventures, executive readiness
+    "Cybersecurity"  — only when squarely about security (most security courses go through cyber_research_agent.py instead)
+- "modules": array of module objects — 5 objects for ⚑ MODEL TOPIC, 8 objects for everything else.
+    Each module object MUST have these three fields:
+    {"title": "<short module name, max 8 words>",
+     "sub":   "<one-sentence subtitle, 6-14 words, framing what the module covers>",
+     "description": "<2-4 sentences describing what the professional does, decides, or produces in this module>"}
 - "synopsis": 2-sentence course description written for a professional audience
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for professional AI literacy

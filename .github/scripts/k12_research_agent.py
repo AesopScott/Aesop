@@ -427,7 +427,14 @@ DESIGN PRINCIPLES FOR YOUTH COURSES:
 For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-and-fake-news")
 - "title": short, compelling title a student would want to click (max 6 words)
-- "modules": array of 4 module names (each max 6 words) — design a focused 4-module arc
+- "mega_group": which Youth nav section this course belongs in. Pick EXACTLY one of:
+    "How AI Works"   — how AI thinks, learns, and what it really is under the hood
+    "Make & Create"  — courses where the learner builds, designs, codes, or creates with AI
+    "Truth & Safety" — bias, misinformation, deepfakes, scams, ethics, privacy, digital citizenship
+- "modules": array of EXACTLY 4 module objects (focused 4-module arc). Each module object MUST have these three fields:
+    {"title": "<short, max 6 words>",
+     "sub":   "<one-sentence subtitle, 6-12 words, framing what the module covers>",
+     "description": "<2-3 sentences explaining what the learner does, decides, or makes in this module>"}
 - "synopsis": 2-sentence description written for a student or their teacher
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "age_band": "8-10", "11-13", or "14-16"

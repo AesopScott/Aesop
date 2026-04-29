@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.5 | 2026-04-28 -->
+<!-- v1.0.6 | 2026-04-28 -->
 <!-- v1.3.0 | 2026-04-23 — enhanced cards: meta badges, learning outcome, nearest-existing, module count -->
 <html lang="en">
 <head>
@@ -988,9 +988,17 @@ function renderCard(draft, idx) {
   // terminal and just show a status badge.
   const isOpen = draft.status === 'pending' || draft.status === 'reviewed';
 
-  const modules = (draft.modules || []).map((m, i) =>
-    `<div class="module-tag">${escHtml(m)}</div>`
-  ).join('');
+  // Modules may be plain strings (legacy drafts) or objects with
+  // {title, sub, description} (current schema). Render the title for
+  // either form so the review page never shows "[object Object]".
+  const modules = (draft.modules || []).map((m, i) => {
+    const title = (typeof m === 'object' && m !== null) ? (m.title || '') : String(m);
+    const sub   = (typeof m === 'object' && m !== null) ? (m.sub   || '') : '';
+    const subHtml = sub
+      ? `<span style="display:block;font-size:0.85em;color:var(--muted);font-weight:400;margin-top:2px;">${escHtml(sub)}</span>`
+      : '';
+    return `<div class="module-tag">${escHtml(title)}${subHtml}</div>`;
+  }).join('');
 
   // On reviewed cards we also show the badge so the user can see the
   // current state at a glance, but the action buttons remain available
@@ -1774,7 +1782,10 @@ function renderDevCourses() {
       <div class="dev-card__desc">${escHtml(c.description)}</div>
       ${c.modules.length ? `
         <div class="modules-label">Modules (${c.modules.length})</div>
-        <div class="dev-card__mods">${c.modules.map(m => `<div class="dev-mod-tag">${escHtml(m)}</div>`).join('')}</div>
+        <div class="dev-card__mods">${c.modules.map(m => {
+          const t = (typeof m === 'object' && m !== null) ? (m.title || '') : String(m);
+          return `<div class="dev-mod-tag">${escHtml(t)}</div>`;
+        }).join('')}</div>
       ` : ''}
       <button class="btn-remove" onclick="promptRemove('${escHtml(c.id)}')">✗ Remove from Courses</button>
     </div>

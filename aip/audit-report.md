@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-29 03:35 UTC
+**Generated:** 2026-04-29 04:04 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 124 · **Warnings:** 790
+**Errors:** 124 · **Warnings:** 799
 
 ---
 
@@ -192,7 +192,7 @@
 
 ## Module File Integrity
 
-### Warnings (759)
+### Warnings (768)
 
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-agent-risk-and-oversight-m2.html` has no COURSE_ID constant
@@ -552,6 +552,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `build-ai-workflows-no-code-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-agents-vertex-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-agents-vertex-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `building-agents-vertex-ai-m3.html` has no COURSE_ID constant
@@ -835,6 +838,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `security-auditing-ai-generated-code-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `security-auditing-ai-generated-code-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `security-auditing-ai-generated-code-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `spot-the-fake-ai-content-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `spot-the-fake-ai-content-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `spot-the-fake-ai-content-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `spot-the-fake-ai-content-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `spot-the-fake-ai-content-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `spot-the-fake-ai-content-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `storytelling-with-ai-m3.html` has no COURSE_ID constant

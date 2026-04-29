@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-29 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>How AI Actually Works — M6: Build a Mini Classifier Yourself</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- how-ai-actually-works-m6 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;font-style:italic;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.visual-classifier{background:var(--panel2);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem;margin:1.25rem 0;}
+.vc-title{font-size:0.65rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;}
+.vc-row{display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;font-size:0.82rem;}
+.vc-label{color:var(--muted);width:90px;flex-shrink:0;}
+.vc-bar-wrap{flex:1;background:rgba(255,255,255,0.04);border-radius:2px;height:14px;overflow:hidden;}
+.vc-bar{height:100%;border-radius:2px;transition:width 0.4s;}
+.vc-bar.high{background:linear-gradient(90deg,rgba(var(--accent-rgb),0.5),rgba(var(--accent-rgb),0.8));}
+.vc-bar.med{background:linear-gradient(90deg,rgba(201,160,90,0.4),rgba(201,160,90,0.7));}
+.vc-bar.low{background:linear-gradient(90deg,rgba(79,207,138,0.3),rgba(79,207,138,0.5));}
+.vc-val{color:#a89f93;width:36px;text-align:right;font-size:0.78rem;}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;margin:1rem 0;}
+.feature-card{background:var(--panel2);border:1px solid var(--border-dark);border-radius:5px;padding:0.85rem 1rem;}
+.feature-card .fc-name{font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:0.4rem;}
+.feature-card .fc-desc{font-size:0.8rem;line-height:1.6;color:#6e6861;}
+.step-list{counter-reset:step-counter;list-style:none;margin:1rem 0;}
+.step-list li{counter-increment:step-counter;display:flex;gap:0.85rem;margin-bottom:1rem;font-size:0.87rem;line-height:1.75;color:#6e6861;}
+.step-list li::before{content:counter(step-counter);display:flex;align-items:center;justify-content:center;width:24px;height:24px;min-width:24px;border-radius:50%;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);font-size:0.72rem;font-weight:700;margin-top:0.1rem;}
+.step-list li strong{color:#c0b8af;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}.lesson-section{padding:0;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.lesson-section{padding:0;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════════
+     LESSON 1: What a Classifier Actually Does
+     ═══════════════════════════════════════════ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 1</div>
+    <h1>What a Classifier Actually Does</h1>
+    <div class="tagline">Every AI decision starts with a question that has a limited set of answers.</div>
+    <div class="lesson-question">How does a machine look at something and put it into a category — and why does that process go wrong in ways that matter?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Berkeley, California — September 2015">
+      <p class="story-text">In the summer of 2015, <span class="char">Google Photos</span> shipped a new feature it was proud of: automatic photo tagging. You upload pictures, the system scans them, and it assigns labels — "beach," "birthday party," "dog." The engineers tested it on thousands of images. The accuracy numbers were high. They shipped it.</p>
+      <p class="story-text">Then, on June 28, 2015, a software developer named <span class="char">Jacky Alcine</span> opened his Google Photos app and found that the system had automatically sorted photos of him and a friend — both Black — into a folder it had labeled <em>"Gorillas."</em></p>
+      <p class="story-text">It was not a fringe case. The classifier had looked at the images, extracted features — skin tone, hair texture, facial geometry — and matched those features to a category. It had done exactly what it was designed to do. The problem was not a bug in the traditional sense. The problem was in how the whole system had been built from the start.</p>
+    </div>
+
+    <div class="section-heading">The Core Job: Sorting the World Into Buckets</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>A <em>classifier</em> is any system — machine or human — that looks at something and assigns it to a category. That's the whole job. Is this email spam or not spam? Is this tumor malignant or benign? Is this photo a cat, a dog, or something else? Classifier. Classifier. Classifier.</p>
+        <p>What makes machine classifiers interesting — and dangerous — is that they don't reason their way to a category the way you might. They don't think, "Hmm, this looks like a dog because it has four legs, fur, and is panting." Instead, they identify <strong>features</strong> — numerical measurements extracted from the input — and use those features to decide which category the input belongs to.</p>
+        <p>A feature is just a number that captures something measurable about the input. For an image, features might include the average brightness of a region, the frequency of certain colors, or the angle of edges detected in the image. For an email, features might include how many times the word "free" appears, whether the sender address has numbers in it, or the length of the subject line. The machine never "sees" the image or "reads" the email the way you do. It sees a list of numbers and runs a calculation.</p>
+      </div>
+    </div>
+
+    <div class="key-term"><span class="kt-term">Classifier</span><span class="kt-def">A system that takes an input and assigns it to one of a fixed set of categories based on patterns in that input's features.</span></div>
+    <div class="key-term"><span class="kt-term">Feature</span><span class="kt-def">A single measurable property of the input — a number that the classifier uses as evidence for or against each category.</span></div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">The Decision Boundary: Drawing a Line in Feature Space</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Imagine you're trying to sort fruit. You measure two things about each piece of fruit: its weight in grams and its redness on a scale of 0 to 100. Apples tend to be moderately heavy and very red. Lemons tend to be light and not red at all. If you plotted every fruit on a chart — weight on one axis, redness on the other — you'd see clusters. Apples over here, lemons over there.</p>
+        <p>A classifier learns where to draw a line between those clusters. That line is called the <em>decision boundary</em>. Any fruit whose measurements land on one side of the line gets called an apple. Any fruit on the other side gets called a lemon. The machine doesn't know what fruit is. It just knows which side of the line the numbers fall on.</p>
+        <p>Now here's what's important: that line was drawn based on the training data — the specific fruits the system was shown before it was tested. If all the training apples were Granny Smith (pale green, not particularly red), the line might be drawn in completely the wrong place for red apples. <strong>The classifier learned a line that works for its training data. Whether that line works for reality depends entirely on how well the training data represents reality.</strong></p>
+      </div>
+    </div>
+
+    <div class="visual-classifier">
+      <div class="vc-title">Feature Evidence Weights — Example: Email Spam Classifier</div>
+      <div class="vc-row"><span class="vc-label">Word "free"</span><div class="vc-bar-wrap"><div class="vc-bar high" style="width:87%"></div></div><span class="vc-val">0.87</span></div>
+      <div class="vc-row"><span class="vc-label">Caps ratio</span><div class="vc-bar-wrap"><div class="vc-bar high" style="width:74%"></div></div><span class="vc-val">0.74</span></div>
+      <div class="vc-row"><span class="vc-label">Link count</span><div class="vc-bar-wrap"><div class="vc-bar med" style="width:58%"></div></div><span class="vc-val">0.58</span></div>
+      <div class="vc-row"><span class="vc-label">Known sender</span><div class="vc-bar-wrap"><div class="vc-bar low" style="width:21%"></div></div><span class="vc-val">0.21</span></div>
+      <div class="vc-row"><span class="vc-label">Subject length</span><div class="vc-bar-wrap"><div class="vc-bar low" style="width:13%"></div></div><span class="vc-val">0.13</span></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">Why the Google Photos Failure Was Structural, Not Random</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Back to Jacky Alcine. When Google's classifier looked at his photos, it was doing exactly what it was trained to do: match visual features to the category in its training data that those features most resembled. The problem was that the system's training data severely underrepresented images of dark-skinned people. The features that distinguish human faces from non-human faces were, for many skin tones, poorly learned — because the system had barely seen them.</p>
+        <p>Google's response was, in its own words, imperfect: they removed the "gorilla" label entirely from the system. By 2023, researchers found that Google Photos still wouldn't label images of gorillas, chimps, or several other primates — the company had simply deleted those categories rather than fix the underlying representation problem. Eight years later.</p>
+        <p>This is what makes classifiers consequential beyond test scores. A system can have 95% accuracy overall and still systematically misclassify specific groups of people. The accuracy number hides whose accuracy it is.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Ethical Question — No Clean Answer</div>
+      <p>If a medical imaging classifier is 97% accurate on patients of European descent and 82% accurate on patients of African descent, should it be approved for use? Who gets to make that call — the company, a government regulator, the hospital, or the patients themselves? And if you say "fix it first," who pays for the additional data collection, and does that delay cost lives in the meantime?</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">What You Can Now See</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>When you hear that an AI system "classifies" something — a loan application, a medical scan, a social media post for moderation — you now know what that means at a mechanical level. The system is measuring features, comparing those measurements to a learned decision boundary, and outputting a category. It is not reasoning. It is not understanding. It is sorting numbers.</p>
+        <p>That means three things are always worth asking: <strong>What features was it measuring?</strong> <strong>Whose data drew the decision boundary?</strong> And <strong>whose experience gets averaged out by the accuracy number?</strong> Most people reading headlines about AI never think to ask those questions. You do now.</p>
+      </div>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">You Can Now See What Most People Miss</div>
+      <p>Every time you encounter a story about an AI system making a mistake — a wrong arrest, a misdiagnosis, a biased hiring decision — the underlying mechanism is almost always a classifier that generalized badly from its training data. Knowing this, you can ask the right questions instead of just being surprised.</p>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Lesson 1 Quiz →</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1: Feature Detective →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 1 ═══ -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 1</h1>
+    <div class="tagline">What a Classifier Actually Does</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-1">
+      <div class="quiz-q">1. What is a "feature" in the context of a machine classifier?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A human-designed rule about what category something belongs to</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">A measurable numerical property of the input that serves as evidence for a category</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The final label the classifier assigns to an input</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A visualization of the training data plotted on a graph</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Features are numerical measurements — pixel brightness, word counts, frequency ratios — that the classifier uses as evidence. The machine never perceives the input directly; it operates on these numbers.</div>
+      <div class="quiz-feedback wrong">Not quite. A feature is a numerical measurement extracted from the input. Rules are written by humans; features are measured from data.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-2">
+      <div class="quiz-q">2. A hospital deploys a skin-cancer classifier that achieves 96% accuracy overall. A dermatologist notices it misses melanoma in darker-skinned patients at twice the rate. What does this most likely reveal about how the system was built?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">The algorithm is mathematically incorrect and needs to be rewritten</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">The threshold for what counts as melanoma was set too high</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">The training data underrepresented darker-skinned patients, so the decision boundary was drawn poorly for them</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">Accuracy above 90% means the system is fair for all groups</button>
+      </div>
+      <div class="quiz-feedback right">Exactly right. High overall accuracy can coexist with systematic failure on underrepresented groups. The decision boundary was learned from data that skewed toward lighter skin tones, so it works poorly where the training data was thin.</div>
+      <div class="quiz-feedback wrong">Think about training data. If the training examples were mostly one type of patient, the decision boundary learned from them may not generalize to other patients — even if the overall accuracy number looks fine.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-3">
+      <div class="quiz-q">3. What is a decision boundary?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The maximum confidence score a classifier is allowed to output</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The list of categories a classifier knows about</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">The line (or surface) in feature space that separates one category from another</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">The point at which a classifier stops training and its weights are locked</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The decision boundary is the dividing line in the space of all possible feature combinations. Everything on one side gets one label; everything on the other side gets the other label.</div>
+      <div class="quiz-feedback wrong">The decision boundary is the dividing line in feature space. Inputs on one side get one label; inputs on the other side get a different label.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-4">
+      <div class="quiz-q">4. Google Photos responded to the 2015 gorilla misclassification primarily by removing the "gorilla" label entirely. What does this approach NOT solve?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">The immediate embarrassment of the offensive label appearing</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">The underlying problem that certain groups of people were underrepresented in the training data</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">The possibility of that specific label appearing again</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Press coverage about the incident</button>
+      </div>
+      <div class="quiz-feedback right">Right. Deleting a label is a patch, not a fix. The training data still doesn't represent certain groups well, which means other misclassifications with other labels remain possible — and the system's accuracy is still unequal across groups.</div>
+      <div class="quiz-feedback wrong">Think about what removing a label does and doesn't change. It prevents that specific word from appearing, but it doesn't change the underlying data or how well the system learned to represent different groups of people.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-5">
+      <div class="quiz-q">5. You're designing a spam filter. Which feature would MOST likely help distinguish spam from legitimate email?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">The time zone of the sender</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">The total number of characters in the email</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-5')">The ratio of capital letters to total letters in the subject line</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Whether the email has a greeting at the top</button>
+      </div>
+      <div class="quiz-feedback right">Good reasoning. Spam emails often use ALL CAPS for emphasis in subject lines ("CLAIM YOUR PRIZE NOW"). A high caps ratio is a measurable, consistent pattern. The other features are either too variable or too easy to game.</div>
+      <div class="quiz-feedback wrong">Think about what patterns actually differ between spam and real email in a consistent, measurable way. Some features are too noisy or too easy to fake to be useful.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 1 ═══ -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1 — Feature Detective</h1>
+    <div class="tagline">You're auditing a classifier. Your job is to find its blind spots.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: Independent Auditor</h4>
+      <p>A company has built an automated content moderation classifier. It scans social media posts and labels them either "safe" or "harmful." The company says it's 94% accurate. You've been asked to evaluate whether it should be deployed. Your lab partner will push back on your reasoning — that's the point.</p>
+      <div class="lab-prompt">Start by describing two specific features the classifier might be using to detect "harmful" content — and then explain why each feature could cause problems for certain groups of users. Take a position. Your partner will challenge it.</div>
+    </div>
+    <div class="lab-chat" id="chat-l1">
+      <div class="lab-chat-header">
+        <span>Lab Partner — CIPHER</span>
+        <span class="chat-badge">Auditor Mode</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">94% accuracy sounds pretty good, right? Before you start poking holes, tell me: what two features do you think this content classifier is probably using, and why would those features cause problems? Be specific — I'm not accepting vague answers.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Describe the features and their problems..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LESSON 2: Training Data — The World You Show the Machine
+     ═══════════════════════════════════════════ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 2</div>
+    <h1>Training Data — The World You Show the Machine</h1>
+    <div class="tagline">A classifier learns from examples. Which examples you choose is everything.</div>
+    <div class="lesson-question">If you could hand-pick every example a machine learned from, what would you be tempted to leave out — and who would pay for that choice?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Washington, D.C. — October 2018">
+      <p class="story-text">In October 2018, <span class="char">Amazon</span> quietly shut down a recruiting AI tool it had been developing for four years. The system was designed to do something Amazon desperately wanted: automatically review resumes and score candidates on a scale of one to five stars, filtering out the weak ones before a human recruiter ever looked at them.</p>
+      <p class="story-text">The system had been trained on ten years of Amazon's own hiring data — resumes submitted between 2004 and 2014 and the hiring decisions made on them. It learned from what Amazon had actually done. The problem: Amazon's tech workforce during that decade was overwhelmingly male. The classifier learned, very efficiently, that certain patterns correlated with being hired. Those patterns included not going to all-women's colleges. They included not having the word <em>"women's"</em> anywhere on the resume — as in "Captain of Women's Chess Club" or "Women in Engineering scholarship recipient."</p>
+      <p class="story-text">The system wasn't programmed to discriminate. Nobody wrote a rule that said "penalize women." It discovered the correlation on its own, from data that reflected a decade of human hiring decisions that had, themselves, systematically disadvantaged women. The machine learned the bias because the bias was in the data.</p>
+    </div>
+
+    <div class="section-heading">What Training Data Actually Is</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>When you train a classifier, you show it a collection of labeled examples: "this is spam," "this is not spam," "this resume got hired," "this one didn't." That collection is the training data. The classifier's entire understanding of the world comes from these examples. It has no other source of information. It cannot look outside the dataset. It cannot apply common sense. It learns exactly what the data teaches it — nothing more, nothing less.</p>
+        <p>This means training data is not neutral. It is a record of decisions, measurements, and observations made by people — people who had biases, made errors, worked in institutions with particular histories. When you hand that data to a machine and ask it to learn from it, you are asking it to replicate the patterns in those decisions, including the bad ones.</p>
+        <p>Amazon's data reflected ten years of human bias in tech hiring. The machine faithfully compressed that history into a scoring function. When Amazon's engineers found out, they tried to fix it — telling the system to ignore certain signals. But because gender correlates with so many other things (school names, club names, volunteer descriptions, writing style patterns), they couldn't fully remove the signal. They shut the tool down instead.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">The Core Principle</div>
+      <p>A classifier trained on biased data doesn't become unbiased just because a computer is running it. Automation amplifies the patterns in training data. It makes them faster, more consistent, and harder to notice — which can make bias worse, not better.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">Three Ways Training Data Goes Wrong</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Training data fails in predictable patterns. Once you know them, you'll see them everywhere.</p>
+
+        <p><strong>1. Historical bias.</strong> The data reflects past human decisions that were themselves unfair. Amazon's case is a textbook example. When you train on past outcomes in domains where discrimination existed — lending, hiring, criminal justice — you bake that discrimination into the model.</p>
+
+        <p><strong>2. Representation bias.</strong> Some groups appear rarely or not at all in the training data. Recall Google Photos: when your training dataset has thousands of images of light-skinned faces and hundreds of dark-skinned faces, the decision boundary for "human face" gets drawn much more precisely for one group than the other. The system isn't trying to discriminate — it's just uncertain where it hasn't seen much data.</p>
+
+        <p><strong>3. Measurement bias.</strong> The labels in the training data were assigned in a way that wasn't consistent across groups. Imagine a classifier trained to predict "creditworthiness" using historical loan data. But historically, banks scrutinized loan applications from Black applicants more aggressively than white applicants. That means more defaults from white applicants may have gone undetected and unrecorded. The data looks like one group is riskier, when really the measurement process was uneven.</p>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card"><div class="fc-name">Historical Bias</div><div class="fc-desc">Data reflects past decisions made under conditions of unfairness. The classifier learns to reproduce those decisions.</div></div>
+      <div class="feature-card"><div class="fc-name">Representation Bias</div><div class="fc-desc">Some groups appear so rarely that the model's decision boundary is poorly defined for them. It works well on who it saw most.</div></div>
+      <div class="feature-card"><div class="fc-name">Measurement Bias</div><div class="fc-desc">Labels were assigned less consistently for some groups. The data looks like real signal but actually reflects inconsistent observation.</div></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">The Harder Problem: You Can't Always Fix It by Adding Data</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>A natural response to representation bias is: just add more data from underrepresented groups. Sometimes that works. But it doesn't work for historical bias, because the additional data you have access to was generated under the same unfair conditions. If you add more hiring decisions from 2015–2020 to fix Amazon's classifier, and those decisions were also made in an industry with gender imbalances, you've added more data with the same historical bias baked in.</p>
+        <p>And there's a deeper issue: sometimes the "correct" label is itself contested. Classifiers trained to predict recidivism (whether a convicted person will commit another crime) use data about who got re-arrested. But re-arrest rates are affected by how intensely police patrol different neighborhoods. The data reflects policing practices, not just individual behavior. You can't fix that with more data — you'd need different data collected under different conditions.</p>
+        <p>This is why the question of training data is not just a technical problem. It is a political and ethical one. The decisions about what data to collect, whose outcomes to treat as "ground truth," and what the training labels actually mean — those are all human choices that happen before the algorithm runs.</p>
+      </div>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">Institutional-Level Stakes</div>
+      <p>In 2019, the U.S. Department of Housing and Urban Development sued Facebook over its ad-targeting system, arguing that it functioned as an illegal housing discrimination tool. The algorithm hadn't been designed to discriminate. But it had learned, from user behavior data, that certain ads correlated with certain demographic groups — and it used that to target or exclude users from seeing housing ads. The training data was the world's existing segregation patterns. The algorithm made them faster and more efficient. Courts are still working out how the Fair Housing Act applies to machine classifiers. You are living in the era where these rules are being written.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Ethical Question — No Clean Answer</div>
+      <p>If a company can't build a hiring classifier that doesn't reproduce historical discrimination, should they use one at all — even if human recruiters are also biased, just more slowly and less consistently? Is a biased algorithm better or worse than a biased human, and does the answer change depending on who's asking?</p>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz 2 →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 2 ═══ -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 2</h1>
+    <div class="tagline">Training Data — The World You Show the Machine</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q2-1">
+      <div class="quiz-q">1. Amazon's recruiting AI penalized resumes that mentioned "women's" organizations. The engineers did NOT program this rule. Where did it come from?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">A hidden software bug introduced during deployment</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">The classifier learned the correlation from ten years of historically male-skewed hiring decisions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">An engineer manually labeled women's colleges as lower-ranked</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">The algorithm was designed by a team with documented gender bias</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The system discovered the correlation itself because the training data — real Amazon hiring decisions over ten years — underrepresented women who were hired. The bias wasn't programmed; it was learned.</div>
+      <div class="quiz-feedback wrong">Nobody programmed a rule. The classifier found the pattern in the training data automatically. That data reflected a decade of human hiring decisions made in an industry with documented gender imbalances.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-2">
+      <div class="quiz-q">2. A school district wants to use a classifier to predict which students are at risk of dropping out, trained on five years of attendance and grade data. What is the MOST important question to ask before deploying it?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">What programming language was used to build the model?</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Does the model run fast enough to process all students each week?</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Were the conditions that caused students to drop out in the training data the same for all demographic groups, or did some groups face additional barriers the data doesn't capture?</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Is the interface easy for teachers to use?</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. The most important question is whether the training data fairly represents the conditions different students faced. If certain groups had barriers (housing instability, language barriers, school resource gaps) that attendance records don't capture, the model will misread those students.</div>
+      <div class="quiz-feedback wrong">Technical performance questions matter, but the most consequential question is about the training data itself — specifically, whether the historical dropout patterns reflect systemic conditions that affect certain groups differently.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-3">
+      <div class="quiz-q">3. What is "measurement bias" in training data?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">When the training dataset is too small to produce good accuracy</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">When the input features use the wrong units of measurement</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">When the labels in the training data were assigned inconsistently across groups, making the data appear to reflect real differences when it actually reflects uneven observation</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">When the classifier measures too many features and overfits to the training examples</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Measurement bias happens when the process of generating the labels wasn't applied equally. If one group was scrutinized more intensely, their data will show more "failures" — not because they fail more, but because they were watched more closely.</div>
+      <div class="quiz-feedback wrong">Measurement bias is about the labeling process, not the size or units of the data. It occurs when the same behavior gets labeled differently depending on who is doing the behavior or who is doing the observing.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-4">
+      <div class="quiz-q">4. Why might simply "adding more data" from underrepresented groups fail to fix historical bias?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Because larger datasets take longer to train on and slow down the algorithm</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Because the additional data was often generated under the same unfair historical conditions, so it carries the same bias forward</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Because classifiers can only use a fixed number of training examples</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Because more data always leads to overfitting</button>
+      </div>
+      <div class="quiz-feedback right">Right. If the historical conditions that produced the bias are still operating when the new data is collected, the additional examples carry the same patterns. More data of the same biased type isn't a solution.</div>
+      <div class="quiz-feedback wrong">The issue isn't quantity — it's quality and conditions. If new data about underrepresented groups was collected under the same unfair circumstances (same biased hiring managers, same unequal policing patterns), adding it just reinforces the problem.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-5">
+      <div class="quiz-q">5. A recidivism classifier (predicting who will re-offend) is trained on re-arrest data from neighborhoods with very different levels of police presence. This is an example of which type of bias?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Representation bias — certain neighborhoods appear too rarely</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Algorithmic bias — the math is applied incorrectly to certain groups</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-5')">Measurement bias — re-arrest rates don't measure re-offending equally across neighborhoods because policing intensity varies</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Historical bias — the algorithm was built using data from decades ago</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Re-arrest is a measurement that depends on police presence. In heavily policed areas, the same behavior generates more arrests. The data looks like it reflects individual behavior but actually reflects surveillance patterns — that's measurement bias.</div>
+      <div class="quiz-feedback wrong">Think about what the label "re-arrested" actually measures. Is it the same thing as "re-offended"? In heavily policed neighborhoods, the same behavior generates more arrests — so the label isn't applied consistently across areas.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 2 ═══ -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2 — Training Data Auditor</h1>
+    <div class="tagline">You're deciding whether a training dataset is safe to use.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: Data Ethics Reviewer</h4>
+      <p>A city wants to build a classifier to predict which neighborhoods need additional social services — food assistance, mental health support, youth programs. They propose to train it on five years of 911 call data, school suspension rates, and emergency room visits by zip code. They say it's objective because it's all real data. You've been asked to evaluate whether this training data should be used.</p>
+      <div class="lab-prompt">Identify at least one specific type of bias that could be embedded in this training data and explain how it would affect which neighborhoods the classifier recommends for services. Then take a position: is this dataset usable, fixable, or should it be abandoned? Defend your answer.</div>
+    </div>
+    <div class="lab-chat" id="chat-l2">
+      <div class="lab-chat-header">
+        <span>Lab Partner — CIPHER</span>
+        <span class="chat-badge">Data Ethics Mode</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">Interesting problem. Before you decide whether the dataset is usable, I need you to name a specific type of bias — historical, representation, or measurement — and explain exactly how it shows up in this particular data. Don't be abstract. Use the 911 call data, the suspension rates, or the ER visits specifically.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Identify a specific bias type and explain it with this dataset..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LESSON 3: How a Classifier Learns — Weights, Errors, and Iteration
+     ═══════════════════════════════════════════ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 3</div>
+    <h1>How a Classifier Learns — Weights, Errors, and Iteration</h1>
+    <div class="tagline">Learning is not a moment. It is a process of making and correcting mistakes — thousands of times.</div>
+    <div class="lesson-question">What actually happens inside a machine when it "learns" to classify something — and who decides when it's learned enough?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Toronto, Canada — 2012">
+      <p class="story-text">In the fall of 2012, a team of researchers led by <span class="char">Alex Krizhevsky</span>, supervised by <span class="char">Geoffrey Hinton</span> at the University of Toronto, entered a computer vision competition called <span class="char">ImageNet Large Scale Visual Recognition Challenge (ILSVRC)</span>. The competition had been running since 2010. The best systems that year were making classification errors on about 26% of images. Krizhevsky's system — a deep neural network he called <em>AlexNet</em> — achieved an error rate of 15.3%. The second-place team's error rate was 26.2%. AlexNet hadn't just won. It had nearly cut the error rate in half.</p>
+      <p class="story-text">The result sent shockwaves through the field. Within two years, deep neural networks had replaced almost every other approach to image classification. The approach wasn't new — Hinton had been pushing it for decades. What changed in 2012 was that the hardware had finally caught up: AlexNet ran on two consumer graphics cards that could perform the billions of calculations required for training in a reasonable amount of time. The same training job that would have taken weeks now took days.</p>
+      <p class="story-text">But what had AlexNet actually learned? Nobody could fully say. It had adjusted millions of numerical values — called <em>weights</em> — through a process that looked at each image, made a guess, measured how wrong the guess was, and nudged each weight in a direction that would make future guesses less wrong. Repeat that 1.2 million times per training pass, for dozens of passes. That was the learning.</p>
+    </div>
+
+    <div class="section-heading">Weights: What Gets Adjusted When a Classifier Learns</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>A weight is a number that controls how much influence one feature has on the final classification decision. Think of it as a volume knob on a mixing board. You have dozens of knobs — one for each feature. Turn a knob up, and that feature gets more say in the classification. Turn it down, and it barely matters.</p>
+        <p>When a classifier is initialized (created fresh), its weights are usually set to small random numbers. The system doesn't know anything yet. Then training begins: you show it a labeled example, it makes a prediction, and you calculate how wrong the prediction was. That wrongness is called the <em>loss</em>. The training algorithm then adjusts every single weight slightly — in the direction that would have produced less loss on that example. Then you show it the next example and do it again. This process, called <em>gradient descent</em>, repeats across the entire training dataset, often hundreds of times over.</p>
+        <p>By the end, the weights have settled into values that produce reasonably small loss across the training examples. The system has learned — not by understanding anything, but by nudging a million dials until the numbers worked out.</p>
+      </div>
+    </div>
+
+    <div class="key-term"><span class="kt-term">Weight</span><span class="kt-def">A number that controls how much a given feature influences the classification output. Weights are what get adjusted during training.</span></div>
+    <div class="key-term"><span class="kt-term">Loss</span><span class="kt-def">A measure of how wrong the classifier's prediction was on a given example. Training minimizes the average loss across all examples.</span></div>
+    <div class="key-term"><span class="kt-term">Gradient Descent</span><span class="kt-def">The process of adjusting weights in the direction that reduces loss, one small step at a time, over thousands of iterations.</span></div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">Overfitting: Learning the Wrong Lesson</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Here is the most counterintuitive problem in machine learning: a classifier can get worse by learning too well from its training data. This is called <em>overfitting</em>.</p>
+        <p>Imagine you're studying for a test by memorizing every practice problem — not the underlying concept, just the exact answers. When the real test shows up with slightly different questions, you're lost. You learned the surface patterns of the practice problems, not the general principle. A classifier does the same thing when it adjusts its weights so precisely to the training examples that it starts capturing the noise — the random, specific quirks of those particular examples — rather than the general patterns that would apply to new data.</p>
+        <p>An overfit classifier has very low training error and very high real-world error. It looks brilliant on the data it was trained on and fails on anything else. This is why you always need to test a classifier on data it has never seen before — called a <em>test set</em>. If the performance gap between training data and test data is large, the model has overfit. It learned the training set, not the world.</p>
+        <p>The practical fix is usually to use simpler models (fewer weights), use more training data, or use techniques like <em>regularization</em> that deliberately penalize the classifier for having weights that are too extreme. All of these push the model toward learning general patterns rather than specific quirks.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">For the Curious — What Gradient Descent Actually Computes</div>
+      <p>Imagine the loss as a landscape — a hilly surface where the height at any point represents how wrong the classifier is with those particular weight values. Gradient descent is a process of finding the lowest valley in that landscape by always stepping in the downhill direction. The "gradient" is just the slope — the direction of steepest descent. You follow the slope until you stop getting lower. That's the trained model.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">Confidence Scores: The Classifier Is Always Making a Bet</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Most classifiers don't just output a category — they output a probability. "I'm 91% confident this is spam." "I'm 63% confident this mole is benign." That number is not a guarantee. It's the classifier's internal accounting of where the input lands relative to its decision boundary. Inputs far from the boundary get high confidence scores. Inputs near the boundary get low confidence scores.</p>
+        <p>This matters enormously in deployment. A hospital that uses a cancer-detection classifier without checking confidence scores will treat a 91%-confident result the same as a 54%-confident result. The classifier is nearly guessing on the second one, but the output looks the same: "BENIGN." Many deployed systems show only the final label, hiding the confidence score. This is a design choice — and a consequential one.</p>
+        <p>It also matters that confidence doesn't equal calibration. A classifier that outputs "90% confident" should be right about 90% of the time on those cases. But many classifiers are <em>overconfident</em> — they say 90% when they're actually right only 70% of the time. Calibration — matching confidence scores to real accuracy — is a separate property from accuracy, and it requires separate evaluation.</p>
+      </div>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">What You Can Now See That Most People Miss</div>
+      <p>When a company says their AI is "94% accurate," you now know that number hides several things: whether that accuracy is equal across groups, what happens on inputs near the decision boundary, whether confidence scores are calibrated, and whether the model was tested on data that truly resembles the real world it will encounter. You have the framework to ask every question that number is designed to prevent you from asking.</p>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Ethical Question — No Clean Answer</div>
+      <p>If a medical classifier outputs a confidence score of 57% but the label says "benign," should the doctor see the score? Some argue that showing uncertainty causes doctors to second-guess themselves unnecessarily. Others argue that hiding it is a form of deception that removes the doctor's ability to make informed decisions. Who should control what information a deployed AI shows its users?</p>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz 3 →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 3 ═══ -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 3</h1>
+    <div class="tagline">How a Classifier Learns — Weights, Errors, and Iteration</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q3-1">
+      <div class="quiz-q">1. What is the role of "weights" in a classifier?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">They determine how many categories the classifier can recognize</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">They control how much influence each feature has on the classification output, and are adjusted during training to reduce error</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">They are the numerical values of the input features before processing</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">They measure how much training data was used to build the model</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Weights are the dials that control each feature's influence. Training adjusts them incrementally to reduce prediction error across the training examples.</div>
+      <div class="quiz-feedback wrong">Weights are not about the input data — they're about how the classifier processes that data. Each weight controls how much a given feature "matters" in making the final prediction, and those values are adjusted during training.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-2">
+      <div class="quiz-q">2. A classifier gets 99% accuracy on its training data but only 72% accuracy when tested on new data. What has most likely happened?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">The test data is incorrect and should be relabeled</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">The classifier has overfit — it memorized patterns specific to the training data rather than learning general features</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">The classifier was not trained for long enough</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">The test data comes from a different country so the features don't apply</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A large gap between training accuracy and test accuracy is the signature of overfitting. The model learned the quirks of the training examples rather than the general pattern that would apply to new data.</div>
+      <div class="quiz-feedback wrong">When a model performs dramatically better on training data than on new test data, it's almost always overfitting — learning the surface patterns of the specific training examples rather than the general signal that applies to new cases.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-3">
+      <div class="quiz-q">3. What does "gradient descent" accomplish during classifier training?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It selects which features to include in the model by ranking their importance</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It divides the training data into batches to prevent overfitting</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">It adjusts each weight in the direction that reduces the prediction error, iterating until the error stabilizes at a low value</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">It generates new training examples when the original dataset is too small</button>
+      </div>
+      <div class="quiz-feedback right">Right. Gradient descent is the mechanism by which weights get updated. At each step, the algorithm calculates which direction to adjust each weight to reduce loss, and takes a small step in that direction. Repeat thousands of times.</div>
+      <div class="quiz-feedback wrong">Gradient descent is specifically about weight adjustment. It's the process of finding the values of all the weights that produce the lowest possible prediction error on the training data, by following the mathematical slope (gradient) of the error surface.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-4">
+      <div class="quiz-q">4. A medical classifier outputs "BENIGN" with a confidence score of 55%. A doctor using the system only sees the label "BENIGN," not the score. What is the most significant risk this design creates?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The doctor might distrust all AI systems if they see too many borderline cases</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The classifier will give lower confidence scores over time if doctors don't see them</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">The doctor treats a near-guess the same as a high-confidence prediction, potentially skipping additional testing on a case the classifier was essentially uncertain about</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The hospital's liability is increased because the doctor didn't make the decision</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. A 55% confidence score means the input was very close to the decision boundary — the classifier is barely leaning toward "benign." Without that information, the doctor has no reason to flag it for additional review.</div>
+      <div class="quiz-feedback wrong">Think about what the confidence score is telling you. 55% means the classifier is essentially flipping a coin. If the doctor can't see that, they can't make an informed decision about whether to seek a second opinion or run more tests.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-5">
+      <div class="quiz-q">5. What does it mean for a classifier to be well-calibrated?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">It produces the same output every time it sees the same input</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-5')">Its confidence scores match its actual accuracy rates — when it says 80% confident, it's right about 80% of the time</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">It was trained on data collected using precise measurement instruments</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Its weights were set by domain experts rather than learned from data</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Calibration means confidence scores are trustworthy as probability estimates. An overconfident classifier might say "90% sure" when it's only right 65% of the time on those cases — which is a dangerous gap in high-stakes applications.</div>
+      <div class="quiz-feedback wrong">Calibration is specifically about whether confidence scores are accurate probability estimates. A well-calibrated model's "80% confident" predictions should be correct about 80% of the time. A poorly calibrated model might be systematically overconfident or underconfident.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 3 ═══ -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3 — Confidence Score Investigator</h1>
+    <div class="tagline">You're deciding how a deployed classifier should communicate uncertainty.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: System Design Critic</h4>
+      <p>A company is deploying a loan approval classifier. It makes a binary decision — approve or deny — and outputs a confidence score. Leadership wants to hide the confidence score from loan officers, arguing that it "simplifies the process" and "prevents second-guessing." You've been asked whether this is acceptable.</p>
+      <div class="lab-prompt">Take a position on whether hiding confidence scores from loan officers is acceptable. Use at least one concept from Lesson 3 — calibration, overfitting, or loss — to support your argument. Then consider: does your answer change if the classifier is well-calibrated versus overconfident? Defend your reasoning.</div>
+    </div>
+    <div class="lab-chat" id="chat-l3">
+      <div class="lab-chat-header">
+        <span>Lab Partner — CIPHER</span>
+        <span class="chat-badge">System Design Mode</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">Interesting position to have to defend. Before I push back: what does hiding the confidence score actually do to the loan officer's ability to make a decision? And does it matter whether the classifier is well-calibrated or overconfident — or is that irrelevant to your argument? Be specific about the mechanism, not just the outcome.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Take a position on hiding confidence scores — use concepts from Lesson 3..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LESSON 4: Building Your Own — From Scratch, In Your Head
+     ═══════════════════════════════════════════ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 6 · Lesson 4</div>
+    <h1>Building Your Own — From Scratch, In Your Head</h1>
+    <div class="tagline">You now have enough to design a real classifier — and to see exactly where it could go wrong.</div>
+    <div class="lesson-question">If you had to build a classifier that affected real people's lives, what decisions would you make — and what would you be responsible for?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="New York City — January 2020">
+      <p class="story-text">In January 2020, the city of <span class="char">New York</span> began piloting a system called <span class="char">Ava</span> — an AI tool developed by a company called Palantir — to help the Administration for Children's Services predict which families were at high risk of child abuse or neglect. The system pulled in data from dozens of city agencies: public housing records, family court filings, benefits enrollment, prior ACS contacts. It classified families and generated risk scores.</p>
+      <p class="story-text">Critics, including researchers at New York University, pointed out a fundamental problem: the training data was overwhelmingly composed of families who had already had contact with ACS — which in New York City meant predominantly Black and Hispanic families in low-income neighborhoods. Families in wealthier neighborhoods who had similar dynamics but had never been flagged were absent from the training data entirely. The classifier had no way to learn from cases it had never seen.</p>
+      <p class="story-text">A child welfare professor named <span class="char">Dorota Wiszniewski</span> put it plainly: "The model can't predict what it hasn't been trained on. And what it hasn't been trained on is the rest of the city." The system was quietly suspended after the mayor who championed it left office. But the design decisions that led to its problems were not unusual. They were, in fact, the standard approach. That's what makes this worth understanding.</p>
+    </div>
+
+    <div class="section-heading">The Five Decisions You Make When You Build a Classifier</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Building a classifier isn't just writing code. It's a series of design decisions, each of which shapes what the system can and can't do, who it will work well for, and who it might harm. Here they are in order.</p>
+      </div>
+    </div>
+
+    <ol class="step-list">
+      <li><strong>Define the output categories.</strong> What labels will the system assign? This sounds obvious, but it's one of the most consequential choices. "At risk" versus "not at risk" sounds clean — but "at risk of what, exactly, on what timeline, as measured how?" Every ambiguity in the category definition gets inherited by everyone downstream who reads the output.</li>
+      <li><strong>Choose your features.</strong> What measurable properties of the input will you use as evidence? This choice determines what the classifier pays attention to and what it ignores. Choosing "neighborhood" as a feature in a risk classifier encodes geography as a proxy for behavior. Choosing "prior agency contact" in a child welfare classifier encodes historical surveillance patterns as evidence of future risk.</li>
+      <li><strong>Collect and audit your training data.</strong> What labeled examples will you train on? Who labeled them, under what conditions, with what instructions? This is where historical bias, representation bias, and measurement bias either get caught or get baked in. This step deserves more time than every other step combined.</li>
+      <li><strong>Choose and train your model.</strong> How complex should the model be? What loss function are you minimizing? How will you prevent overfitting? This is the step most people think of as "the AI part," but by this point, the most important decisions have already been made.</li>
+      <li><strong>Decide how to deploy the output.</strong> Will the classifier's output be one input to a human decision, or will it automate the decision entirely? Will confidence scores be shown? What happens when the system is wrong? Who bears the consequences — the people making the decision, or the people the decision is about?</li>
+    </ol>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">Precision vs. Recall: You Can't Always Have Both</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Here's a real engineering tension that has direct ethical consequences. When you're tuning a classifier, you can adjust the decision boundary to make two competing kinds of errors.</p>
+        <p><em>False positives</em> happen when the classifier says "yes" but the truth is "no." In a disease classifier: telling a healthy person they're sick. In a fraud detector: blocking a legitimate transaction. In a child welfare system: flagging a family that's actually fine.</p>
+        <p><em>False negatives</em> happen when the classifier says "no" but the truth is "yes." In a disease classifier: telling a sick person they're healthy. In a fraud detector: letting fraud through. In a child welfare system: missing a family that genuinely needs intervention.</p>
+        <p><strong>Precision</strong> measures how often the classifier is right when it says yes. If it flags 10 cases and 9 are actually problems, precision is 90%. <strong>Recall</strong> measures how many of the actual problems the classifier caught. If there were 15 real problems and the classifier caught 9, recall is 60%.</p>
+        <p>Here's the tension: moving the decision boundary to catch more true positives (higher recall) almost always increases false positives too (lower precision). You can't maximize both simultaneously without infinite data and a perfect model. So which errors are acceptable? That is not a technical question. It is an ethical one — and the answer differs depending on whose false positives and false negatives you're counting.</p>
+      </div>
+    </div>
+
+    <div class="visual-classifier">
+      <div class="vc-title">Precision / Recall Tradeoff — Child Welfare Risk Classifier</div>
+      <div class="vc-row"><span class="vc-label">High Recall</span><div class="vc-bar-wrap"><div class="vc-bar high" style="width:91%"></div></div><span class="vc-val">Catches more real cases — but flags more innocent families</span></div>
+      <div class="vc-row"><span class="vc-label">Balanced</span><div class="vc-bar-wrap"><div class="vc-bar med" style="width:60%"></div></div><span class="vc-val">Some of each type of error</span></div>
+      <div class="vc-row"><span class="vc-label">High Precision</span><div class="vc-bar-wrap"><div class="vc-bar low" style="width:30%"></div></div><span class="vc-val">Rarely flags innocent families — but misses more real cases</span></div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="section-heading">Responsibility: Who Is Accountable When a Classifier Is Wrong?</div>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>This is the question that no technical manual covers, but it's the one that matters most once a system is deployed. When New York's child welfare classifier generated a false positive and a family was investigated unnecessarily — who was responsible? The company that built the model? The city agency that deployed it? The caseworker who used the score without questioning it? The policymaker who approved the procurement?</p>
+        <p>Right now, the legal and regulatory answers to that question are genuinely unsettled. In the European Union, the AI Act (which became law in 2024) requires that high-risk AI systems — including those used in employment, education, social services, and law enforcement — meet standards for transparency, human oversight, and accuracy. In the United States, there is no equivalent federal law. The rules are being written now. Not in ten years. Now.</p>
+        <p>Every engineer, product manager, policy analyst, and journalist who understands how classifiers actually work — what features they use, where their training data came from, what their confidence scores mean, and where their decision boundaries sit — has a role in how those rules get written. You understand all of that now. Most people making these decisions professionally don't.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-label">Ethical Question — No Clean Answer</div>
+      <p>If you were the engineer who built New York's child welfare classifier, and you knew your training data was biased toward already-surveilled families, would you ship the system? What if you were told it would still catch some cases that would otherwise be missed — cases where real children were harmed? Does the possibility of catching even one genuine case justify deploying a biased system? Who gets to make that calculation?</p>
+    </div>
+
+    <div class="gold-callout">
+      <div class="callout-label">What You Now Understand</div>
+      <p>You have gone from "AI classifies things" to understanding the full chain: features are measured from inputs, weights are learned from labeled training data through gradient descent, decision boundaries are drawn in feature space, confidence scores quantify proximity to those boundaries, and all of it is shaped by choices made before the algorithm ran. That is the complete picture. Most people who talk about AI publicly — including many who are paid to — don't have it. You do.</p>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz 4 →</button>
+  </div>
+</div>
+
+<!-- ═══ QUIZ 4 ═══ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 4</h1>
+    <div class="tagline">Building Your Own — From Scratch, In Your Head</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q4-1">
+      <div class="quiz-q">1. Why was New York's child welfare classifier (piloted in 2020) structurally unable to predict risk for families across the whole city?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The algorithm used was too simple to handle a large city's population</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">It was trained only on families who had already had ACS contact, so families who had similar dynamics but no prior agency contact were absent from the training data</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The system was built by a private company instead of a government agency</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">It lacked access to sufficient computing power to process citywide data</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A classifier can only learn patterns that are present in its training data. Families who had never been flagged by ACS — including many in wealthier neighborhoods — were invisible to the model. It learned what "risk looks like" only from families the system had already been watching.</div>
+      <div class="quiz-feedback wrong">The core problem was the training data's coverage, not the algorithm's complexity or who built it. A classifier that has only ever seen families flagged by ACS has no model of what "unflagged but at-risk" looks like — because that type of case was never in its training set.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-2">
+      <div class="quiz-q">2. A fraud detection classifier has high recall but low precision. In practice, this means:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">It rarely catches actual fraud but almost never bothers legitimate customers</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">It catches most real fraud cases but also blocks many legitimate transactions, generating many false alarms</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">It is extremely accurate but only on a limited set of fraud types</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">It works well for large transactions but misses small-scale fraud</button>
+      </div>
+      <div class="quiz-feedback right">Right. High recall means it catches a high proportion of actual fraud cases (few false negatives). Low precision means many of its positive flags are wrong (many false positives) — legitimate transactions get blocked alongside the fraud.</div>
+      <div class="quiz-feedback wrong">Recall measures how many real positives were caught. Precision measures how often a positive prediction was correct. High recall, low precision: catches most real fraud, but also raises many false alarms about legitimate transactions.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-3">
+      <div class="quiz-q">3. You're building a classifier to detect wildfires from satellite imagery. Which of the five design steps would have the MOST impact on whether the system works reliably across different climate zones?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Choosing a more powerful deep learning architecture in step 4</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Collecting and auditing training data (step 3) to ensure it includes fires from diverse climate zones, vegetation types, and seasons</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Defining precise output categories in step 1 so responders know how to act</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Deciding in step 5 to show confidence scores to dispatchers</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A classifier trained only on fires in California chaparral will have a decision boundary poorly suited to fires in boreal forests or Mediterranean scrubland. Data diversity is the foundation; everything else builds on it.</div>
+      <div class="quiz-feedback wrong">Apply what you've learned about training data. A model can only learn patterns it has seen. If the training data is geographically narrow, the decision boundary will be drawn for that specific context — and may fail badly in other climate zones.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-4">
+      <div class="quiz-q">4. The EU AI Act (2024) classifies systems used in child welfare, employment screening, and law enforcement as "high-risk." What is the most likely reasoning behind singling out these applications?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">These applications require the most computing power and are therefore most expensive to audit</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">These applications are newer and therefore less tested than other AI uses</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">Errors in these applications affect people's fundamental rights and life opportunities, and the people affected often have limited power to challenge or correct the decision</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">These applications are used by governments, which are subject to more regulation than private companies</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The EU's reasoning is about consequence severity and power asymmetry. A false positive in a spam filter is inconvenient. A false positive in a child removal algorithm, a hiring screen, or a criminal risk score changes a person's life in ways they may never be able to challenge.</div>
+      <div class="quiz-feedback wrong">Think about what makes these applications different from, say, a music recommendation system. The errors have severe real-world consequences for specific people, and those people typically have little ability to understand, appeal, or correct the classifier's decision.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-5">
+      <div class="quiz-q">5. When choosing features for a classifier, using "zip code" or "neighborhood" as a feature is risky primarily because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Geographic data is usually inaccurate and hard to verify</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Zip codes change frequently and would make the model quickly outdated</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-5')">Neighborhood is a proxy for race and income due to historical segregation, so the classifier effectively uses demographics as a hidden feature even if they were never explicitly included</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">It makes the model too complex and leads to overfitting</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. Geographic features often encode demographic information because of historical patterns of residential segregation. Including zip code can introduce racial and economic proxies into the classifier's decision-making without anyone explicitly programming them there.</div>
+      <div class="quiz-feedback wrong">The problem isn't data quality or model complexity — it's what geography encodes. Because of decades of redlining and residential segregation, where someone lives is correlated with their race and income. A classifier using zip code is indirectly using those demographics whether or not they're explicitly listed as features.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+  </div>
+</div>
+
+<!-- ═══ LAB 4 ═══ -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4 — Design Your Own Classifier</h1>
+    <div class="tagline">You're the designer. You make the calls. Then defend them.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: System Architect</h4>
+      <p>You've been asked to design a classifier for a real use case of your choice. It could be a school attendance risk predictor, a disease detection system, a content moderation filter, a loan approval system, or something you invent. Walk through all five design decisions: output categories, feature selection, training data plan, model choices, and deployment constraints. Your lab partner will pressure-test every decision.</p>
+      <div class="lab-prompt">Start by stating what you want to build and what your output categories are. Then name two features you'd use and explain why you chose them — and one feature you'd deliberately avoid and why. Your partner will push back on at least one of your choices.</div>
+    </div>
+    <div class="lab-chat" id="chat-l4">
+      <div class="lab-chat-header">
+        <span>Lab Partner — CIPHER</span>
+        <span class="chat-badge">Architect Mode</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">You're the designer now — that means you're responsible for every choice. Tell me what you're building, what the output categories are, two features you'd use, and one you'd exclude. I'll accept your reasoning only if it holds up. What are you building?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Describe your classifier design — output categories, features chosen, features excluded..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODULE TEST
+     ═══════════════════════════════════════════ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module Test — Build a Mini Classifier Yourself</h1>
+    <div class="tagline">15 questions · Pass at 80% (12/15 correct)</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt-1">
+      <div class="quiz-q">1. What is the fundamental job of a classifier?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">To generate new content based on patterns in training data</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">To take an input and assign it to one of a fixed set of categories based on its measured features</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">To store and retrieve information from a large database</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">To translate one type of data representation into another</button>
+      </div>
+      <div class="quiz-feedback right">Correct.</div>
+      <div class="quiz-feedback wrong">A classifier assigns inputs to categories — spam/not-spam, cat/dog, approve/deny — based on measured features of the input.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-2">
+      <div class="quiz-q">2. In the 2015 Google Photos incident, what was the root cause of the misclassification?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A software bug that assigned incorrect labels to specific image formats</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Severe underrepresentation of dark-skinned people in the training data, causing a poorly drawn decision boundary for those images</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">An intentional design decision that was later reversed</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Low image resolution that prevented accurate feature extraction</button>
+      </div>
+      <div class="quiz-feedback right">Correct.</div>
+      <div class="quiz-feedback wrong">The cause was representation bias in the training data — not a bug, not intentional, but a failure to include diverse enough examples when drawing the decision boundary for human faces.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-3">
+      <div class="quiz-q">3. A decision boundary that was learned from training data primarily collected from wealthy urban neighborhoods will most likely fail on:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Inputs that use a different file format than the training data</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">Inputs from rural areas or lower-income communities whose patterns differ from those that shaped the boundary</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Any input submitted after the model was trained</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">Inputs where the correct label is rare in the overall population</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The decision boundary was learned from one context. When the input comes from a different context whose patterns weren't represented in training, the boundary is poorly positioned for those inputs.</div>
+      <div class="quiz-feedback wrong">Decision boundaries are only drawn well for the distribution of data that shaped them. Inputs from underrepresented contexts — different geography, income level, demographic background — land in regions of feature space where the model hasn't been well-calibrated.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-4">
+      <div class="quiz-q">4. Amazon's recruiting AI downgraded resumes mentioning "women's" organizations because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">The algorithm was programmed with explicit gender-based rules by its developers</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">The system confused the word "women's" with other negative signals in the vocabulary</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">The training data — ten years of male-skewed hiring decisions — correlated that pattern with not being hired, so the model learned to penalize it</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Female candidates who had those items on resumes performed worse in interviews historically</button>
+      </div>
+      <div class="quiz-feedback right">Correct. No rule was written. The correlation was discovered automatically from training data that reflected a decade of human discrimination in tech hiring.</div>
+      <div class="quiz-feedback wrong">No explicit rule existed. The system found the statistical correlation in training data — women were hired less in tech, so features correlated with female applicants were weighted negatively by the learning process.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-5">
+      <div class="quiz-q">5. "Measurement bias" refers to which of the following?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Using measurement units that differ across training examples</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Labels in the training data that were assigned inconsistently across groups, reflecting uneven observation rather than real behavioral differences</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Training on a dataset that doesn't have enough examples to be statistically reliable</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">The process of measuring feature values from raw input data</button>
+      </div>
+      <div class="quiz-feedback right">Correct.</div>
+      <div class="quiz-feedback wrong">Measurement bias is about the labeling process — when some groups are monitored more intensively than others, their data appears to show more "failures," even if actual behavior is the same.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-6">
+      <div class="quiz-q">6. What does "loss" measure during classifier training?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The amount of memory the training process consumes</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The proportion of the dataset not used in a given training pass</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">How wrong the classifier's prediction was on a given example — the signal that drives weight adjustment</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">The number of features that were excluded from the final model</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Loss is the error signal. The training algorithm minimizes it by adjusting weights in the direction that would have produced a smaller loss on that example.</div>
+      <div class="quiz-feedback wrong">Loss is the measure of prediction error. It's what the training algorithm tries to minimize by nudging the model's weights — more wrong prediction means higher loss, which triggers bigger weight adjustments.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-7">
+      <div class="quiz-q">7. An overfit classifier is characterized by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Very low training error but much higher error on new, unseen test data</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Very high error on all data, including the training set</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Low confidence scores on inputs near the center of each category cluster</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">A decision boundary that is too simple to separate the categories</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Overfitting means the model learned the specific examples rather than the general pattern — brilliant on training data, poor on anything new.</div>
+      <div class="quiz-feedback wrong">Overfitting produces a model that performs well on what it trained on (low training error) but fails on new data (high test error) because it learned quirks rather than general patterns.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-8">
+      <div class="quiz-q">8. A classifier is "well-calibrated" means:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Its weights were initialized using domain expert knowledge rather than random values</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">It was trained and tested on datasets of equal size</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Its confidence scores accurately reflect real-world accuracy rates — 80% confidence predictions are right about 80% of the time</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">It produces the same output regardless of how input data is formatted</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Calibration is about whether the probability outputs are trustworthy estimates, not just whether the final binary prediction is accurate.</div>
+      <div class="quiz-feedback wrong">Calibration means confidence scores correspond to actual correctness rates. An overconfident but miscalibrated model might say "90% confident" on cases where it's only actually right 60% of the time.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-9">
+      <div class="quiz-q">9. In the precision/recall tradeoff, raising the classification threshold to reduce false positives will typically:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Increase both precision and recall simultaneously</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">Increase precision but decrease recall — fewer false alarms, but more real cases missed</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Decrease precision and decrease recall simultaneously</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Have no effect on recall as long as the training data is unchanged</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Moving the boundary to reduce false positives (higher precision) means the classifier only flags high-confidence cases — so it will miss more real positives (lower recall).</div>
+      <div class="quiz-feedback wrong">Precision and recall trade off. A stricter threshold means fewer false alarms (better precision) but also misses more true positives (worse recall). You can't optimize one without a cost to the other.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-10">
+      <div class="quiz-q">10. The New York child welfare classifier was "unable to predict risk for families across the whole city" primarily because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">The Palantir-built system used outdated machine learning methods</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Its training data only included families already flagged by ACS, making families with no prior contact invisible to the model</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">The city did not provide the system with enough computing resources</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Child welfare risk is inherently unpredictable by any algorithmic system</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The classifier's world was bounded by the cases it had seen. Families outside that surveillance history were outside its model of what "risk" looks like.</div>
+      <div class="quiz-feedback wrong">The issue was training data coverage. The model only learned from families already in the system — which skewed heavily toward lower-income communities of color. Families in wealthier, less-surveilled communities were absent from the training set.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-11">
+      <div class="quiz-q">11. Using "zip code" as a feature in a loan approval classifier creates risk primarily because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Geographic data is frequently inaccurate and hard to verify</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Due to historical segregation, zip code is a proxy for race and income, effectively introducing demographic discrimination even without explicitly using those variables</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Zip codes are too coarse-grained to provide meaningful information about individuals</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Including geographic features always causes overfitting in financial models</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Proxy features that correlate with protected characteristics introduce the discrimination through a side door — technically "race-neutral" while functionally race-correlated.</div>
+      <div class="quiz-feedback wrong">The problem is correlation: because of historical redlining and segregation, where someone lives correlates with their race and income. A classifier using location is indirectly using those demographics even if they were never explicitly included as features.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-12">
+      <div class="quiz-q">12. Google's response to the gorilla misclassification — removing the "gorilla" label entirely — was inadequate because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The label should have been replaced with a more technically accurate biological term</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">It patched the visible symptom without fixing the training data representation problem that would cause similar misclassifications with other labels</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Removing categories makes classifiers significantly less accurate overall</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">The fix was technically difficult to implement correctly</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Deleting a label prevents that specific output from appearing but leaves the underlying representation failure in place. As of 2023, Google Photos still would not label any gorillas, chimps, or similar primates — evidence that the root cause was never addressed.</div>
+      <div class="quiz-feedback wrong">Removing the label doesn't fix the fact that the training data underrepresented dark-skinned people. That gap in the training data means other misclassifications remain possible — the gorilla label was just the most visible symptom.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-13">
+      <div class="quiz-q">13. AlexNet's 2012 ImageNet breakthrough was significant primarily because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">It was the first AI system to correctly classify any image</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">It nearly halved the previous best error rate, demonstrating that deep neural networks trained on GPUs could dramatically outperform other methods — triggering a rapid shift across the field</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">It was the first system to explain its classification decisions in plain language</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">It demonstrated that classifiers could operate without any training data at all</button>
+      </div>
+      <div class="quiz-feedback right">Correct. AlexNet's 15.3% error rate versus the field's 26.2% was not a marginal improvement — it was a signal that the whole approach to image classification should change, and within two years, it had.</div>
+      <div class="quiz-feedback wrong">AlexNet cut the error rate nearly in half — from ~26% to 15.3%. That gap was so large it redirected an entire research field, demonstrating that deep neural networks running on consumer GPUs were a fundamentally superior approach.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-14">
+      <div class="quiz-q">14. The EU AI Act (2024) requires human oversight for "high-risk" AI applications. What concept from this module best explains why human oversight is especially important near the decision boundary?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Humans are faster than AI systems at processing edge cases</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Inputs near the decision boundary have low confidence scores — the classifier is essentially uncertain — and those are precisely the cases where human judgment adds the most value</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Human oversight ensures the training data is updated in real time</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">EU law requires human oversight only when the training data was collected in Europe</button>
+      </div>
+      <div class="quiz-feedback right">Correct. High confidence inputs — those far from the decision boundary — are where the classifier is most reliable and automation adds the most value. Low confidence inputs — near the boundary — are where the classifier is uncertain and human judgment is most needed.</div>
+      <div class="quiz-feedback wrong">Think about what the decision boundary means. Inputs near it produce low confidence scores — the classifier is barely leaning one way. That's precisely where a human reviewer's judgment could change the outcome and where automation is riskiest.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-15">
+      <div class="quiz-q">15. A journalist writes: "The AI approved 91% of loan applications from Neighborhood A but only 67% from Neighborhood B." Based on what you've learned, which follow-up question is MOST important?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">What programming language was used to build the loan classifier?</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Did the classifier output confidence scores, and were they shown to loan officers?</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">Were both neighborhoods equally represented in the training data, and does "neighborhood" (or a correlated proxy) appear as a feature — effectively encoding historical discrimination into the classifier's decision boundary?</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Was the classifier trained using gradient descent or a different optimization method?</button>
+      </div>
+      <div class="quiz-feedback right">Excellent. The approval rate gap is the symptom. The question that gets to the cause is about training data representation and whether geographic proxies for race and income shaped the decision boundary. That's the question worth asking.</div>
+      <div class="quiz-feedback wrong">The most consequential question connects the symptom (approval rate gap) to the mechanism (training data and feature selection). Did the training data equally represent both neighborhoods? Is neighborhood — or a correlated proxy — embedded in the features? That's where discrimination enters the system.</div>
+    </div>
+
+    <div class="mt-score" id="mt-score"></div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1')">Restart Module</button>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how-ai-actually-works';
+var MODULE_ID='how-m6';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are CIPHER, a sharp, peer-level lab partner for a student studying AI classifiers in the AESOP AI Academy course "Inside the Machine: AI Unpacked." This lab is about content moderation classifiers. The student is acting as an independent auditor evaluating whether a social media content moderation classifier (94% accurate) should be deployed. Your job: push back on vague answers, ask for specifics, challenge assumptions, and demand the student take and defend a position. You do NOT lecture. You ask pointed questions. When the student names a feature, ask why that feature specifically could harm certain communities. When they say something is wrong, ask them what they would do instead and why. Keep responses to 3-5 sentences maximum. Never agree too easily — make them earn their conclusion. Stay on topic: classifiers, features, bias, training data, deployment ethics.',
+  l2:'You are CIPHER, a sharp, peer-level lab partner for a student studying AI training data bias in the AESOP AI Academy course "Inside the Machine: AI Unpacked." This lab focuses on a city dataset (911 calls, suspension rates, ER visits by zip code) being considered for training a social services allocation classifier. The student is acting as a data ethics reviewer. Your job: press the student to be specific about which type of bias (historical, representation, or measurement) applies to which specific data source. If they say "measurement bias," ask them exactly which measurement is being applied unevenly and to whom. If they say the dataset is unusable, ask what they would use instead. If they say it\'s fixable, ask what the fix would cost and who would verify it worked. Keep responses to 3-5 sentences. Never lecture. Stay on topic: training data, bias types, labeling, ground truth, deployment decisions.',
+  l3:'You are CIPHER, a sharp, peer-level lab partner for a student studying how classifiers learn in the AESOP AI Academy course "Inside the Machine: AI Unpacked." This lab is about whether it is acceptable to hide confidence scores from loan officers using an AI approval classifier. The student must take and defend a position. Your job: ask them to explain the mechanism — not just the outcome. If they say hiding scores is wrong, ask: wrong for whom, wrong in what way, and does it matter whether the classifier is well-calibrated? If they say it\'s acceptable, ask: what happens when the classifier is overconfident and the loan officer trusts it completely? Push them to engage with both calibration and the overconfidence problem specifically. Keep responses to 3-5 sentences. Do not lecture. Stay on topic: confidence scores, calibration, loss, deployment decisions, decision boundary.',
+  l4:'You are CIPHER, a sharp, peer-level lab partner for a student in the AESOP AI Academy course "Inside the Machine: AI Unpacked." This lab asks the student to design their own classifier — output categories, features chosen, features deliberately excluded — for a use case of their choice. Your job: accept their design description and immediately challenge at least one specific choice. If they chose a feature, ask whether it could be a proxy for something protected (race, gender, income). If they excluded a feature, ask whether that exclusion might create representation gaps. Ask them to justify their precision/recall tradeoff decision. Ask who bears the cost of the classifier\'s false positives. Keep responses to 3-5 sentences. Do not lecture. Challenge their reasoning, do not replace it. Stay on topic: classifier design, features, training data, precision/recall, deployment responsibility.'
+};
+
+var _fallbackResponses={
+  l1:[
+    "Interesting. You named a feature — but tell me something specific: which community would be most harmed if that feature is overweighted, and why? Give me a real example, not a hypothetical.",
+    "Okay, so you've identified a problem with that feature. Here's my follow-up: what would you use instead, and how do you know your replacement feature doesn't have the same issue in a different form?",
+    "You're building toward a position. Before I accept it: if the company refuses to change the features and just wants to ship it, what do you recommend they do? Delay? Deploy with caveats? Refuse the contract entirely?"
+  ],
+  l2:[
+    "You've named a bias type. Now make it concrete: which specific data source (911 calls, suspensions, or ER visits) exhibits it, and explain exactly how the measurement process creates the unequal labeling.",
+    "So you think the dataset has measurement bias. Here's my challenge: could you collect data that doesn't have this problem? What would that data look like, and what would it cost to get it?",
+    "You've made a call on whether to use the dataset. Defend it: what's the worst-case outcome if you're wrong? Who pays for that outcome — the city, the algorithm team, or the families in the neighborhoods being assessed?"
+  ],
+  l3:[
+    "You've taken a position on hiding confidence scores. Now explain the mechanism: what specifically happens differently in the loan officer's decision-making when they see a 55% score versus when they only see 'DENIED'?",
+    "Interesting argument. Does it change if the classifier is well-calibrated — meaning its 55% predictions are right exactly 55% of the time? Is the problem the score itself, or the uncertainty it represents?",
+    "You're close to a defensible answer. Last challenge: if showing confidence scores makes loan officers second-guess good decisions as often as it makes them catch bad ones, is transparency still worth it? How would you measure whether transparency is actually helping?"
+  ],
+  l4:[
+    "You've named two features. Here's my first challenge: could either of them function as a proxy for race, income, or another protected characteristic? Walk me through the correlation, not just the intent.",
+    "You excluded a feature deliberately — good. But here's what I want to know: does excluding it create a blind spot? Is there a group whose risk pattern depended on that feature, and will the classifier now miss them?",
+    "You've sketched a design. Now tell me: in your system, who bears the cost of false positives? The person who was wrongly flagged, the institution using the tool, or the company that built it? Your answer affects every design decision you made."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackResponses[labId]||_fallbackResponses['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1)%replies.length;
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function resetChat(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  while(msgs.children.length>1) msgs.removeChild(msgs.lastChild);
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(typeof chatExchanges[labId]==='undefined') chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking...');
+  var success=false;
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var messages=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I\'m having trouble connecting. Try again in a moment.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking&&thinking.parentNode) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      success=true;
+      break;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      success=true;
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+// Initialize
+updateTabs();
+</script>
+</body>
+</html>

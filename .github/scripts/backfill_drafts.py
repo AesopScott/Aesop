@@ -156,16 +156,30 @@ def call_claude(client, prompt: str) -> dict:
 
 def merge_into_draft(draft: dict, llm_out: dict, allowed_groups: list[str]) -> dict:
     """Merge the model's output into the draft, preserving existing fields and
-    enforcing that mega_group is one of the allowed values."""
+    enforcing that mega_group is one of the allowed values.
+
+    Precedence for mega_group:
+      1. If the draft already has a mega_group that's in the allowed list,
+         KEEP IT — manual classifications must not be overwritten by the
+         LLM (this is critical because we sometimes hand-classify a batch
+         before running the backfill).
+      2. Otherwise take the LLM's mega_group if it's valid.
+      3. Otherwise fall back to the first allowed group as a last resort.
+    """
     new = dict(draft)
 
-    mg = (llm_out.get("mega_group") or "").strip()
-    if mg in allowed_groups:
-        new["mega_group"] = mg
-    elif draft.get("mega_group"):
-        new["mega_group"] = draft["mega_group"]
+    existing_mg = (draft.get("mega_group") or "").strip()
+    llm_mg      = (llm_out.get("mega_group") or "").strip()
+    if existing_mg in allowed_groups:
+        new["mega_group"] = existing_mg
+    elif llm_mg in allowed_groups:
+        new["mega_group"] = llm_mg
+    elif existing_mg:
+        # existing value is set but not in allowed list — keep it anyway
+        # so curator sees the mismatch rather than having it silently
+        # rewritten
+        new["mega_group"] = existing_mg
     else:
-        # Default to the first allowed group as a last resort
         new["mega_group"] = allowed_groups[0]
 
     # Map original module titles → llm-produced sub/description by index,

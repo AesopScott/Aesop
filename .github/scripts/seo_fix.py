@@ -241,6 +241,77 @@ def main() -> None:
     for tag, n in sorted(counts.items()):
         print(f"  {tag:<20}: +{n}")
 
+    print("\n-- Course JSON-LD -------------------------------------------")
+    inject_course_jsonld()
+
+
+COURSE_JSONLD_START = '<!-- SEO:COURSE-JSONLD-START -->'
+COURSE_JSONLD_END   = '<!-- SEO:COURSE-JSONLD-END -->'
+
+def inject_course_jsonld() -> None:
+    import json as _json
+    registry_path = ROOT / 'ai-academy' / 'modules' / 'course-registry.json'
+    hub_path      = ROOT / 'ai-academy' / 'modules' / 'electives-hub.html'
+
+    if not registry_path.exists():
+        print('  WARN: course-registry.json not found, skipping Course JSON-LD.')
+        return
+    if not hub_path.exists():
+        print('  WARN: electives-hub.html not found, skipping Course JSON-LD.')
+        return
+
+    registry = _json.loads(registry_path.read_text(encoding='utf-8'))
+    live = [v for v in registry.values() if v.get('status') == 'live']
+    live.sort(key=lambda c: c.get('title', ''))
+
+    items = []
+    for i, course in enumerate(live, 1):
+        cid  = course.get('id', '')
+        name = course.get('title', cid)
+        desc = course.get('desc', name)
+        url  = f'https://aesopacademy.org/ai-academy/modules/electives-hub.html?course={cid}'
+        items.append({
+            '@type': 'ListItem',
+            'position': i,
+            'item': {
+                '@type': 'Course',
+                'name': name,
+                'description': desc,
+                'url': url,
+                'provider': {
+                    '@type': 'EducationalOrganization',
+                    'name': 'AESOP AI Academy',
+                    'url': 'https://aesopacademy.org',
+                },
+            },
+        })
+
+    schema = {
+        '@context': 'https://schema.org',
+        '@type': 'ItemList',
+        'name': 'AESOP AI Academy Courses',
+        'description': 'Story-driven AI literacy courses for learners of all ages.',
+        'url': 'https://aesopacademy.org/ai-academy/modules/electives-hub.html',
+        'numberOfItems': len(items),
+        'itemListElement': items,
+    }
+    block = (
+        '\n<script type="application/ld+json">\n'
+        + _json.dumps(schema, ensure_ascii=False, indent=2)
+        + '\n</script>\n'
+    )
+
+    content = hub_path.read_text(encoding='utf-8')
+    if COURSE_JSONLD_START in content and COURSE_JSONLD_END in content:
+        before = content[:content.index(COURSE_JSONLD_START) + len(COURSE_JSONLD_START)]
+        after  = content[content.index(COURSE_JSONLD_END):]
+        content = before + block + after
+    else:
+        content = content.replace('</head>', COURSE_JSONLD_START + block + COURSE_JSONLD_END + '\n</head>', 1)
+
+    hub_path.write_text(content, encoding='utf-8')
+    print(f'  Injected Course ItemList ({len(live)} live courses) into electives-hub.html.')
+
 
 if __name__ == "__main__":
     main()

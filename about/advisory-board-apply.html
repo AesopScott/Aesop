@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.8 | 2026-04-28 -->
+<!-- v1.0.9 | 2026-04-28 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -521,8 +521,8 @@ body {
 
 <script src="/assets/top-banner-v2.js?v=2"></script>
 <script>
-var currentMode      = 'join';
-var allMembers       = [];
+var currentMode   = 'join';
+var jsonCache     = {};
 
 var regularBoards    = document.querySelectorAll('input[name="board"]:not(#board-founders)');
 var foundersCheckbox = document.getElementById('board-founders');
@@ -539,34 +539,66 @@ var BOARD_DISPLAY = {
   foundation:    'Founders Board'
 };
 
-/* ── MEMBER DATA ── */
-fetch('/about/advisory-board-members.json')
-  .then(function(r) { return r.json(); })
-  .then(function(data) { allMembers = data.members || []; });
+var BOARD_JSON = {
+  brand:         '/about/advisory-board-members.json',
+  education:     '/about/education-advisory-board-members.json',
+  technical:     '/about/technical-advisory-board-members.json',
+  military:      '/about/military-advisory-board-members.json',
+  international: '/about/international-advisory-board-members.json',
+  foundation:    '/about/advisory-board-members.json'
+};
+
+var BOARD_FILTER = {
+  brand:         function(m) { return m.boards ? m.boards.indexOf('brand') !== -1 : m.board !== 'foundation'; },
+  education:     function()  { return true; },
+  technical:     function()  { return true; },
+  military:      function()  { return true; },
+  international: function()  { return true; },
+  foundation:    function(m) { return m.board === 'foundation'; }
+};
 
 /* ── BOARD RADIO CHANGE ── */
 document.querySelectorAll('input[name="upd-board"]').forEach(function(r) {
   r.addEventListener('change', function() {
-    var key = r.value;
-    var sel = document.getElementById('upd-member');
-    sel.innerHTML = '<option value="">Select your name…</option>';
-    sel.disabled  = false;
+    var key    = r.value;
+    var sel    = document.getElementById('upd-member');
+    var filter = BOARD_FILTER[key] || function() { return true; };
+    var url    = BOARD_JSON[key];
 
-    var matches = allMembers.filter(function(m) {
-      return m.board === key || (m.boards && m.boards.indexOf(key) !== -1);
-    });
-    matches.forEach(function(m) {
-      var opt = document.createElement('option');
-      opt.value       = m.name;
-      opt.textContent = m.name;
-      opt.dataset.bio = m.bio || '';
-      sel.appendChild(opt);
-    });
-
+    sel.innerHTML = '<option value="">Loading…</option>';
+    sel.disabled  = true;
     document.getElementById('upd-bio-wrap').style.display = 'none';
     document.getElementById('upd-ctx-wrap').style.display = 'none';
     document.getElementById('upd-bio').value = '';
-    updateState();
+
+    function populate(members) {
+      var matches = members.filter(filter);
+      sel.innerHTML = '<option value="">Select your name…</option>';
+      matches.forEach(function(m) {
+        var opt = document.createElement('option');
+        opt.value       = m.name;
+        opt.textContent = m.name;
+        opt.dataset.bio = m.bio || '';
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      updateState();
+    }
+
+    if (jsonCache[url]) {
+      populate(jsonCache[url]);
+    } else {
+      fetch(url + '?_=' + Date.now())
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          jsonCache[url] = data.members || [];
+          populate(jsonCache[url]);
+        })
+        .catch(function() {
+          sel.innerHTML = '<option value="">Could not load members — try again</option>';
+          sel.disabled  = false;
+        });
+    }
   });
 });
 

@@ -46,6 +46,7 @@ ALLOWED_GROUPS = {
     ],
     "Youth": [
         "How AI Works", "Make & Create", "Truth & Safety",
+        "AI Toolbox", "AI in School", "Code with AI",
     ],
     "Cybersecurity": [
         "Cybersecurity",

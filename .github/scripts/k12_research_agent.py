@@ -428,9 +428,12 @@ For EACH topic, return a JSON object with exactly these fields:
 - "id": kebab-case slug (e.g. "ai-and-fake-news")
 - "title": short, compelling title a student would want to click (max 6 words)
 - "mega_group": which Youth nav section this course belongs in. Pick EXACTLY one of:
-    "How AI Works"   — how AI thinks, learns, and what it really is under the hood
-    "Make & Create"  — courses where the learner builds, designs, codes, or creates with AI
-    "Truth & Safety" — bias, misinformation, deepfakes, scams, ethics, privacy, digital citizenship
+    "How AI Works"   — how AI thinks, learns, perceives, and communicates (mechanism / explanation)
+    "Make & Create"  — building, designing, no-code automation, or general creating with AI (excludes coding-as-skill)
+    "AI Toolbox"     — getting productive with specific named AI tools (ChatGPT, Claude, Gemini, etc.) and choosing between them
+    "AI in School"   — using AI in classroom contexts: tutoring, study skills, homework, teaching, school-specific risks
+    "Code with AI"   — programming/coding with AI assistants (Copilot, Cursor, Scratch-to-Python, etc.)
+    "Truth & Safety" — bias, misinformation, deepfakes, scams, ethics, privacy, digital citizenship, agentic-risk
 - "modules": array of EXACTLY 4 module objects (focused 4-module arc). Each module object MUST have these three fields:
     {"title": "<short, max 6 words>",
      "sub":   "<one-sentence subtitle, 6-12 words, framing what the module covers>",

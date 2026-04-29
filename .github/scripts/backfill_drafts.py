@@ -54,6 +54,7 @@ DRAFT_FOLDERS = {
     ]),
     "aip/k12-drafts":   ("Youth", [
         "How AI Works", "Make & Create", "Truth & Safety",
+        "AI Toolbox", "AI in School", "Code with AI",
     ]),
     "aip/cyber-drafts": ("Cybersecurity", [
         "Cybersecurity",

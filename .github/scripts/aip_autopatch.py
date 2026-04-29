@@ -181,6 +181,9 @@ def insert_tab_button(html, tab_html, draft_title, target_group=None):
         "How AI Works":    '<div class="mega-cat">🧠 How AI Works</div>',
         "Make & Create":   '<div class="mega-cat">✏️ Make &amp; Create</div>',
         "Truth & Safety":  '<div class="mega-cat">🛡️ Truth &amp; Safety</div>',
+        "AI Toolbox":     '<div class="mega-cat">🛠️ AI Toolbox</div>',
+        "AI in School":   '<div class="mega-cat">🎓 AI in School</div>',
+        "Code with AI":   '<div class="mega-cat">💻 Code with AI</div>',
         # Sub-category aliases — use these in draft JSON "mega_group" field for
         # precise placement without having to edit courses.html manually
         "Strategy":        '<div class="mega-cat">📋 Strategy &amp; Org</div>',

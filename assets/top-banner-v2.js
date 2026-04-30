@@ -191,7 +191,7 @@
     '      <span class="tb-stat" data-stat="learners" hidden><span class="tb-stat-num" data-stat-num>\u2014</span><span class="tb-stat-lbl">Learners this week</span></span>' +
     '      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>41</span><span class="tb-stat-lbl">Courses live</span></span>' +
     '      <span class="tb-stat" data-stat="coursesInDev"><span class="tb-stat-num" data-stat-num>42</span><span class="tb-stat-lbl">In development</span></span>' +
-    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>7</span><span class="tb-stat-lbl">Languages</span></span>' +
+    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>8</span><span class="tb-stat-lbl">Languages</span></span>' +
     '    </div>' +
     '    <a href="/report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">⚑</span>Report</a>' +
     '    <div class="tb-utilities">' +
@@ -209,6 +209,8 @@
     '        <button class="lang-btn" data-lang="ko" title="\ud55c\uad6d\uc5b4"><span class="fi fi-kr"></span> KO</button>' +
     '        <div class="lang-divider"></div>' +
     '        <button class="lang-btn" data-lang="ur" title="\u0627\u0631\u062f\u0648"><span class="fi fi-pk"></span> UR</button>' +
+    '        <div class="lang-divider"></div>' +
+    '        <button class="lang-btn" data-lang="tr" title="T\u00fcrk\u00e7e"><span class="fi fi-tr"></span> TR</button>' +
     '      </div>' +
     '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
     '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +

@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-29 23:58 UTC
+**Generated:** 2026-04-30 00:24 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 121 · **Warnings:** 819
+**Errors:** 123 · **Warnings:** 826
 
 ---
 
@@ -62,7 +62,7 @@
 
 ## Cross-References
 
-### Errors (25)
+### Errors (27)
 
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `applied` is linked in courses.html but not defined in electives-hub or registry
@@ -81,11 +81,13 @@
 - 🔴 **ORPHAN_LINK**: Course `photography` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `rag` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `robot` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `running` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `security` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `synthetic` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `talking` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `the` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `truth` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `vertex` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `whats` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `working` is linked in courses.html but not defined in electives-hub or registry
@@ -152,10 +154,17 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
 
+### Warnings (4)
+
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-and-fake-information/ai-and-fake-information-m5.html` — The read operation timed out
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-for-marketing-and-growth/ai-for-marketing-and-growth-m4.html` — The read operation timed out
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-security-and-red-teaming/ai-security-and-red-teaming-m7.html` — The read operation timed out
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-work-and-automation-deep-dive/ai-work-and-automation-deep-dive-m4.html` — The read operation timed out
+
 
 ## Module File Integrity
 
-### Warnings (819)
+### Warnings (822)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m2.html` has no COURSE_ID constant
@@ -387,6 +396,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-gaming-and-interactive-media-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-gaming-and-interactive-media-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-gaming-and-interactive-media-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-gaming-and-interactive-media-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-gaming-and-interactive-media-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-in-gaming-and-interactive-media-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-healthcare-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-healthcare-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-in-healthcare-m3.html` has no COURSE_ID constant
@@ -981,7 +993,7 @@
 
 ## Summary
 
-**121 error(s) require attention:**
+**123 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1040,11 +1052,13 @@
 1. Course `photography` is linked in courses.html but not defined in electives-hub or registry
 1. Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 1. Course `rag` is linked in courses.html but not defined in electives-hub or registry
+1. Course `robot` is linked in courses.html but not defined in electives-hub or registry
 1. Course `running` is linked in courses.html but not defined in electives-hub or registry
 1. Course `security` is linked in courses.html but not defined in electives-hub or registry
 1. Course `synthetic` is linked in courses.html but not defined in electives-hub or registry
 1. Course `talking` is linked in courses.html but not defined in electives-hub or registry
 1. Course `the` is linked in courses.html but not defined in electives-hub or registry
+1. Course `truth` is linked in courses.html but not defined in electives-hub or registry
 1. Course `vertex` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry

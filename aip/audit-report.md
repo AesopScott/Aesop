@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 16:58 UTC
+**Generated:** 2026-04-30 17:43 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 143 · **Warnings:** 980
+**Errors:** 143 · **Warnings:** 982
 
 ---
 
@@ -191,7 +191,7 @@
 
 ## Module File Integrity
 
-### Warnings (969)
+### Warnings (971)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -1097,6 +1097,8 @@
 - 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `the-reasoning-revolution-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `truth-detectives-ai-and-fake-info-m2.html` has no COURSE_ID constant

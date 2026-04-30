@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 18:11 UTC
+**Generated:** 2026-04-30 20:25 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 143 · **Warnings:** 983
+**Errors:** 143 · **Warnings:** 997
 
 ---
 
@@ -191,7 +191,7 @@
 
 ## Module File Integrity
 
-### Warnings (972)
+### Warnings (986)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -238,6 +238,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-alignment-for-everyone-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-and-architecture-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-and-climate-m2.html` has no COURSE_ID constant
@@ -540,6 +548,12 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-risk-for-business-leaders-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-risk-for-business-leaders-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-risk-for-business-leaders-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-basics-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-basics-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-basics-m2.html` has no COURSE_ID constant

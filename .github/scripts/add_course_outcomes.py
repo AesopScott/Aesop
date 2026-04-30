@@ -320,11 +320,16 @@ def main() -> int:
     import anthropic
     client = anthropic.Anthropic(api_key=api_key)
 
+    # Run candidates in parallel via a thread pool. Each worker holds
+    # one in-flight Claude call; the SDK is thread-safe for sync use.
+    # File writes are local and lockless because each worker writes to
+    # a distinct path.
     written = 0
     failed  = 0
-    for i, (m1, slug, text, intro, ctx) in enumerate(candidates, 1):
-        rel = m1.relative_to(REPO)
-        print(f"[{i}/{len(candidates)}] {rel}  ({ctx['headline'] or slug})")
+    done    = 0
+    total   = len(candidates)
+
+    def process_one(idx, m1, slug, text, intro, ctx):
         try:
             mods = module_summary_for(slug, lookup)
             prompt = build_prompt(slug, ctx, mods)
@@ -342,11 +347,28 @@ def main() -> int:
             if new_html == text:
                 raise RuntimeError("insert anchor not found")
             m1.write_text(new_html, encoding="utf-8")
-            written += 1
-            print(f"  ok — {len(bullets)} bullets inserted")
+            return (idx, m1, slug, ctx, len(bullets), None)
         except Exception as e:
-            failed += 1
-            print(f"  FAIL: {e}")
+            return (idx, m1, slug, ctx, 0, e)
+
+    workers = max(1, args.workers)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [
+            pool.submit(process_one, i, m1, slug, text, intro, ctx)
+            for i, (m1, slug, text, intro, ctx) in enumerate(candidates, 1)
+        ]
+        for fut in as_completed(futures):
+            idx, m1, slug, ctx, n_bullets, err = fut.result()
+            done += 1
+            rel = m1.relative_to(REPO)
+            label = ctx['headline'] or slug
+            prefix = f"[{done}/{total}] {rel}  ({label})"
+            if err is None:
+                written += 1
+                print(f"{prefix}\n  ok — {n_bullets} bullets inserted")
+            else:
+                failed += 1
+                print(f"{prefix}\n  FAIL: {err}")
 
     print()
     print(f"Patched: {written}, failed: {failed}, total: {len(candidates)}")

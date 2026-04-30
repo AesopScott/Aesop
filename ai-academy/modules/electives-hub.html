@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.21 | 2026-04-29 -->
+<!-- v1.0.22 | 2026-04-29 -->
 <!-- electives-hub-v1.1.0 | Registry-only: all course data from course-registry.json (no hardcoded courses) | April 2026 -->
 <html lang="en">
 <head>
@@ -237,14 +237,27 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--cream);color:var(--in
   padding:1rem 1.25rem;display:flex;align-items:center;gap:1rem;
   cursor:pointer;transition:all 0.2s;margin-top:1.25rem;
 }
-.course-test-card:hover:not(.locked){border-color:var(--current-accent);background:rgba(0,0,0,0.01);}
+.course-test-card:hover:not(.locked):not(.passed){border-color:var(--current-accent);background:rgba(0,0,0,0.01);}
 .course-test-card.locked{opacity:0.4;cursor:not-allowed;}
-.course-test-card.passed{border-color:var(--green);background:rgba(45,138,94,0.03);}
+.course-test-card.passed{border-color:var(--green);background:rgba(45,138,94,0.03);cursor:default;}
 .ctc-icon{font-size:1.25rem;}
 .ctc-info{flex:1;}
 .ctc-title{font-size:0.88rem;font-weight:700;color:var(--ink);}
 .ctc-sub{font-size:0.72rem;color:var(--ink-muted);margin-top:0.15rem;}
 .ctc-pts{font-size:0.72rem;font-weight:700;color:var(--current-accent);}
+/* Bypass / Skip-Ahead card */
+.bypass-card{
+  background:var(--white);border:2px dashed #c9a05a55;border-radius:8px;
+  padding:0.85rem 1.25rem;display:flex;align-items:center;gap:1rem;
+  cursor:pointer;transition:all 0.2s;margin-top:0.6rem;
+}
+.bypass-card:hover:not(.locked):not(.passed){border-color:#c9a05a;background:rgba(201,160,90,0.04);}
+.bypass-card.locked{opacity:0.5;cursor:not-allowed;border-style:solid;}
+.bypass-card.passed{border-color:var(--green);border-style:solid;background:rgba(45,138,94,0.03);cursor:default;}
+.bypass-card .ctc-title{color:#8a6a2a;}
+.bypass-card.passed .ctc-title,.bypass-card.locked .ctc-title{color:inherit;}
+[data-theme="dark"] .bypass-card{background:#1a1a2e;border-color:#c9a05a44;}
+[data-theme="dark"] .bypass-card:hover:not(.locked):not(.passed){background:rgba(201,160,90,0.08);}
 
 /* Module content iframe area */
 .module-frame-area{padding:0;display:flex;flex-direction:column;height:100%;}
@@ -2238,10 +2251,36 @@ function allTestsPassed(cId){
   const c=getCourse(cId); if(!c) return false;
   return c.modules.every(m=>testPassed(cId,m.id));
 }
+// All quizzes done for every module (unlocks final exam on standard path)
+// Uses the enforcement-gate localStorage key: aesop-gate-{courseId}-{moduleId}
+function allMTsAttempted(cId){
+  const c=getCourse(cId); if(!c||!c.modules||!c.modules.length) return false;
+  return c.modules.every(function(m){
+    try{
+      var key='aesop-gate-'+cId+'-'+m.id;
+      var g=JSON.parse(localStorage.getItem(key)||'null');
+      return g && Array.isArray(g.q) && g.q.length>=4;
+    }catch(e){ return false; }
+  });
+}
+// Foundations courses are excluded from bypass (noTestout flag set in registry)
+function isFoundationsCourse(c){
+  return !!(c && c.noTestout);
+}
+// Read the stored final-exam result for a course
+function getFinalExamState(cId){
+  try{ return JSON.parse(localStorage.getItem('aesop-final-'+cId)||'null'); }
+  catch(e){ return null; }
+}
 function getCourse(id){ return COURSES.find(c=>c.id===id); }
 
 function totalPoints(){
-  return COURSES.filter(c=>examPassed(c.id)).reduce((s,c)=>s+c.pts,0);
+  return COURSES.reduce((s,c)=>{
+    const v=STATE.passedExams[c.id];
+    if(!v) return s;
+    // v is a factor (0.5 bypass, 1.0 standard) — legacy true treated as 1.0
+    return s + Math.round(c.pts * (typeof v==='number' ? v : 1));
+  },0);
 }
 
 // totalModulePoints — 1 point per completed module across all courses (certification currency)
@@ -2280,10 +2319,12 @@ function markTestPassed(cId, mId){
   STATE.passedTests[cId].add(mId);
   if(STATE._firebaseStub) console.log('[Firebase stub] testPassed',cId,mId);
 }
-function markExamPassed(cId){
-  STATE.passedExams[cId]=true;
+// factor: 1.0 = full credit (standard path), 0.5 = bypass credit
+function markExamPassed(cId, factor){
+  factor = (typeof factor==='number' && factor>0 && factor<=1) ? factor : 1;
+  STATE.passedExams[cId]=factor;
   STATE.earnedPoints=totalPoints();
-  if(STATE._firebaseStub) console.log('[Firebase stub] examPassed',cId,'pts:',STATE.earnedPoints);
+  if(STATE._firebaseStub) console.log('[Firebase stub] examPassed',cId,'factor:',factor,'pts:',STATE.earnedPoints);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2291,7 +2332,7 @@ function markExamPassed(cId){
 // ═══════════════════════════════════════════════════════════
 window.addEventListener('message',function(e){
   if(!e.data||typeof e.data!=='object') return;
-  const {type,courseId,moduleId,lessonId}=e.data;
+  const {type,courseId,moduleId,lessonId,passed,score,path}=e.data;
   if(type==='lessonComplete'&&courseId&&moduleId){
     if(!STATE.completedLessons[courseId]) STATE.completedLessons[courseId]={};
     if(!STATE.completedLessons[courseId][moduleId]) STATE.completedLessons[courseId][moduleId]=new Set();
@@ -2308,6 +2349,20 @@ window.addEventListener('message',function(e){
     markTestPassed(courseId,moduleId);
     markModComplete(courseId,moduleId);
     renderAll();
+  }
+  // Final exam results (standard path or bypass)
+  if(type==='finalExamPassed'&&courseId){
+    const factor = (path==='testout') ? 0.5 : 1.0;
+    markExamPassed(courseId, factor);
+    saveCertModPts();
+    // Re-render course detail so the exam card updates immediately
+    if(STATE.courseId===courseId) renderCourseDetail(courseId);
+    renderAll();
+  }
+  if(type==='finalExamFailed'&&courseId){
+    // State already stored in localStorage by the exam page.
+    // Re-render so bypass card flips to locked state if this was a testout attempt.
+    if(STATE.courseId===courseId) renderCourseDetail(courseId);
   }
 });
 
@@ -2411,12 +2466,38 @@ function selectModule(e, cId, mId){
   renderModuleFrame(cId, mId);
 }
 
-function openExam(cId){
-  if(!allModsDone(cId)) return;
-  STATE.examCourseId=cId;
-  STATE.view='exam';
-  renderAll();
-  renderExamPanel(cId);
+function openExam(cId){ openFinalExam(cId); } // legacy alias
+
+function openFinalExam(cId){
+  const c=getCourse(cId);
+  if(!c||!c.final) return;
+  if(!allMTsAttempted(cId)) return;
+  const url=c.url+c.final+'.html';
+  renderFinalExamFrame(cId, url, c.title+' — Final Exam');
+}
+
+function openBypassExam(cId){
+  const c=getCourse(cId);
+  if(!c||!c.final) return;
+  if(isFoundationsCourse(c)) return;
+  const existing=getFinalExamState(cId);
+  if(existing && existing.path==='testout' && existing.attempted) return; // one-shot guard
+  const url=c.url+c.final+'.html?mode=testout';
+  renderFinalExamFrame(cId, url, c.title+' — Bypass Exam');
+}
+
+function renderFinalExamFrame(cId, url, title){
+  const c=getCourse(cId);
+  const backLabel = c ? c.title : 'Course';
+  document.getElementById('contentArea').innerHTML=`
+    <div style="display:flex;flex-direction:column;height:100%;min-height:100vh;">
+      <div style="display:flex;align-items:center;gap:1rem;padding:0.65rem 1.5rem;background:rgba(6,14,24,0.97);border-bottom:1px solid #1a2738;flex-shrink:0;">
+        <button onclick="selectCourse('${cId}')" style="background:transparent;border:none;color:rgba(201,160,90,0.75);font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:0.06em;padding:0;">← ${backLabel}</button>
+        <span style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-left:auto;letter-spacing:0.04em;">${title}</span>
+      </div>
+      <iframe src="${url}" style="flex:1;border:none;width:100%;min-height:640px;" loading="lazy"></iframe>
+    </div>`
+;
 }
 
 function showWelcome(){
@@ -2472,6 +2553,8 @@ function renderCourseDetail(cId){
   const c=getCourse(cId);
   const ep=examPassed(cId);
   const allDone=allModsDone(cId);
+  const mtsDone=allMTsAttempted(cId);
+  const feState=getFinalExamState(cId);
 
   let h=`<div class="course-detail">
     <div class="cd-back" onclick="showWelcome()">← All Courses</div>
@@ -2534,15 +2617,90 @@ function renderCourseDetail(cId){
 
   h+=`</div>`;
 
-  // Course test card
-  h+=`<div class="course-test-card${ep?' passed':''}" onclick="${!ep?`openExam('${cId}')`:''}" >
-    <span class="ctc-icon">${ep?'🏆':'📝'}</span>
-    <div class="ctc-info">
-      <div class="ctc-title">${ep?'Course Exam — Passed!':'Course Exam'}</div>
-      <div class="ctc-sub">${ep?`Awarded ${c.pts} Core Point${c.pts>1?'s':''}`:allDone?'All modules complete — ready to take the exam':'Take the course exam'}</div>
-    </div>
-    ${ep?`<span class="ctc-pts">+${c.pts}pt${c.pts>1?'s':''} ✓</span>`:''}
-  </div>`;
+  // ── Final Exam card (standard path) ─────────────────────
+  {
+    const examFactor = typeof STATE.passedExams[cId]==='number' ? STATE.passedExams[cId] : (ep ? 1 : 0);
+    const awardedPts = Math.round(c.pts * examFactor);
+    const stdPassed  = ep && (feState ? feState.path!=='testout' : true);
+    const bypassOnly = ep && feState && feState.path==='testout' && feState.passed;
+
+    let examClass   = 'course-test-card';
+    let examOnclick = '';
+    let examIcon    = '📝';
+    let examTitle   = 'Final Exam';
+    let examSub;
+    let examBadge   = '';
+
+    if(ep){
+      examClass += ' passed';
+      examIcon   = '🏆';
+      examTitle  = 'Final Exam — Passed!';
+      examSub    = `${awardedPts} Core Point${awardedPts!==1?'s':''} awarded${examFactor<1?' (bypass credit — retake for full credit)':''}`;
+      examBadge  = `<span class="ctc-pts">+${awardedPts}pt${awardedPts!==1?'s':''} ✓</span>`;
+    } else if(!c.final){
+      examClass += ' locked';
+      examIcon   = '🔒';
+      examSub    = 'Final exam not yet available';
+    } else if(feState && feState.attempted && !feState.passed && feState.path!=='testout'){
+      // Standard path failed — allow retry (no one-shot restriction on standard)
+      if(mtsDone){ examOnclick=`openFinalExam('${cId}')`; }
+      else { examClass+=' locked'; }
+      examSub = `Last score: ${feState.score}% — 70% needed. ${mtsDone?'Try again →':'Complete module tests to unlock'}`;
+    } else if(!mtsDone){
+      examClass += ' locked';
+      examSub    = 'Complete all module tests to unlock the final exam';
+    } else {
+      examOnclick = `openFinalExam('${cId}')`;
+      examSub = `${c.modules.length} module tests done — ready for the final exam`;
+    }
+
+    h+=`<div class="${examClass}" onclick="${examOnclick}">
+      <span class="ctc-icon">${examIcon}</span>
+      <div class="ctc-info">
+        <div class="ctc-title">${examTitle}</div>
+        <div class="ctc-sub">${examSub}</div>
+      </div>
+      ${examBadge}
+    </div>`;
+  }
+
+  // ── Bypass card (test-out path) — hidden for Foundations courses ─
+  if(c.final && !isFoundationsCourse(c)){
+    const bState   = getFinalExamState(cId); // re-read for testout path
+    const bAttempted = bState && bState.path==='testout' && bState.attempted;
+    const bPassed    = bAttempted && bState.passed;
+    const alreadyFull = ep && !(bState && bState.path==='testout');
+
+    let bypassClass   = 'bypass-card';
+    let bypassOnclick = '';
+    let bypassIcon    = '⚡';
+    let bypassTitle   = 'Bypass Exam';
+    let bypassSub;
+
+    if(alreadyFull){
+      bypassClass += ' locked';
+      bypassSub = 'Course already completed — bypass not needed';
+    } else if(bPassed){
+      bypassClass += ' passed';
+      bypassIcon   = '✓';
+      bypassTitle  = 'Bypass Exam — Passed';
+      bypassSub    = `Scored ${bState.score}% — 50% credit applied. Retake the full course for 100%.`;
+    } else if(bAttempted && !bPassed){
+      bypassClass += ' locked';
+      bypassSub = `Scored ${bState.score}% — one attempt used. Start Module 1 to earn full credit.`;
+    } else {
+      bypassOnclick = `openBypassExam('${cId}')`;
+      bypassSub = 'Score 80% on a single attempt to bypass modules — earns 50% credit';
+    }
+
+    h+=`<div class="${bypassClass}" onclick="${bypassOnclick}">
+      <span class="ctc-icon" style="font-size:1.3rem;">${bypassIcon}</span>
+      <div class="ctc-info" style="flex:1;">
+        <div class="ctc-title">${bypassTitle}</div>
+        <div class="ctc-sub">${bypassSub}</div>
+      </div>
+    </div>`;
+  }
 
   h+=`</div>`;
   document.getElementById('contentArea').innerHTML=h;

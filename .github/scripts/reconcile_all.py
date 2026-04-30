@@ -55,6 +55,7 @@ STEPS = [
     ("registry → disk",   "sync_registry_to_disk.py", ["--apply"], False),
     ("tag nav buttons",   "tag_mega_buttons.py",      ["--apply"], False),
     ("dedup nav buttons", "dedup_mega_buttons.py",    ["--apply"], False),
+    ("sync panel counts", "sync_panel_counts.py",     ["--apply"], False),
     ("reconcile panels",  "reconcile_panels.py",      ["--apply"], False),
     ("sync i18n",         "sync_i18n_to_registry.py", ["--apply"], False),
     # build_stats has no dry-run mode — it always writes. Skip on dry-run.

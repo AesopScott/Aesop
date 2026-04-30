@@ -139,6 +139,10 @@ def parse_args() -> argparse.Namespace:
                     help="Read OLD from this git revision instead of a path.")
     ap.add_argument("--new-rev", default="",
                     help="Read NEW from this git revision instead of a path.")
+    ap.add_argument("--new-path", default="", dest="new_path_flag",
+                    help="Read NEW from this filesystem path "
+                         "(named flag; avoids positional-arg ambiguity when "
+                         "--old-rev is also supplied).")
     ap.add_argument("--git-path",
                     default="ai-academy/courses.html",
                     help="When using --old-rev/--new-rev, the repo-relative path "
@@ -162,11 +166,15 @@ def main() -> int:
     if args.new_rev:
         new_text = read_at_revision(args.new_rev, args.git_path)
         new_label = f"{args.new_rev}:{args.git_path}"
+    elif args.new_path_flag:
+        new_text = Path(args.new_path_flag).read_text(encoding="utf-8", errors="replace")
+        new_label = args.new_path_flag
     elif args.new_path:
         new_text = Path(args.new_path).read_text(encoding="utf-8", errors="replace")
         new_label = args.new_path
     else:
-        print("ERROR: pass either new_path positional or --new-rev", file=sys.stderr)
+        print("ERROR: pass either new_path positional, --new-path, or --new-rev",
+              file=sys.stderr)
         return 2
 
     if not new_text:

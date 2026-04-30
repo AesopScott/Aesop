@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 02:38 UTC
+**Generated:** 2026-04-30 05:50 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 141 · **Warnings:** 947
+**Errors:** 142 · **Warnings:** 972
 
 ---
 
@@ -62,7 +62,7 @@
 
 ## Cross-References
 
-### Errors (45)
+### Errors (46)
 
 - 🔴 **ORPHAN_LINK**: Course `agile` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
@@ -93,6 +93,7 @@
 - 🔴 **ORPHAN_LINK**: Course `pentesting` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `performing` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `photography` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `pick` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `rag` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `robot` is linked in courses.html but not defined in electives-hub or registry
@@ -189,7 +190,7 @@
 
 ## Module File Integrity
 
-### Warnings (936)
+### Warnings (961)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -363,6 +364,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-ethics-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-ethics-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-ethics-m9.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-ethics-foundations-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-for-graphic-design-m2.html` has no COURSE_ID constant
@@ -539,6 +548,14 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-basics-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-basics-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-safety-and-alignment-basics-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m5.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m7.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-safety-for-everyone-m8.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-security-and-red-teaming-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-security-and-red-teaming-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-security-and-red-teaming-m2.html` has no COURSE_ID constant
@@ -562,6 +579,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m3.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-social-media-m4.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-real-teaching-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-real-teaching-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-real-teaching-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-real-teaching-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-solo-founders-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-solo-founders-m2.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `ai-tools-for-solo-founders-m3.html` has no COURSE_ID constant
@@ -876,6 +897,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-the-robot-being-fair-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
@@ -934,6 +956,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `photography-and-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `photography-and-ai-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `photography-and-ai-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pick-the-right-ai-tool-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pick-the-right-ai-tool-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pick-the-right-ai-tool-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `pick-the-right-ai-tool-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-for-developers-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-for-developers-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `prompt-engineering-for-developers-m2.html` has no COURSE_ID constant
@@ -1132,7 +1158,7 @@
 
 ## Summary
 
-**141 error(s) require attention:**
+**142 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1203,6 +1229,7 @@
 1. Course `pentesting` is linked in courses.html but not defined in electives-hub or registry
 1. Course `performing` is linked in courses.html but not defined in electives-hub or registry
 1. Course `photography` is linked in courses.html but not defined in electives-hub or registry
+1. Course `pick` is linked in courses.html but not defined in electives-hub or registry
 1. Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 1. Course `rag` is linked in courses.html but not defined in electives-hub or registry
 1. Course `robot` is linked in courses.html but not defined in electives-hub or registry

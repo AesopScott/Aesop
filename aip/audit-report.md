@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 00:24 UTC
+**Generated:** 2026-04-30 00:32 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 123 · **Warnings:** 826
+**Errors:** 123 · **Warnings:** 822
 
 ---
 
@@ -153,13 +153,6 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m6.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
-
-### Warnings (4)
-
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-and-fake-information/ai-and-fake-information-m5.html` — The read operation timed out
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-for-marketing-and-growth/ai-for-marketing-and-growth-m4.html` — The read operation timed out
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-security-and-red-teaming/ai-security-and-red-teaming-m7.html` — The read operation timed out
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-work-and-automation-deep-dive/ai-work-and-automation-deep-dive-m4.html` — The read operation timed out
 
 
 ## Module File Integrity

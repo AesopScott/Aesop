@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 14:23 UTC
+**Generated:** 2026-04-30 14:29 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 142 · **Warnings:** 973
+**Errors:** 141 · **Warnings:** 976
 
 ---
 
@@ -114,12 +114,11 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (56)
+### Errors (55)
 
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
-- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`
@@ -173,15 +172,18 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
 
-### Warnings (12)
+### Warnings (15)
 
-- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/` — The read operation timed out
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-agents-in-the-wild/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-autonomous-systems/`
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html` — The read operation timed out
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-job-market-impact/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-misinformation/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-side-hustle-money/`
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ai-work-and-automation-realities/ai-work-and-automation-realities-m8.html` — The read operation timed out
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ap-7/ap-7-m1.html` — The read operation timed out
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/modules/ap-7/ap-7-m2.html` — The read operation timed out
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-ai-agents-v-optimization/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/building-an-ai-first-business/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/gpt-vs-claude-vs-gemini/`
@@ -1159,7 +1161,7 @@
 
 ## Summary
 
-**142 error(s) require attention:**
+**141 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1250,7 +1252,6 @@
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m3.html`
-1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m4.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m5.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m6.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m7.html`

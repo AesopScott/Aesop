@@ -2,10 +2,13 @@
 
 ## Session Startup (READ FIRST)
 
-**At the start of every session, read the memory index:**
-- `C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md`
-- Follow all "always," "proactive," and standing behavioral rules before beginning work
-- This ensures prior session learnings and constraints are in effect from the start
+**At the start of every session, use the Read tool to load the memory index from disk:**
+```
+Read: C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md
+```
+- Must use the Read tool explicitly (not rely on system context)
+- Follow all "always," "proactive," and standing behavioral rules from the memory index
+- This ensures every session loads the latest memory state before beginning work
 
 ## Layout & Page Width
 

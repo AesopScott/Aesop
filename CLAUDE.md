@@ -1,5 +1,12 @@
 # AESOP AI Academy — Claude Code Guidelines
 
+## Session Startup (READ FIRST)
+
+**At the start of every session, read the memory index:**
+- `C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md`
+- Follow all "always," "proactive," and standing behavioral rules before beginning work
+- This ensures prior session learnings and constraints are in effect from the start
+
 ## Layout & Page Width
 
 - Content sections use `padding: 0 12.5%` on left and right — not a fixed width or max-width constraint.

@@ -586,6 +586,94 @@ window.parent.postMessage({ type: '...', courseId: COURSE_ID, moduleId: MODULE_I
 
 ---
 
+## End-of-Course Final Exam (Required)
+
+Every course **must** ship a `{course-slug}-final.html` file alongside its module files. This is a standalone exam — not embedded in any module tab system.
+
+**File location:** `ai-academy/modules/{course-slug}/{course-slug}-final.html`
+
+**Example:** `ai-academy/modules/wispr-flow/wispr-flow-final.html`
+
+### Structure
+
+- 20 questions, all required before submission
+- Progress bar fills as questions are answered
+- Submit button only enables when all 20 are answered
+- Each question: 4 options, 1 correct, 1 right feedback div + 1 wrong feedback div
+- Feedback reveals inline after each answer; options lock immediately
+
+### Scoring Thresholds
+
+| Mode | Threshold | Behavior |
+|------|-----------|----------|
+| Standard | 70% (14/20) | Unlimited retakes |
+| Test-out (`?mode=testout`) | 80% (16/20) | One attempt only |
+
+Test-out mode: student who believes they already know the material can bypass the full course at 80%. On pass, course credit awarded at 50% of standard point value. On fail, attempt is consumed — student must take the full course.
+
+### Required JavaScript
+
+```javascript
+var COURSE_ID = '{course-slug}';    // must match course-registry.json id
+var Q_COUNT   = 20;
+var STANDARD_THRESH = 70;
+var TESTOUT_THRESH  = 80;
+
+var params     = new URLSearchParams(window.location.search);
+var IS_TESTOUT = params.get('mode') === 'testout';
+var THRESH     = IS_TESTOUT ? TESTOUT_THRESH : STANDARD_THRESH;
+var answered   = {};
+
+function feAnswer(btn, result, qid) { /* locks options, shows feedback, updates progress */ }
+function updateProgress() { /* fills progress bar, enables submit when count === Q_COUNT */ }
+function submitExam() {
+  /* scores, writes localStorage record, fires postMessage */
+  localStorage.setItem('aesop-final-' + COURSE_ID, JSON.stringify(record));
+  window.parent.postMessage({
+    type:     passed ? 'finalExamPassed' : 'finalExamFailed',
+    courseId: COURSE_ID,
+    score:    score,
+    passed:   passed,
+    path:     IS_TESTOUT ? 'testout' : 'standard'
+  }, '*');
+}
+```
+
+### postMessage Events
+
+| Event | When |
+|-------|------|
+| `finalExamPassed` | Score ≥ threshold |
+| `finalExamFailed` | Score < threshold |
+
+Payload always includes: `{ courseId, score, passed, path }` where `path` is `'standard'` or `'testout'`.
+
+### localStorage Key
+
+`aesop-final-{course-slug}` — stores `{ attempted, passed, score, correct, total, path, completedAt }`.
+
+### Design
+
+- Dark theme: `--bg:#0d1117`, `--surface:#161b22`, `--accent:#c9a05a`
+- Fonts: Crimson Pro (questions), Inter (options/UI)
+- Question box: `background:rgba(var(--accent-rgb),0.02); border:1px solid var(--border-dark)`
+- Correct answer: green border + bg; wrong answer: red border + bg
+- Result panel: large score number (green = pass, red = fail) + label + message
+
+### Content Requirements
+
+- 20 questions covering the full course — distribute across all modules/lessons
+- Each question: 4 options, exactly 1 marked correct; rotate correct answer position
+- Right feedback: explain WHY the correct answer is right + the key fact to remember
+- Wrong feedback: gently correct the misconception; state the right answer briefly
+- Questions should test application of knowledge, not just recall of terms
+
+### Reference Implementation
+
+See `ai-academy/modules/ai-and-climate/ai-and-climate-final.html` for the canonical reference implementation.
+
+---
+
 ## QA Checklist
 
 Before FTPing a module file:

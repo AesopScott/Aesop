@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<!-- v1.0.0 | 2026-04-29 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Context Window Race — Final Exam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--surface:#161b22;--border-dark:#21262d;
+  --accent:#c9a05a;--accent-rgb:201,160,90;
+  --muted:#8b949e;--text:#e6edf3;
+  --green:#4fcf8a;--red:#f07070;--blue:#38bdf8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+.exam-header{background:var(--surface);border-bottom:1px solid var(--border-dark);padding:1.5rem 2rem;text-align:center}
+.exam-header h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.6rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.25rem}
+.exam-header .tagline{font-size:0.8rem;color:var(--muted)}
+.exam-header .course-name{font-size:0.9rem;color:var(--accent);font-weight:600;margin-bottom:0.5rem}
+.exam-body{width:90%;max-width:860px;margin:0 auto;padding:1.5rem 0 3rem;flex:1}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04)}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important}
+.quiz-feedback.show{display:block!important}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070}
+.submit-row{text-align:center;margin:2rem 0 1rem}
+.submit-btn{background:var(--accent);color:#0d1117;border:none;padding:0.85rem 2.5rem;border-radius:6px;font-family:inherit;font-size:0.95rem;font-weight:600;cursor:pointer;transition:opacity 0.2s}
+.submit-btn:hover{opacity:0.85}
+.submit-btn:disabled{opacity:0.4;cursor:not-allowed}
+.result-panel{display:none;background:var(--surface);border:1px solid var(--border-dark);border-radius:8px;padding:2rem;text-align:center;margin:2rem 0}
+.result-panel.show{display:block}
+.result-score{font-size:3rem;font-weight:700;margin-bottom:0.5rem}
+.result-score.pass{color:var(--green)}
+.result-score.fail{color:var(--red)}
+.result-label{font-family:'Crimson Pro',Georgia,serif;font-size:1.3rem;color:#fff;margin-bottom:0.75rem}
+.result-msg{font-size:0.88rem;color:var(--muted);line-height:1.6;max-width:520px;margin:0 auto}
+.progress-bar{height:6px;background:var(--border-dark);border-radius:3px;margin:1rem 0 0.5rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width 0.3s}
+.progress-label{font-size:0.75rem;color:var(--muted);text-align:right}
+@media(max-width:600px){.exam-body{padding:1rem 1.25rem 2rem}}
+</style>
+</head>
+<body>
+<div class="exam-header">
+  <div class="course-name">The Context Window Race</div>
+  <h1 id="examTitle">Final Exam</h1>
+  <div class="tagline" id="examTagline">20 questions &middot; <span id="threshDisplay">70</span>% to pass</div>
+</div>
+
+<div class="exam-body">
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="progress-label" id="progressLabel">0 of 20 answered</div>
+
+
+    <div class="quiz-box" id="fe1">
+      <div class="quiz-q">1. A model parameter count of 100 billion and a context window of 4,096 tokens means the model:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe1')">Can process very long documents because its large parameter count compensates</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe1')">Cannot process more than 4,096 tokens in one pass, regardless of parameter count</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe1')">Has a special extended context mode enabled by its parameter count</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe1')">Can use its parameters as additional working memory beyond the context window</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Parameters and context window are independent dimensions. Parameter count encodes learned knowledge; context window determines what can be attended to in a single inference pass.</div>
+      <div class="quiz-feedback wrong">Not quite. Parameters and context window are completely separate. No matter how many parameters a model has, it cannot attend to tokens outside its context window in a single pass.</div>
+    </div>
+
+    <div class="quiz-box" id="fe2">
+      <div class="quiz-q">2. What did Shi et al. (2023) find about the relationship between longer contexts with distractors and model hallucination rates?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe2')">Longer contexts with irrelevant distractors increase hallucination rates</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe2')">Longer contexts reduce hallucinations by providing more grounding material</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe2')">Distractor content has no measurable effect on hallucination rates</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe2')">Only distractors in the first half of context affect hallucination rates</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Shi et al. (2023) found that longer contexts containing irrelevant distractor content significantly increase hallucination rates — models confabulate rather than accurately retrieve from long, noisy inputs.</div>
+      <div class="quiz-feedback wrong">Not correct. Shi et al. found that irrelevant distractor content in long contexts increases hallucination rates — a counter-intuitive finding that more context is not always better.</div>
+    </div>
+
+    <div class="quiz-box" id="fe3">
+      <div class="quiz-q">3. The &quot;Lost in the Middle&quot; paper found that recall performance had which shape when plotted against information position in the context?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe3')">Monotonically decreasing from beginning to end</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe3')">U-shaped: high at beginning and end, low in the middle</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe3')">Flat with occasional random drops</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe3')">Inverted U: best recall in the middle</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The U-shaped curve reflects primacy bias (strong at the start) and recency bias (strong at the end), with poor performance for content in the middle.</div>
+      <div class="quiz-feedback wrong">The &quot;Lost in the Middle&quot; paper found a U-shaped recall curve — high at the beginning and end, poor in the middle.</div>
+    </div>
+
+    <div class="quiz-box" id="fe4">
+      <div class="quiz-q">4. Why did Google DeepMind use long context (not RAG) for genomic sequence analysis in 2024?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe4')">Genomic data is too sensitive to store in external vector databases</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe4')">Long-range dependencies in genomic sequences mean mutations early in the sequence affect interpretation of mutations later — a cross-document relationship RAG's chunking misses</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe4')">RAG embedding models are not trained on genomic data and therefore cannot retrieve relevant chunks</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe4')">Genomic analysis requires sub-millisecond latency that RAG retrieval cannot achieve</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Genomic sequences have long-range dependencies that require the entire sequence to be held in context simultaneously — RAG's independent chunk retrieval misses these cross-position relationships.</div>
+      <div class="quiz-feedback wrong">Long-range genomic dependencies mean position 1 affects interpretation at position 700,000 — a relationship that RAG's chunked retrieval cannot capture.</div>
+    </div>
+
+    <div class="quiz-box" id="fe5">
+      <div class="quiz-q">5. LangChain was created by Harrison Chase in what month and year?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe5')">January 2022</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe5')">March 2023</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe5')">October 2022</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe5')">June 2021</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Harrison Chase created LangChain in October 2022, and it reached 1 million GitHub stars in under 18 months.</div>
+      <div class="quiz-feedback wrong">LangChain was created in October 2022 by Harrison Chase.</div>
+    </div>
+
+    <div class="quiz-box" id="fe6">
+      <div class="quiz-q">6. The attention mechanism in standard transformers scales as O(n²) in both time and memory because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe6')">Each of n query tokens computes a score against all n key tokens, producing an n×n attention matrix</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe6')">The softmax function requires n passes over the full sequence</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe6')">Positional embeddings grow quadratically with sequence length</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe6')">Weights are squared during the forward pass for numerical stability</button>
+      </div>
+      <div class="quiz-feedback right">Correct. QKᵀ produces an n×n matrix — the defining quadratic operation.</div>
+      <div class="quiz-feedback wrong">The quadratic scaling comes from the n×n matrix in QKᵀ — all n queries against all n keys.</div>
+    </div>
+
+    <div class="quiz-box" id="fe7">
+      <div class="quiz-q">7. GPT-4's input price at launch (March 2023) was approximately $30 per million tokens. What did Claude 3 Haiku cost per million input tokens at launch in March 2024?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe7')">$3.00</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe7')">$1.00</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe7')">$0.25</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe7')">$0.05</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Claude 3 Haiku launched at $0.25/million input tokens in March 2024 — roughly a 99% reduction from GPT-4's original pricing.</div>
+      <div class="quiz-feedback wrong">Claude 3 Haiku cost $0.25 per million input tokens — representing roughly a 99% price reduction from GPT-4's March 2023 launch pricing.</div>
+    </div>
+
+    <div class="quiz-box" id="fe8">
+      <div class="quiz-q">8. The original RAG paper by Lewis et al. (2020) came from which organization?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe8')">Facebook AI Research (FAIR)</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe8')">Google DeepMind</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe8')">OpenAI</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe8')">Stanford HAI</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Lewis et al. (2020) published the original RAG paper from Facebook AI Research, establishing the retrieval-augmented generation paradigm.</div>
+      <div class="quiz-feedback wrong">Not correct. The original RAG paper — Lewis et al. 2020 — came from Facebook AI Research (FAIR).</div>
+    </div>
+
+    <div class="quiz-box" id="fe9">
+      <div class="quiz-q">9. What is the three-stage architecture of a standard RAG system (in correct order)?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe9')">Generation → Retrieval → Indexing</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe9')">Retrieval → Indexing → Generation</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe9')">Indexing → Retrieval → Generation</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe9')">Indexing → Generation → Retrieval</button>
+      </div>
+      <div class="quiz-feedback right">Correct. RAG follows: Indexing (embed and store documents), Retrieval (find similar chunks for the query), Generation (use retrieved chunks plus query as context for the model).</div>
+      <div class="quiz-feedback wrong">The three stages are Indexing (embed and store), Retrieval (find relevant chunks), then Generation (LLM produces answer from retrieved context).</div>
+    </div>
+
+    <div class="quiz-box" id="fe10">
+      <div class="quiz-q">10. The &quot;lost in the middle&quot; phenomenon shows that model recall accuracy is highest for information placed where in the context?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe10')">In the middle of the context window</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe10')">At the beginning and end of the context window</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe10')">Evenly distributed throughout the context</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe10')">In the first 10% of the context only</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The Stanford/Berkeley research found models reliably recall information at the beginning and end of context, but accuracy degrades for information placed in the middle.</div>
+      <div class="quiz-feedback wrong">The &quot;lost in the middle&quot; research showed models recall best from the beginning and end of context — not the middle.</div>
+    </div>
+
+    <div class="quiz-box" id="fe11">
+      <div class="quiz-q">11. Longformer was published by researchers at:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe11')">OpenAI</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe11')">Google Brain</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe11')">Allen Institute for AI (AI2)</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe11')">Stanford University</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Iz Beltagy and colleagues at the Allen Institute for AI published Longformer in April 2020.</div>
+      <div class="quiz-feedback wrong">Longformer came from Iz Beltagy et al. at the Allen Institute for AI, published in April 2020.</div>
+    </div>
+
+    <div class="quiz-box" id="fe12">
+      <div class="quiz-q">12. The SCROLLS benchmark (Shaham et al., 2022) tests which type of capability that NIAH does not?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe12')">Synthesis and reasoning across long documents (summarization, QA, NLI)</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe12')">Single-fact retrieval at variable positions</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe12')">Code generation from long specification documents</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe12')">Image understanding in multimodal long contexts</button>
+      </div>
+      <div class="quiz-feedback right">Correct. SCROLLS tests summarization, QA, and natural language inference across real long documents — synthesis tasks that require more than single-fact recall.</div>
+      <div class="quiz-feedback wrong">Not correct. SCROLLS tests document-level synthesis: summarization, question answering, and natural language inference — not simple single-fact retrieval.</div>
+    </div>
+
+    <div class="quiz-box" id="fe13">
+      <div class="quiz-q">13. Gemini 1.5 Pro's improved long-context recall was achieved in part through which architectural design?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe13')">RoPE positional embeddings extended with YaRN</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe13')">Ring attention distributed across 512 TPUs</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe13')">Mixture of Experts (MoE) architecture with modified positional encoding</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe13')">A dedicated &quot;memory&quot; module separate from the main transformer</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Gemini 1.5 Pro's technical report describes a mixture-of-experts design combined with modified positional encoding as key architectural contributors to its improved long-context performance.</div>
+      <div class="quiz-feedback wrong">Not correct. Gemini 1.5 Pro's technical report attributed improved long-context recall to a mixture-of-experts architecture combined with modified positional encoding.</div>
+    </div>
+
+    <div class="quiz-box" id="fe14">
+      <div class="quiz-q">14. Anthropic's Claude 1 required specialized infrastructure for its 100K context window (2023) primarily because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe14')">100K tokens exceeded the vocabulary size of the tokenizer</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe14')">Full attention at 100K tokens produced memory requirements that exceeded standard GPU configurations</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe14')">Anthropic needed to retrain the model from scratch on 100K-length documents</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe14')">Regulatory requirements mandated isolated compute for long documents</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The O(n²) memory growth at 100K tokens required novel infrastructure, not just more of the same hardware.</div>
+      <div class="quiz-feedback wrong">The O(n²) attention matrix at 100K tokens overwhelms standard GPU memory — specialized infrastructure was needed to manage this.</div>
+    </div>
+
+    <div class="quiz-box" id="fe15">
+      <div class="quiz-q">15. Why does transformer attention scale as O(n²) with context length?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe15')">Each token must be re-tokenized at every layer</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe15')">Every token must attend to every other token, creating a matrix that grows quadratically with sequence length</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe15')">Positional embeddings require n² parameters</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe15')">Softmax normalization is applied n² times per forward pass</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Attention computes a relationship score between every pair of tokens — n tokens × n tokens = n² relationships in the attention matrix.</div>
+      <div class="quiz-feedback wrong">Attention scales quadratically because every token must attend to every other token, producing an n × n attention matrix that quadruples in size when context length doubles.</div>
+    </div>
+
+    <div class="quiz-box" id="fe16">
+      <div class="quiz-q">16. The &quot;lost in the middle&quot; research (2023) found that transformer models most reliably attend to information at what position in a long context?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe16')">Only the very last few paragraphs before the query.</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe16')">The beginning and end of the context — with weaker attention to information in the middle.</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe16')">Evenly distributed throughout, with no positional bias.</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe16')">The middle sections, because earlier content is treated as preamble.</button>
+      </div>
+      <div class="quiz-feedback right">Correct.</div>
+      <div class="quiz-feedback wrong">Review Lesson 1: the finding was that models attend more strongly to beginning and end, with a &quot;lost in the middle&quot; dip for information positioned centrally in long contexts.</div>
+    </div>
+
+    <div class="quiz-box" id="fe17">
+      <div class="quiz-q">17. According to Databricks' 2024 enterprise LLM engineering evaluation, what is the approximate effective context ceiling for reliable multi-step reasoning in most models?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe17')">4k–8k tokens</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe17')">16k–32k tokens</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe17')">64k–128k tokens</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe17')">The full advertised context window</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Databricks' evaluations placed the practical effective ceiling for reliable multi-step reasoning at approximately 16k–32k tokens, regardless of advertised maximum context length.</div>
+      <div class="quiz-feedback wrong">Not correct. Databricks found the practical effective ceiling for reliable multi-step reasoning at approximately 16k–32k tokens for most models evaluated.</div>
+    </div>
+
+    <div class="quiz-box" id="fe18">
+      <div class="quiz-q">18. Google's Gemini 1.5 Pro was announced in February 2024 with what maximum context window in research preview?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe18')">200,000 tokens</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe18')">500,000 tokens</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe18')">1,000,000 tokens</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe18')">10,000,000 tokens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Gemini 1.5 Pro launched in research preview with 1 million tokens in February 2024, later expanding to 2 million.</div>
+      <div class="quiz-feedback wrong">Gemini 1.5 Pro launched with 1 million tokens in research preview in February 2024.</div>
+    </div>
+
+    <div class="quiz-box" id="fe19">
+      <div class="quiz-q">19. FlashAttention's primary performance advantage over standard attention is that it reduces:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe19')">The total number of FLOPs required</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe19')">HBM (High Bandwidth Memory) read/write operations</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe19')">The model's parameter count</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe19')">The precision of attention score computations</button>
+      </div>
+      <div class="quiz-feedback right">Correct. FlashAttention performs the same FLOPs but avoids materializing the n × n attention matrix in HBM, reducing memory traffic from O(n²) to O(n) per layer.</div>
+      <div class="quiz-feedback wrong">FlashAttention's key innovation is IO-awareness: it performs identical FLOPs but drastically reduces expensive HBM read/write operations by keeping intermediate values in fast SRAM.</div>
+    </div>
+
+    <div class="quiz-box" id="fe20">
+      <div class="quiz-q">20. The Stanford CRFM pilot studies on long-context meta-analysis found that AI assistance reduced manual data extraction time by approximately what percentage?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe20')">About 10–15%.</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe20')">About 30–40%.</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'correct','fe20')">About 60–70%.</button>
+        <button class="quiz-opt" onclick="feAnswer(this,'wrong','fe20')">About 95% — near-complete automation.</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Stanford CRFM's 2024 pilot showed approximately 60–70% reduction in time for extracting effect sizes, sample sizes, and methodological details from collections of 50+ papers.</div>
+      <div class="quiz-feedback wrong">Review Lesson 3: the Stanford CRFM pilots showed approximately 60–70% reduction in manual extraction time for meta-analysis tasks.</div>
+    </div>
+
+  <div class="submit-row">
+    <button class="submit-btn" id="submitBtn" onclick="submitExam()" disabled>Submit Exam</button>
+  </div>
+
+  <div class="result-panel" id="resultPanel">
+    <div class="result-score" id="resultScore"></div>
+    <div class="result-label" id="resultLabel"></div>
+    <div class="result-msg"   id="resultMsg"></div>
+  </div>
+</div>
+
+<script>
+var COURSE_ID = 'the-context-window-race';
+var Q_COUNT   = 20;
+var STANDARD_THRESH = 70;
+var TESTOUT_THRESH  = 80;
+
+var params     = new URLSearchParams(window.location.search);
+var IS_TESTOUT = params.get('mode') === 'testout';
+var THRESH     = IS_TESTOUT ? TESTOUT_THRESH : STANDARD_THRESH;
+
+// Guard: test-out is one-shot — if already attempted, lock immediately
+if (IS_TESTOUT) {
+  var _existing = null;
+  try { _existing = JSON.parse(localStorage.getItem('aesop-final-' + COURSE_ID)); } catch(e) {}
+  if (_existing && _existing.path === 'testout' && _existing.attempted) {
+    document.getElementById('examTitle').textContent  = 'Bypass Exam — Already Attempted';
+    document.getElementById('examTagline').textContent = 'You have already used your one bypass attempt for this course.';
+    document.getElementById('submitBtn').disabled = true;
+    document.querySelectorAll('.quiz-opt').forEach(function(b){ b.disabled = true; });
+  }
+}
+
+if (IS_TESTOUT) {
+  document.getElementById('examTitle').textContent = 'Bypass Exam';
+  document.getElementById('threshDisplay').textContent = '80';
+  document.getElementById('examTagline').innerHTML =
+    Q_COUNT + ' questions · 80% to pass · One attempt only';
+}
+
+var answered = {};
+
+function feAnswer(btn, result, qid) {
+  var box = document.getElementById(qid);
+  if (box.dataset.done) return;
+  box.dataset.done = '1';
+  box.querySelectorAll('.quiz-opt').forEach(function(b) {
+    b.disabled = true;
+    if (b === btn) b.classList.add(result === 'correct' ? 'correct' : 'wrong');
+  });
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb) {
+    if ((result === 'correct' && fb.classList.contains('right')) ||
+        (result !== 'correct' && fb.classList.contains('wrong'))) {
+      fb.classList.add('show');
+    }
+  });
+  answered[qid] = result;
+  updateProgress();
+}
+
+function updateProgress() {
+  var count = Object.keys(answered).length;
+  var pct   = Math.round(count / Q_COUNT * 100);
+  document.getElementById('progressFill').style.width  = pct + '%';
+  document.getElementById('progressLabel').textContent = count + ' of ' + Q_COUNT + ' answered';
+  document.getElementById('submitBtn').disabled = (count < Q_COUNT);
+}
+
+function submitExam() {
+  var correct = Object.values(answered).filter(function(v){ return v === 'correct'; }).length;
+  var score   = Math.round(correct / Q_COUNT * 100);
+  var passed  = score >= THRESH;
+  var key     = 'aesop-final-' + COURSE_ID;
+
+  var record = {
+    attempted:   true,
+    passed:      passed,
+    score:       score,
+    correct:     correct,
+    total:       Q_COUNT,
+    path:        IS_TESTOUT ? 'testout' : 'standard',
+    completedAt: new Date().toISOString()
+  };
+  localStorage.setItem(key, JSON.stringify(record));
+
+  window.parent.postMessage({
+    type:     passed ? 'finalExamPassed' : 'finalExamFailed',
+    courseId: COURSE_ID,
+    score:    score,
+    passed:   passed,
+    path:     IS_TESTOUT ? 'testout' : 'standard'
+  }, '*');
+
+  showResult(score, passed);
+}
+
+function showResult(score, passed) {
+  document.getElementById('submitBtn').style.display = 'none';
+  var scoreEl = document.getElementById('resultScore');
+  var labelEl = document.getElementById('resultLabel');
+  var msgEl   = document.getElementById('resultMsg');
+  scoreEl.textContent = score + '%';
+  scoreEl.className   = 'result-score ' + (passed ? 'pass' : 'fail');
+  if (passed) {
+    if (IS_TESTOUT) {
+      labelEl.textContent = 'Bypass Complete';
+      msgEl.textContent   = 'You passed the bypass exam at ' + score + '%. Course credit has been applied at 50% of the standard point value. The full course remains available if you want to go deeper.';
+    } else {
+      labelEl.textContent = 'Exam Passed — Course Complete';
+      msgEl.textContent   = 'You scored ' + score + '% and have earned full course credit. Congratulations on completing the course.';
+    }
+  } else {
+    if (IS_TESTOUT) {
+      labelEl.textContent = 'Bypass Attempt Failed';
+      msgEl.textContent   = 'You scored ' + score + '% — the bypass threshold is 80%. This was your one bypass attempt. Begin the course from Module 1 to earn full credit.';
+    } else {
+      labelEl.textContent = 'Not Quite — Review and Retry';
+      msgEl.textContent   = 'You scored ' + score + '%. You need ' + THRESH + '% to pass. Review the modules and try the exam again when you\'re ready.';
+    }
+  }
+  document.getElementById('resultPanel').classList.add('show');
+  document.getElementById('resultPanel').scrollIntoView({behavior:'smooth', block:'center'});
+}
+</script>
+</body>
+</html>

@@ -57,6 +57,14 @@ STEPS = [
     ("dedup nav buttons", "dedup_mega_buttons.py",    ["--apply"], False),
     ("sync panel counts", "sync_panel_counts.py",     ["--apply"], False),
     ("reconcile panels",  "reconcile_panels.py",      ["--apply"], False),
+    # ensure_panels_live runs AFTER reconcile_panels: reconcile_panels
+    # tags panels with data-course and toggles core-badge-live; this
+    # script then strips any lingering core-panel--cs class, removes
+    # contradictory "Coming Soon" badges, and replaces "In Development"
+    # span CTAs with real "Enter Course →" links — for every panel of
+    # every disk-built registry-live course. Closes the recurring
+    # "button says Live, panel says In Development" gap.
+    ("ensure panels live","ensure_panels_live.py",    ["--apply"], False),
     ("sync i18n",         "sync_i18n_to_registry.py", ["--apply"], False),
     # build_stats has no dry-run mode — it always writes. Skip on dry-run.
     ("build stats",       "build_stats.py",           [],          True),

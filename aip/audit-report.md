@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 21:39 UTC
+**Generated:** 2026-04-30 23:07 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 143 · **Warnings:** 997
+**Errors:** 144 · **Warnings:** 1001
 
 ---
 
@@ -62,7 +62,7 @@
 
 ## Cross-References
 
-### Errors (47)
+### Errors (48)
 
 - 🔴 **ORPHAN_LINK**: Course `agile` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
@@ -96,6 +96,7 @@
 - 🔴 **ORPHAN_LINK**: Course `pick` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `rag` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `real` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `robot` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `running` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `security` is linked in courses.html but not defined in electives-hub or registry
@@ -191,7 +192,7 @@
 
 ## Module File Integrity
 
-### Warnings (986)
+### Warnings (990)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -1009,6 +1010,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `rag-systems-from-scratch-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `real-or-rendered-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `real-or-rendered-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `real-or-rendered-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `real-or-rendered-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `robot-speak-talk-to-ai-m2.html` has no COURSE_ID constant
@@ -1184,7 +1189,7 @@
 
 ## Summary
 
-**143 error(s) require attention:**
+**144 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1258,6 +1263,7 @@
 1. Course `pick` is linked in courses.html but not defined in electives-hub or registry
 1. Course `prompt` is linked in courses.html but not defined in electives-hub or registry
 1. Course `rag` is linked in courses.html but not defined in electives-hub or registry
+1. Course `real` is linked in courses.html but not defined in electives-hub or registry
 1. Course `robot` is linked in courses.html but not defined in electives-hub or registry
 1. Course `running` is linked in courses.html but not defined in electives-hub or registry
 1. Course `security` is linked in courses.html but not defined in electives-hub or registry

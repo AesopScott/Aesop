@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 17:43 UTC
+**Generated:** 2026-04-30 17:54 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 143 · **Warnings:** 982
+**Errors:** 143 · **Warnings:** 983
 
 ---
 
@@ -191,7 +191,7 @@
 
 ## Module File Integrity
 
-### Warnings (971)
+### Warnings (972)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -1151,6 +1151,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `wispr-flow-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `wispr-flow-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `working-with-the-anthropic-api-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `working-with-the-anthropic-api-m1.html` has no COURSE_ID constant

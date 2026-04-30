@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 02:11 UTC
+**Generated:** 2026-04-30 02:38 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 140 · **Warnings:** 948
+**Errors:** 141 · **Warnings:** 947
 
 ---
 
@@ -62,7 +62,7 @@
 
 ## Cross-References
 
-### Errors (44)
+### Errors (45)
 
 - 🔴 **ORPHAN_LINK**: Course `agile` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
@@ -101,6 +101,7 @@
 - 🔴 **ORPHAN_LINK**: Course `spot` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `storytelling` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `synthetic` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `talking` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `the` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `truth` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `vertex` is linked in courses.html but not defined in electives-hub or registry
@@ -171,11 +172,10 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
 
-### Warnings (12)
+### Warnings (11)
 
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-agents-in-the-wild/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-autonomous-systems/`
-- 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-bias-and-fairness/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-job-market-impact/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-misinformation/`
@@ -1132,7 +1132,7 @@
 
 ## Summary
 
-**140 error(s) require attention:**
+**141 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1211,6 +1211,7 @@
 1. Course `spot` is linked in courses.html but not defined in electives-hub or registry
 1. Course `storytelling` is linked in courses.html but not defined in electives-hub or registry
 1. Course `synthetic` is linked in courses.html but not defined in electives-hub or registry
+1. Course `talking` is linked in courses.html but not defined in electives-hub or registry
 1. Course `the` is linked in courses.html but not defined in electives-hub or registry
 1. Course `truth` is linked in courses.html but not defined in electives-hub or registry
 1. Course `vertex` is linked in courses.html but not defined in electives-hub or registry

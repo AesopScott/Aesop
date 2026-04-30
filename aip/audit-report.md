@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 05:50 UTC
+**Generated:** 2026-04-30 14:23 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 142 · **Warnings:** 972
+**Errors:** 142 · **Warnings:** 973
 
 ---
 
@@ -173,8 +173,9 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m8.html`
 
-### Warnings (11)
+### Warnings (12)
 
+- 🟡 **LIVE_UNREACHABLE**: Could not reach: `https://aesopacademy.org/ai-academy/` — The read operation timed out
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-agents-in-the-wild/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-autonomous-systems/`
 - 🟡 **LIVE_ERROR**: HTTP 403: `https://aesopacademy.org/ai-academy/modules/ai-in-game-design-i/`

@@ -2,12 +2,22 @@
 
 ## Session Startup (READ FIRST)
 
-**At the start of every session, use the Read tool to load the memory index from disk:**
-```
-Read: C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md
-```
+**At the start of every session, read the complete memory system from disk:**
+
+1. Read the memory index:
+   ```
+   Read: C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md
+   ```
+
+2. For each memory file referenced in the index, read it to load the actual content (MEMORY.md is just an index pointing to the real memory files):
+   ```
+   Read: C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\[filename].md
+   ```
+
+3. Load all memory files at startup—each contains standing instructions, feedback, and project context that must be active for the session
+
 - Must use the Read tool explicitly (not rely on system context)
-- Follow all "always," "proactive," and standing behavioral rules from the memory index
+- Follow all "always," "proactive," and standing behavioral rules from all memory files
 - This ensures every session loads the latest memory state before beginning work
 
 ## Layout & Page Width

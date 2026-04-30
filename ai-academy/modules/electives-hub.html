@@ -2307,16 +2307,42 @@ function saveCertModPts(){
   }catch(_){}
 }
 
+function saveHubProgress(){
+  try{
+    const d={completedMods:{},passedTests:{},completedLessons:{}};
+    Object.entries(STATE.completedMods).forEach(([c,s])=>{ d.completedMods[c]=Array.from(s); });
+    Object.entries(STATE.passedTests).forEach(([c,s])=>{ d.passedTests[c]=Array.from(s); });
+    Object.entries(STATE.completedLessons).forEach(([c,mm])=>{
+      d.completedLessons[c]={};
+      Object.entries(mm).forEach(([m,s])=>{ d.completedLessons[c][m]=Array.from(s); });
+    });
+    localStorage.setItem('aesop-hub-progress',JSON.stringify(d));
+  }catch(_){}
+}
+function loadHubProgress(){
+  try{
+    const d=JSON.parse(localStorage.getItem('aesop-hub-progress')||'null');
+    if(!d) return;
+    if(d.completedMods) Object.entries(d.completedMods).forEach(([c,a])=>{ STATE.completedMods[c]=new Set(a); });
+    if(d.passedTests) Object.entries(d.passedTests).forEach(([c,a])=>{ STATE.passedTests[c]=new Set(a); });
+    if(d.completedLessons) Object.entries(d.completedLessons).forEach(([c,mm])=>{
+      STATE.completedLessons[c]={};
+      Object.entries(mm).forEach(([m,a])=>{ STATE.completedLessons[c][m]=new Set(a); });
+    });
+  }catch(_){}
+}
+
 function markModComplete(cId, mId){
   if(!STATE.completedMods[cId]) STATE.completedMods[cId]=new Set();
   STATE.completedMods[cId].add(mId);
   saveCertModPts();
-  // Firebase stub
+  saveHubProgress();
   if(STATE._firebaseStub) console.log('[Firebase stub] modComplete',cId,mId);
 }
 function markTestPassed(cId, mId){
   if(!STATE.passedTests[cId]) STATE.passedTests[cId]=new Set();
   STATE.passedTests[cId].add(mId);
+  saveHubProgress();
   if(STATE._firebaseStub) console.log('[Firebase stub] testPassed',cId,mId);
 }
 // factor: 1.0 = full credit (standard path), 0.5 = bypass credit
@@ -2343,6 +2369,7 @@ window.addEventListener('message',function(e){
     if(m&&STATE.completedLessons[courseId][moduleId].size>=m.lessons.length){
       markModComplete(courseId,moduleId);
     }
+    saveHubProgress();
     renderAll();
   }
   if(type==='modTestPassed'&&courseId&&moduleId){
@@ -2885,6 +2912,22 @@ function injectModuleContent(html, cId, mId, m, c){
 
   // Restore hub controls on new content
   setTimeout(function(){ if(typeof hubRestoreControls==='function') hubRestoreControls(); }, 50);
+
+  // Save + restore page position within module (so F5 returns to same tab/lab)
+  const _pageKey = 'aesop-page-' + cId + '-' + mId;
+  setTimeout(function(){
+    // Restore saved page
+    const _savedPage = localStorage.getItem(_pageKey);
+    if(_savedPage && typeof window.goPage === 'function'){
+      try{ window.goPage(_savedPage); }catch(_){}
+    }
+    // Intercept goPage to persist position
+    const _origGoPage = window.goPage;
+    window.goPage = function(id){
+      if(_origGoPage) _origGoPage(id);
+      localStorage.setItem(_pageKey, id);
+    };
+  }, 150);
 
   // Re-execute module scripts in global scope
   // Minimal fallback used when module script has a syntax error (e.g. truncated file)
@@ -3653,6 +3696,7 @@ function hubRestoreControls(){
 }
 
 loadCourseRegistry().then(() => {
+  loadHubProgress();
   const _urlCourse = new URLSearchParams(window.location.search).get('course');
   const _saved = JSON.parse(localStorage.getItem('aesop-hub-last-view') || 'null');
   if (_urlCourse && COURSES.find(c=>c.id===_urlCourse)) {

@@ -39,6 +39,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -259,6 +260,9 @@ def main() -> int:
                     help="Cap how many courses to process. 0 = no cap.")
     ap.add_argument("--slug", default="",
                     help="Process only this course slug (e.g. ai-governance).")
+    ap.add_argument("--workers", type=int, default=8,
+                    help="Concurrent Claude API calls (default 8). "
+                         "Set to 1 for sequential.")
     args = ap.parse_args()
 
     lookup = load_courses_data_lookup()

@@ -36,6 +36,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -222,6 +223,11 @@ def main() -> int:
                     help="Cap the number of drafts processed. 0 = no cap.")
     ap.add_argument("--folder", default="",
                     help="Restrict to one folder, e.g. aip/k12-drafts")
+    ap.add_argument("--workers", type=int, default=8,
+                    help="Concurrent Claude API calls (default 8). "
+                         "Set to 1 for sequential. Each worker holds one "
+                         "in-flight request; total wall time is roughly "
+                         "(len(candidates) / workers) × per-call latency.")
     args = ap.parse_args()
 
     candidates = []
@@ -270,10 +276,19 @@ def main() -> int:
     import anthropic
     client = anthropic.Anthropic(api_key=api_key)
 
+    # Run candidates in parallel via a thread pool. The Anthropic SDK's
+    # sync client is thread-safe; threads are blocked on I/O during the
+    # API call, so a small pool gives a roughly linear speedup until the
+    # account-tier rate limit pushes back. Default 8 workers gets ~6-8x
+    # throughput vs sequential without bumping into per-minute caps for
+    # 100-200 calls. File writes are local and lockless because each
+    # worker writes to a distinct path.
     written = 0
     failed  = 0
-    for i, (p, draft, audience, groups) in enumerate(candidates, 1):
-        print(f"[{i}/{len(candidates)}] {p.relative_to(REPO)}  ({audience})")
+    done    = 0
+    total   = len(candidates)
+
+    def process_one(idx: int, p: Path, draft: dict, audience: str, groups: list[str]):
         try:
             prompt = build_prompt(draft, audience, groups)
             llm_out = call_claude(client, prompt)
@@ -282,13 +297,29 @@ def main() -> int:
                 json.dumps(updated, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8",
             )
-            written += 1
-            print(f"  ok — mega_group={updated.get('mega_group')!r}, "
-                  f"{sum(1 for m in updated['modules'] if m.get('sub'))} subs, "
-                  f"{sum(1 for m in updated['modules'] if m.get('description'))} descriptions")
+            return (idx, p, audience, updated, None)
         except Exception as e:
-            failed += 1
-            print(f"  FAIL: {e}")
+            return (idx, p, audience, None, e)
+
+    workers = max(1, args.workers)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [
+            pool.submit(process_one, i, p, draft, audience, groups)
+            for i, (p, draft, audience, groups) in enumerate(candidates, 1)
+        ]
+        for fut in as_completed(futures):
+            idx, p, audience, updated, err = fut.result()
+            done += 1
+            prefix = f"[{done}/{total}] {p.relative_to(REPO)}  ({audience})"
+            if err is None:
+                written += 1
+                subs  = sum(1 for m in updated["modules"] if m.get("sub"))
+                descs = sum(1 for m in updated["modules"] if m.get("description"))
+                print(f"{prefix}\n  ok — mega_group={updated.get('mega_group')!r}, "
+                      f"{subs} subs, {descs} descriptions")
+            else:
+                failed += 1
+                print(f"{prefix}\n  FAIL: {err}")
 
     print()
     print(f"Backfilled: {written}, failed: {failed}, total: {len(candidates)}")

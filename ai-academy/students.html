@@ -144,68 +144,99 @@
       document.getElementById('challengeA').textContent = ch.a;
 
       // Progress — Firestore first, localStorage fill-in for anything missing.
-      // Foundations course and electives-hub both write to aesop-course-progress
-      // in localStorage on every module completion (Firebase auth not required).
-      let progress = {};
+      let modProgress = {};
       try {
         const snap = await getDoc(doc(db, 'learners', id));
-        if (snap.exists()) progress = snap.data().courseProgress || {};
+        if (snap.exists()) modProgress = snap.data().courseProgress || {};
       } catch(e) { console.warn('Progress load error:', e); }
-
-      // Merge localStorage — fills gaps while Firebase auth is pending
       try {
         const local = JSON.parse(localStorage.getItem('aesop-course-progress') || '{}');
         Object.entries(local).forEach(([cId, mods]) => {
-          if (!progress[cId]) progress[cId] = {};
-          Object.assign(progress[cId], mods);
+          if (!modProgress[cId]) modProgress[cId] = {};
+          Object.assign(modProgress[cId], mods);
         });
       } catch(_) {}
 
-      // Find course to continue (latest started, not 100%)
+      // Lesson-level progress from hub
+      let hubProgress = {};
+      try { hubProgress = JSON.parse(localStorage.getItem('aesop-hub-progress') || '{}'); } catch(_) {}
+      const completedLessons = hubProgress.completedLessons || {};
+      const passedTests      = hubProgress.passedTests      || {};
+
+      // Load course registry for full lesson structure
+      let registry = {};
+      try {
+        const r = await fetch('/ai-academy/modules/course-registry.json?v=' + Date.now());
+        if (r.ok) registry = await r.json();
+      } catch(_) {}
+
+      // Build unified per-course progress using the best available data
+      const allStarted = new Set([
+        ...Object.keys(modProgress),
+        ...Object.keys(completedLessons)
+      ]);
+
+      // Find course to continue (most lessons done, not yet 100%)
       let continueUrl = '/ai-academy/courses.html';
       let continueTitle = 'Browse Courses';
       let continueIcon = '📚';
-      let bestMods = -1;
-      COURSES.forEach(c => {
-        const cp = progress[c.id];
-        if (!cp) return;
-        const done = Object.keys(cp).length;
-        if (done > bestMods && done < c.modules) {
-          bestMods = done; continueUrl = c.url; continueTitle = c.title; continueIcon = c.icon;
+      let bestLessons = -1;
+      allStarted.forEach(cId => {
+        const reg = registry[cId];
+        if (!reg || reg.status !== 'live') return;
+        const cl = completedLessons[cId] || {};
+        const done = Object.values(cl).reduce((s, a) => s + a.length, 0);
+        const total = (reg.modules || []).reduce((s, m) => s + (m.lessons?.length || 4), 0);
+        if (done > bestLessons && done < total) {
+          bestLessons = done;
+          continueUrl = '/ai-academy/modules/electives-hub.html';
+          continueTitle = reg.title;
+          continueIcon = reg.icon || '📚';
         }
       });
       document.getElementById('continueIcon').textContent  = continueIcon;
       document.getElementById('continueTitle').textContent = continueTitle;
       document.getElementById('continueLink').href = continueUrl;
 
-      // Progress bars
+      // Progress display
       const progressEl = document.getElementById('progressList');
-      const started = COURSES.filter(c => progress[c.id]);
-      if (!started.length) {
+      if (!allStarted.size) {
         progressEl.innerHTML = '<p class="sh-empty">No courses started yet. <a href="/ai-academy/courses.html">Browse courses →</a></p>';
       } else {
-        progressEl.innerHTML = started.map(c => {
-          const done = Object.keys(progress[c.id] || {}).length;
-          const pct  = Math.round((done / c.modules) * 100);
+        const items = [...allStarted].map(cId => {
+          const reg = registry[cId];
+          if (!reg) return '';
+          const mods = reg.modules || [];
+          const cl   = completedLessons[cId] || {};
+          const pt   = passedTests[cId]      || [];
+
+          let totalLessons = 0, doneLessons = 0;
+          const modBars = mods.map(m => {
+            const mTotal = m.lessons?.length || 4;
+            const mDone  = (cl[m.id] || []).length;
+            const mTest  = pt.includes ? pt.includes(m.id) : (Array.isArray(pt) ? pt.includes(m.id) : false);
+            totalLessons += mTotal;
+            doneLessons  += mDone;
+            const pct = Math.round((mDone / mTotal) * 100);
+            return `<div class="sh-mod-seg" title="${m.title}: ${mDone}/${mTotal} lessons${mTest ? ' · Test passed' : ''}">
+              <div class="sh-mod-seg-bar"><div class="sh-mod-seg-fill" style="width:${pct}%"></div></div>
+              <div class="sh-mod-seg-lbl">${mDone}/${mTotal}${mTest ? ' ✓' : ''}</div>
+            </div>`;
+          }).join('');
+
+          const pct = totalLessons > 0 ? Math.round((doneLessons / totalLessons) * 100) : 0;
           return `<div class="sh-prog-item">
             <div class="sh-prog-top">
-              <span>${c.icon} ${c.title}</span>
+              <span>${reg.icon || '📚'} ${reg.title}</span>
               <span class="sh-prog-pct">${pct}%</span>
             </div>
             <div class="sh-prog-bar-wrap"><div class="sh-prog-bar" style="width:${pct}%"></div></div>
-            <div class="sh-prog-sub">${done} of ${c.modules} modules</div>
+            <div class="sh-mod-segs">${modBars}</div>
+            <div class="sh-prog-sub">${doneLessons} of ${totalLessons} lessons</div>
           </div>`;
-        }).join('');
+        }).filter(Boolean).join('');
+        progressEl.innerHTML = items || '<p class="sh-empty">No courses started yet. <a href="/ai-academy/courses.html">Browse courses →</a></p>';
       }
-
-      // Total stats
-      let totalDone = 0, totalMods = 0;
-      COURSES.forEach(c => {
-        totalMods += c.modules;
-        totalDone += Math.min(Object.keys(progress[c.id] || {}).length, c.modules);
-      });
-      document.getElementById('statModules').textContent = totalDone;
-      document.getElementById('statPct').textContent     = Math.round((totalDone / totalMods) * 100) + '%';
     }
 
     window._copyId = () => {
@@ -334,7 +365,13 @@
     .sh-prog-bar-wrap { height: 6px; background: var(--border, rgba(0,0,0,0.08)); border-radius: 3px; overflow: hidden; }
     [data-theme="dark"] .sh-prog-bar-wrap { background: rgba(255,255,255,0.08); }
     .sh-prog-bar { height: 100%; background: var(--gold, #c9a05a); border-radius: 3px; transition: width 0.6s; }
-    .sh-prog-sub { font-size: 0.72rem; color: var(--ink-muted, #666); margin-top: 0.25rem; }
+    .sh-prog-sub { font-size: 0.72rem; color: var(--ink-muted, #666); margin-top: 0.3rem; }
+    .sh-mod-segs { display: flex; gap: 3px; margin-top: 0.4rem; flex-wrap: wrap; }
+    .sh-mod-seg { flex: 1; min-width: 28px; }
+    .sh-mod-seg-bar { height: 4px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; margin-bottom: 2px; }
+    [data-theme="dark"] .sh-mod-seg-bar { background: rgba(255,255,255,0.1); }
+    .sh-mod-seg-fill { height: 100%; background: var(--gold, #c9a05a); border-radius: 2px; transition: width 0.5s; }
+    .sh-mod-seg-lbl { font-size: 0.6rem; color: var(--ink-muted, #888); text-align: center; white-space: nowrap; }
     .sh-empty { font-size: 0.9rem; color: var(--ink-muted, #666); }
     .sh-empty a { color: var(--gold, #c9a05a); }
 

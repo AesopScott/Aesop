@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Local pre-commit hook for the AESOP repo.
+#
+# Mirrors .github/workflows/guard-courses-html.yml so accidental
+# clobbers of ai-academy/courses.html are caught BEFORE a push reaches
+# GitHub, instead of red-X-ing in CI a few seconds later.
+#
+# Install once with:
+#     git config core.hooksPath .githooks
+#
+# Bypass intentional restructures with one of:
+#   git commit -m "your message [skip-courses-guard]"
+#   COURSES_GUARD_SKIP=1 git commit ...
+#   git commit --no-verify    (skips ALL hooks, last resort)
+
+set -e
+
+# 1. If courses.html isn't in the staged change set, nothing to check.
+if ! git diff --cached --name-only | grep -qx "ai-academy/courses.html"; then
+  exit 0
+fi
+
+# 2. Locate the comparison source. We want "the latest version on
+#    origin/main" so a stale local copy gets flagged before it can
+#    overwrite a newer one. If origin/main isn't fetched, fall back
+#    to HEAD's version.
+BASE="origin/main"
+if ! git rev-parse --verify --quiet "$BASE" >/dev/null; then
+  BASE="HEAD"
+fi
+
+# 3. Stash the staged courses.html into a temp file so the python
+#    script can read it as a path. Don't touch the working copy.
+NEW_TMP="$(mktemp)"
+trap 'rm -f "$NEW_TMP"' EXIT
+git show :ai-academy/courses.html > "$NEW_TMP"
+
+# 4. Run the same check the CI workflow uses. Read OLD from origin/main
+#    so the comparison is against the canonical published version.
+SCRIPT="$(git rev-parse --show-toplevel)/.github/scripts/check_courses_html_sanity.py"
+if [ ! -f "$SCRIPT" ]; then
+  echo "  pre-commit: $SCRIPT not found — skipping guard."
+  exit 0
+fi
+
+if ! python "$SCRIPT" --old-rev "$BASE" "$NEW_TMP"; then
+  echo
+  echo "❌ pre-commit: courses.html sanity guard failed."
+  echo "   See message above for what changed and how to fix."
+  echo "   To override (only when you really mean it):"
+  echo "     git commit -m \"your message [skip-courses-guard]\""
+  echo "   or:"
+  echo "     COURSES_GUARD_SKIP=1 git commit ..."
+  exit 1
+fi
+
+exit 0

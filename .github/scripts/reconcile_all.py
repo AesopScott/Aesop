@@ -65,6 +65,12 @@ STEPS = [
     # every disk-built registry-live course. Closes the recurring
     # "button says Live, panel says In Development" gap.
     ("ensure panels live","ensure_panels_live.py",    ["--apply"], False),
+    # reconcile_modgen_data syncs courses-data.json (the file ModGen
+    # reads) to current registry-live + disk-built truth: promotes
+    # entries to live, refreshes module lists from disk + drafts,
+    # fills missing subtitles, and demotes stale legacy entries to
+    # live=false so they stop polluting ModGen's course picker.
+    ("reconcile modgen",  "reconcile_modgen_data.py", ["--apply"], False),
     ("sync i18n",         "sync_i18n_to_registry.py", ["--apply"], False),
     # build_stats has no dry-run mode — it always writes. Skip on dry-run.
     ("build stats",       "build_stats.py",           [],          True),

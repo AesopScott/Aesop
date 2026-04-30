@@ -122,6 +122,22 @@ header .tagline {
 }
 .lang-es-notice.visible { display: block; }
 
+/* ── LANGUAGE SWITCHER BAR ──────────────────────────────────────────────── */
+.lang-switcher-bar {
+  display: inline-flex; align-items: center; gap: 0;
+  border: 1px solid rgba(201,160,90,0.3); border-radius: 5px;
+  overflow: hidden; margin-left: 0.75rem; flex-shrink: 0;
+}
+.lang-switcher-bar a {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.07em;
+  padding: 0.28rem 0.55rem; color: rgba(201,160,90,0.45);
+  text-decoration: none; transition: all 0.15s; white-space: nowrap;
+  border-right: 1px solid rgba(201,160,90,0.2);
+}
+.lang-switcher-bar a:last-child { border-right: none; }
+.lang-switcher-bar a:hover { color: var(--gold); background: rgba(201,160,90,0.08); }
+.lang-switcher-bar a.active { color: var(--gold); background: rgba(201,160,90,0.12); }
+
 /* ── ORIENTATION BAR (Group 0) ──────────────────────────────────────────── */
 .mod0-bar {
   position: relative; z-index: 10;
@@ -892,6 +908,11 @@ header .tagline {
 <header>
   <div class="header-back-group">
     <a class="header-back-academy" href="https://aesopacademy.org">AESOP AI Academy</a>
+    <div class="lang-switcher-bar" id="langBar">
+      <a href="#" onclick="setLang('en');return false;" data-lang="en" class="active">🇺🇸 EN</a>
+      <a href="#" onclick="setLang('es');return false;" data-lang="es">🇲🇽 ES</a>
+      <a href="#" onclick="setLang('tr');return false;" data-lang="tr">🇹🇷 TR</a>
+    </div>
   </div>
   <a class="header-forums" href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener">◈ Forums - Discord</a>
   <button class="dark-mode-toggle" id="darkToggle" aria-label="Toggle dark mode" title="Toggle dark mode"><span class="dark-mode-toggle__icon">☀️</span><span class="dark-mode-toggle__track"><span class="dark-mode-toggle__thumb"></span></span><span class="dark-mode-toggle__icon">🌙</span></button>
@@ -1162,15 +1183,67 @@ let state = {
   }
 };
 
+const UI_STRINGS = {
+  en: {
+    h1: 'AI Foundation Course',
+    tagline: 'AI Literacy for All Ages · Story-Driven · AesopAcademy.org',
+    forums: '◈ Forums - Discord',
+    notice: null,
+    modules: 'Modules', lessons: 'Lessons',
+    moduleLabel: 'Module', moduleTest: 'Module Test',
+    lessonsLabel: 'lessons', perModule: 'Per Module',
+    complete: '✓ Complete', selectCourse: 'Select a Course to Begin',
+  },
+  es: {
+    h1: 'AI Foundation Course',
+    tagline: 'AI Literacy for All Ages · Story-Driven · AesopAcademy.org',
+    forums: '◈ Forums - Discord',
+    notice: '🇪🇸 Español — Solo el nivel <strong>Advanced</strong> está disponible en español por ahora.',
+    modules: 'Modules', lessons: 'Lessons',
+    moduleLabel: 'Module', moduleTest: 'Module Test',
+    lessonsLabel: 'lessons', perModule: 'Per Module',
+    complete: '✓ Complete', selectCourse: 'Select a Course to Begin',
+  },
+  tr: {
+    h1: 'AI Temel Kursu',
+    tagline: 'Her Yaş İçin AI Okuryazarlığı · Hikaye Tabanlı · AesopAcademy.org',
+    forums: '◈ Forum - Discord',
+    notice: '🇹🇷 Türkçe — İleri içerik <a href="/ai-academy/modules/tr/courses.html" style="color:var(--gold);font-weight:700;">İleri Temeller kursunda</a> mevcuttur.',
+    modules: 'Modüller', lessons: 'Dersler',
+    moduleLabel: 'Modül', moduleTest: 'Modül Testi',
+    lessonsLabel: 'ders', perModule: 'Modül Başına',
+    complete: '✓ Tamamlandı', selectCourse: 'Başlamak için bir kurs seçin',
+  },
+};
+
 function setLang(lang) {
   currentLang = lang;
-  // Update toggle UI
+  const s = UI_STRINGS[lang] || UI_STRINGS.en;
+
+  // Update lang bar
+  document.querySelectorAll('#langBar [data-lang]').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+  // Legacy .lang-toggle support
   document.querySelectorAll('.lang-toggle button').forEach(b => {
     b.classList.toggle('active', b.dataset.lang === lang);
   });
+
+  // Translate header elements
+  const h1 = document.querySelector('header h1');
+  if (h1) h1.textContent = s.h1;
+  const tagline = document.querySelector('.tagline');
+  if (tagline) tagline.textContent = s.tagline;
+  const forums = document.querySelector('.header-forums');
+  if (forums) forums.innerHTML = s.forums;
+
   // Show/hide notice
   const notice = document.getElementById('langNotice');
-  if (notice) notice.classList.toggle('visible', lang === 'es');
+  if (notice) {
+    notice.innerHTML = s.notice || '';
+    notice.classList.toggle('visible', !!s.notice);
+  }
+
   // If switching to Spanish, force Advanced tier (only tier with Spanish content)
   if (lang === 'es' && state.groupId !== 3) {
     selectGroup(3);
@@ -1186,7 +1259,9 @@ function setLang(lang) {
       btn.style.pointerEvents = '';
     }
   });
-  // Re-render current view if a module is selected
+
+  // Re-render to apply translated labels
+  renderSidebar();
   if (state.moduleId) renderModuleDetail();
 }
 
@@ -1289,16 +1364,17 @@ function renderSidebar() {
   const lessonPct = totalLessons ? Math.round((doneLessons / totalLessons) * 100) : 0;
   const mods = groupModules(group);
 
+  const s = UI_STRINGS[currentLang] || UI_STRINGS.en;
   let html = `
     <div class="sidebar-group-label">${group.emoji} ${group.label}</div>
     <div class="progress-block">
       <div class="progress-row">
-        <span class="progress-label">Modules</span>
+        <span class="progress-label">${s.modules}</span>
         <span class="progress-count">${modsDone}/${modsTotal}</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${modPct}%"></div></div>
       <div class="progress-row">
-        <span class="progress-label">Lessons</span>
+        <span class="progress-label">${s.lessons}</span>
         <span class="progress-count">${doneLessons}/${totalLessons}</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${lessonPct}%"></div></div>
@@ -1315,7 +1391,7 @@ function renderSidebar() {
       <div class="${rowClass}" onclick="selectModule('${mod.id}')">
         <div class="mod-row-icon">${done ? '✅' : mod.icon}</div>
         <div class="mod-row-info">
-          <div class="mod-row-num">Module ${i + 1}</div>
+          <div class="mod-row-num">${s.moduleLabel} ${i + 1}</div>
           <div class="mod-row-label">${mod.title}</div>
         </div>
         <div class="mod-row-check">${done ? '✓' : ''}</div>
@@ -1344,7 +1420,7 @@ function renderSidebar() {
              onclick="selectModuleTest('${mod.id}')"
              style="border-left-color:${isTestActive ? 'var(--current-accent)' : 'transparent'};opacity:${isTestActive ? '1' : '0.65'};">
           <div class="lesson-row-num">📝</div>
-          <div class="lesson-row-label">Module Test</div>
+          <div class="lesson-row-label">${s.moduleTest}</div>
           <div class="lesson-row-dot">→</div>
         </div>
       `;
@@ -1363,6 +1439,7 @@ function renderGroupOverview() {
   const group = AGE_GROUPS[state.groupId];
   const mods = groupModules(group);
   const totalLessons = mods.length * group.lessonsPerModule;
+  const s = UI_STRINGS[currentLang] || UI_STRINGS.en;
 
   let html = `
     <div class="group-overview">
@@ -1373,15 +1450,15 @@ function renderGroupOverview() {
         <div class="group-stats">
           <div style="text-align:center;">
             <div class="group-stat-val">${mods.length}</div>
-            <div class="group-stat-label">Modules</div>
+            <div class="group-stat-label">${s.modules}</div>
           </div>
           <div style="text-align:center;">
             <div class="group-stat-val">${totalLessons}</div>
-            <div class="group-stat-label">Lessons</div>
+            <div class="group-stat-label">${s.lessons}</div>
           </div>
           <div style="text-align:center;">
             <div class="group-stat-val">${group.lessonsPerModule}</div>
-            <div class="group-stat-label">Per Module</div>
+            <div class="group-stat-label">${s.perModule}</div>
           </div>
         </div>
       </div>
@@ -1399,12 +1476,12 @@ function renderGroupOverview() {
           ${done ? '✅' : mod.icon}
         </div>
         <div class="module-card-body">
-          <div class="module-card-num" style="color:${accent};">Module ${i + 1}</div>
+          <div class="module-card-num" style="color:${accent};">${s.moduleLabel} ${i + 1}</div>
           <div class="module-card-title">${mod.title}</div>
           <div class="module-card-desc">${mod.desc}</div>
           <div class="module-card-meta">
-            <span class="module-card-count">${lessons.length} lessons</span>
-            ${done ? '<span class="module-card-done-badge">✓ Complete</span>' : ''}
+            <span class="module-card-count">${lessons.length} ${s.lessonsLabel}</span>
+            ${done ? `<span class="module-card-done-badge">${s.complete}</span>` : ''}
           </div>
         </div>
         <div class="module-card-arrow">→</div>

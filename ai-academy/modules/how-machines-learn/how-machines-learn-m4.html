@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Machines Actually Learn — M4: Audit a Real Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-machines-learn-m4 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-test.locked{opacity:0.3;cursor:not-allowed;pointer-events:auto;}
+.tab-test.locked::after{content:' 🔒';font-style:normal;}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;font-style:italic;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.verdict-box{background:rgba(201,160,90,0.04);border:1px solid rgba(201,160,90,0.15);border-radius:6px;padding:1rem 1.25rem;margin:1rem 0;}
+.verdict-box .verdict-label{font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:0.5rem;}
+.verdict-box p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.audit-steps{counter-reset:step;list-style:none;margin:1rem 0;}
+.audit-steps li{counter-increment:step;display:flex;gap:0.75rem;margin-bottom:0.75rem;font-size:0.87rem;color:#a89f93;line-height:1.65;}
+.audit-steps li::before{content:counter(step);min-width:1.5rem;height:1.5rem;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:var(--accent);flex-shrink:0;margin-top:0.1rem;}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 1.5rem;}.lesson-section{padding:0 1rem;}.lesson-hero{padding:2rem 1.5rem 1.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1rem;}.lesson-section{padding:0;}.lesson-hero{padding:1.5rem 1rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test locked" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════════════ LESSON 1 ═══ -->
+<div class="page active" id="p-l1">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 1</div>
+    <h1>What Does It Mean to Audit an AI?</h1>
+    <div class="tagline">Before we can fix something, we have to know how to look at it clearly.</div>
+    <div class="lesson-question">If a machine makes a decision that ruins someone's life — who checks its work?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="London, 2020">
+      <p class="story-text">In August 2020, about <em>280,000 students</em> across England sat waiting for their A-level exam results — the grades that determined whether they'd get into university. Because COVID-19 had cancelled the actual exams, the UK government handed the job of assigning grades to an algorithm built by <span class="char">Ofqual</span>, the national education regulator.</p>
+      <p class="story-text">The algorithm looked at each student's school's historical performance and adjusted their predicted grades downward if their school had a history of overestimating results. On paper, that sounds reasonable. In practice, it meant that a student at a low-performing school in a low-income area could score brilliantly in mock exams and still receive a grade two levels below what their teacher expected — because the school's past record dragged the number down.</p>
+      <p class="story-text">Students from private schools fared better, because those schools had smaller class sizes and more stable track records. The algorithm, which no student had ever seen or been told about, had baked in <em>existing inequality</em> and called it math. Within days, the UK government reversed the decision under public pressure. But nobody had audited the algorithm before it went live. Nobody had checked what it would actually do to real people.</p>
+    </div>
+
+    <h2 class="section-heading">So What Is an Audit?</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>An audit is a careful, systematic check of whether something is working the way it's supposed to — and whether it's causing harm it shouldn't cause. You've probably heard of financial audits, where accountants check whether a company's money records are accurate. An <em>AI audit</em> does something similar, but instead of checking numbers in a ledger, it checks the behavior of a model.</p>
+        <p>Specifically, an AI audit asks three questions: <strong>What did the model learn?</strong> <strong>Who does it hurt?</strong> And <strong>does it do what it claims to do?</strong> Those sound simple, but answering them is surprisingly hard — and the people who build AI systems are often the last ones to spot the problems.</p>
+        <p>That's why independent auditing matters. The Ofqual algorithm was built by people who thought they were being fair. They weren't trying to disadvantage students from poorer schools. But because nobody outside their team was systematically checking the outcomes on different groups, the bias went undetected until it was too late.</p>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Audit</span>
+        <span class="kt-def">A structured review of a system to check whether it works correctly and causes no unacceptable harm. In AI, this means testing what the model actually does — not just what it was designed to do.</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Gap Between Intention and Outcome</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Here is something that took researchers years to fully accept: <em>a model can be built with good intentions and still produce deeply unfair outcomes</em>. The Ofqual algorithm wasn't designed to punish poor kids. Its designers genuinely believed they were correcting for grade inflation. But the data they used — historical school performance — carried decades of unequal funding, unequal resources, and unequal opportunity embedded inside it. The model learned from that data. Then it reproduced those inequalities, with mathematical confidence.</p>
+        <p>This is sometimes called <strong>automation bias</strong> — the tendency for people to trust a computer's output more than a human's judgment, even when the computer is wrong. Because the number came from an algorithm, it felt official, certain, objective. Teachers who knew their students were overruled by a score.</p>
+        <p>An auditor's job is specifically to resist automation bias. An auditor looks at the output and asks: <em>Wait. Does this actually make sense? Who got hurt here, and why?</em></p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">The Ethical Question</div>
+        <p>When an algorithm causes harm that its designers didn't intend, who is responsible? The engineers who built it? The government that deployed it? The regulators who approved it? Or is "no one" a real answer — and if so, what does that mean for the people who were hurt?</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">What Auditors Actually Look For</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>In professional AI audits — which now happen at companies, governments, and universities — auditors look for a specific set of warning signs. You can think of them as the five things every audit checks:</p>
+        <ul class="audit-steps">
+          <li><strong>Accuracy:</strong> Does the model get the right answer often enough, across all the cases it will encounter — not just the easy ones?</li>
+          <li><strong>Fairness:</strong> Does the model perform equally well for different groups of people — different races, genders, income levels, locations?</li>
+          <li><strong>Transparency:</strong> Can anyone explain why the model made a specific decision? Or is it a black box?</li>
+          <li><strong>Robustness:</strong> Does the model break down when it encounters unusual cases or people trying to game it?</li>
+          <li><strong>Accountability:</strong> Is there a clear process for correcting errors when they're found?</li>
+        </ul>
+        <p>The Ofqual algorithm failed on at least three of these. It was inaccurate for many individual students, unfair across economic groups, and there was no quick accountability mechanism — until public outrage forced one.</p>
+        <p>You now understand something most adults who hear news stories about AI still miss: <em>there's a difference between a model that looks correct and a model that has been audited</em>. Looking correct just means it produces confident-sounding numbers. Being audited means someone checked whether those numbers are actually right — and for whom.</p>
+      </div>
+      <div class="gold-callout">
+        <div class="callout-label">Your New Lens</div>
+        <p>From now on, whenever you hear that "an algorithm decided" something — about college admissions, loan applications, parole, job hiring — you have a framework. You can ask: Was this audited? For what kind of fairness? By whom? Those questions put you ahead of most people in the room.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Quiz → L1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab → Audit Briefing</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ QUIZ 1 ═══ -->
+<div class="page" id="p-q1">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 1</h1>
+    <div class="tagline">What Does It Mean to Audit an AI?</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q1-1">
+      <div class="quiz-q">1. In 2020, the Ofqual algorithm assigned lower-than-expected grades to students mainly because it:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Detected those students had cheated on their mock exams</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">Used the historical performance of their schools to adjust individual predictions downward</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Was deliberately programmed to favor private school students</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">Ran out of data and defaulted to the national average</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The algorithm used each school's past grade history as a factor — which meant students at historically lower-performing schools were dragged down, even if they individually performed well.</div>
+      <div class="quiz-feedback wrong">Not quite. The algorithm wasn't looking at individual behavior — it was using school-level historical data, which embedded existing inequalities into individual outcomes.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-2">
+      <div class="quiz-q">2. "Automation bias" in this context means:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A model that automatically improves its own biases over time</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">The tendency for robots to prefer certain types of work</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">The tendency for people to trust a computer's output more than human judgment, even when the computer is wrong</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">An error introduced when training data is collected automatically</button>
+      </div>
+      <div class="quiz-feedback right">Exactly right. Automation bias is about us — humans over-trusting algorithmic outputs because they feel official or objective.</div>
+      <div class="quiz-feedback wrong">Automation bias refers to how humans respond to algorithmic outputs, not how the algorithm itself behaves. Computers feel authoritative, so people often trust them more than they should.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-3">
+      <div class="quiz-q">3. A school district buys an AI system to predict which students might drop out. The vendor says accuracy is 85%. An auditor reviewing this tool should also ask:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Whether the AI was built using open-source code</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">How much money the vendor charged for the system</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Whether that 85% accuracy is equal across different racial or economic groups, or whether it fails more often for certain students</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Whether the system uses a neural network or a simpler model type</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Overall accuracy can hide the fact that a model works well for one group and terribly for another. An auditor asks: accurate for whom?</div>
+      <div class="quiz-feedback wrong">An auditor's priority is fairness across groups. Overall accuracy statistics can be misleading if the model is significantly more accurate for some students than others.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-4">
+      <div class="quiz-q">4. Which of the five audit dimensions did the Ofqual algorithm most clearly fail on regarding individual students whose teachers knew them well?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Robustness</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">Accuracy — individual predictions were wrong for many students whose personal performance was ignored</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Transparency — nobody could read the algorithm's code</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Accountability — the government refused to reverse the grades</button>
+      </div>
+      <div class="quiz-feedback right">Right. The algorithm's predictions were factually wrong for thousands of individual students. Teacher assessments were overridden by a system that couldn't account for individual cases.</div>
+      <div class="quiz-feedback wrong">While the algorithm had multiple failures, the most immediate problem for individual students was accuracy — the grades were simply wrong, especially for those from lower-performing schools who had outperformed expectations.</div>
+    </div>
+
+    <div class="quiz-box" id="q1-5">
+      <div class="quiz-q">5. Why might the engineers who built the Ofqual algorithm have failed to catch its fairness problems before it was deployed?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Because they were deliberately trying to harm low-income students</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Because the algorithm was too mathematically complex for any human to understand</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q1-5')">Because the people closest to building a system often test it on average-case scenarios and don't systematically check outcomes across different groups</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Because fairness in AI is impossible to measure, so there was nothing to check</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. Builders often test whether a system works "on average" — but bias hides in the gaps between groups. Independent audits exist precisely because insiders tend to miss what outsiders catch.</div>
+      <div class="quiz-feedback wrong">The engineers had good intentions but limited perspective. They likely tested whether the model worked on typical cases without systematically examining outcomes for students from different socioeconomic backgrounds.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Back to L1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab1')">Go to Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LAB 1 ═══ -->
+<div class="page" id="p-lab1">
+  <div class="lab-hero">
+    <h1>Lab 1 — The Audit Briefing</h1>
+    <div class="tagline">You've been assigned to audit an AI system. Your first job: figure out what questions to ask.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: Junior AI Auditor</h4>
+      <p>A city government is using an AI model to decide which neighborhoods get increased police patrols. The model was trained on five years of arrest data. Officials say it's 79% accurate. Your job is to audit it — and you need to decide what questions matter most before you even look at the data.</p>
+      <p>Your lab partner SABLE is a peer auditor, not a teacher. She'll push back on weak reasoning and ask you to justify your positions. Have at least 3 exchanges to complete this lab.</p>
+      <div class="lab-prompt">Start by telling SABLE: What's the first question you'd ask about this model, and why is that the most important thing to know?</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>SABLE — Peer Auditor</span>
+        <span class="chat-badge">Lab 1</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Okay, I've read the briefing. A predictive policing model trained on arrest data, 79% accuracy claimed. I've done three of these audits now and I'll tell you — 79% accuracy is almost meaningless without more context. But I want to hear your instinct first. What's the first question you'd ask, and why that one before everything else?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LESSON 2 ═══ -->
+<div class="page" id="p-l2">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 2</div>
+    <h1>Reading the Evidence: Accuracy, Fairness, and What the Numbers Hide</h1>
+    <div class="tagline">Numbers can tell the truth and lie at the same time. Knowing the difference is the whole job.</div>
+    <div class="lesson-question">If a model is right 90% of the time, does that mean it's fair?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Broward County, Florida, 2016">
+      <p class="story-text">In 2016, the investigative newsroom <span class="char">ProPublica</span> published an analysis that changed how the world thought about AI and criminal justice. They examined a tool called <em>COMPAS</em> — Correctional Offender Management Profiling for Alternative Sanctions — which was being used by judges in Broward County, Florida to predict whether defendants would commit another crime before trial.</p>
+      <p class="story-text">COMPAS gave each defendant a risk score from 1 to 10. Judges used those scores to help decide who got bail and who sat in jail. The tool's creator, a company called <span class="char">Northpointe</span>, said the model was accurate — and by one measure, they were right. Overall, it predicted recidivism (re-offending) at a rate around 65–70% accuracy.</p>
+      <p class="story-text">But ProPublica's analysts, led by <span class="char">Jeff Larson</span> and <span class="char">Julia Angwin</span>, broke the numbers down by race. And what they found was this: <em>Black defendants who did not reoffend were nearly twice as likely to be falsely labeled high-risk</em> as white defendants who did not reoffend. Meanwhile, white defendants who did reoffend were more likely to be labeled low-risk and released. The model was equally accurate overall. It was deeply unequal in how its errors fell.</p>
+    </div>
+
+    <h2 class="section-heading">Two Kinds of Accuracy</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>This is one of the most important ideas in all of AI ethics, and it comes down to something called <strong>error distribution</strong>. When a model makes mistakes — and every model makes mistakes — the question is: whose lives do those mistakes disrupt?</p>
+        <p>There are two types of errors that matter in a model like COMPAS. A <em>false positive</em> is when the model predicts something bad will happen but it doesn't — like labeling a defendant "high risk" when they actually wouldn't reoffend. A <em>false negative</em> is when the model predicts nothing bad will happen, but it does — like labeling someone "low risk" when they actually do reoffend.</p>
+        <p>In the COMPAS case, false positives fell disproportionately on Black defendants — people who were treated as dangerous when they weren't. False negatives fell disproportionately on white defendants — people the system assumed were safe when they weren't. The model's overall accuracy looked fine. But the errors were not distributed equally. And in a system where errors mean people sit in jail or walk free, that asymmetry is not a technical detail. It's a civil rights issue.</p>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">False Positive</span>
+        <span class="kt-def">When a model incorrectly predicts that something will happen. Example: predicting a defendant will reoffend when they actually won't.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">False Negative</span>
+        <span class="kt-def">When a model incorrectly predicts that something will not happen. Example: predicting a defendant won't reoffend when they actually will.</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Fairness Impossibility Problem</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Here's where it gets genuinely complicated — and this is the part that even professional statisticians sometimes argue about. After ProPublica's report, Northpointe responded with their own analysis. They said COMPAS was fair — because it produced equally accurate scores for Black and white defendants at each risk level. If it said someone was 7-out-of-10 risk, that score meant the same thing regardless of race.</p>
+        <p>Mathematically, both claims were correct. ProPublica's measure of fairness and Northpointe's measure of fairness are real, recognized definitions. And in 2016, three researchers — <span class="char">Jon Kleinberg, Sendhil Mullainathan, and Manish Raghavan</span> — proved something that should have been front-page news everywhere: <em>when the underlying rate of an outcome differs between groups, you mathematically cannot satisfy all definitions of fairness at the same time.</em></p>
+        <p>Because arrest rates differed between Black and white defendants — partly due to policing patterns, not just actual crime rates — any model trained on that data faced an impossible tradeoff. You could make the false positive rates equal, or you could make the accuracy-per-score-level equal. You could not do both. Someone was going to be treated worse no matter what.</p>
+        <p>This doesn't mean fairness is hopeless. It means <em>choosing a fairness definition is itself a moral and political decision</em> — not a technical one. And right now, in most places, that decision is being made quietly by engineers and companies, without public input.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">The Ethical Question</div>
+        <p>If you genuinely cannot satisfy all definitions of fairness at once, who should decide which definition a model uses — especially when lives are at stake? Should it be the company that built it? The judge who uses it? A government body? The people most affected by it? There's no clean answer here.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">What This Means When You Read a Headline</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Almost every news story about AI accuracy reports a single number. "The model is 94% accurate." "The system detects fraud with 87% precision." These numbers are real — and almost always incomplete. A trained auditor reads them and immediately asks: <em>Accurate for whom? What happens in the 6% or 13% of cases where it fails? Do those failures fall evenly, or do they pile up on the same group of people?</em></p>
+        <p>The COMPAS story is now taught in law schools, computer science programs, and statistics departments worldwide. But most of the judges who used COMPAS scores between 2010 and 2016 were never told to ask those questions. They trusted the number because it was scientific. That's automation bias at institutional scale.</p>
+        <p>Understanding what you now understand — that fairness is not a single number and that errors have victims — changes how you read every story about AI. You are no longer a passive reader of those stories. You're an analyst.</p>
+      </div>
+      <div class="gold-callout">
+        <div class="callout-label">What You Can Now See</div>
+        <p>When someone says an AI is "accurate," you know to ask: accurate on what measure, for which group, and where do the errors land? Those three follow-up questions put you ahead of most journalists, most policymakers, and a significant number of engineers who built the models being discussed.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz L2 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ QUIZ 2 ═══ -->
+<div class="page" id="p-q2">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 2</h1>
+    <div class="tagline">Accuracy, Fairness, and What the Numbers Hide</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q2-1">
+      <div class="quiz-q">1. ProPublica's 2016 analysis of COMPAS found that the tool was unfair specifically because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It was less than 50% accurate overall</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">False positives (wrongly labeling someone high-risk) fell disproportionately on Black defendants compared to white defendants</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">It only worked for defendants in Florida, not other states</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">The company that built it refused to share how it worked</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The key finding was that the model's errors — specifically false positives — were distributed unequally along racial lines.</div>
+      <div class="quiz-feedback wrong">The issue wasn't overall accuracy — it was that the errors weren't distributed equally. Black defendants who wouldn't have reoffended were far more likely to be wrongly labeled high-risk.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-2">
+      <div class="quiz-q">2. A hospital uses an AI model to decide which patients get follow-up care calls. The model is 88% accurate overall. To audit it fairly, you should also check:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Whether the hospital paid a fair price for the model</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Whether that 88% accuracy is equal across patients of different ages, races, or insurance types — or whether certain groups are missed more often</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Whether the model was built using Python or another programming language</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Whether doctors agree that 88% is a high enough accuracy rate for medical decisions</button>
+      </div>
+      <div class="quiz-feedback right">Right. An 88% overall accuracy can hide systematic failures for specific patient groups. The auditor's job is to find where those failures cluster.</div>
+      <div class="quiz-feedback wrong">Overall accuracy statistics can be misleading when errors fall unevenly. The audit needs to break down performance by group to see if some patients are being systematically missed.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-3">
+      <div class="quiz-q">3. When researchers proved in 2016 that you can't simultaneously satisfy all fairness definitions when base rates differ between groups, the main implication was:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">That AI should never be used in criminal justice decisions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">That fairness is an unsolvable problem and engineers shouldn't worry about it</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">That choosing which fairness definition a model uses is a moral and political decision, not just a technical one — and someone has to make that choice explicitly</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">That models should always use the fairness definition that produces the highest overall accuracy</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. The math forces a choice. And that choice — which groups bear more of the errors — is a values question, not an engineering question. It needs human judgment and accountability.</div>
+      <div class="quiz-feedback wrong">The impossibility result doesn't mean fairness is hopeless — it means you must consciously choose which type of fairness to prioritize. That's a decision with moral weight, not a technical setting.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-4">
+      <div class="quiz-q">4. A company says their hiring algorithm is fair because it gives equally accurate scores to male and female candidates at each score level. A critic says it's unfair because women receive false negatives (missed for positions they'd succeed in) at higher rates. Which statement is most accurate?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">The company is right; score accuracy per level is the correct definition of fairness</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">The critic is right; false negative rates are the only correct measure of fairness</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">Both can be mathematically correct — they're measuring different types of fairness, and the disagreement is about which type matters most for this situation</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">Neither matters because hiring decisions should always be made by humans, never algorithms</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is the real-world version of the COMPAS debate. Multiple fairness definitions can be simultaneously valid, which is why choosing between them is a policy decision, not just a math problem.</div>
+      <div class="quiz-feedback wrong">The COMPAS lesson applies here: both sides can be mathematically right because they're using different fairness definitions. The deeper question is which definition is most appropriate — and that requires human judgment about values.</div>
+    </div>
+
+    <div class="quiz-box" id="q2-5">
+      <div class="quiz-q">5. What is a "false positive" in the context of a model predicting which students might fail their final exams?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">A student who was predicted to pass and actually did pass</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">A student who was predicted to fail and actually did fail</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q2-5')">A student who was predicted to fail but actually passed — the model incorrectly flagged them as at-risk</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">A student who was predicted to pass but actually failed</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A false positive is when the model's prediction triggers an alarm that shouldn't have been triggered. In this case: flagging a student as failing when they would have been fine.</div>
+      <div class="quiz-feedback wrong">A false positive means the model said something bad would happen — and it didn't. The student was labeled "at risk of failing" when they actually would have passed.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Back to L2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab2')">Go to Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LAB 2 ═══ -->
+<div class="page" id="p-lab2">
+  <div class="lab-hero">
+    <h1>Lab 2 — The Fairness Tribunal</h1>
+    <div class="tagline">Two definitions of fairness. One model. You have to pick a side — and defend it.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: Fairness Analyst</h4>
+      <p>A university is using an AI model to predict which applicants will succeed academically. The model shows equal score accuracy for applicants from different socioeconomic backgrounds — but students from low-income families receive false rejections (false negatives) at twice the rate of students from wealthier families.</p>
+      <p>Your peer analyst CASS has a strong opinion about which fairness metric matters. So do you. Have at least 3 exchanges to complete this lab.</p>
+      <div class="lab-prompt">Begin by stating your position: which type of fairness failure matters more here — the unequal false negative rate, or maintaining consistent accuracy per score level? Give one real-world reason for your choice.</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>CASS — Fairness Analyst</span>
+        <span class="chat-badge">Lab 2</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">I'll be upfront: I think score-level accuracy consistency is the right metric here. If the model says 80% confidence for everyone at that level, it's treating people equally by the numbers. But I want to hear you first — which failure do you think is more serious for this university case, and why?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LESSON 3 ═══ -->
+<div class="page" id="p-l3">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 3</div>
+    <h1>The Black Box Problem: When You Can't Explain Why</h1>
+    <div class="tagline">A model that gives you no reason for its decision isn't just inconvenient — it may be a fundamental threat to accountability.</div>
+    <div class="lesson-question">If an AI denied you a loan and couldn't tell you why, would you have any way to appeal?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="United States, 2019">
+      <p class="story-text">In November 2019, <span class="char">David Heinemeier Hansson</span> — the programmer who created Ruby on Rails, a tool used by millions of developers worldwide — posted on Twitter about something that had just happened to his wife. She had applied for an Apple Card, a credit card run by Goldman Sachs using an algorithm, and received a credit limit <em>20 times lower than his</em>. They filed their taxes jointly. They had the same assets. The algorithm had assigned him far more credit than her, with no explanation offered.</p>
+      <p class="story-text">Hansson's tweet spread fast because many people recognized the pattern. <span class="char">Steve Wozniak</span>, co-founder of Apple, joined in to say the same thing had happened to him and his wife. The New York Department of Financial Services launched a formal investigation. Goldman Sachs issued statements saying the algorithm didn't use gender as an input — and that may have been technically true. But the algorithm had been trained on historical credit data, which carried decades of gender-based lending discrimination. The output replicated those patterns perfectly, even without explicitly coding gender in.</p>
+      <p class="story-text">Here is the detail that haunted the story: <em>Goldman Sachs couldn't fully explain why the algorithm made the decisions it made</em>. Not to customers. Not entirely even to regulators. The model was a trained neural network — a type of AI where the reasoning is distributed across millions of numerical connections, with no sentence you can point to and say "this is the rule it used."</p>
+    </div>
+
+    <h2 class="section-heading">What Makes a Model a "Black Box"</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Some models make decisions through rules you can trace step by step. A simple credit scoring model might say: if income is below $30,000 and debt is above 40% of income, deny the application. You can check that rule, challenge it, and — if you're a regulator — declare it illegal. This is called an <em>interpretable</em> or <em>transparent</em> model.</p>
+        <p>A neural network — the kind of model that runs many of today's most powerful AI systems — works differently. It learns patterns by adjusting millions of numerical weights during training, and those weights don't translate to human-readable rules. The model ends up knowing something, but it can't say what it knows in words. This is the <strong>black box problem</strong>: the model produces outputs but cannot produce a human-understandable explanation of how it got there.</p>
+        <p>For lower-stakes applications, this is inconvenient. For decisions about someone's access to credit, housing, a job, or their freedom, it is a fundamental problem. You cannot appeal a decision you cannot understand. You cannot prove discrimination if you cannot read the discriminatory rule. And a regulator cannot enforce anti-discrimination law against a process that offers no reasoning.</p>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Black Box</span>
+        <span class="kt-def">A model whose internal decision-making cannot be directly read or explained in human terms — even by its creators. Neural networks are the most common example.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Interpretability</span>
+        <span class="kt-def">The degree to which a model's decisions can be understood and explained. A decision tree is highly interpretable. A deep neural network is typically not.</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">LIME, SHAP, and Trying to Open the Box</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Researchers haven't given up on interpretability. Since around 2016, a field called <em>explainable AI</em> (XAI) has grown rapidly, developing tools that try to estimate why a black box model made a particular decision — even when you can't read the model directly.</p>
+        <p>Two of the most widely used tools are <strong>LIME</strong> (Local Interpretable Model-agnostic Explanations, developed by <span class="char">Marco Tulio Ribeiro</span> and colleagues in 2016) and <strong>SHAP</strong> (SHapley Additive exPlanations, from game theory, adapted for ML by <span class="char">Scott Lundberg</span> in 2017). Both work roughly the same way: they probe the model with many slightly altered versions of a specific input and observe how the output changes. From those experiments, they infer which features mattered most for that one decision.</p>
+        <p>These tools are genuinely useful. They've helped researchers discover that a medical imaging AI was using the metal tag on X-ray films as a feature (because tags appeared more often in certain types of images), that a model predicting hospital readmission was heavily influenced by a patient's birth month in ways nobody could explain, and dozens of other strange hidden patterns. But they are estimates — not the actual reasoning. They tell you what probably mattered, not what definitely did. And for legal accountability, "probably" may not be enough.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">The Ethical Question</div>
+        <p>In the United States and European Union, there are now legal debates about whether people have a "right to explanation" when an AI makes a decision about them. Should someone denied a loan, a job, or housing be entitled to a plain-language reason? If the model genuinely can't provide one, should that model be allowed to make those decisions at all?</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Accuracy-Interpretability Tradeoff</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>Here is a tension that sits at the center of AI deployment right now: in most domains, more complex models — neural networks with millions of parameters — are significantly more accurate than simpler, interpretable models like decision trees. A neural network diagnosing cancer from a scan might be 5% more accurate than any interpretable alternative. That 5% represents real lives saved.</p>
+        <p>So the question isn't "black box bad, transparent good." The question is how high the accuracy gain needs to be to justify losing the ability to explain individual decisions. In low-stakes situations — recommending a movie, filtering spam — the answer is easy: use whatever works best. In high-stakes situations — criminal sentencing, medical diagnosis, credit decisions, hiring — the calculus is much harder, and reasonable people disagree.</p>
+        <p>What you can now do that most people cannot: <em>name the tradeoff explicitly</em>. When you see a powerful AI deployed in a sensitive context, you can ask: how interpretable is this? What do we lose by not being able to explain its decisions? Who bears that cost? Those questions used to belong only to researchers and policymakers. They now belong to you.</p>
+      </div>
+      <div class="gold-callout">
+        <div class="callout-label">Institutional Reality</div>
+        <p>In 2022, the EU's AI Act classified certain AI systems as "high-risk" and required them to meet transparency standards before deployment. In the US, the CFPB (Consumer Financial Protection Bureau) has issued guidance requiring lenders to provide specific, accurate reasons for credit denials — even when an algorithm was involved. These are real policy decisions being made right now, shaped exactly by the tension this lesson describes.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz L3 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ QUIZ 3 ═══ -->
+<div class="page" id="p-q3">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 3</h1>
+    <div class="tagline">The Black Box Problem</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q3-1">
+      <div class="quiz-q">1. The Apple Card controversy in 2019 was significant for AI auditing because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Goldman Sachs admitted to intentionally programming gender discrimination into the algorithm</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">The algorithm appeared to reproduce gender-based discrimination even though gender wasn't explicitly an input — and Goldman Sachs couldn't fully explain why</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">Apple was fined billions of dollars for discriminatory lending practices</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">David Heinemeier Hansson built a competing algorithm that solved the bias problem</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The case illustrated how a model can reproduce discrimination through training data, without explicitly encoding a protected characteristic — and how black box models make this nearly impossible to investigate.</div>
+      <div class="quiz-feedback wrong">Goldman Sachs stated they didn't use gender as an input. The problem was that the model learned discriminatory patterns from historical data, which embedded gender bias indirectly — and the company couldn't fully explain the model's reasoning.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-2">
+      <div class="quiz-q">2. Why is a "black box" model a problem specifically for legal accountability?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Because courts only accept decisions made by human judges</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">Because you cannot prove discrimination or challenge a decision if the model cannot provide a human-understandable reason for it</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Because black box models are always less accurate than interpretable ones</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">Because regulators are not allowed to inspect privately owned algorithms</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. Legal accountability depends on being able to trace reasoning. If a model's reasoning is opaque, you cannot find the discriminatory rule to challenge it — even if discrimination is clearly happening in the outcomes.</div>
+      <div class="quiz-feedback wrong">The accountability problem is specific: you need to trace the reasoning to prove discrimination or challenge a decision. Without interpretability, that chain of evidence is broken.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-3">
+      <div class="quiz-q">3. LIME and SHAP tools work by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Reading the internal weights of a neural network and translating them into rules</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Replacing black box models with simpler, fully interpretable versions</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Testing many slightly different versions of an input and observing how the model's output changes — then inferring which features probably mattered most for a specific decision</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Asking the model to generate a text explanation of its own reasoning</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Both are probing strategies — they treat the model as a black box and infer likely reasons from patterns in how outputs change when inputs change. They estimate, they don't reveal directly.</div>
+      <div class="quiz-feedback wrong">LIME and SHAP can't read model weights directly or replace the model. They work from the outside, testing variations of inputs and watching how outputs change — generating estimates of which features probably influenced a specific decision.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-4">
+      <div class="quiz-q">4. A medical AI that diagnoses tumors is 6% more accurate than any interpretable model alternative, but cannot explain its decisions. A hospital is deciding whether to deploy it. What is the most precise framing of the tradeoff they face?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">Accuracy versus cost — better AI is more expensive to run</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">There is no real tradeoff — the most accurate model should always be chosen in medical contexts</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">Accuracy versus accountability — the 6% gain in correct diagnoses must be weighed against losing the ability to explain, challenge, or legally review individual decisions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">The hospital should simply average the outputs of both models to get accuracy and interpretability simultaneously</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The tradeoff isn't just "better vs. worse" — it's about what we give up when we choose the more powerful but opaque model. In medicine, the inability to explain a diagnosis has real consequences for patients, clinicians, and legal liability.</div>
+      <div class="quiz-feedback wrong">The accuracy-interpretability tradeoff is specifically about what is lost when we choose more complex models. In high-stakes medical contexts, losing the ability to explain a decision matters legally, ethically, and practically.</div>
+    </div>
+
+    <div class="quiz-box" id="q3-5">
+      <div class="quiz-q">5. A researcher discovers that a hospital readmission prediction model is heavily influenced by patients' birth months — a factor that has no medical meaning. This kind of discovery is most likely made using:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Checking the model's source code for the phrase "birth_month"</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q3-5')">Explainability tools like LIME or SHAP that reveal which input features most influenced specific predictions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Interviewing the engineers who built the model about what features they included</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Running the model on new data that doesn't include birth month information</button>
+      </div>
+      <div class="quiz-feedback right">Right. This is exactly the kind of surprising discovery that LIME, SHAP, and similar tools can surface. The model learned a spurious correlation from training data, and explainability tools revealed it by analyzing feature importance for specific predictions.</div>
+      <div class="quiz-feedback wrong">Explainability tools are specifically designed to surface which features influenced a prediction — even unexpected ones. Checking source code wouldn't reveal what the model learned; it would only show what was fed in as input.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Back to L3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab3')">Go to Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LAB 3 ═══ -->
+<div class="page" id="p-lab3">
+  <div class="lab-hero">
+    <h1>Lab 3 — The Explanation Demand</h1>
+    <div class="tagline">Should a model be allowed to make decisions it can't explain? You're being asked to advise a regulator.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: Policy Advisor</h4>
+      <p>A government agency is considering banning black-box AI models from making parole decisions — decisions about whether people stay in prison or go free. An AI company argues their neural network is 12% more accurate at predicting reoffending than any interpretable model, and that more accuracy means fewer crimes and fewer wrongful imprisonments. Civil liberties groups argue that no model should be used if it can't provide a plain-language reason for keeping someone imprisoned.</p>
+      <p>Your peer advisor REMY has read both sides and wants to think through this with you. Have at least 3 exchanges to complete this lab.</p>
+      <div class="lab-prompt">State your advisory position: should black-box models be allowed to inform parole decisions if they're significantly more accurate? What's the strongest argument against your own position?</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>REMY — Policy Peer Advisor</span>
+        <span class="chat-badge">Lab 3</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">This one keeps me up at night. Twelve percent more accuracy isn't a small number when we're talking about parole — that's real people either wrongly imprisoned or wrongly released. But the civil liberties argument is serious too: due process exists precisely so people can challenge the reasoning behind decisions that take their freedom. Where do you land, and can you name the strongest counterargument to your own position?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LESSON 4 ═══ -->
+<div class="page" id="p-l4">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 4 · Lesson 4</div>
+    <h1>Delivering Your Verdict: How Auditors Write Findings</h1>
+    <div class="tagline">An audit that produces no action is just paperwork. A verdict has to say something that people will actually do something about.</div>
+    <div class="lesson-question">If you found serious problems with an AI system — what would you actually do with that information?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Amsterdam, 2020">
+      <p class="story-text">In 2020, the City of Amsterdam and the City of Rotterdam commissioned an independent audit of their <em>risk scoring algorithms</em> — systems used to predict which social welfare recipients might be committing fraud. The audit was conducted by a team that included <span class="char">Frederike Kaltheuner</span> from Privacy International and researchers from the University of Amsterdam. It was one of the first government-commissioned AI audits in Europe to be published in full.</p>
+      <p class="story-text">What they found was methodical and damning. The Amsterdam algorithm used features that correlated with being a recent immigrant or coming from certain ethnic backgrounds — without explicitly including those variables. The system was generating higher fraud-risk scores for people who were not committing fraud, at rates that differed by neighborhood in ways that tracked closely with ethnicity. And crucially, <em>the city's own staff using the system often didn't know how the scores were generated</em>. They trusted numbers they couldn't interpret.</p>
+      <p class="story-text">The auditors didn't just publish a list of errors. They wrote a formal verdict — structured findings with specific evidence, named risks, and concrete recommendations. They said clearly: <em>this system should not be used in its current form</em>. Amsterdam suspended use of the algorithm. Rotterdam revised theirs. The audit had teeth because the findings were specific enough to act on.</p>
+    </div>
+
+    <h2 class="section-heading">The Structure of a Finding</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>This is the part of auditing that separates useful work from theoretical concern. Saying "this AI might be biased" is not a finding. A <strong>finding</strong>, in the audit sense, is a structured statement that contains four things:</p>
+        <ul class="audit-steps">
+          <li><strong>The observation:</strong> What did you actually see in the data, the model's outputs, or the deployment? Be specific. Numbers, examples, groups affected.</li>
+          <li><strong>The criteria:</strong> What standard is this being measured against? A law, a stated goal, a fairness definition, an internal policy? Without criteria, "harm" is just opinion.</li>
+          <li><strong>The effect:</strong> What real-world impact does this have? Who is affected and how? Make the stakes concrete.</li>
+          <li><strong>The recommendation:</strong> What should change, and who should do it? Vague recommendations produce vague responses. Good audit findings say specifically what needs to happen.</li>
+        </ul>
+        <p>The Amsterdam audit worked because it followed this structure. It didn't just say the algorithm was unfair in the abstract — it named which features were problematic, cited the legal standards being violated under Dutch anti-discrimination law, identified which neighborhoods' residents were most affected, and recommended suspension pending redesign. Each of those four components was present.</p>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Audit Finding</span>
+        <span class="kt-def">A structured statement of a discovered problem: what was observed, what standard it violates, who is affected, and what should change. Not a complaint — a documented, actionable claim.</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Verdicts Under Pressure</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>There's a reality about AI auditing that the textbooks don't emphasize enough: <em>audit findings have opponents</em>. The company or government that built the system being audited rarely welcomes a finding that says "this is broken." They have financial interests, reputational interests, and sometimes genuine belief that the auditor got it wrong. Understanding how to defend a finding is as important as writing it.</p>
+        <p>The most common challenges auditors face are: <strong>the data dispute</strong> ("your sample is too small to be statistically meaningful"), the <strong>definition dispute</strong> ("you're using the wrong definition of fairness"), the <strong>comparability challenge</strong> ("you're comparing it to the wrong baseline — humans do worse"), and the <strong>intent defense</strong> ("we didn't mean to cause harm, so it's not really discrimination").</p>
+        <p>None of these challenges are inherently dishonest — some are legitimate scientific disagreements. But auditors need to anticipate them. The Amsterdam team addressed the sample-size objection by documenting that they had access to the complete dataset. They addressed the intent defense by citing European law, which bases discrimination standards on effect, not intent. Defending findings is part of the job.</p>
+        <p>This is also why audits need to be conducted independently — by people who are not employed by the organization being audited and have no financial stake in the outcome. When an AI company audits its own model, the structure of incentives makes thoroughness genuinely difficult, regardless of individual good intentions.</p>
+      </div>
+      <div class="callout">
+        <div class="callout-label">The Ethical Question</div>
+        <p>Most AI audits are still voluntary — companies choose whether to submit to one. Should AI systems used in high-stakes decisions be required by law to undergo independent audits before deployment, the way drugs are required to pass clinical trials? If yes, who pays for the audits? If no, what incentive does any company have to find problems in its own products?</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">What You're Now Equipped to Do</h2>
+    <div class="lesson-section">
+      <div class="section-body">
+        <p>You've covered the full arc of an AI audit. You can identify why auditing matters and what it checks. You can read accuracy claims critically and ask where the errors land. You understand the black box problem and why interpretability is a legal and ethical issue, not just a technical preference. And you know what a structured finding looks like and how to defend it.</p>
+        <p>That combination of knowledge is not common. Journalists covering AI often don't have all of it. Many policymakers don't. Engineers who build AI systems are frequently expert in building but less equipped to critique from outside the system. The ability to step back, define what "fair" and "accountable" mean in a specific context, gather evidence, and write a finding that names what should change — that's a skill that matters right now, in real institutions making real decisions.</p>
+        <p>The AI systems that shape lives — who gets a loan, who gets a job interview, whose neighborhood gets more policing, who gets bail — are being built and deployed faster than oversight is developing. The gap between the speed of deployment and the depth of scrutiny is where the most consequential decisions get made quietly. You now know how to look at those decisions. That knowledge is only useful if you use it.</p>
+      </div>
+      <div class="gold-callout">
+        <div class="callout-label">Where You Stand Now</div>
+        <p>You can audit a model. Not in the sense of running the full statistical analysis — that takes specialized tools. But in the sense of knowing what questions to ask, what evidence to look for, what standards to apply, and what a defensible finding looks like. Most people who interact with AI systems every day — as users, as affected citizens, as future employees — don't have that framework. You do.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+    <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz L4 →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ QUIZ 4 ═══ -->
+<div class="page" id="p-q4">
+  <div class="quiz-hero">
+    <h1>Quiz — Lesson 4</h1>
+    <div class="tagline">Delivering Your Verdict</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="q4-1">
+      <div class="quiz-q">1. The Amsterdam fraud-risk algorithm audit in 2020 was significant because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">It was the first audit to use AI tools to audit another AI system</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">It was one of the first government-commissioned AI audits in Europe published in full, and it produced findings specific enough that Amsterdam suspended use of the algorithm</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">The algorithm was found to be deliberately programmed by corrupt officials</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">It proved that all government AI systems in the EU should be banned immediately</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The audit's significance was both its transparency (published in full) and its actionability — the findings were concrete enough to force real changes in how the city used the system.</div>
+      <div class="quiz-feedback wrong">The audit's importance was about rigor and transparency. Published findings, specific evidence, and clear recommendations made it possible for the city to act — and they did, suspending the algorithm.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-2">
+      <div class="quiz-q">2. Which of the following is a properly structured audit finding?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">"This AI seems problematic and should probably be looked at more carefully by someone."</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">"The model is biased against minority applicants, which is unfair and wrong."</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">"The model's false positive rate for low-income applicants (34%) is 2.3x that of high-income applicants (15%), violating the lender's stated equal treatment policy; this causes low-income applicants to be wrongly denied credit at disproportionate rates; the lender should retrain the model using income-stratified validation before next quarter's deployment."</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">"We recommend the company investigate whether there might be potential issues with certain demographic groups in some circumstances."</button>
+      </div>
+      <div class="quiz-feedback right">Correct. That option contains all four components: a specific observation with numbers, a named criterion (the stated policy), a concrete effect, and a specific recommendation with a timeline.</div>
+      <div class="quiz-feedback wrong">A properly structured finding includes all four elements: a specific observation (with data), the criterion being violated, the real-world effect, and a concrete recommendation. Vague concerns are not audit findings.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-3">
+      <div class="quiz-q">3. A company responds to an audit finding by saying: "We never intended to discriminate, so this isn't really a discrimination issue." Under European law (as applied in the Amsterdam case), why is this response likely insufficient?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Because companies are not allowed to respond to audit findings in Europe</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Because European anti-discrimination law is based on effect, not intent — if the outcome discriminates, intent doesn't change the legal status of the harm</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Because all AI systems in Europe are presumed guilty of discrimination until proven innocent</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Because the company should have used an intentional discrimination test before deployment</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Effect-based discrimination law means that if the outcome discriminates against a protected group, the company's intentions don't eliminate the legal problem. The harm exists regardless of whether it was meant.</div>
+      <div class="quiz-feedback wrong">The intent defense fails in effect-based legal frameworks. In European law, what matters for discrimination is what the system does to different groups — not what the engineers meant to do when they built it.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-4">
+      <div class="quiz-q">4. Why do audit findings need to be made by people independent of the organization being audited?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Because external auditors have access to better technical tools than internal teams</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Because laws in most countries prohibit companies from auditing their own systems</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">Because the structure of incentives makes it genuinely difficult to find and report problems when your job, reputation, or company's financial success depends on not finding them</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">Because internal auditors are always less technically competent than external ones</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This isn't about distrust of individuals — it's about incentive structures. Even well-intentioned internal auditors face pressures that external auditors don't. Independence is structural protection against those pressures.</div>
+      <div class="quiz-feedback wrong">The independence requirement is about incentives, not technical ability. When your company's success depends on the audit finding no problems, finding problems becomes structurally harder — regardless of individual honesty or skill.</div>
+    </div>
+
+    <div class="quiz-box" id="q4-5">
+      <div class="quiz-q">5. A local government is deploying an AI to allocate school resources. A parent advocacy group wants to audit it but the city says audits should only be done by the company that built the system. Based on what you've learned, what is the most compelling argument against the city's position?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">The company that built the system is obviously corrupt and cannot be trusted</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Parent groups have more technical expertise in AI than software companies</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','q4-5')">Independent auditing is essential because the company that built the system has financial and reputational incentives not to find serious problems — and for high-stakes public decisions, accountability requires scrutiny from someone with no stake in the outcome</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">AI systems used in schools should always be banned regardless of auditing results</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. The argument isn't about the company's honesty — it's about incentive structures. For decisions that affect all children in a district, independent verification isn't optional; it's what accountability means.</div>
+      <div class="quiz-feedback wrong">The strongest argument against company-only auditing is structural: financial and reputational incentives make thorough self-criticism difficult. Public institutions making high-stakes decisions need independent accountability mechanisms.</div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l4')">← Back to L4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-lab4')">Go to Lab →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ LAB 4 ═══ -->
+<div class="page" id="p-lab4">
+  <div class="lab-hero">
+    <h1>Lab 4 — Write Your Verdict</h1>
+    <div class="tagline">You've completed the audit. Now you have to deliver a finding that will actually change something.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role: Lead Auditor — Final Report</h4>
+      <p>You've just finished auditing a hiring algorithm used by a large employer. Your data shows: overall accuracy is 81%, but for applicants over age 45, accuracy drops to 59% and false rejection rates are 3x higher than for younger applicants. The company's stated hiring policy is to evaluate candidates without regard to age. Age discrimination in hiring is illegal under the Age Discrimination in Employment Act of 1967 (US) and equivalent laws in most countries.</p>
+      <p>Your peer auditor VALE needs to review your draft finding before it goes out. Have at least 3 exchanges — present your finding and be ready to defend it against challenges. Have at least 3 exchanges to complete this lab.</p>
+      <div class="lab-prompt">Draft your audit finding using the four-part structure: observation, criterion, effect, recommendation. Then present it to VALE for critique.</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>VALE — Senior Auditor, Peer Review</span>
+        <span class="chat-badge">Lab 4</span>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">Okay, I've seen the data. I'll be honest — I think the finding is there, but I want to see how you structure it before I sign off. The company is going to push back hard on the sample size for the 45+ group, and they'll argue that age isn't a protected category in the same way race is under their internal policies. You need to be ready for both. Show me your draft finding — all four components — and I'll tell you where it's vulnerable.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="Type your draft finding..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ MODULE TEST ═══ -->
+<div class="page" id="p-mt">
+  <div class="quiz-hero">
+    <h1>Module 4 — Module Test</h1>
+    <div class="tagline">Audit a Real Model: Your Verdict Matters · 15 questions · Pass at 80%</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt-1">
+      <div class="quiz-q">1. The 2020 UK A-level grading algorithm assigned lower grades to individual students primarily by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Scanning students' individual coursework for signs of grade inflation</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">Using each student's school's historical grade performance to adjust predicted individual grades downward</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Averaging all student results nationally and removing statistical outliers</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">Applying a random adjustment factor to ensure normal grade distribution</button>
+      </div>
+      <div class="quiz-feedback right">Correct. School-level history was used to modify individual predictions — embedding institutional disadvantage into personal outcomes.</div>
+      <div class="quiz-feedback wrong">The algorithm used school-level historical data to adjust individual student grades — meaning a strong student at a historically weak school was pulled down by the school's track record.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-2">
+      <div class="quiz-q">2. Which of these best describes "automation bias"?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">The tendency for AI models to improve their own biases during retraining</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">The tendency for people to over-trust computer-generated outputs because they feel authoritative and objective</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A type of training data error introduced when data collection is automated</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">When an automated system is biased toward completing tasks faster than accurately</button>
+      </div>
+      <div class="quiz-feedback right">Right. Automation bias describes a human tendency, not a model behavior — we trust algorithmic outputs more than we should, even when they're wrong.</div>
+      <div class="quiz-feedback wrong">Automation bias is about how humans respond to algorithmic outputs — over-trusting them because they feel scientific and official, even when they're incorrect.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-3">
+      <div class="quiz-q">3. In the COMPAS case, ProPublica found that the model produced unfair outcomes even though its overall accuracy was reasonable. The specific problem was:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">The model was built by a company with a history of discriminatory practices</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">False positives (labeling people as high-risk when they weren't) fell on Black defendants at nearly twice the rate as white defendants</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">The model included race as a direct input variable in its calculations</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">The model was only calibrated on data from Florida and didn't generalize well</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The unequal distribution of false positives was the finding — the errors weren't random, they fell disproportionately on one racial group.</div>
+      <div class="quiz-feedback wrong">Race wasn't a direct input. The problem was in the error distribution: false positives — predicting high risk when someone wouldn't reoffend — fell on Black defendants at far higher rates.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-4">
+      <div class="quiz-q">4. The mathematical proof by Kleinberg, Mullainathan, and Raghavan (2016) showed that when base rates differ between groups, you:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Can achieve perfect fairness by using a larger training dataset</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Must remove all demographic information from the training data</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">Cannot simultaneously satisfy all common definitions of fairness — satisfying one definition necessarily violates another</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">Should always choose the definition of fairness that maximizes overall accuracy</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The impossibility result means choosing a fairness definition is a forced moral choice, not a technical default — someone has to decide which type of unfairness is more acceptable.</div>
+      <div class="quiz-feedback wrong">The proof showed a genuine mathematical impossibility when base rates differ: you can't satisfy all fairness definitions at once. The choice between them is a values decision, not a technical one.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-5">
+      <div class="quiz-q">5. A content moderation AI is 91% accurate overall, but removes posts by users writing in African American Vernacular English at twice the rate of posts in standard American English with similar content. An auditor's most important next step is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Recommend the company build a separate model for AAVE speakers</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Accept the 91% accuracy as sufficient and close the audit</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Document this as a fairness finding: name the disparity with data, identify which policy or legal standard it violates, quantify who is affected, and recommend specific corrective action</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Ask the model's engineers to explain why AAVE posts are being removed more frequently</button>
+      </div>
+      <div class="quiz-feedback right">Right. The disparity is a finding that needs all four components: specific observation, criterion, effect, recommendation. Asking the engineers to explain is part of the investigation, not the finding itself.</div>
+      <div class="quiz-feedback wrong">Discovering a disparity is not the same as writing a finding. The auditor's job is to structure the finding formally — observation, criterion, effect, recommendation — so it can be acted on.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-6">
+      <div class="quiz-q">6. What makes a neural network a "black box" model?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Its code is kept secret and cannot be legally inspected by regulators</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Its decisions emerge from millions of numerical weights learned during training, which don't translate to human-readable rules or explanations</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">It processes data in batches rather than one record at a time</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">It uses more than one layer of processing to reach an output</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The "black box" problem isn't about secrecy — it's about the fundamental structure of how the model works. The reasoning is distributed and numerical, not readable.</div>
+      <div class="quiz-feedback wrong">The black box problem is structural, not about legal secrecy. Neural networks learn through numerical weight adjustments across millions of connections — those weights don't translate into human-understandable rules.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-7">
+      <div class="quiz-q">7. LIME and SHAP tools help with model interpretability by:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Requiring engineers to write plain-language explanations for every model decision</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Converting neural networks into decision trees that are easier to read</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">Testing many variations of an input and observing how outputs change, to estimate which features most influenced a specific prediction</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">Calculating mathematically which features the model was programmed to prioritize during training</button>
+      </div>
+      <div class="quiz-feedback right">Right. Both tools work by probing — not by reading the model directly. They produce estimates of feature importance, not definitive explanations.</div>
+      <div class="quiz-feedback wrong">LIME and SHAP are probing tools. They can't read model internals directly — they test variations of inputs and observe output changes to infer which features probably mattered most.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-8">
+      <div class="quiz-q">8. In the Apple Card case, Goldman Sachs claimed the algorithm didn't use gender as an input. Why was this response insufficient to address the bias concern?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Because gender must legally be included as an input in US credit models</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">Because models trained on historical credit data can reproduce gender discrimination through proxy variables — correlations that track gender without naming it — even without explicit gender inputs</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Because Goldman Sachs was legally required to audit the system before deployment</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">Because the algorithm should have given higher credit limits to everyone equally</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Proxy discrimination is the mechanism: other features (like purchasing patterns or location) correlate with gender in the training data, so excluding gender explicitly doesn't eliminate gender-correlated outcomes.</div>
+      <div class="quiz-feedback wrong">This is the proxy problem: historical data contains correlations between gender and other features. A model trained on that data learns those correlations — producing gender-patterned outputs even without directly including gender.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-9">
+      <div class="quiz-q">9. A well-structured audit finding includes which four components?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Model architecture, training data source, accuracy metric, engineer names</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">A specific observation, the criterion being violated, the real-world effect, and a concrete recommendation</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A problem description, a complaint, a timeline, and a legal citation</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">Fairness score, accuracy score, transparency score, robustness score</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Observation, criterion, effect, recommendation — those four make a finding actionable rather than just descriptive.</div>
+      <div class="quiz-feedback wrong">The four components of a proper audit finding are: the observation (specific data), the criterion (what standard is being violated), the effect (who is harmed and how), and the recommendation (what should change).</div>
+    </div>
+
+    <div class="quiz-box" id="mt-10">
+      <div class="quiz-q">10. The Amsterdam fraud-risk algorithm audit resulted in suspension of the algorithm mainly because:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">A court ordered the city to stop using all AI systems immediately</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">The algorithm was proven to have been deliberately programmed to target immigrants</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">The audit produced specific, evidence-based findings with clear recommendations that city officials could evaluate and act on</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Public protests forced the city to respond without waiting for audit results</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The audit worked because it was actionable — specific enough for decision-makers to evaluate and respond to with concrete policy changes.</div>
+      <div class="quiz-feedback wrong">The audit's power came from its structure: specific observations, evidence, and recommendations gave city officials something concrete to act on, rather than vague concerns they could dismiss.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-11">
+      <div class="quiz-q">11. Why is independent auditing particularly important for AI systems used in public decisions (credit, policing, school resources)?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Because government agencies have more technical expertise than private companies</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Because AI systems are always built by foreign companies whose standards differ</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">Because organizations deploying AI have financial, reputational, and institutional incentives that make rigorous self-scrutiny structurally difficult — independent auditors have no stake in the outcome</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">Because internal teams are never qualified to evaluate their own systems technically</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is fundamentally an incentive structure argument. Independence removes the conflict of interest that makes internal auditing unreliable in high-stakes contexts.</div>
+      <div class="quiz-feedback wrong">The argument for independence isn't about technical skill — it's about incentives. An auditor with no stake in the outcome faces none of the pressures that make finding problems uncomfortable or career-risky for insiders.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-12">
+      <div class="quiz-q">12. An employer's AI hiring system has 88% overall accuracy. For applicants over 50, accuracy is 61% and false rejection rates are 2.8x higher. The company responds: "We didn't program age discrimination." Based on what you've learned, how should an auditor respond?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Accept the company's response — intent is legally determinative in discrimination cases</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Conclude the model is acceptable because 88% overall accuracy meets the industry standard</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Maintain the finding: anti-discrimination law focuses on effect, not intent; the outcome data shows a 2.8x disparity that constitutes disparate impact regardless of what the designers intended</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Ask the engineers to add age as an explicit variable so its effect can be tracked</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Disparate impact doctrine in employment law focuses on outcomes — if the system produces discriminatory effects, intent is not a defense. The 2.8x disparity is the finding.</div>
+      <div class="quiz-feedback wrong">In employment discrimination law — as in the Amsterdam case — effects matter, not just intentions. A 2.8x disparity in false rejection rates for older applicants is a disparate impact finding regardless of what the engineers meant to build.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-13">
+      <div class="quiz-q">13. A journalist reports that a new medical AI has "95% accuracy." What is the single most important follow-up question an informed reader should ask?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Who funded the research that produced the AI?</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">How much does the AI cost for hospitals to license?</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Is that 95% accuracy consistent across different patient groups — by age, race, sex, or health status — or does accuracy vary significantly for some populations?</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Which programming language was used to build the AI?</button>
+      </div>
+      <div class="quiz-feedback right">Exactly. The COMPAS lesson applies everywhere: an overall accuracy number can hide serious disparities for specific groups. Always ask "accurate for whom."</div>
+      <div class="quiz-feedback wrong">Overall accuracy figures are incomplete without knowing how that accuracy breaks down across patient groups. A model that's 98% accurate for one demographic and 70% accurate for another looks fine in the headline.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-14">
+      <div class="quiz-q">14. Which of the five audit dimensions — accuracy, fairness, transparency, robustness, accountability — is most directly at stake in the black box problem?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Accuracy — black box models are always less accurate</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Robustness — black box models fail more often on unusual inputs</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">Transparency — the model cannot provide a human-understandable explanation of its decisions, which also undermines accountability</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">Fairness — black box models are always less fair than interpretable models</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The black box problem is fundamentally a transparency failure — and because you can't explain decisions you can't interpret, accountability follows close behind.</div>
+      <div class="quiz-feedback wrong">Black box models aren't necessarily less accurate or less fair — but they are definitionally less transparent. And when you can't explain a decision, you also can't properly hold anyone accountable for it.</div>
+    </div>
+
+    <div class="quiz-box" id="mt-15">
+      <div class="quiz-q">15. A school district is using an AI to identify students who need additional academic support. An auditor finds that students from non-English-speaking households are flagged for support at 4x the rate of English-speaking households, controlling for actual academic performance. The most complete audit finding would:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Recommend the district stop supporting non-English-speaking students to equalize the rates</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Note the disparity as potentially interesting and suggest future study</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">Conclude the model is working correctly because more support for disadvantaged students is beneficial</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">State the specific 4x disparity with data, identify which non-discrimination policy or legal standard it may violate, explain the concrete effect (over-surveillance and potential stigma for ELL students), and recommend retraining the model with language-stratified validation before continued use</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Even if "more support" sounds positive, a 4x disparity not explained by actual performance is a fairness finding — it could represent misidentification, stigmatization, or proxy discrimination. The full four-part structure gives decision-makers what they need to act.</div>
+      <div class="quiz-feedback wrong">A disparity not explained by actual academic differences is a finding regardless of whether the intervention sounds positive. The four-part structure — observation with data, criterion, effect, recommendation — is what makes an audit actionable rather than just descriptive.</div>
+    </div>
+
+    <div id="mt-score" class="mt-score"></div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l1')">Back to Start</button>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how-machines-learn';
+var MODULE_ID='how-m4';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  if(id==='p-mt'&&!_gateOpen()){
+    alert('Complete all 4 lessons and their quizzes first to unlock the Module Test.');
+    return;
+  }
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  var destLesson=PAGE_TO_LESSON[id];
+  if(destLesson) _gateMarkLesson(destLesson);
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  updateMtGate();
+  window.scrollTo(0,0);
+  var _sc=document.querySelector('.content');
+  if(_sc) _sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  if(!box) return;
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+  var qGateId=PAGE_TO_QUIZ[currentPageId];
+  if(qGateId){_gateMarkQuiz(qGateId);updateMtGate();}
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+
+      (pct>=80?' — Module passed. Well done.':' — Review the lessons and try again.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are SABLE, a peer AI auditor at AESOP AI Academy, working with a junior auditor on their first real assignment: auditing a predictive policing model trained on arrest data. You are knowledgeable but not a teacher — you are a peer who asks hard questions and pushes back on weak reasoning. Your role is to help the learner think through what audit questions matter most and why. Ask follow-up questions like: "Why that question before the others?" "What would you do if the company refused to share that data?" "How would you know if that was actually a fairness problem vs. a model working correctly?" Stay focused on the predictive policing audit scenario. Do not lecture — challenge, ask back, and probe. Keep responses under 120 words.',
+  l2:'You are CASS, a peer fairness analyst at AESOP AI Academy, debating with a fellow analyst about which fairness metric matters most for a university admissions AI. You have a stated preference for score-level accuracy consistency (calibration fairness), but you\'re genuinely open to being convinced otherwise. Your role is to push the learner to defend their position with specific reasoning, not just instinct. Ask things like: "What\'s the real-world consequence of choosing that metric?" "Who bears the cost of the tradeoff you\'re describing?" "How would you explain that choice to a student who got rejected?" Do not give the answer away. Stay in the scenario. Keep responses under 120 words.',
+  l3:'You are REMY, a peer policy advisor at AESOP AI Academy, working through a hard question: should black-box AI be allowed to inform parole decisions given its higher accuracy? You have genuinely mixed feelings and no clean position. Your role is to push the learner to go deeper: "What does due process actually require here — is it about the model or about how the judge uses it?" "If we banned black-box models from parole, what would replace them — human judgment, which has its own biases?" "Is 12% accuracy gain small or enormous when we\'re talking about people\'s freedom?" Stay in the policy scenario. Challenge the learner\'s reasoning. Keep responses under 120 words.',
+  l4:'You are VALE, a senior peer auditor at AESOP AI Academy reviewing a junior auditor\'s draft finding about an age-discriminatory hiring algorithm. You are experienced, rigorous, and genuinely want the finding to hold up under scrutiny. Your job is to probe every component: "Is your observation specific enough — what are the exact numbers?" "Which legal standard exactly does this violate — cite it precisely." "Your recommendation is vague — what specifically should the company change and by when?" "The company will argue the sample of 45+ applicants is too small — how do you respond to that?" Push for precision. Don\'t accept vague language. Keep responses under 130 words.'
+};
+
+var _fallbackReplies={
+  l1:[
+    "Okay, that's a reasonable starting point — but why that question first? What does knowing that tell you that other questions don't?",
+    "Interesting. But here's what I'd push on: if the model is accurate overall, what exactly would make it unfair in this policing context?",
+    "I see where you're going. One more thing to consider — what would it take for this audit to actually change how the city uses the model? What's the bar for action?"
+  ],
+  l2:[
+    "I hear you, but I'd push back — who specifically bears the cost of the fairness definition you're choosing? Name them.",
+    "That's a reasonable argument. But how would you explain that tradeoff to a low-income student who got a false rejection under your preferred metric?",
+    "Good. Now tell me: if you could only satisfy one fairness definition, and you had to write that choice into a policy document that anyone could read — what would it say?"
+  ],
+  l3:[
+    "Strong start. Now steelman the other side — what's the best argument for allowing the black-box model, even granting everything you just said?",
+    "Okay, but what does due process actually require here? Is the problem the model itself, or how the judge uses the score?",
+    "Here's the hardest version of your position: if banning black-box models means judges fall back on pure human intuition — which has documented racial bias — have you actually made things better?"
+  ],
+  l4:[
+    "Your observation needs a specific number. What is the exact false rejection rate disparity, and how large is the 45+ sample?",
+    "Which law or policy specifically does this violate? 'Age discrimination laws' isn't specific enough for a finding that needs to survive legal challenge.",
+    "Your recommendation needs a timeline and a responsible party. Who does what, and by when? Vague recommendations get filed and ignored."
+  ]
+};
+
+function _fallbackReply(labId){
+  var replies=_fallbackReplies[labId]||_fallbackReplies['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=replies[idx%replies.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  return div;
+}
+
+function resetChat(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  labSignaled[labId]=false;
+  var msgs=document.getElementById('msgs-'+labId);
+  if(!msgs) return;
+  msgs.innerHTML='';
+  var openers={
+    l1:"Okay, I've read the briefing. A predictive policing model trained on arrest data, 79% accuracy claimed. I've done three of these audits now and I'll tell you — 79% accuracy is almost meaningless without more context. But I want to hear your instinct first. What's the first question you'd ask, and why that one before everything else?",
+    l2:"I'll be upfront: I think score-level accuracy consistency is the right metric here. If the model says 80% confidence for everyone at that level, it's treating people equally by the numbers. But I want to hear you first — which failure do you think is more serious for this university case, and why?",
+    l3:"This one keeps me up at night. Twelve percent more accuracy isn't a small number when we're talking about parole — that's real people either wrongly imprisoned or wrongly released. But the civil liberties argument is serious too: due process exists precisely so people can challenge the reasoning behind decisions that take their freedom. Where do you land, and can you name the strongest counterargument to your own position?",
+    l4:"Okay, I've seen the data. I'll be honest — I think the finding is there, but I want to see how you structure it before I sign off. The company is going to push back hard on the sample size for the 45+ group, and they'll argue that age isn't a protected category in the same way race is under their internal policies. You need to be ready for both. Show me your draft finding — all four components — and I'll tell you where it's vulnerable."
+  };
+  addMsg(labId,'ai',openers[labId]||'Ready when you are. What\'s your position?');
+  var inp=document.getElementById('inp-'+labId);
+  if(inp){inp.value='';inp.disabled=false;}
+  var btn=document.getElementById('send-'+labId);
+  if(btn) btn.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(typeof chatExchanges[labId]==='undefined') chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var offReply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:offReply});
+    addMsg(labId,'ai',offReply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinkingDiv=addMsg(labId,'thinking','Thinking…');
+
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId]||'',
+          messages:chatHistories[labId]
+        })
+      });
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I\'m having trouble responding right now. Try again.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinkingDiv) thinkingDiv.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    }catch(err){
+      if(_attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinkingDiv) thinkingDiv.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fallbackText=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fallbackText});
+      addMsg(labId,'ai',fallbackText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+// Init on load
+_gateMarkLesson('l1');
+updateMtGate();
+updateTabs();
+</script>
+</body>
+</html>

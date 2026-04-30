@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Machines Actually Learn — M3: Overfitting, Bias, and Other Hidden Traps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- how-machines-learn-m3 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-test.locked{opacity:0.3;cursor:not-allowed;pointer-events:auto;}
+.tab-test.locked::after{content:' 🔒';font-style:normal;}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+.mt-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.mt-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.mt-hero .tagline{font-size:0.78rem;color:var(--muted);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1rem;}.quiz-hero,.lab-hero,.mt-hero{padding:1.25rem 1rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test locked" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+<!-- ═══════════════════════════════════════════════
+     LESSON 1: Overfitting — When a Model Memorizes Instead of Learns
+     ═══════════════════════════════════════════════ -->
+<div id="p-l1" class="page active">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 1</div>
+    <h1>The Model That Was Too Good to Be True</h1>
+    <div class="tagline">When a machine learns your examples perfectly — and fails at everything else.</div>
+    <div class="lesson-question">Why would a higher score on a test sometimes mean a worse system in real life?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="New York — 2013">
+      <p class="story-text">In 2013, a team of researchers at <span class="char">Memorial Sloan Kettering Cancer Center</span> in New York partnered with IBM to build an AI system called <span class="char">Watson for Oncology</span>. The goal was serious: give oncologists — cancer doctors — a tool that could read medical literature and patient records and recommend chemotherapy treatments.</p>
+      <p class="story-text">When Watson was tested on the cases it had been trained on, it performed remarkably. It matched what expert doctors recommended at very high rates. The headlines wrote themselves: <em>AI beats doctors at cancer treatment planning.</em></p>
+      <p class="story-text">But something quietly wrong was building underneath those numbers. Watson had been trained almost entirely on patient cases from <span class="char">Memorial Sloan Kettering</span> — one of the most elite, specialized cancer hospitals in the world. When other hospitals tried to use it on their own patients — patients who didn't look quite like the original training examples — the recommendations started going sideways. A 2018 internal report from <span class="char">MD Anderson Cancer Center</span> described Watson suggesting treatments that were, in some cases, medically unsafe.</p>
+      <p class="story-text">Watson hadn't learned oncology. It had memorized one particular hospital's approach to oncology. <em>When the world didn't match the training data, the model broke.</em></p>
+    </div>
+
+    <h2 class="section-heading">What Overfitting Actually Means</h2>
+    <div class="section-body">
+      <p>What happened to Watson has a name in machine learning: <strong>overfitting</strong>. It's one of the most important concepts you'll ever encounter when thinking about AI, and it's surprisingly easy to understand once you see it.</p>
+      <p>Imagine you're studying for a history test by memorizing every single answer from last year's practice exam — not understanding why events happened, just memorizing the exact questions and exact answers. You'd ace that practice test. But when the real test showed up with slightly different questions about the same events, you'd struggle. You learned the answers, not the subject.</p>
+      <p>A machine learning model overfits when it learns the training data too specifically. Instead of finding the general pattern — the real underlying rule — it finds every tiny quirk, every coincidence, every specific detail of the examples it was shown. It gets excellent at reproducing those exact examples. But the real world is full of new cases that weren't in the training data.</p>
+      <div class="key-term">
+        <span class="kt-term">Overfitting</span>
+        <span class="kt-def">When a model learns the training data so precisely that it performs well on that data but poorly on new, unseen data it hasn't encountered before.</span>
+      </div>
+      <p>There's a technical way to spot overfitting: the gap between <em>training accuracy</em> (how well the model does on data it's already seen) and <em>test accuracy</em> (how well it does on fresh examples it's never seen). A model that scores 98% on training data but only 72% on test data is almost certainly overfitting. Watson's internal scores looked great — because it was being evaluated mostly on data similar to what it trained on.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Complexity Problem</h2>
+    <div class="section-body">
+      <p>Here's what makes overfitting tricky to avoid: the more powerful and complex you make a model, the more capable it is of memorizing. A model with millions of parameters — adjustable settings — can find extremely subtle patterns. Some of those patterns are real and useful. But some are noise: coincidences that existed in the training data but don't exist in the real world.</p>
+      <p>Think about a medical study with 200 patients. Maybe in those 200 patients, everyone who got better also happened to be left-handed. That's almost certainly a coincidence — there are simply not enough patients for this to mean anything. But an overfitting model might latch onto left-handedness as a predictor of recovery. It found a pattern. The pattern just isn't real.</p>
+      <p>The size of your training dataset matters too. With Watson, the problem was partly that the training cases all came from one hospital. That hospital treats a specific kind of patient — often wealthier, often living in the northeastern United States, often already at an advanced stage of cancer because they came there seeking specialized care. A model trained on those patients learned <em>that population</em>, not cancer patients in general.</p>
+      <div class="callout">
+        <div class="callout-label">Pause and think</div>
+        <p>If you could only study 100 people to understand all of humanity, and those 100 people all happened to live in the same city and have the same job, what would your model of "humans" get wrong? Overfitting is that same problem — at scale, in software.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">How Engineers Fight Overfitting</h2>
+    <div class="section-body">
+      <p>The machine learning community has developed several tools to catch and reduce overfitting. The most important one is something called a <strong>validation split</strong> — deliberately holding back some data so the model never sees it during training, then using that hidden data to test whether the model actually generalizes.</p>
+      <p>Imagine training a model on 80% of your data and keeping 20% locked away. After training, you run the locked-away data through the model. If performance drops dramatically, you know overfitting has occurred. This is now considered a basic standard in responsible ML development.</p>
+      <p>Another technique is <strong>regularization</strong> — a mathematical penalty that discourages the model from getting too complicated. Regularization basically tells the model: "If you can explain this data with a simpler pattern, prefer that over a complicated one." It's like telling a student: don't write a ten-page essay if three paragraphs would make the same point just as well.</p>
+      <p>A third approach is <strong>early stopping</strong>. Training a neural network is an iterative process — the model improves in rounds. Early stopping watches for the point where training accuracy keeps going up but validation accuracy starts to level off or decline. That's the signal: stop training now, the model is starting to memorize instead of learn.</p>
+      <div class="key-term">
+        <span class="kt-term">Generalization</span>
+        <span class="kt-def">A model's ability to apply what it learned to new data it's never seen before — the thing overfitting destroys.</span>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Ethical Trap Inside the Technical Problem</h2>
+    <div class="section-body">
+      <p>Watson for Oncology cost hundreds of millions of dollars to develop. It was marketed to hospitals around the world, including in countries like India and South Korea where many patients purchased access to it. Those patients' care was being guided by a system that was, at some level, overfit to a wealthy American hospital in New York.</p>
+      <p>This is where the technical becomes ethical. Nobody making the original system set out to hurt anyone. They ran tests. The tests looked good. But the tests were run on the same kind of data the model was trained on — which meant they weren't testing whether the model could handle new situations at all. They were testing whether the model had memorized well.</p>
+
+      <div class="callout">
+        <div class="callout-label">Ethical Question — No Clean Answer</div>
+        <p>If a company tests a medical AI thoroughly and all their tests pass — but those tests happen to use the same population the model was trained on — is the company responsible for harm when the model fails elsewhere? They weren't negligent in the obvious sense. But they also chose which tests to run. At what point does oversight become a choice?</p>
+      </div>
+
+      <p>You now understand something most people reading headlines about AI don't. When an AI system is announced as achieving "state-of-the-art accuracy," the first question worth asking is: <em>accuracy on what data?</em> Is that data representative of the real world the system will face? Or is it the same data it trained on? Knowing the difference between those two questions is how you read AI news critically — and it's a skill most adults haven't developed.</p>
+
+      <div class="gold-callout">
+        <div class="callout-label">What You Can Now See</div>
+        <p>Every time you read that an AI scored 95% accuracy — on medical diagnosis, on detecting fraud, on anything — you're equipped to ask the question that separates a real result from an overfit one: was that 95% on data the model already saw, or data it hadn't? Most headlines don't tell you. Most readers don't know to ask.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">Take the Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     QUIZ 1
+     ═══════════════════════════════════════════════ -->
+<div id="p-q1" class="page">
+  <div class="quiz-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 1</div>
+    <h1>Quiz: The Model That Memorized</h1>
+    <div class="tagline">5 questions · Test your understanding of overfitting</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq1">
+      <div class="quiz-q">1. IBM's Watson for Oncology failed outside Memorial Sloan Kettering mainly because it had been trained on data from only one hospital. What is the technical name for this kind of failure?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Underfitting — the model didn't have enough data to learn</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq1')">Overfitting — the model learned that hospital's cases too specifically</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Regularization — the model was penalized for complexity</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq1')">Early stopping — training was halted too soon</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Overfitting is exactly this: excellent performance on training-style data, poor performance on new or different data. Watson learned one hospital's pattern, not cancer medicine in general.</div>
+      <div class="quiz-feedback wrong">Not quite. Overfitting describes what happened — the model learned one hospital's cases so specifically that it couldn't generalize to other patients.</div>
+    </div>
+
+    <div class="quiz-box" id="qq2">
+      <div class="quiz-q">2. A student memorizes every question and answer from last year's practice exam. On the actual test — which has different questions about the same topics — they struggle. Which concept from this lesson does this story best illustrate?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'correct','qq2')">Overfitting — learning examples instead of the underlying pattern</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Regularization — being penalized for using too much information</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Validation split — deliberately hiding some data during studying</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq2')">Generalization — applying learning successfully to new situations</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is precisely the analogy used in the lesson. The student (or model) has memorized instead of understood — which fails the moment new examples appear.</div>
+      <div class="quiz-feedback wrong">Revisit the lesson's study-for-a-test analogy. The student memorized answers without understanding — that's the core of overfitting.</div>
+    </div>
+
+    <div class="quiz-box" id="qq3">
+      <div class="quiz-q">3. You train a model on 10,000 examples. It gets 97% accuracy on those 10,000. Then you test it on 2,000 new examples it never saw — and it scores only 61%. What is most likely happening?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">The model needs more training rounds to improve</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">The 2,000 test examples are probably mislabeled</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq3')">The model has overfit the training data and cannot generalize</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq3')">The training dataset was too large and caused confusion</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A big gap between training accuracy (97%) and test accuracy (61%) is the classic signature of overfitting. The model has memorized the training set rather than learning a general pattern.</div>
+      <div class="quiz-feedback wrong">The large gap between training accuracy and test accuracy is the key clue. That gap is the fingerprint of overfitting — the model learned the training examples, not the rule.</div>
+    </div>
+
+    <div class="quiz-box" id="qq4">
+      <div class="quiz-q">4. Which of the following is NOT one of the techniques for reducing overfitting described in this lesson?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Validation split — holding back data the model never sees during training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Regularization — penalizing overly complex models mathematically</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq4')">Early stopping — halting training when validation accuracy stops improving</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq4')">Data augmentation — duplicating training examples with small random changes</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Data augmentation is a real and useful technique, but it was not covered in this lesson. The three described were validation splits, regularization, and early stopping.</div>
+      <div class="quiz-feedback wrong">Review the lesson's third section. Three techniques were named: validation splits, regularization, and early stopping. One of these options wasn't among them.</div>
+    </div>
+
+    <div class="quiz-box" id="qq5">
+      <div class="quiz-q">5. A company announces their new AI scores 94% accuracy on detecting a rare disease. Before trusting this claim, which question is most important to ask based on what you learned?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">How many engineers worked on building the model?</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">What type of neural network architecture was used?</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq5')">Was that 94% measured on new data the model never trained on, or on data it already saw?</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq5')">How long did it take to train the model?</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is exactly the critical-reading skill the lesson ends with. Training accuracy and test accuracy are very different things, and knowing which one a headline reports tells you almost everything about how seriously to take the claim.</div>
+      <div class="quiz-feedback wrong">Reread the final section of the lesson. The key skill it teaches is asking whether the accuracy figure comes from data the model already saw, or from genuinely new data.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Go to Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LAB 1
+     ═══════════════════════════════════════════════ -->
+<div id="p-lab1" class="page">
+  <div class="lab-hero">
+    <div class="lesson-kicker">Module 3 · Lab 1</div>
+    <h1>Overfitting Investigator</h1>
+    <div class="tagline">You're reviewing AI systems for a hospital procurement board. Your job: decide what to trust.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role</h4>
+      <p>You've been hired as a junior AI auditor for a hospital board that's deciding whether to purchase three different AI diagnostic systems. Each vendor has given you their accuracy numbers. Your job is to figure out which numbers are trustworthy — and which might be hiding overfitting.</p>
+      <p>Your lab partner — an AI systems analyst — will challenge your reasoning. Don't just state conclusions. Defend them.</p>
+      <div class="lab-prompt">To start: Vendor A claims 96% accuracy. Vendor B claims 83% accuracy. Vendor A trained and tested on data from one large urban hospital. Vendor B trained on 40 hospitals across 12 countries and tested on a separate held-out set. Which vendor's number do you trust more, and why?</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>AI Systems Analyst</span>
+        <div class="chat-badge">Lab 1</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l1">
+        <div class="chat-msg ai">Ready when you are. You've got Vendor A at 96% and Vendor B at 83%. Most hospital boards I've seen would immediately go with A — higher number looks better. Make your case for why that might be a mistake. I'll push back.</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l1" placeholder="Type your analysis..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l1')">Reset</button>
+        <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q1')">← Back to Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LESSON 2: Training Data Bias — Garbage In, Prejudice Out
+     ═══════════════════════════════════════════════ -->
+<div id="p-l2" class="page">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 2</div>
+    <h1>The Hiring Tool That Learned to Discriminate</h1>
+    <div class="tagline">How the patterns in past data can teach a machine to repeat the worst of human history.</div>
+    <div class="lesson-question">If an AI was trained entirely on human decisions — and humans have made biased decisions for centuries — what does the AI learn?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Amazon — Seattle, 2014–2018">
+      <p class="story-text">In 2014, <span class="char">Amazon</span> began building an AI tool to automate the first stage of job hiring. The company received hundreds of thousands of applications every year. The goal was to build a system that could read a résumé and give it a score from one to five stars — sorting good candidates from weak ones before a human recruiter ever got involved.</p>
+      <p class="story-text">The engineers trained the model on ten years of Amazon's own hiring data: résumés that had been submitted and decisions that had been made about those résumés. It seemed like a clean, logical starting point. Real data. Real decisions. Real outcomes.</p>
+      <p class="story-text">By 2015, researchers inside Amazon started noticing something troubling. <em>The model was systematically giving lower scores to résumés that included the word "women's"</em> — as in "women's chess club" or "women's college." It was downgrading candidates who had attended all-women's colleges. It was, in some detectable way, penalizing applicants for being women.</p>
+      <p class="story-text">Nobody programmed that in. The engineers hadn't written a rule that said "penalize women." But the training data — ten years of Amazon hiring decisions — reflected a tech industry that had hired far more men than women. The AI had found the pattern in the data and amplified it. It learned: people who got hired here looked like this. People who didn't get hired looked like that. <em>It simply reproduced the biases embedded in a decade of human choices.</em></p>
+      <p class="story-text"><span class="char">Amazon</span> quietly shelved the project in 2018 after Reuters reported on it. The system was never used to make actual hiring decisions. But its existence raised a question that the entire AI field is still wrestling with today.</p>
+    </div>
+
+    <h2 class="section-heading">What Bias in Training Data Actually Means</h2>
+    <div class="section-body">
+      <p>The word "bias" gets used in a lot of different ways. In everyday language it means having unfair opinions. In statistics it has a precise technical definition. In machine learning it can mean both — and the distinction matters.</p>
+      <p>When we say a model has <strong>training data bias</strong>, we mean: the dataset used to train the model doesn't accurately represent the real world the model will operate in. This can happen in a few different ways.</p>
+      <div class="key-term">
+        <span class="kt-term">Historical bias</span>
+        <span class="kt-def">When past human decisions — themselves the product of discrimination, inequality, or limited perspective — are used as training data. The model learns to replicate those decisions.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Representation bias</span>
+        <span class="kt-def">When some groups of people are over- or under-represented in the training dataset. The model performs well for groups it saw lots of examples of, and poorly for groups it rarely saw.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Measurement bias</span>
+        <span class="kt-def">When the way data is collected introduces systematic errors. For example, if police arrest data is used to train a crime-prediction model, the model learns who gets arrested — not who actually commits crimes.</span>
+      </div>
+      <p>Amazon's hiring tool suffered from historical bias. The dataset was made of real decisions — but those real decisions reflected years of a hiring culture that had favored men. The AI didn't invent that bias. It inherited it, packaged it in math, and automated it at scale.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Representation Bias: The Dermatology Example</h2>
+    <div class="section-body">
+      <p>In 2019, a study published in the journal <em>Nature Medicine</em> examined dozens of AI systems trained to detect skin cancer from photographs. These systems had been celebrated for matching or exceeding dermatologist performance in clinical trials. The catches were buried in the details.</p>
+      <p>The training datasets were overwhelmingly composed of photographs of light-skinned patients. When researchers tested the models on darker skin tones, performance dropped — sometimes dramatically. One system that achieved 91% accuracy overall performed at 65% on darker skin. The disease looks different on different skin. The model had barely seen the darker-skin version.</p>
+      <p>Nobody in those studies was trying to build a tool that worked better for white patients. But the photographs that were available — collected over decades at hospitals serving predominantly white populations — reflected those demographics. The data shaped what the model knew. And what the model didn't know, it couldn't detect reliably.</p>
+      <div class="callout">
+        <div class="callout-label">Think About Scale</div>
+        <p>If a skin cancer AI is deployed to 10 million users and performs 20% worse on darker skin tones, the patients most likely to have a cancer missed are already among the most medically underserved populations. The AI doesn't create the disparity from nothing. But it can automate it and expand it.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Can You Remove Bias from Training Data?</h2>
+    <div class="section-body">
+      <p>This is harder than it sounds — and there's genuine disagreement in the machine learning community about what "fair" even means mathematically. It turns out there are multiple different definitions of fairness that are mathematically incompatible with each other. You can satisfy one definition of fair but not another simultaneously.</p>
+      <p>One approach is <strong>data rebalancing</strong>: deliberately collecting more training examples from underrepresented groups, or artificially reweighting the existing examples so the model treats all groups as equally important during training. Amazon could have, in theory, rebalanced its hiring data to include equal numbers of successful male and female hires.</p>
+      <p>But there's a deeper problem. If the real historical data shows more men being promoted, and you rebalance to pretend it was equal — you've changed the data to reflect a more just world that didn't actually exist. That's not capturing reality; it's manufacturing it. The model trained on that adjusted data might make different predictions. Whether those predictions are more fair or less accurate or both is genuinely contested.</p>
+      <div class="callout">
+        <div class="callout-label">Ethical Question — No Clean Answer</div>
+        <p>If you train an AI on real historical data, it learns and perpetuates past discrimination. If you deliberately modify the data to be more equitable, you're making a value judgment about what the world should look like — not what it did look like. Who decides which is the right approach? Should that be an engineer's decision? A government's? The people affected?</p>
+      </div>
+      <p>There is no neutral choice here. Choosing to use historical data uncritically is a decision. Choosing to modify it is a decision. Choosing which definition of fairness to use is a decision. The decisions just happen to be made by engineers, usually without much public input.</p>
+
+      <div class="gold-callout">
+        <div class="callout-label">What You Can Now See</div>
+        <p>When someone says an AI system is objective — that it removes human bias from a decision — you know exactly why that claim is suspect. Every AI was trained on data produced by humans in a world shaped by human history. "Objective" doesn't mean "unbiased." It often just means "the bias is harder to trace."</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l1')">← Previous Lesson</button>
+    <button class="pnav-btn" onclick="goPage('p-q2')">Take the Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     QUIZ 2
+     ═══════════════════════════════════════════════ -->
+<div id="p-q2" class="page">
+  <div class="quiz-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 2</div>
+    <h1>Quiz: The Bias in the Data</h1>
+    <div class="tagline">5 questions · Apply what you know about training data bias</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq6">
+      <div class="quiz-q">1. Amazon's hiring AI gave lower scores to résumés mentioning "women's" organizations. The most accurate explanation for why this happened is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">The engineers deliberately programmed in a preference for male candidates</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq6')">The training data reflected years of human hiring decisions that had favored men, and the model learned that pattern</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">The model became overfit to résumés from all-male colleges specifically</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq6')">The model was too simple to understand gender-neutral language</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Historical bias is the key concept here. The model wasn't programmed to discriminate — it learned discrimination from data that reflected a decade of biased human decisions.</div>
+      <div class="quiz-feedback wrong">Reread the Amazon story. The engineers didn't program bias in; the bias came from the training data — ten years of real decisions that reflected an industry pattern of hiring more men.</div>
+    </div>
+
+    <div class="quiz-box" id="qq7">
+      <div class="quiz-q">2. An AI trained to detect skin cancer performs at 91% accuracy overall but only 65% on darker skin tones. The primary reason for this gap is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">The AI was intentionally designed to work better for lighter-skinned patients</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Skin cancer is medically different in darker-skinned patients and cannot be detected by AI</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq7')">The training dataset contained far more photos of lighter-skinned patients, so the model rarely learned what the disease looks like on darker skin</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq7')">Darker skin tones are harder to photograph, creating measurement noise</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is representation bias. The model learned from what it saw — and it mostly saw lighter skin. The patients who most needed accurate detection were underrepresented in training data.</div>
+      <div class="quiz-feedback wrong">This is representation bias at work. The model learned from what data existed — and the historical photograph collections came from hospitals serving predominantly lighter-skinned patients.</div>
+    </div>
+
+    <div class="quiz-box" id="qq8">
+      <div class="quiz-q">3. A city uses past arrest data to train a predictive policing AI that estimates crime risk by neighborhood. Which type of bias from this lesson is this most clearly an example of?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Representation bias — not all neighborhoods are equally sized</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Historical bias — arrests happened in the past, not the present</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq8')">Measurement bias — arrests measure where police patrol, not where crime actually occurs</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq8')">Overfitting — the model memorized specific streets instead of general patterns</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Arrest data measures police behavior as much as criminal behavior. Where police patrol more, they make more arrests — so the model learns "high police presence = high crime" and can entrench a self-fulfilling cycle.</div>
+      <div class="quiz-feedback wrong">Think carefully about what arrests actually measure. Arrests happen where police patrol. The data is biased not because of historical attitudes, but because of what it actually captures.</div>
+    </div>
+
+    <div class="quiz-box" id="qq9">
+      <div class="quiz-q">4. A researcher proposes fixing Amazon's hiring AI by rebalancing the training data so it includes equal numbers of men and women who were hired historically — even though women were hired less often in reality. What is a genuine problem with this approach?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">It would make the model overfit to female applicants specifically</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq9')">Modifying data to reflect a more equal world than actually existed involves making a value judgment about what is fair — not a purely technical decision</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Equal representation would make the model too simple to detect other patterns</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq9')">Historical data is legally protected and cannot be modified for model training</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The lesson makes this point explicitly: choosing to modify data to be more equitable is itself a value judgment. There is no neutral choice — using biased data is a choice, and changing it is also a choice, each with different implications.</div>
+      <div class="quiz-feedback wrong">Revisit the lesson's section on removing bias. The key tension is that modifying data means making a judgment about what the world should look like, not just describing what it was.</div>
+    </div>
+
+    <div class="quiz-box" id="qq10">
+      <div class="quiz-q">5. A company claims their new loan approval AI is "completely objective — it removes human bias from credit decisions." Based on this lesson, why is that claim worth questioning?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">AI systems cannot process financial data accurately enough to replace humans</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">Loan approval is too legally complex for AI to handle</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq10')">The AI was trained on historical human loan decisions, which already reflect patterns of who was approved and denied — those patterns carry whatever biases existed in those past decisions</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq10')">Objectivity is achievable in AI, so the claim might actually be true</button>
+      </div>
+      <div class="quiz-feedback right">Correct. "Objective" doesn't mean "unbiased." The model learned from human decisions. Those decisions carried human history. The bias becomes harder to see — not absent.</div>
+      <div class="quiz-feedback wrong">The lesson's closing thought addresses this directly. Every AI trained on human data inherits the patterns in that data. Those patterns include the biases built up over the history of those decisions.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Go to Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LAB 2
+     ═══════════════════════════════════════════════ -->
+<div id="p-lab2" class="page">
+  <div class="lab-hero">
+    <div class="lesson-kicker">Module 3 · Lab 2</div>
+    <h1>Bias Auditor</h1>
+    <div class="tagline">You're reviewing an AI system before it gets deployed to 50 million users. Spot the hidden traps.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role</h4>
+      <p>A major bank wants to deploy an AI loan approval system. They say it was trained on "10 years of successful loan data" from their existing customer base. Before the regulator signs off, you — the bias auditor — need to ask the hard questions.</p>
+      <p>Your lab partner is a senior data scientist at the bank. They built the system and believe in it. Push them to reveal what the training data actually shows, and argue your case for what should be tested before deployment.</p>
+      <div class="lab-prompt">Start by telling me: what is the first question you'd ask about their "10 years of successful loan data" — and why that specific question matters for bias?</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>Bank Data Scientist</span>
+        <div class="chat-badge">Lab 2</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l2">
+        <div class="chat-msg ai">I've spent two years building this system. Our validation accuracy is 89% and it's more consistent than our human loan officers. What's your concern — the data is from real decisions made by real experts. What exactly do you want to audit?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l2" placeholder="Ask your audit questions..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l2')">Reset</button>
+        <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q2')">← Back to Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LESSON 3: The Label Problem — Humans Tell Machines What's True
+     ═══════════════════════════════════════════════ -->
+<div id="p-l3" class="page">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 3</div>
+    <h1>Who Gets to Define the Right Answer?</h1>
+    <div class="tagline">Training data doesn't come pre-labeled with truth. A human — usually a stranger — decided what each example means.</div>
+    <div class="lesson-question">If a machine learns by being shown millions of labeled examples, who decided what those labels say — and what happens when they're wrong?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="Venezuela — 2019">
+      <p class="story-text">In 2019, the investigative outlet <span class="char">TIME Magazine</span> published a report on where a significant portion of AI training data labels come from. The answer was surprising to people outside the industry: a global network of contract workers — often in Venezuela, Kenya, the Philippines, and India — earning wages as low as <em>one to three dollars per hour</em> to label training data.</p>
+      <p class="story-text">These workers — called <strong>data annotators</strong> — looked at images, listened to audio clips, and read text. They drew boxes around pedestrians in street scenes so self-driving car systems could learn what a pedestrian looks like. They listened to recordings and transcribed speech. They read sentences and decided whether the emotion was "positive," "negative," or "neutral."</p>
+      <p class="story-text">One Venezuelan annotator described labeling 200 to 400 images per hour to make her quota. She was deciding, at a rate of seconds per image, what was in each photo — and those decisions would become the ground truth that an AI model learned from. She wasn't a domain expert. She was working on a deadline, making judgment calls, and moving on.</p>
+      <p class="story-text"><em>The AI learned what she decided was true.</em> The model had no way to question it. Whatever she labeled "cat," the model learned was a cat. Whatever she labeled "dangerous," the model learned to call dangerous. The model's entire understanding of the world was built on millions of individual human decisions made under time pressure, for very little pay, by people who often didn't speak the language of the content they were labeling.</p>
+    </div>
+
+    <h2 class="section-heading">What Labels Are, and Why They're Fragile</h2>
+    <div class="section-body">
+      <p>Supervised learning — the most common form of machine learning — requires labeled data. Every training example needs a tag that tells the model: this image is a cat, this review is negative, this tumor scan is malignant. The model learns by matching patterns in the input to the labels assigned to it.</p>
+      <p>The problem is that labels are not facts. They're <em>judgments</em>. And judgments depend on who is making them, under what circumstances, using what definitions.</p>
+      <div class="key-term">
+        <span class="kt-term">Label noise</span>
+        <span class="kt-def">Incorrect or inconsistent labels in training data. If 5% of your training images are mislabeled, the model learns from 5% bad information — and has no way to know which examples to distrust.</span>
+      </div>
+      <p>Label noise is one problem. But label <em>subjectivity</em> is often a deeper one. Consider the task of labeling text as "toxic" or "not toxic" for a content moderation system. What counts as toxic? One annotator's "heated debate" is another's "harassment." Researchers studying the major toxicity datasets have found that annotators from different demographic backgrounds label the same text differently at measurable rates. The model trained on those labels learns the average judgment of whoever happened to be hired to label the data — not some objective definition of harm.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Content Moderation Crisis</h2>
+    <div class="section-body">
+      <p>In 2020, researchers at the <span style="color:#a89f93;">University of Washington</span> published a study examining whether major toxic speech datasets had racial bias in their labels. What they found was striking: text written in African American English — a distinct dialect with its own grammar and patterns — was labeled "toxic" at significantly higher rates than text expressing the same sentiment in standard American English.</p>
+      <p>The implication was serious. If you train a content moderation AI on those labeled datasets, the AI learns to flag African American English at higher rates. Users who write in that dialect would have their posts removed at higher rates — not because of what they were saying, but because of how they were saying it. An AI trained to remove "toxic" content would, in practice, systematically remove the speech of a particular community.</p>
+      <p>No one who labeled that data necessarily intended this. Many were probably trying to make the judgment they were asked to make. But when you aggregate millions of those individual calls, patterns emerge that nobody explicitly chose.</p>
+      <div class="callout">
+        <div class="callout-label">Pause and think</div>
+        <p>A content moderation system decides what speech gets removed from a social platform used by billions of people. The training labels for that system were made by paid workers on a deadline. The workers' demographic background influences their labeling patterns. Nobody voted on what "harmful" means. Does this bother you? It should — at least a little.</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">The Hidden Value Choices in Every Dataset</h2>
+    <div class="section-body">
+      <p>Here's what makes this consequential beyond just data quality: every labeled dataset encodes someone's definition of what's true, good, harmful, normal, or correct. That definition gets baked into the model's weights. The model then goes out into the world and applies those definitions at scale — to billions of people who were never consulted about what the labels meant.</p>
+      <p>In 2021, a team of researchers examined the <strong>ImageNet</strong> dataset — one of the most influential training datasets in AI history, containing 14 million labeled images. They found hundreds of labels for human beings that were derogatory, clinical in pathologizing ways, or simply demeaning. Those labels had been used to train AI systems that millions of people used. Some were eventually removed, but only after years of those definitions being baked into models already in deployment.</p>
+      <p>The label problem is ultimately a question of power: <em>who gets to define the world that the AI learns?</em> Right now, that power is largely held by whoever commissions the dataset and whoever is hired (often cheaply) to annotate it. That is a very small number of people making very large decisions about how machines will perceive reality — for everyone.</p>
+
+      <div class="callout">
+        <div class="callout-label">Ethical Question — No Clean Answer</div>
+        <p>If toxic speech datasets systematically label certain dialects as more harmful, and AI systems trained on those datasets remove more content from speakers of those dialects, is that a technical failure, a social failure, or both? And who is responsible for fixing it — the annotators, the researchers who built the dataset, the companies that deployed the models, or the platforms that used the outputs?</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">What You Can Now See</div>
+        <p>The next time you encounter an AI system that classifies something — whether a post is harmful, whether a person is a risk, whether an email is spam — you can ask the question most people never think to ask: who decided what the labels meant, under what conditions, and who reviewed them? The label is not the truth. It's someone's decision about truth. Those are very different things.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l2')">← Previous Lesson</button>
+    <button class="pnav-btn" onclick="goPage('p-q3')">Take the Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     QUIZ 3
+     ═══════════════════════════════════════════════ -->
+<div id="p-q3" class="page">
+  <div class="quiz-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 3</div>
+    <h1>Quiz: Who Defines the Right Answer?</h1>
+    <div class="tagline">5 questions · Labels, annotation, and the hidden choices in data</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq11">
+      <div class="quiz-q">1. Data annotators are paid workers who label training examples for machine learning systems. What role does their work play in what the model learns?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">They clean the data of duplicate entries but don't affect what the model learns</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq11')">Their labels become the ground truth the model learns from — whatever they call correct, the model learns is correct</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">They review model outputs after training to check for errors</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq11')">They design the model architecture that determines how learning happens</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The model has no independent way to verify labels. It learns from them as if they are facts. Whatever an annotator marked, the model treats as ground truth.</div>
+      <div class="quiz-feedback wrong">Reread the opening story. The Venezuelan annotator's decisions — made at a rate of seconds per image — became the ground truth that AI models trained on. The model learned what she decided was true.</div>
+    </div>
+
+    <div class="quiz-box" id="qq12">
+      <div class="quiz-q">2. A content moderation AI was trained on text labeled "toxic" or "not toxic." Researchers found the AI flags African American English at higher rates than standard American English expressing the same sentiment. The most likely explanation is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">African American English grammar contains patterns that technically trigger toxicity filters</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">The model was intentionally programmed to target specific dialects</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq12')">Annotators consistently labeled African American English as more toxic, and the model learned that labeling pattern</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq12')">The training dataset did not contain enough examples of African American English to learn from it accurately</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Label subjectivity — different people judging the same text differently based on their own backgrounds — gets baked into the model. The model then applies those human patterns at scale.</div>
+      <div class="quiz-feedback wrong">The lesson covers this specific finding from the University of Washington study. Annotators' labeling patterns — influenced by their own backgrounds — became the model's learned definitions of "toxic."</div>
+    </div>
+
+    <div class="quiz-box" id="qq13">
+      <div class="quiz-q">3. What is "label noise" as defined in this lesson?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">Background interference in audio training data that makes transcription harder</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">When a model produces uncertain or low-confidence output labels</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq13')">Incorrect or inconsistent labels in training data that the model learns from as if they were correct</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq13')">The variation in label formatting across different datasets</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Label noise is the presence of incorrect labels in training data. The model learns from all of it — including the mistakes — because it cannot distinguish a wrong label from a right one.</div>
+      <div class="quiz-feedback wrong">Return to the key term in the lesson. Label noise specifically refers to incorrect or inconsistent labels in training data, which the model has no way to identify or reject.</div>
+    </div>
+
+    <div class="quiz-box" id="qq14">
+      <div class="quiz-q">4. A team builds a sentiment analysis AI — a system that reads social media posts and decides if they're "positive," "negative," or "neutral." They hire 500 annotators from one country to label the training data. Apply what you know: what potential problem should they be most worried about?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">The model might overfit to posts from that one country's internet culture</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">500 annotators is too many — it introduces too much conflicting information</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq14')">Sentiment norms vary across cultures — what reads as "positive" in one cultural context may read as "neutral" or even "negative" in another, biasing the model toward one cultural lens</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq14')">The model might learn to ignore punctuation and formatting differences between languages</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is label subjectivity applied to a new scenario. Sentiment is culturally inflected. Annotators bring their own cultural norms to labeling — and those norms become the model's norms.</div>
+      <div class="quiz-feedback wrong">Think about what the lesson says about how annotators' backgrounds shape their labeling decisions. Sentiment — positive, negative, neutral — isn't a universal fact. It's a cultural judgment.</div>
+    </div>
+
+    <div class="quiz-box" id="qq15">
+      <div class="quiz-q">5. The lesson argues that labeled datasets encode "hidden value choices." What does this mean in plain terms?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Datasets contain financial information that must be kept private for legal reasons</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq15')">The definitions used when labeling data — what counts as harmful, correct, or normal — reflect the values of whoever made those decisions, and those values get built into the model</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Dataset labels are usually encrypted and hidden from the model during training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq15')">Labeling choices are made randomly to prevent the model from finding patterns too quickly</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Every labeling decision is a judgment about what is true, good, or correct. Those judgments are made by specific people in specific contexts — and they shape how the model understands the world for everyone who uses it.</div>
+      <div class="quiz-feedback wrong">The lesson's final section addresses this directly. Labels are not facts — they're judgments. Whoever holds the labeling decisions holds power over what the AI thinks is real, normal, or harmful.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Go to Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LAB 3
+     ═══════════════════════════════════════════════ -->
+<div id="p-lab3" class="page">
+  <div class="lab-hero">
+    <div class="lesson-kicker">Module 3 · Lab 3</div>
+    <h1>Label Designer</h1>
+    <div class="tagline">You're creating annotation guidelines for a major content platform. Your choices affect a billion users.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role</h4>
+      <p>A major social media company has hired you to write the labeling guidelines for their new content safety AI. Annotators across the world will use your guidelines to decide what gets flagged as "harmful." Your decisions will shape what the model considers dangerous — for everyone on the platform.</p>
+      <p>Your lab partner is a researcher who has studied annotation bias. They're skeptical that any guidelines can avoid value judgments. Defend your approach — or change it when they make a good point.</p>
+      <div class="lab-prompt">Start by telling me: what's the first thing you'd define in your guidelines — and how would you define "harmful" in a way that doesn't just reflect your own cultural background?</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>Annotation Researcher</span>
+        <div class="chat-badge">Lab 3</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l3">
+        <div class="chat-msg ai">I've studied annotation projects across 30 countries. Every time a company tries to write "neutral" guidelines, they end up encoding their own culture's norms. I'm curious — how are you going to avoid that? What's your first move?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l3" placeholder="Share your approach..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l3')">Reset</button>
+        <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q3')">← Back to Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LESSON 4: Distribution Shift — When the World Changes but the Model Doesn't
+     ═══════════════════════════════════════════════ -->
+<div id="p-l4" class="page">
+  <div class="lesson-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 4</div>
+    <h1>When the World Moves and the Model Stays Still</h1>
+    <div class="tagline">A model trained on yesterday's world is making today's decisions. What could go wrong?</div>
+    <div class="lesson-question">If the world changes after a model is trained — and nobody updates the model — what happens to everything it gets wrong?</div>
+  </div>
+  <div class="lesson-body">
+
+    <div class="story-scene" data-label="United States — March 2020">
+      <p class="story-text">In the first weeks of March 2020, as COVID-19 began spreading rapidly across the United States, hospitals and health systems started deploying AI tools they had been developing for years — tools that analyzed patient data to predict which patients were most at risk and how to allocate limited resources.</p>
+      <p class="story-text">These tools had been trained on years of patient records from before the pandemic. They had learned patterns from a world where most respiratory illness came from the flu, pneumonia, and other familiar conditions. When COVID-19 patients started arriving, they didn't fit those patterns. The symptoms overlapped with what the model knew, but the underlying biology and progression were different. COVID affected blood oxygen, the heart, blood clotting — in ways the model had never been trained to associate with respiratory illness.</p>
+      <p class="story-text">A sweeping 2021 review published in <em>The BMJ</em> — one of the world's oldest and most respected medical journals — analyzed <span class="char">232 separate AI tools</span> developed for COVID-19 detection and triage. The conclusion was damning: <em>"We identified major methodological flaws and high risks of bias in most of the models."</em> Among the most cited problems was that tools trained before or during the early pandemic performed poorly as the pandemic evolved. The virus changed. New variants arrived. The population affected changed. The interventions available changed. The models had been trained on a world that no longer existed.</p>
+      <p class="story-text">Some hospitals quietly stopped using their AI triage tools. Others kept using them, unaware of how much drift had accumulated between the world the model learned from and the world it was operating in.</p>
+    </div>
+
+    <h2 class="section-heading">Distribution Shift: The Concept</h2>
+    <div class="section-body">
+      <p>The technical term for what happened during COVID is <strong>distribution shift</strong> — or sometimes called <em>data drift</em> or <em>covariate shift</em>. It describes what happens when the statistical patterns in the real world change after a model has been trained, but the model itself doesn't change.</p>
+      <div class="key-term">
+        <span class="kt-term">Distribution shift</span>
+        <span class="kt-def">When the statistical properties of the data a model encounters in real use differ from the data it was trained on. The model continues making predictions as if the old patterns still apply — even when they don't.</span>
+      </div>
+      <p>Think of it this way: you learn to recognize cats by looking at thousands of photos of domestic cats — mostly sitting, mostly indoors, mostly in well-lit rooms. Then someone asks you to identify cats in dark outdoor environments with unusual angles. Your recognition skills might fail — not because you're bad at recognizing cats, but because the conditions don't match what you learned from.</p>
+      <p>A model doesn't know when it's operating outside its training distribution. It doesn't raise a flag and say "warning — conditions have changed." It keeps generating outputs with the same confidence as always. The predictions get worse; the confidence stays the same.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Distribution Shift in Everyday Systems</h2>
+    <div class="section-body">
+      <p>COVID is an extreme case because the shift happened rapidly and visibly. But distribution shift is actually a constant, quiet problem in deployed AI systems — not a rare event.</p>
+      <p>In 2016, a widely cited paper examined the behavior of <strong>fraud detection</strong> systems at financial institutions. These systems are trained to flag unusual patterns that suggest a transaction is fraudulent. But consumer behavior changes — new apps become popular, people travel differently, shopping patterns shift with the economy. A system trained in 2016 on typical transaction patterns would, without updates, start mislabeling legitimate transactions as fraudulent — and approving increasingly sophisticated fraud that uses patterns not in the original training data.</p>
+      <p>Credit scoring models face the same issue. A model trained to predict loan repayment behavior in 2018 used patterns from an economy that looked very different from 2020's pandemic economy or 2022's high-inflation economy. People's financial behavior changed. The model's definition of "risky borrower" didn't.</p>
+      <p>Language models trained on internet text from a specific period can become subtly outdated as language evolves — slang changes, cultural references shift, events alter the meaning of words. A model trained before 2020 on the word "mask" primarily associated it with Halloween and surgery. By 2021, it had become one of the most politically loaded words in American discourse.</p>
+      <div class="callout">
+        <div class="callout-label">Think About This</div>
+        <p>Most large-scale AI systems are not retrained constantly. Retraining is expensive, technically complex, and requires new labeled data. The practical result is that many real-world AI systems are running on training data that is months or years old. Every day they operate, the gap between their learned world and the real world widens. Nobody sends you a notification saying "this model is now 18 months out of date."</p>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <h2 class="section-heading">Detecting and Handling Drift</h2>
+    <div class="section-body">
+      <p>Responsible ML engineering includes monitoring deployed models for signs that their inputs or outputs have started to drift from the training distribution. This is sometimes called <strong>model monitoring</strong> or <strong>drift detection</strong>.</p>
+      <p>One approach is to track the statistical properties of the inputs the model receives over time. If the average value of certain features starts to move significantly from where they were during training, that's a signal worth investigating. Another approach is to watch for drops in the model's <em>confidence scores</em> — when a model that used to predict with 90% confidence is now at 70%, something in the world has changed.</p>
+      <p>Some high-stakes deployments include automatic retraining pipelines — systems that gather new labeled data continuously and periodically update the model to reflect the current world. But this requires ongoing human oversight to make sure the new labels are correct, and it introduces its own risks (what if the new data contains new biases?).</p>
+      <p>At the institutional level — the level of hospitals, banks, governments, and courts — the question of how often to retrain models and who is responsible for monitoring drift is a genuine policy question that is currently being worked out in real time. Many regulatory frameworks for AI in healthcare and finance now explicitly require documentation of when a model was trained and regular performance audits.</p>
+
+      <div class="callout">
+        <div class="callout-label">Ethical Question — No Clean Answer</div>
+        <p>A hospital deployed an AI diagnostic tool in 2019. By 2022, the medical literature had significantly advanced, new treatment protocols existed, and disease prevalence patterns had shifted. The model was never retrained. A patient receives a suboptimal diagnosis as a result. Who is responsible — the hospital that failed to update the model, the company that sold the tool without a clear update policy, the regulators who didn't require one, or the physician who trusted the output without questioning it?</p>
+      </div>
+
+      <p>This question is actively being debated in medical AI policy today. The FDA's framework for regulating AI-based medical devices was designed primarily for static software — software that doesn't change. An AI model that retrains itself is harder to regulate using the same tools. The institutions that govern medicine are still catching up to the pace of AI deployment.</p>
+
+      <div class="gold-callout">
+        <div class="callout-label">What You Can Now See</div>
+        <p>When you encounter an AI tool making decisions about you — a credit score, a medical screening tool, a content recommendation system — you can ask: when was this trained, and on what era's data? A model making decisions about your world in 2025 that was trained on 2020 data is not just a technical footnote. It's a meaningful fact about the quality of that decision. Very few people know to ask this. You do now.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-l3')">← Previous Lesson</button>
+    <button class="pnav-btn" onclick="goPage('p-q4')">Take the Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     QUIZ 4
+     ═══════════════════════════════════════════════ -->
+<div id="p-q4" class="page">
+  <div class="quiz-hero">
+    <div class="lesson-kicker">Module 3 · Lesson 4</div>
+    <h1>Quiz: When the World Changes</h1>
+    <div class="tagline">5 questions · Distribution shift and the limits of static models</div>
+  </div>
+  <div class="quiz-area">
+
+    <div class="quiz-box" id="qq16">
+      <div class="quiz-q">1. In 2021, The BMJ reviewed 232 AI tools built for COVID-19 detection and found most had "major methodological flaws." One key issue was that tools trained before the pandemic performed poorly as it evolved. What concept from this lesson does this best illustrate?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">Overfitting — the models memorized early COVID cases too precisely</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">Label noise — hospital workers mislabeled patient records under pressure</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq16')">Distribution shift — the models were trained on a world that no longer existed when they were used</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq16')">Historical bias — COVID disproportionately affected certain demographics in the training data</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The pandemic changed the statistical properties of incoming patients far faster than any model could be retrained. The models kept predicting for a world that had already transformed around them.</div>
+      <div class="quiz-feedback wrong">The key issue wasn't how the models were trained — it's that the world they were trained on no longer matched the world they operated in. That gap is distribution shift.</div>
+    </div>
+
+    <div class="quiz-box" id="qq17">
+      <div class="quiz-q">2. A model trained on consumer spending patterns from 2016 is still in use in 2024. Which of the following problems would most likely result from distribution shift?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq17')">The model would become slower as its code ages</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq17')">The model might flag legitimate spending patterns that became common after 2016 as suspicious, and miss new fraud techniques that emerged after 2016</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq17')">The model would become overfit to spending patterns from 2016 customers</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq17')">The training labels from 2016 would become corrupted over time</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is distribution shift applied to fraud detection. Normal behavior changed. New fraud tactics emerged. The model's definition of "suspicious" is anchored to a world that no longer fully exists.</div>
+      <div class="quiz-feedback wrong">Think about what changed between 2016 and 2024 in consumer behavior — new apps, new payment methods, a pandemic. The model still thinks 2016 is normal. That gap creates exactly these kinds of errors.</div>
+    </div>
+
+    <div class="quiz-box" id="qq18">
+      <div class="quiz-q">3. A deployed AI model doesn't know when it's operating outside its training distribution. What does this mean in practice?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq18')">The model will automatically request retraining when it detects unusual inputs</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq18')">The model will produce lower confidence scores as a warning signal</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq18')">The model continues producing outputs with normal-seeming confidence even when its predictions are degrading — there is no automatic warning</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq18')">The model switches to a fallback set of rules it was programmed with at deployment</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is one of the most practically dangerous aspects of distribution shift. The model appears to be working fine. No alarm goes off. But the quality of its predictions may have quietly deteriorated.</div>
+      <div class="quiz-feedback wrong">The lesson is explicit about this: a model doesn't raise a flag when conditions change. It keeps generating outputs with the same apparent confidence. That's what makes silent drift so dangerous in high-stakes systems.</div>
+    </div>
+
+    <div class="quiz-box" id="qq19">
+      <div class="quiz-q">4. "Model monitoring" is described in the lesson as a technique for handling distribution shift. What does it involve?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq19')">Reviewing the model's code periodically for security vulnerabilities</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq19')">Tracking the statistical properties of inputs and outputs over time to detect signs that the real-world distribution has shifted away from training</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq19')">Having users rate the quality of individual AI predictions in real time</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq19')">Comparing two separately trained models to see which performs better</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Model monitoring watches for statistical drift in the inputs and confidence of outputs — looking for the early signals that the model's world no longer matches the real world.</div>
+      <div class="quiz-feedback wrong">Revisit the lesson's section on detecting drift. Model monitoring specifically tracks how the statistical properties of what the model sees in real use compare to what it learned from during training.</div>
+    </div>
+
+    <div class="quiz-box" id="qq20">
+      <div class="quiz-q">5. A hospital used an AI diagnostic tool for three years without retraining it. A patient receives an inaccurate diagnosis partly because the model's training data predates current medical knowledge. The lesson raises a hard ethical question here. Which answer best captures the tension it describes?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq20')">Only the AI company is responsible, because they built the flawed product</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq20')">Only the doctor is responsible, because they should have overridden the AI</button>
+        <button class="quiz-opt" onclick="answer(this,'wrong','qq20')">Nobody is responsible, because AI errors are an acceptable technical limitation</button>
+        <button class="quiz-opt" onclick="answer(this,'correct','qq20')">Responsibility is genuinely shared and hard to assign — hospital, company, regulator, and physician each contributed to the failure, and no single party is obviously solely at fault</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The ethical question in this lesson has no clean answer precisely because multiple actors made decisions — or failed to — that contributed to the outcome. That's what makes it a genuinely hard ethical problem, not just a technical one.</div>
+      <div class="quiz-feedback wrong">The lesson deliberately raises this as a question with no clean answer. Responsibility is distributed across the hospital, the company, the regulators, and the physician. Assigning it to only one party misses how the system as a whole produced the failure.</div>
+    </div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Back to Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Go to Lab →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     LAB 4
+     ═══════════════════════════════════════════════ -->
+<div id="p-lab4" class="page">
+  <div class="lab-hero">
+    <div class="lesson-kicker">Module 3 · Lab 4</div>
+    <h1>Model Lifecycle Auditor</h1>
+    <div class="tagline">You're deciding whether a critical government AI system should continue operating — or be taken offline.</div>
+  </div>
+  <div class="lab-area">
+    <div class="lab-intro">
+      <h4>Your Role</h4>
+      <p>A federal agency uses an AI system to assess benefit eligibility — deciding who qualifies for housing assistance. The model was trained in 2019 on pre-pandemic economic data. It's now three years later. Economic conditions, housing markets, and the demographics of people seeking assistance have all shifted significantly.</p>
+      <p>Your lab partner is the agency's AI policy director, who is under pressure to keep the system running because replacing it would take 18 months and cost millions. You need to make the case — or counter it — based on what you know about distribution shift.</p>
+      <div class="lab-prompt">Start by stating your position: should the agency keep running the 2019 model, pause it, or do something else — and what evidence from what you've learned would you use to argue your case?</div>
+    </div>
+    <div class="lab-chat">
+      <div class="lab-chat-header">
+        <span>Agency AI Policy Director</span>
+        <div class="chat-badge">Lab 4</div>
+      </div>
+      <div class="lab-chat-msgs" id="msgs-l4">
+        <div class="chat-msg ai">Look — I understand the concern about drift. But we have 200,000 applications to process every quarter. Our case workers are overwhelmed. If we shut this down, real people stop getting benefits while we wait for a new system. The model still has an accuracy rate of 81% in our internal checks. What's your argument for actually taking it offline?</div>
+      </div>
+      <div class="lab-chat-input">
+        <textarea id="inp-l4" placeholder="State your position and argument..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+        <button class="chat-reset-btn" onclick="resetChat('l4')">Reset</button>
+        <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+      </div>
+    </div>
+  </div>
+  <div class="page-nav">
+    <button class="pnav-btn" onclick="goPage('p-q4')">← Back to Quiz</button>
+    <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MODULE TEST
+     ═══════════════════════════════════════════════ -->
+<div id="p-mt" class="page">
+  <div class="mt-hero">
+    <div class="lesson-kicker">Module 3 · Final Assessment</div>
+    <h1>Module Test: Hidden Traps in Machine Learning</h1>
+    <div class="tagline">15 questions · Pass at 80% or higher to complete this module</div>
+  </div>
+  <div class="mt-area">
+
+    <div class="quiz-box" id="mt1">
+      <div class="quiz-q">1. A model scores 99% on its training set but 58% on a test set it never saw during training. This large gap most strongly indicates:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt1')">The model is overfitting — it memorized training examples rather than learning a general pattern</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The test set is too small to be meaningful</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The model needs more training rounds to close the gap</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt1')">The training set was too large and confused the model</button>
+      </div>
+      <div class="quiz-feedback right">Correct. A very high training score with a much lower test score is the clearest signature of overfitting.</div>
+      <div class="quiz-feedback wrong">The large gap between training and test performance is the classic overfitting signal. The model learned the training data, not the underlying pattern.</div>
+    </div>
+
+    <div class="quiz-box" id="mt2">
+      <div class="quiz-q">2. IBM's Watson for Oncology was trained primarily on patient data from one elite hospital in New York. When deployed globally, it failed in other contexts. Which trap is most central to this failure?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Distribution shift — the medical industry changed after training</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt2')">Overfitting — the model learned one hospital's patterns too specifically and failed to generalize</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Label noise — doctors mislabeled cases during training</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt2')">Measurement bias — the diagnostic equipment used was non-standard</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Watson overfit to one specific institution's patient population and clinical approach. It couldn't generalize to different hospitals, countries, or patient demographics.</div>
+      <div class="quiz-feedback wrong">Watson's core problem was that it learned one hospital so well it couldn't work anywhere else. That's overfitting — excellent on familiar data, poor on new data.</div>
+    </div>
+
+    <div class="quiz-box" id="mt3">
+      <div class="quiz-q">3. Regularization is a technique used to reduce overfitting. What does it do, in plain terms?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">It removes duplicate training examples before training begins</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">It splits training data into batches to prevent the model from seeing it all at once</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt3')">It penalizes overly complex models mathematically, encouraging simpler explanations that are more likely to generalize</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt3')">It tests model performance against a held-out validation dataset</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Regularization adds a penalty for complexity — pushing the model toward simpler patterns that are more likely to reflect real signal rather than noise.</div>
+      <div class="quiz-feedback wrong">Regularization is specifically the mathematical penalty that discourages complexity. Simpler models tend to generalize better; regularization nudges the model in that direction.</div>
+    </div>
+
+    <div class="quiz-box" id="mt4">
+      <div class="quiz-q">4. Amazon's hiring AI learned to downgrade résumés mentioning women's organizations. The engineers didn't program this in. What type of bias does this illustrate?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Measurement bias — the résumé format introduced systematic errors</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Representation bias — women were underrepresented among applicants</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt4')">Historical bias — the model learned from years of human decisions that had themselves favored male candidates</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt4')">Distribution shift — hiring practices changed significantly after the model was trained</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Historical bias is when past human decisions — biased by the standards of their time — become training data. The model inherits and automates those decisions.</div>
+      <div class="quiz-feedback wrong">The bias came from the training data — ten years of Amazon's own hiring decisions that reflected an industry pattern. The model learned that pattern. That's historical bias.</div>
+    </div>
+
+    <div class="quiz-box" id="mt5">
+      <div class="quiz-q">5. A skin cancer detection AI achieves 91% accuracy overall but 65% on darker skin tones. Which type of bias is primarily responsible?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Historical bias — dermatologists historically misdiagnosed darker-skinned patients</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt5')">Representation bias — the training dataset contained far more images of lighter-skinned patients</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Label noise — annotators marked images incorrectly at different rates for different skin tones</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt5')">Distribution shift — skin cancer patterns changed after the training data was collected</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Representation bias occurs when some groups appear far less in the training data. The model simply learned less about darker skin — because it saw much less of it.</div>
+      <div class="quiz-feedback wrong">The model's poor performance on darker skin came from rarely seeing it during training. When certain groups are underrepresented in training data, model performance on those groups degrades. That's representation bias.</div>
+    </div>
+
+    <div class="quiz-box" id="mt6">
+      <div class="quiz-q">6. Measurement bias is defined in the lessons as a specific type of problem. Which of the following is the best example of it?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">A dataset has more examples from wealthy neighborhoods than poor ones</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">A model trained in 2018 is used in 2024 without retraining</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt6')">A crime prediction AI is trained on arrest data, which measures where police patrol rather than where crime actually occurs</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt6')">Annotators in one country label text as positive that annotators in another country would label negative</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Measurement bias happens when the data collection method introduces a systematic distortion. Arrests measure policing behavior as much as criminal behavior — that's a measurement bias in the data itself.</div>
+      <div class="quiz-feedback wrong">Measurement bias is specifically about how the data is collected introducing systematic errors. Arrest data is a classic example: it measures who gets arrested, not who commits crimes.</div>
+    </div>
+
+    <div class="quiz-box" id="mt7">
+      <div class="quiz-q">7. Data annotators label training examples for machine learning systems. Their labels become the ground truth the model learns from. What does this mean for the model's understanding of the world?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">The model will independently verify labels using logic before learning from them</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt7')">The model's entire understanding is built on judgments made by specific humans under specific conditions — not objective facts</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">Multiple annotators cancel each other's errors out through averaging</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt7')">The model learns patterns but ignores individual labels when they conflict with the majority</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Labels are judgments, not facts. The model has no mechanism to question them. It learns whatever the annotators decided — at scale, permanently.</div>
+      <div class="quiz-feedback wrong">The model treats all labels as facts. It can't distinguish a careful expert judgment from a rushed guess under deadline. Whoever labeled the data defined the model's reality.</div>
+    </div>
+
+    <div class="quiz-box" id="mt8">
+      <div class="quiz-q">8. Researchers at the University of Washington found that text written in African American English was labeled "toxic" at higher rates in major datasets. When an AI trained on these datasets is deployed, the most likely practical consequence is:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">The AI will translate African American English into standard English before classifying it</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">The AI will flag all English-language content at higher rates due to learned confusion</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt8')">Content written in African American English will be removed at higher rates, disproportionately suppressing the speech of that community</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt8')">The AI will perform poorly only on accounts known to be from that demographic group</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The model learned annotators' patterns. Those patterns treated certain dialect markers as toxicity signals. At scale, that means one community's speech is systematically flagged more — regardless of content.</div>
+      <div class="quiz-feedback wrong">The model learned the labeling pattern — African American English = more likely toxic. When deployed at scale on billions of posts, that pattern translates to disproportionate removal of a specific community's speech.</div>
+    </div>
+
+    <div class="quiz-box" id="mt9">
+      <div class="quiz-q">9. The lesson describes multiple mathematically incompatible definitions of fairness in machine learning. What is the key implication of this fact?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Fairness is impossible to achieve in AI systems and should not be attempted</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">The most mathematically complex definition of fairness is always the most appropriate</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt9')">Choosing which definition of fairness to optimize for is an unavoidable value judgment — there is no purely technical solution to bias</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt9')">Engineers should always choose the definition of fairness that maximizes overall accuracy</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The existence of multiple incompatible fairness definitions means someone has to choose — and that choice encodes a value judgment. There is no neutral, purely technical answer to "what is fair."</div>
+      <div class="quiz-feedback wrong">If multiple definitions of fairness are mathematically incompatible, then choosing one over another is a value judgment, not a technical one. That's the key implication the lesson builds toward.</div>
+    </div>
+
+    <div class="quiz-box" id="mt10">
+      <div class="quiz-q">10. Distribution shift is defined as the gap between training data and real-world data growing over time. Which of the following is NOT an example of distribution shift?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">A fraud detection model trained in 2016 fails to recognize new payment methods introduced in 2022</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">A COVID diagnostic AI trained on pre-pandemic data struggles as new variants emerge</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt10')">A face recognition model performs worse on darker skin tones because the training data was mostly lighter-skinned people</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt10')">A language model trained in 2019 doesn't understand pandemic-era political meanings of common words</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The face recognition example is representation bias — the problem existed at training time, not because the world changed afterward. Distribution shift specifically involves the world changing after the model was trained.</div>
+      <div class="quiz-feedback wrong">Distribution shift is about the world changing after training. The face recognition example describes a bias that was present from the start — because of who was in the training data. That's representation bias, not drift.</div>
+    </div>
+
+    <div class="quiz-box" id="mt11">
+      <div class="quiz-q">11. A deployed AI model doesn't automatically warn users when it's operating outside its training distribution. Why is this especially dangerous in high-stakes settings like medicine or criminal justice?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">High-stakes settings use larger models that are more likely to fail suddenly</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt11')">Decision-makers may trust confident-seeming model outputs without realizing the model's world no longer matches reality — and serious harm can result before anyone notices</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">High-stakes models are updated more often, so drift accumulates faster</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt11')">Medical and legal data is more likely to be mislabeled than consumer data</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The model appears to be working. No alarm sounds. Practitioners trust the output. The degradation can be substantial before anyone detects it — and in medicine or criminal justice, that gap can cost lives or liberty.</div>
+      <div class="quiz-feedback wrong">The danger is that the model looks normal. It still outputs a prediction with apparent confidence. The person relying on it has no signal that something has drifted — and the stakes of trusting a quietly broken system are highest in medicine and justice.</div>
+    </div>
+
+    <div class="quiz-box" id="mt12">
+      <div class="quiz-q">12. "Early stopping" as a technique for reducing overfitting involves:</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Removing training examples that look like outliers before training begins</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Limiting the number of features the model is allowed to consider</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt12')">Halting training when validation accuracy stops improving, before the model has a chance to overfit the training data</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt12')">Using a smaller training dataset so the model has less material to memorize</button>
+      </div>
+      <div class="quiz-feedback right">Correct. Early stopping watches for the moment when the model stops getting better on held-out data — that's the signal that continued training will cause memorization, not learning.</div>
+      <div class="quiz-feedback wrong">Early stopping monitors validation performance during training. When it stops improving (while training accuracy keeps climbing), that's the overfitting signal — and training is halted at that point.</div>
+    </div>
+
+    <div class="quiz-box" id="mt13">
+      <div class="quiz-q">13. A government deploys an AI system to decide who qualifies for housing assistance, trained on 2019 economic data. It's now three years later. You're asked to audit it. What is your single most important concern based on the concepts from this module?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">The model may have been programmed with discriminatory rules by its developers</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">The model is probably too simple to handle the complexity of housing decisions</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt13')">The economic conditions, demographics of applicants, and housing market have all changed significantly since 2019 — the model may be making decisions based on patterns that no longer hold, and it has no way to know that</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt13')">The model's training data from 2019 is legally too old to be used for government decisions</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is distribution shift in a high-stakes public context. The world the model learned has changed substantially. People are being denied or granted benefits based on patterns from a pre-pandemic, economically different world.</div>
+      <div class="quiz-feedback wrong">Apply distribution shift here. Three years, a global pandemic, significant economic changes — the world the model trained on looks different from the one it's operating in. That gap is exactly what distribution shift describes.</div>
+    </div>
+
+    <div class="quiz-box" id="mt14">
+      <div class="quiz-q">14. Which of the following best describes what makes the "label problem" a question of power, as the lesson argues?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Labeling requires expensive computational power that only large companies can afford</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">The most accurate labels come from people who hold institutional authority</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt14')">A small number of people — often underpaid annotators hired by private companies — define what is "true," "harmful," or "correct" for AI systems used by billions, with no public input into those decisions</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt14')">Labels are legally binding definitions that can only be changed by government regulators</button>
+      </div>
+      <div class="quiz-feedback right">Correct. The lesson's closing argument is about the concentration of definitional power. Whoever holds the labeling decisions determines how machines categorize the world — and most people never have any say in that.</div>
+      <div class="quiz-feedback wrong">The lesson's final section addresses this explicitly. Power here means: who decides what is real, normal, or harmful. That power sits with whoever commissions and runs annotation projects — without the input of the billions who will be affected.</div>
+    </div>
+
+    <div class="quiz-box" id="mt15">
+      <div class="quiz-q">15. Across all four lessons in this module, a common theme emerges about AI systems and human responsibility. Which statement best captures that theme?</div>
+      <div class="quiz-opts">
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">AI systems fail because engineers are careless — better engineering practices would eliminate these problems</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">These problems are inevitable limitations of AI that cannot be addressed with better practices</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt15')">AI failures are always the result of intentional discrimination that can be prosecuted</button>
+        <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt15')">The hidden traps in ML — overfitting, data bias, label subjectivity, distribution shift — often occur without malicious intent, but they have real consequences; understanding them is essential to building accountable AI systems and informed public oversight</button>
+      </div>
+      <div class="quiz-feedback right">Correct. This is the unifying insight of the module. None of the failures described required bad intentions. They emerged from structural properties of how machine learning works — and understanding them is what makes thoughtful oversight possible.</div>
+      <div class="quiz-feedback wrong">The module's recurring point is that these failures happen without malice — and that's what makes them systemic rather than individual. Understanding the mechanisms is the foundation of genuine accountability.</div>
+    </div>
+
+    <div id="mt-score" class="mt-score"></div>
+
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Review Lesson 4</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how-machines-learn';
+var MODULE_ID='how-m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  if(id==='p-mt'&&!_gateOpen()){
+    alert('Complete all 4 lessons and their quizzes first to unlock the Module Test.');
+    return;
+  }
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  var destLesson=PAGE_TO_LESSON[id];
+  if(destLesson) _gateMarkLesson(destLesson);
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  updateMtGate();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result);
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  var qGateId=PAGE_TO_QUIZ[currentPageId];
+  if(qGateId){_gateMarkQuiz(qGateId);updateMtGate();}
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+
+      (pct>=80?' — Module passed. Well done.':' — Review the lessons and try again.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+/* ── CHAT SYSTEM ── */
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_PROMPTS={
+  l1: 'You are an AI systems analyst reviewing diagnostic tools for a hospital procurement board. You are a knowledgeable peer, NOT a teacher. The learner is a junior AI auditor. Your role: challenge their reasoning, ask follow-up questions, push them to be specific about overfitting, generalization, validation splits, and what makes one vendor\'s accuracy claim more trustworthy than another\'s. Do not lecture. Ask back. Keep responses under 120 words. If they make a good point, acknowledge it and push deeper. If they make a weak point, challenge it directly but fairly. Stay on topic: overfitting, training vs test accuracy, and what makes AI performance claims trustworthy.',
+  l2: 'You are a senior data scientist at a bank who built a loan approval AI. You believe in the system — your validation accuracy is 89%. The learner is a bias auditor. You are not a villain; you genuinely think you built something good. But you should be defensive when challenged and require the auditor to be specific and substantive to change your mind. Push back on vague concerns. If they raise a specific, well-argued point about historical bias, representation bias, or measurement bias in loan data, concede it and ask what they\'d do about it. Keep responses under 120 words. Stay on topic: bias in training data, what "10 years of successful loan data" actually represents, and what audits should check.',
+  l3: 'You are an annotation researcher who has studied labeling bias across 30 countries. You are a peer, not a teacher. You are skeptical that any annotation guidelines can avoid cultural value judgments — you\'ve seen every approach tried and every approach fail in some way. Challenge the learner\'s proposed guidelines. Point out edge cases, cultural relativism issues, and power dynamics they may not have considered. Ask back: "Who decides that definition?" "What happens when annotators in different countries read that guideline differently?" Keep responses under 120 words. Do not lecture. Stay on topic: annotation subjectivity, cultural variation in labeling, label noise, the power dynamics of who defines \'harmful.\'',
+  l4: 'You are an agency AI policy director under real pressure. You have 200,000 applications per quarter and an 81% accuracy rate in internal checks. You need the system to keep running. You are not irresponsible — you care about the people you serve — but you face genuine resource constraints. The learner is an outside auditor. If they make a vague argument, push back. If they make a specific argument about distribution shift, what the 81% figure actually measures, or what the real cost of errors is at scale, engage seriously. Ask: "What would you replace it with while we wait 18 months?" Keep responses under 120 words. Stay on topic: distribution shift, what accuracy figures actually tell you, and the ethics of keeping or pausing a degraded but not-fully-broken system.'
+};
+
+var _fallbacks={
+  l1:[
+    "That's a reasonable starting point. But here's what I'd push on: Vendor B's 83% — do we know what population those 40 hospitals serve? Diversity of institutions doesn't automatically mean diversity of patients. How would you verify that?",
+    "Okay, but let's be concrete. If a hospital board asks you why they should trust a lower number, what's your one-sentence answer that doesn't require them to understand statistics?",
+    "Fair point. Let me flip it: what's the minimum information you'd need from ANY vendor before recommending them — not just these two? What are your non-negotiables?",
+    "You're building a reasonable framework. Last question: if Vendor A agreed to run a validation study on patient data from five different hospitals, would that be sufficient to address your concerns? Why or why not?"
+  ],
+  l2:[
+    "Okay, but 'historical bias' is a broad term. Get specific — what exactly in a loan dataset would you look for? Payment history? Default rates? Something else? Tell me what I should pull up.",
+    "That's fair. But here's my counterpoint: our approval rates across demographic groups aren't wildly different in the output data. Doesn't that suggest the model isn't discriminating in practice?",
+    "Interesting. But rebalancing training data requires a judgment call about what 'equal' looks like. Who decides that? Are you comfortable with an engineer making that call without public input?",
+    "You're asking good questions. But none of this is free — another six months of auditing means six months of delayed approvals. At what point do audit costs outweigh the bias risk?"
+  ],
+  l3:[
+    "You've given me a definition. But that definition itself carries assumptions. 'Incitement to violence' — whose legal standard? Which country's? An annotator in Germany and an annotator in the US have different legal intuitions about that phrase.",
+    "Okay. But if you require annotators to flag their uncertainty, what do you do with the uncertain ones? Discard them? Use them anyway? Anything you do with them is another value judgment.",
+    "That's a thoughtful approach. But here's a harder case: what about content that's considered polite disagreement in one culture and deeply disrespectful in another — same words, different context. How does your guideline handle that?",
+    "You're thinking carefully. Let me push to the institutional level: should a single company be writing these guidelines at all? What would a more democratic process look like — and is that even feasible at scale?"
+  ],
+  l4:[
+    "You say 'distribution shift' — but our internal checks still show 81% accuracy. If it had really drifted that badly, wouldn't we see more complaints from case workers flagging bad recommendations?",
+    "Okay. But when you say 'test for drift' — test against what? We don't have a new labeled dataset from 2022 economic conditions. That would take months to build. What's your realistic proposal?",
+    "Fair concern. But consider this: if we pause the system, the alternative is overwhelmed human case workers making decisions under pressure with no decision support at all. Are you confident that's better?",
+    "You've made a substantive case. Let me ask the harder version: if the system is making 19% errors and those errors are falling disproportionately on people who've experienced the most economic disruption since 2019 — is that a technical problem, a policy failure, or both? Who owns that?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbacks[labId]||_fallbacks['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function resetChat(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var openers={
+    l1:"Ready when you are. You've got Vendor A at 96% and Vendor B at 83%. Most hospital boards I've seen would immediately go with A — higher number looks better. Make your case for why that might be a mistake. I'll push back.",
+    l2:"I've spent two years building this system. Our validation accuracy is 89% and it's more consistent than our human loan officers. What's your concern — the data is from real decisions made by real experts. What exactly do you want to audit?",
+    l3:"I've studied annotation projects across 30 countries. Every time a company tries to write 'neutral' guidelines, they end up encoding their own culture's norms. I'm curious — how are you going to avoid that? What's your first move?",
+    l4:"Look — I understand the concern about drift. But we have 200,000 applications to process every quarter. Our case workers are overwhelmed. If we shut this down, real people stop getting benefits while we wait for a new system. The model still has an accuracy rate of 81% in our internal checks. What's your argument for actually taking it offline?"
+  };
+  addMsg(labId,'ai',openers[labId]||'What do you think?');
+  var btn=document.getElementById('send-'+labId);
+  var inp=document.getElementById('inp-'+labId);
+  if(btn) btn.disabled=false;
+  if(inp) inp.disabled=false;
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  inp.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    setTimeout(function(){
+      var reply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:reply});
+      addMsg(labId,'ai',reply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;inp.disabled=false;inp.focus();
+    },600);
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking...');
+
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var payload={
+        model:'claude-opus-4-5',
+        max_tokens:300,
+        system:LAB_PROMPTS[labId],
+        messages:chatHistories[labId].slice()
+      };
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I\'m not sure how to respond to that. Try rephrasing?';
+      if(thinking&&thinking.parentNode) thinking.remove();
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;inp.disabled=false;inp.focus();
+      return;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+    }
+  }
+  btn.disabled=false;inp.disabled=false;inp.focus();
+}
+
+// Mark L1 as visited on load since it's the active page
+_gateMarkLesson('l1');
+updateMtGate();
+</script>
+</body>
+</html>

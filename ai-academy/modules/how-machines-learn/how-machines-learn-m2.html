@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How Machines Actually Learn — M2: When the Model Gets It Dangerously Wrong</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- how-machines-learn-m2 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-test.locked{opacity:0.3;cursor:not-allowed;pointer-events:auto;}
+.tab-test.locked::after{content:' 🔒';font-style:normal;}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;font-style:italic;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}.lesson-hero,.quiz-hero,.lab-hero{padding:1.75rem 2rem 1.25rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero,.quiz-hero,.lab-hero{padding:1.25rem 1rem 1rem;}.lesson-section{padding:0;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test locked" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LESSON 1: Bias — The Amazon Hiring Algorithm       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 2 · Lesson 1</div>
+      <h1>The Ghost in the Training Data</h1>
+      <div class="tagline">How Amazon built a hiring tool that quietly penalized women — and why the machine wasn't doing anything wrong.</div>
+      <div class="lesson-question">If a model learns from the past, what happens when the past was unfair?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Amazon HQ — Seattle, 2014–2018">
+        <p class="story-text">In 2014, Amazon's engineers had a genuinely exciting idea. They were hiring thousands of software engineers and product managers every year, and the process was slow and inconsistent. Different recruiters noticed different things. So the team built an AI system to do what AI does best: <em>find patterns in large amounts of data</em>. They fed it ten years of Amazon's own hiring records — résumés, interview outcomes, who got offers, who got promoted.</p>
+        <p class="story-text">The system trained on that data. It learned what "successful Amazon employee" looked like, based on real examples. Then it started scoring new applicants on a scale of one to five stars.</p>
+        <p class="story-text">By 2015, something was wrong. The model had taught itself to <em>penalize résumés that included the word "women's"</em> — as in "women's chess club" or "women's college." It downgraded graduates of all-women's colleges. It had also learned to favor certain verbs — "executed," "captured" — that appeared more often in men's résumés. No engineer programmed it to do any of this. The model figured it out on its own.</p>
+        <p class="story-text">Amazon tried to fix it. They removed the gender-related penalties. But auditors found the model was still finding other proxies — subtle signals that correlated with gender without directly naming it. In 2018, <span class="char">Amazon quietly scrapped the whole project.</span> It was never used to make real hiring decisions, but the lesson was already written: a model trained on biased history will reproduce that bias, and it won't tell you it's doing it.</p>
+      </div>
+
+      <div class="section-heading">Why the Machine Wasn't Lying</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>Here's the part most people miss: <em>the algorithm did exactly what it was told to do.</em> It found the patterns that predicted success at Amazon. And for ten years, the people promoted at Amazon had been — overwhelmingly — men. Not because women were less capable, but because of countless human decisions made before the model existed: who got interviewed, who got hired, who got the second chance after a slow start.</p>
+          <p>The model looked at history and said: "Okay, I see what a successful hire looks like." It was right about the pattern. The pattern was wrong.</p>
+          <p>This is called <strong>bias in training data</strong>. The data isn't neutral. It's a recording of the past, and the past contains all the unfairness, prejudice, and unexamined assumptions of the humans who created it.</p>
+        </div>
+        <div class="key-term"><span class="kt-term">Training Bias</span><span class="kt-def">When the data a model learns from reflects historical unfairness, the model learns to replicate that unfairness — even without being told to.</span></div>
+        <div class="key-term"><span class="kt-term">Proxy Variable</span><span class="kt-def">A signal the model uses as a stand-in for something it was never supposed to consider. The word "women's" wasn't a gender marker — until the model made it one.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">The Pattern-Finding Machine Has No Conscience</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>Imagine you're trying to guess who's likely to score high on a test. You look at thousands of past students and you notice that students who own a desk lamp score higher. So you start predicting: desk lamp = smart. But what you've actually found is a <em>correlation with wealth</em> — students who could afford a lamp had quieter study spaces, more stable homes, better access to materials. The lamp didn't help them. It just went along for the ride.</p>
+          <p>A machine learning model does this all the time, at massive scale, with hundreds of variables simultaneously. It finds signals that predict the outcome in the training data. It doesn't ask whether those signals are fair, or what they actually mean, or whether they'd apply to a different population.</p>
+          <p>For younger readers: think of it like this. If your teacher graded every test with red pen, and then someone built a model to predict grades — and the model learned that "red ink on the page = low grade" — it would be right about the correlation but completely wrong about the cause. The ink didn't cause the low grade. The model can't tell the difference without more context.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">The Core Problem</div>
+          <p>Models find patterns. They don't find meaning. The pattern "women's college → lower rating" was real in the training data. What it meant was: we've been undervaluing women's applications for years. The model learned the symptom without anyone explaining the disease.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Where Else This Happens</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>Amazon's case became famous because they admitted it. But the same dynamic plays out in systems that affect far more people's lives, often invisibly:</p>
+          <p><strong>Criminal sentencing.</strong> The COMPAS algorithm, used in courts across the United States since the 2000s, predicted likelihood of reoffending. A 2016 investigation by ProPublica found it rated Black defendants as higher risk than white defendants with the same criminal history — not because race was a direct input, but because the training data reflected decades of racially unequal policing and sentencing.</p>
+          <p><strong>Medical diagnosis.</strong> In 2019, researchers published a study in Science showing a widely-used healthcare algorithm was directing less care toward Black patients than equally sick white patients. The algorithm had been trained on healthcare costs — but cost is a proxy for access, and access is unequal.</p>
+          <p><strong>Facial recognition.</strong> MIT researcher Joy Buolamwini found in 2018 that commercial facial recognition systems from IBM, Microsoft, and Face++ had error rates of up to 34% for dark-skinned women, compared to under 1% for light-skinned men. The training datasets had far more light-skinned faces.</p>
+          <p>In every case, no engineer woke up and decided to be unfair. The data carried the unfairness in silence.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">The Ethical Tension — and Why It's Hard</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>Now here's where it gets genuinely difficult. Suppose you're trying to fix a biased model. You could remove race as an input variable. But the model might still use zip code, which correlates with race. You remove zip code. It uses school attended, which correlates with zip code. You remove that. The correlations run so deep that removing every proxy would also remove much of the model's ability to make predictions at all.</p>
+          <p>So you face a real tradeoff: <em>a less accurate model that's more fair, or a more accurate model that perpetuates historical inequality.</em> There's no clean mathematical answer to that. It's a value judgment — and value judgments belong to people, not machines.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">Ethical Question — No Clean Answer</div>
+          <p>If a company uses a hiring AI that produces fairer outcomes on average, but occasionally discriminates against individuals in a way no human would catch — is that better or worse than using a human recruiter who is consciously biased but accountable? Who should decide?</p>
+        </div>
+        <div class="gold-callout">
+          <div class="callout-label">You Can Now See What Most People Miss</div>
+          <p>When you read a headline saying "AI discriminates," you now understand the real mechanism: the model didn't develop hatred — it learned history. That distinction matters enormously for how we fix it. Knowing this, you're equipped to ask the right question: not "is the AI evil?" but "what did the training data contain, and whose decisions made it that way?"</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn primary" onclick="goPage('p-q1')">Take the Quiz →</button>
+      <button class="pnav-btn" onclick="goPage('p-lab1')">Go to Lab</button>
+      <button class="pnav-btn" onclick="goPage('p-l2')">Next Lesson</button>
+    </div>
+  </div>
+
+  <!-- QUIZ 1 -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Lesson 1 Quiz</div>
+      <h1>The Ghost in the Training Data</h1>
+      <div class="tagline">5 questions · Apply what you learned — not just recall it.</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">1. Amazon's hiring AI downgraded résumés containing the word "women's" — but no engineer programmed it to do this. What actually caused this behavior?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">A. A hidden bug in the algorithm's code deliberately targeted gender.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">B. The model learned the pattern from training data that reflected years of gender-unequal hiring outcomes.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">C. Amazon's engineers intentionally used gender as an input variable to sort candidates.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">D. The word "women's" statistically predicts lower academic performance.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The model wasn't given gender as an input — it inferred it from words correlated with gender in historical data. This is training bias at work: the data carried the unfairness, and the model absorbed it.</div>
+        <div class="quiz-feedback wrong">Not quite. Think about what the model was actually doing: it was learning from historical hiring records. The bias came from patterns in that history, not from deliberate code or malicious intent.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">2. A city builds a model to predict which neighborhoods will have the most traffic accidents. The model heavily weights "number of police stops per block." Why might this produce a biased result?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">A. Police stops have no relationship to accidents, making them useless as a variable.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">B. The model should only use variables that are directly related to car speed.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">C. Police stops reflect policing intensity, not just accident rates — so neighborhoods with more police get flagged as dangerous even if actual accidents are similar elsewhere.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">D. Police stops are too hard to count accurately to be a useful variable.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly right. This is the proxy variable problem applied to a new scenario. "Police stops" doesn't measure danger — it measures police presence, which is unequal across neighborhoods. The model would mistake policing inequality for accident risk.</div>
+        <div class="quiz-feedback wrong">Think about what "police stops" actually measures. Is it purely a count of dangerous events, or does it also reflect decisions about where police patrol? That distinction is the core issue here.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">3. What is a "proxy variable" in the context of a biased model?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">A. A variable that the model uses as a backup when the main variable is missing.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">B. The target outcome the model is trying to predict.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">C. A variable the model uses as an unintentional stand-in for a protected characteristic like gender or race.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">D. A variable that has been deliberately added to make the model fairer.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A proxy variable carries the signal of something the model wasn't supposed to use — like the word "women's" standing in for gender, or zip code standing in for race.</div>
+        <div class="quiz-feedback wrong">Re-read the definition from the lesson. A proxy isn't about backup data or fairness — it's about what the model learns to use as a substitute for something it should ignore.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-4">
+        <div class="quiz-q">4. Researchers found that a healthcare algorithm directed less care to Black patients than equally sick white patients. The algorithm didn't use race as an input. It used healthcare costs. Why does this still produce a racially biased result?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">A. Because Black patients have statistically lower healthcare costs regardless of illness severity.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">B. Because cost is a proxy for access to healthcare, and access is historically unequal across racial groups — so a sicker Black patient may have spent less simply because they had less access.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">C. Because the algorithm was secretly using race through a hidden variable the researchers didn't find.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">D. Because healthcare costs are an unreliable measure and should never be used in medical models.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly. Cost looks neutral but it's shaped by access — and access is shaped by race in the U.S. healthcare system. Using cost as a measure of health need smuggles in historical inequality without anyone noticing.</div>
+        <div class="quiz-feedback wrong">Think about what "cost" actually measures in healthcare. Does spending less money mean being less sick? Or could it mean having less ability to access care? That's the key to this question.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-5">
+        <div class="quiz-q">5. An engineer suggests removing every variable that correlates with race to make a model fairer. What's the problem with this approach?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">A. It's illegal to remove variables from a trained model after deployment.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">B. Removing variables always makes the model more accurate, so there is no problem.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">C. Race never correlates with any useful variables, so this approach is unnecessary.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-5')">D. So many variables correlate with race (zip code, school, cost) that removing all of them could gut the model's accuracy — creating a real tradeoff between fairness and usefulness.</button>
+        </div>
+        <div class="quiz-feedback right">Right. This is the genuine difficulty described at the end of the lesson. Fairness and accuracy exist in tension when historical inequality runs deep through the data. There's no purely technical fix — it requires value judgments about what we're optimizing for.</div>
+        <div class="quiz-feedback wrong">Think about why the lesson called this "genuinely difficult." If it were easy to fix bias just by removing variables, Amazon would have done it. What happens to the model's usefulness when you strip out signals that happen to correlate with protected characteristics?</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Go to Lab →</button>
+      <button class="pnav-btn" onclick="goPage('p-l2')">Next Lesson</button>
+    </div>
+  </div>
+
+  <!-- LAB 1 -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Lesson 1 Lab</div>
+      <h1>Bias Auditor</h1>
+      <div class="tagline">You're investigating a real model. Your job is to find what it learned from — and what it learned wrong.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Role: AI Auditor</h4>
+        <p>A hospital has deployed an algorithm that recommends whether patients should receive a specialist referral. The model was trained on five years of hospital referral records. You've been hired to audit it before it goes into wider use.</p>
+        <p>Your lab partner is an AI investigator who will challenge your thinking and push you to be more precise. Don't expect easy answers — this is a real investigation.</p>
+        <div class="lab-prompt">Start by telling your partner: what's the first thing you'd want to know about the training data? And why does it matter?</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l1">
+        <div class="lab-chat-header">
+          <span>Investigation Partner</span>
+          <div class="chat-badge">Lab 1 · Bias Auditor</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">You've been hired to audit a hospital referral algorithm before it scales. I've read the basic documentation. Before we dig into the data — what do you think we should look at first, and why? Don't just say "the training data." Get specific. What about it?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LESSON 2: Overfitting — When Models Memorize       -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 2 · Lesson 2</div>
+      <h1>The Model That Memorized the Test</h1>
+      <div class="tagline">How a skin cancer detection AI that was 95% accurate on its training data turned out to be partly detecting rulers — and what that reveals about the difference between memorizing and learning.</div>
+      <div class="lesson-question">What's the difference between a model that learned something and a model that just memorized the answers?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Stanford University — 2017">
+        <p class="story-text">In 2017, researchers at Stanford University published a paper in Nature announcing that a deep learning model could detect skin cancer from photographs with the accuracy of a board-certified dermatologist. The model had been trained on nearly 130,000 clinical images. It was called a breakthrough. News articles declared AI was better than doctors at one of medicine's hardest visual tasks.</p>
+        <p class="story-text">Shortly after, a German research team decided to dig deeper. They ran their own tests on similar image-recognition models trained to detect melanoma — the deadliest kind of skin cancer. They noticed something strange. <em>Many of the malignant (cancerous) lesions in the training datasets had been photographed with a ruler in the frame.</em> Dermatologists use rulers to document lesion size when something looks suspicious enough to measure. The benign (non-cancerous) spots typically weren't measured.</p>
+        <p class="story-text">The model had — quietly, without anyone realizing — <em>learned to associate rulers with cancer.</em> It wasn't just looking at the lesion. It was looking at whether a ruler was present. In the training data, this was a <span class="char">nearly perfect signal</span>. In the real world, it was completely meaningless.</p>
+        <p class="story-text">When deployed on images without rulers, or on clinical setups where dermatologists routinely photographed even benign spots with rulers, the model's accuracy dropped. The team published their findings in 2018. The problem they'd identified had a name researchers had known about for decades — but that the hype around deep learning had quietly pushed aside.</p>
+      </div>
+
+      <div class="section-heading">What Overfitting Means — and Why It Happens</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>The skin cancer model had made a classic error called <strong>overfitting</strong>. Here's what that means in plain terms: the model had fit itself so tightly to the specific examples it trained on that it stopped learning the general rule — and started memorizing the quirks of its dataset instead.</p>
+          <p>Imagine studying for a history test by memorizing only the exact practice questions your teacher handed out. On test day, if the teacher asks those exact questions word-for-word, you ace it. But if she asks the same historical concepts in different wording, or applies them to new events — you're lost. You memorized the test. You didn't learn history.</p>
+          <p>That's overfitting. The model learned "ruler in photo → cancer" not because rulers cause cancer, but because in its training examples that correlation happened to be true. It had no way to know the correlation was an artifact of how dermatologists practice — a shortcut, not a signal.</p>
+        </div>
+        <div class="key-term"><span class="kt-term">Overfitting</span><span class="kt-def">When a model learns the training data too precisely — including its noise, accidents, and quirks — and fails to generalize to new examples outside that data.</span></div>
+        <div class="key-term"><span class="kt-term">Spurious Correlation</span><span class="kt-def">A statistical relationship between two things that isn't caused by any real connection. Rulers and cancer are correlated in certain datasets — not because they're related, but because of how the data was collected.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">The Model That Identified Huskies by Snow</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>The skin cancer case isn't a fluke. In 2016, AI researcher <strong>Marco Ribeiro</strong> was testing an image classification model's ability to tell wolves from huskies. The model performed brilliantly on the test set. Then Ribeiro used a technique he'd developed — called LIME — to visualize which pixels the model was actually using to make its decisions.</p>
+          <p>The result: the model was classifying "husky" vs "wolf" almost entirely based on <em>whether there was snow in the background of the photo.</em> Husky photos in the training data happened to include snowy landscapes. Wolf photos were taken in forests. The model never actually looked at the dog. It looked at the scenery.</p>
+          <p>This illustrates a critical idea: <em>a model can appear accurate while doing completely the wrong thing.</em> If your test set has the same background patterns as your training set, the model scores well. Deploy it in the real world — say, at a dog shelter where all photos are taken against a plain wall — and it falls apart.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">Why This Matters at Scale</div>
+          <p>When thousands of doctors use a model to triage patients, or when thousands of parole decisions are influenced by a risk score, an overfitted model isn't just wrong on a test set. It's wrong in ways no one anticipated, on patients and people who had no say in how the training data was collected.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Detecting Overfitting — and Why It's Not Always Caught</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>The standard defense against overfitting is called a <strong>validation set</strong> — a portion of data held back from training, used only to test whether the model generalizes. If your model scores 97% on training data but only 68% on the validation set, that gap is a red flag for overfitting.</p>
+          <p>But this only works if the validation set is genuinely different from the training data. In the melanoma case, both the training and validation images came from the same clinical datasets — which all had the same ruler artifact. The model scored well on both because it was using the same spurious shortcut in both cases.</p>
+          <p>The deeper problem: <em>you can't test for failure modes you haven't thought to look for.</em> Nobody thought to check for rulers. They were checking for cancer — and the model was getting the right answers, by the wrong method, in a way no one had a reason to inspect.</p>
+          <p>For older readers: this is why AI safety researchers talk about "evaluation goodhart" — once a metric becomes the target, models optimize for the metric rather than the underlying goal. A model trained to maximize accuracy on a test set will find whatever shortcut produces accuracy, whether or not that shortcut reflects genuine understanding.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">Ethical Question — No Clean Answer</div>
+          <p>If an overfitted model is 95% accurate — genuinely better than the average human for most cases — is it acceptable to deploy it in hospitals, even if its accuracy relies partly on shortcuts that could fail unpredictably? Who bears responsibility when it does fail?</p>
+        </div>
+        <div class="gold-callout">
+          <div class="callout-label">You Can Now See What Most People Miss</div>
+          <p>When you see a headline claiming "AI outperforms doctors," you now know the question to ask first: where did they test it, and was that test environment the same as the training environment? Accuracy on a test set is not the same as accuracy in the real world. That distinction is something most people reading that headline will never think to ask.</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l1')">← Previous Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Take the Quiz →</button>
+      <button class="pnav-btn" onclick="goPage('p-l3')">Next Lesson</button>
+    </div>
+  </div>
+
+  <!-- QUIZ 2 -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Lesson 2 Quiz</div>
+      <h1>The Model That Memorized the Test</h1>
+      <div class="tagline">5 questions · Does the model generalize, or does it just remember?</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">1. The melanoma detection model associated rulers in photos with cancer. This is an example of:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">A. Training bias — because the data was collected unfairly by gender.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">B. Overfitting — the model memorized a spurious pattern (ruler = cancer) specific to how training images were collected, rather than learning the real signal.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">C. A deliberate shortcut programmed by the engineers to speed up diagnosis.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">D. Underfitting — the model didn't learn enough from the training data.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The model learned the training data too precisely — including artifacts of how dermatologists happen to photograph suspicious lesions. That's overfitting: it memorized the quirks of the dataset, not the real pattern.</div>
+        <div class="quiz-feedback wrong">Think about what "overfitting" means: learning too specifically. The ruler pattern was a quirk of this particular dataset, not a real medical signal. What does it mean when a model latches onto that kind of artifact?</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">2. A student studies only the exact practice problems from last year's test. They score 100% on the practice set. On a new test covering the same topics with different numbers, they score 52%. This is an analogy for:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">A. Overfitting — high performance on training data, poor generalization to new examples.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">B. Training bias — the test was unfair to students who studied differently.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">C. A validation set error — the teacher used the wrong test to measure performance.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">D. Underfitting — the student didn't study enough material.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly. Perfect performance on the training examples (the practice set) with poor performance on new examples (the real test) is the definition of overfitting. The student memorized, didn't learn.</div>
+        <div class="quiz-feedback wrong">The key detail is: great on the specific examples they studied, poor on new examples of the same concepts. That gap — training performance vs. generalization — is the signature of overfitting.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">3. Ribeiro's wolf/husky model was classifying animals based on background scenery, not the animal itself. What does this reveal about high accuracy scores?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">A. High accuracy always means the model learned the right signal — otherwise it wouldn't score high.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">B. Accuracy is irrelevant; only the model's architecture determines whether it learned correctly.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">C. A model can score high accuracy by learning shortcuts that happen to work on the test set but don't reflect genuine understanding of the task.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">D. This shows that image recognition models should never be used for medical applications.</button>
+        </div>
+        <div class="quiz-feedback right">Right. Accuracy is a measure of correct answers — it says nothing about whether the model learned the right thing. A model can be right for the wrong reasons, and that's dangerous because it will fail unpredictably when the shortcut stops working.</div>
+        <div class="quiz-feedback wrong">Think about the husky case. The model got high accuracy — but was it because it understood what a husky looks like, or because it noticed something irrelevant that happened to correlate in the training set? What does that tell you about what accuracy actually measures?</div>
+      </div>
+
+      <div class="quiz-box" id="q2-4">
+        <div class="quiz-q">4. A researcher uses a validation set to test for overfitting. But the validation set comes from the same hospitals as the training set, and all those hospitals use the same ruler-photographing practice. What is the problem?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">A. Validation sets should always be larger than training sets — otherwise overfitting can't be detected.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">B. Validation sets can only detect overfitting if the model was built by researchers who understand statistics.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">C. The validation set contains the same spurious artifact (rulers) as the training set, so the model scores well on both — masking the overfitting instead of revealing it.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">D. There is no problem — if the model scores well on both training and validation sets, it is definitely not overfit.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly. Validation only tests for failure modes that are absent from the validation set. If the training and validation data share the same artifacts, the model can exploit those artifacts across both sets and appear to be generalizing — when it isn't.</div>
+        <div class="quiz-feedback wrong">Think about what a validation set is for: it's supposed to represent data the model hasn't seen. But if validation and training data come from the same source with the same artifact, what does scoring well on validation actually prove?</div>
+      </div>
+
+      <div class="quiz-box" id="q2-5">
+        <div class="quiz-q">5. An AI company claims their new loan approval model has 94% accuracy on their internal test set, based on 100,000 loans made by their bank over the past eight years. What question should you ask before trusting this claim?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">A. "How many engineers worked on the model?" — more engineers means fewer errors.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">B. "Was the model built using Python or a different programming language?"</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">C. "What is the model's architecture — neural network or decision tree?"</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-5')">D. "Is the test set drawn from the same source as the training data, and has the model been tested on loan applicants from different institutions or different years?"</button>
+        </div>
+        <div class="quiz-feedback right">Exactly the right question. An 8-year internal test set might share all the same institutional quirks and data collection artifacts as the training data. High accuracy in that environment doesn't tell you how the model will perform on new applicants from different banks, different years, or different economic conditions.</div>
+        <div class="quiz-feedback wrong">Think about what we learned about validation sets. The real question about accuracy is not "how high is the number" but "what was the test set, and does it represent the environment where the model will actually be deployed?"</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab2')">Go to Lab →</button>
+      <button class="pnav-btn" onclick="goPage('p-l3')">Next Lesson</button>
+    </div>
+  </div>
+
+  <!-- LAB 2 -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Lesson 2 Lab</div>
+      <h1>Shortcut Detective</h1>
+      <div class="tagline">A model scores 96% on its test set. Your job is to figure out whether it actually learned anything — or just found a shortcut.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Role: Model Evaluator</h4>
+        <p>A startup has built a model to detect fraudulent bank transactions. It was trained on two years of transaction data from a single major bank. It scores 96% on the held-out test set from that bank. They want to license it to 50 other banks and claim it's ready.</p>
+        <p>Your lab partner will challenge your thinking. You need to make a case — with specific reasoning — about whether this model is ready to deploy.</p>
+        <div class="lab-prompt">Start by explaining: what would you want to know about the training data and test setup before you trusted that 96% number? Be specific.</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l2">
+        <div class="lab-chat-header">
+          <span>Model Evaluator Partner</span>
+          <div class="chat-badge">Lab 2 · Shortcut Detective</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">96% accuracy — that's a strong number. The startup CEO just sent me a message saying "the data speaks for itself." I'm not so sure. What's your first concern about this evaluation setup, and why would that number potentially be misleading?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LESSON 3: Distributional Shift — When the World Changes -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 2 · Lesson 3</div>
+      <h1>The World Moved and the Model Didn't</h1>
+      <div class="tagline">In March 2020, medical AI systems trained on years of patient data ran headlong into a disease that had never existed in their training sets. What happened next was predictable — and preventable.</div>
+      <div class="lesson-question">A model trained on old data gets deployed in a world that has changed. Who is responsible for what goes wrong?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="Global Hospital Systems — March–April 2020">
+        <p class="story-text">By late March 2020, hospitals across Europe and North America were being overwhelmed by COVID-19 patients. Administrators and doctors turned to AI triage tools — systems trained over years on millions of patient records — to help prioritize care and predict which patients would deteriorate fastest.</p>
+        <p class="story-text">Many of these tools had passed extensive testing before the pandemic. They had good accuracy on historical data. And then they were asked to assess patients with a disease that <em>did not exist anywhere in their training data.</em></p>
+        <p class="story-text">A review published in the journal Nature Machine Intelligence in April 2021, led by researchers including <span class="char">Michael Roberts</span> at Cambridge and <span class="char">Derek Driggs</span> at Cambridge, evaluated 232 published AI models for diagnosing or predicting outcomes in COVID-19. The verdict was devastating: nearly all of them were found to be "poorly reported" or "potentially biased" in ways that made them clinically unusable. Some models had been trained on datasets where all the COVID-positive patients had been scanned in one position and all the COVID-negative patients in another — and the model had learned the position, not the disease.</p>
+        <p class="story-text">Others had trained on data from early pandemic datasets that were too small, too skewed, or sourced from single hospitals where local practices created artificial patterns. When deployed at different hospitals in different countries, with different patient populations and different imaging equipment, <em>the models failed quietly</em> — often without alerting anyone that they were operating outside the conditions they were designed for.</p>
+      </div>
+
+      <div class="section-heading">What Distributional Shift Means</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>Every model is trained on a <strong>distribution</strong> — a collection of data that represents some slice of the world at some moment in time. When a model is deployed, it encounters new data. If that new data looks similar to the training distribution, the model tends to perform well. But if the new data is systematically different — because time has passed, circumstances have changed, or the model is being used somewhere new — performance can collapse without warning.</p>
+          <p>This is called <strong>distributional shift</strong> (or distribution shift). The world that the model encounters no longer matches the world it was trained on.</p>
+          <p>For younger readers: imagine you've practiced basketball only on an indoor court. You've trained your muscle memory for the lighting, the echo, the feel of that specific floor. Now someone asks you to play outdoors — different light, different surface, wind affecting the ball. Your skills don't disappear, but your very specific learned responses stop working as well. The environment shifted. You didn't.</p>
+        </div>
+        <div class="key-term"><span class="kt-term">Distributional Shift</span><span class="kt-def">When the data a model encounters after deployment is systematically different from the data it was trained on — causing performance to degrade, sometimes without any visible warning.</span></div>
+        <div class="key-term"><span class="kt-term">Silent Failure</span><span class="kt-def">When a model's performance deteriorates but no error message appears — the system keeps running and outputting predictions that seem confident while being increasingly wrong.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">The Stock Market Model That Worked Until 2008</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>Distributional shift isn't only a healthcare problem. In the years before 2008, banks and hedge funds deployed sophisticated mathematical models to price complex financial instruments — particularly mortgage-backed securities. These models had been trained on mortgage data going back decades. They had been validated. They had been tested. They performed extremely well on historical data.</p>
+          <p>There was one problem: <em>all that historical data came from a period when U.S. housing prices had never fallen significantly at a national level.</em> The models had never encountered a scenario where they did. When housing prices began falling across the entire country simultaneously in 2007 and 2008, the models weren't just wrong — they were confidently wrong. They kept outputting low-risk assessments on instruments that were catastrophically failing. The firms trading on those assessments lost billions.</p>
+          <p>The 2008 financial crisis had many causes. But the systematic failure of quantitative models trained on non-representative historical data — and deployed without adequate monitoring for distributional shift — was among them. Economists including <strong>Nassim Nicholas Taleb</strong> had warned about this exact vulnerability for years before 2008, calling the excluded scenario a "Black Swan" — an event outside the historical distribution that models had no way to anticipate.</p>
+          <p>For older readers, this has direct policy implications: regulators now require financial institutions to perform "stress tests" — deliberately running models through scenarios outside their training distribution to see what happens. The COVID AI review had a similar implication: models need monitoring systems that detect when the incoming data is drifting away from training conditions.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">The Institutional Lesson</div>
+          <p>After 2008, financial regulators mandated stress testing precisely to address distributional shift. The same logic is now being applied to medical AI — models should come with documentation of their training distribution, and deployment systems should flag when incoming data looks significantly different from what the model was trained on.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Why Silent Failure Is the Worst Kind</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>There's a simple defense against a tool that fails loudly: it tells you it's broken. A thermometer that displays an error code is much safer than one that gives you a reading of 98.6°F when you have a 104°F fever and no error code in sight.</p>
+          <p>Most deployed AI systems don't fail loudly. They produce an output — a score, a recommendation, a classification — regardless of whether the input data is within the model's reliable operating range. The COVID triage tools didn't refuse to give predictions when patients had a new disease. They gave predictions. The predictions happened to be based on patterns that didn't apply.</p>
+          <p>This is why <em>knowing your model's distribution</em> — understanding exactly what kind of data it was trained on and where its boundaries are — isn't optional. It's a safety requirement. And right now, most deployed models don't come with this documentation.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">Ethical Question — No Clean Answer</div>
+          <p>During COVID, hospitals were overwhelmed and doctors were desperate for any tool that could help triage patients. If an AI triage system was operating outside its training distribution and no one knew it — but doctors believed it was helping — should it have been deployed at all? What would you need to know to answer that question honestly?</p>
+        </div>
+        <div class="gold-callout">
+          <div class="callout-label">Knowing This Changes How You Read Every Headline About AI</div>
+          <p>Whenever you see a claim that an AI system "works" — now you'll automatically ask: works on what data, in what conditions, from what time period? A model that worked perfectly last year might be failing today because the world changed. That question — "has the world drifted away from the training data?" — is one most headlines never bother to ask. You will.</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l2')">← Previous Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Take the Quiz →</button>
+      <button class="pnav-btn" onclick="goPage('p-l4')">Next Lesson</button>
+    </div>
+  </div>
+
+  <!-- QUIZ 3 -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Lesson 3 Quiz</div>
+      <h1>The World Moved and the Model Didn't</h1>
+      <div class="tagline">5 questions · When does a model's past training become a liability?</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">1. A COVID-19 triage AI was trained on pre-pandemic patient data and deployed in March 2020. Why would distributional shift be a fundamental problem here — even if the model had been perfectly built?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A. Pre-pandemic data is always lower quality than data collected during a crisis.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">B. The model was never trained on patients with COVID-19, so the patterns it learned had no basis for predicting COVID outcomes — the disease was completely outside its training distribution.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">C. The model would be fine if doctors manually reviewed every prediction before acting on it.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">D. Models trained on large datasets automatically update when new diseases appear.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly right. Distribution shift here is absolute — COVID-19 didn't exist in any prior dataset. The model wasn't making slightly inaccurate predictions; it was generating predictions with no valid basis whatsoever for a completely novel disease.</div>
+        <div class="quiz-feedback wrong">Think about what "training distribution" means. If a disease never appeared in the training data, what patterns could the model possibly be using when it encounters a patient with that disease? That's the core of the distributional shift problem here.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">2. What made the failure of financial models in 2008 an example of distributional shift?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">A. The models had been deliberately sabotaged by traders who wanted prices to fall.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">B. The models were underfitted — they hadn't been trained on enough historical data.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">C. The models had been trained on data from a period when U.S. housing prices never fell nationally — a scenario that finally occurred in 2007–2008, placing the real world outside the training distribution.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">D. The models had been built by engineers who misunderstood mortgage finance.</button>
+        </div>
+        <div class="quiz-feedback right">Right. The historical data was accurate for the world it described — but it excluded a scenario that eventually happened. When the excluded scenario arrived, the models had no learned pattern to draw on and kept outputting confident wrong answers.</div>
+        <div class="quiz-feedback wrong">The models weren't technically broken or underfitted. They were trained correctly on historical data. The problem was what that historical data didn't contain — a specific scenario the past had never produced. What does that mean for how reliable past data is?</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">3. Why is "silent failure" particularly dangerous for deployed AI systems?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">A. Because the system continues to produce confident-looking outputs even when operating outside its reliable range, giving users no signal that the predictions may be invalid.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">B. Because silent failures can only be detected by engineers, not by doctors or other end users.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">C. Because silent failures always produce outputs that are the exact opposite of the correct answer.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">D. Because silent failures occur only in medical applications, not in other domains.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A system that fails loudly tells you to stop trusting it. A system that fails silently keeps producing plausible outputs — and users continue to act on them without knowing the underlying basis has collapsed.</div>
+        <div class="quiz-feedback wrong">Think about the thermometer analogy from the lesson. What's the difference between a thermometer that shows an error code and one that shows 98.6°F when you actually have a 104°F fever? That's the essence of silent failure.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-4">
+        <div class="quiz-q">4. After 2008, financial regulators mandated "stress tests" for risk models. In the context of distributional shift, what is the purpose of a stress test?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">A. To increase the training dataset size so the model has more historical examples.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">B. To check whether the model's code compiles without errors under heavy server load.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">C. To deliberately expose the model to scenarios outside its training distribution — asking what would happen if the world changes in ways the training data didn't include.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">D. To replace the model's training data with more recent data before deployment.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly. A stress test probes the edges of a model's training distribution — asking "what if housing prices fall nationally?" or "what if a new disease appears?" It's a deliberate attempt to find the failure modes before deployment rather than after.</div>
+        <div class="quiz-feedback wrong">Think about what distributional shift means. A stress test is specifically designed to address that problem — to see what happens when the world moves beyond the training distribution. What would you have to do to a model to test that?</div>
+      </div>
+
+      <div class="quiz-box" id="q3-5">
+        <div class="quiz-q">5. A school builds a model to predict which students are at risk of dropping out, trained on five years of student data. In 2020, the school switches entirely to remote learning. What should the school do before continuing to use the model?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">A. Nothing — the model was validated on historical data and has already proven its accuracy.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">B. Increase the model's confidence threshold so it flags fewer students as at-risk.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-5')">C. Audit the model's performance on current students against actual outcomes, since the switch to remote learning likely represents a distributional shift — engagement patterns, attendance signals, and social dynamics all changed.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">D. Delete the model and rebuild from scratch using only 2020 data, since all prior data is now invalid.</button>
+        </div>
+        <div class="quiz-feedback right">Right. A fundamental change in how school operates — from in-person to remote — changes almost every signal the model was trained on. Before using predictions to make decisions about students' futures, you'd want to verify the model is still tracking the same underlying reality.</div>
+        <div class="quiz-feedback wrong">Think about what "distribution" means in this context. Five years of in-person school creates very specific patterns of attendance, engagement, and behavior. What happens to all those patterns when everything moves online? Does the old model still know what it's looking at?</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab3')">Go to Lab →</button>
+      <button class="pnav-btn" onclick="goPage('p-l4')">Next Lesson</button>
+    </div>
+  </div>
+
+  <!-- LAB 3 -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Lesson 3 Lab</div>
+      <h1>The Shift Monitor</h1>
+      <div class="tagline">A model was built before the world changed. You're deciding whether it should keep running.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Role: AI Deployment Reviewer</h4>
+        <p>A city's social services department uses an AI model to predict which families are most at risk of housing instability and should be prioritized for outreach. The model was trained on 2015–2019 data. It's now 2021, after two years of pandemic-era economic disruption, eviction moratoriums, and changed assistance programs.</p>
+        <p>City leadership wants to keep using the model because it's "already built and tested." You've been asked whether it should continue operating as-is, be monitored carefully, or be suspended pending retraining.</p>
+        <div class="lab-prompt">Your partner will challenge your recommendation. Start by stating your position clearly and your single strongest reason for it.</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l3">
+        <div class="lab-chat-header">
+          <span>Deployment Review Partner</span>
+          <div class="chat-badge">Lab 3 · Shift Monitor</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">The city's budget office is pushing hard to keep the model running — retooling it costs money they don't have, and families need help now. The argument is: "even an imperfect model is better than no model." What's your position, and what's your strongest argument for it? Don't hedge. Take a side.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Next Lesson →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LESSON 4: Adversarial Attacks — Gaming the Model   -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 2 · Lesson 4</div>
+      <h1>Breaking the Model on Purpose</h1>
+      <div class="tagline">In 2018, a researcher added a small sticker to a stop sign. A self-driving car saw a speed limit sign instead. The sticker was designed using mathematics — and it worked every time.</div>
+      <div class="lesson-question">If someone knows how your model makes decisions, can they make it fail whenever they want?</div>
+    </div>
+    <div class="lesson-body">
+
+      <div class="story-scene" data-label="University of Washington / CMU / UC Berkeley — 2017–2018">
+        <p class="story-text">In August 2017, a team of researchers from the University of Washington, Carnegie Mellon, and UC Berkeley published a paper with a striking demonstration. They had taken a standard stop sign — the kind at any intersection — and added small black-and-white stickers to it. The stickers looked, to a human, like random graffiti or tape residue. Nothing concerning.</p>
+        <p class="story-text">But the stickers had been calculated with precision. Using knowledge of how neural networks process images, the team had crafted the sticker pattern so that it would push the network's internal calculations in a specific direction. The sign would be classified not as a stop sign — but as a <em>45 mph speed limit sign</em>. In every test. From multiple viewing angles. At different distances. <span class="char">100% of the time.</span></p>
+        <p class="story-text">This wasn't a magic trick. It was a demonstration of a category of attack that researchers had first identified in 2013 when scientists at Google and New York University — including <span class="char">Ian Goodfellow</span> — showed that you could add carefully calculated noise to any image, invisible to human eyes, and cause a neural network to confidently misclassify it. Goodfellow called these "adversarial examples."</p>
+        <p class="story-text">The 2017 stop sign paper was alarming for a specific reason: the attack worked in the <em>physical world.</em> Not just on digital images fed directly into a computer — but on a real sign, photographed by a real camera, processed by a real model. The researchers titled their paper: "Robust Physical-World Attacks on Deep Neural Networks." No one who read it thought self-driving cars were quite as safe as they'd seemed the week before.</p>
+      </div>
+
+      <div class="section-heading">How Adversarial Attacks Work</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>To understand why this is possible, you need to remember how neural networks make decisions. A network classifying an image isn't looking at the image the way you do — seeing shapes, objects, context. It's applying millions of learned numerical weights to the pixels in the image, combining them through layers of calculations, and producing a confidence score for each possible label.</p>
+          <p>An adversarial attack works by asking: <em>which small changes to the pixel values would most push the model's calculation toward a wrong answer?</em> If you know the model's weights and architecture, you can calculate this precisely using a technique called gradient descent — the same technique used to train the model in the first place, but run in reverse to find inputs that break it.</p>
+          <p>The result is a perturbation — a tiny modification to the image — that is mathematically optimized to deceive the specific model. To human eyes, a photo of a panda with an adversarial perturbation added still looks exactly like a panda. To the model: 99.3% confident it's a gibbon.</p>
+        </div>
+        <div class="key-term"><span class="kt-term">Adversarial Example</span><span class="kt-def">An input that has been deliberately modified — often imperceptibly — to cause a model to make a specific wrong prediction with high confidence.</span></div>
+        <div class="key-term"><span class="kt-term">Adversarial Attack</span><span class="kt-def">The deliberate use of adversarial examples to cause a deployed model to fail, either for research purposes or malicious ones.</span></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Beyond Stop Signs — Where This Gets Real</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>The stop sign demonstration was alarming because autonomous vehicles were already on public roads. But adversarial attacks extend well beyond self-driving cars:</p>
+          <p><strong>Face recognition systems.</strong> In 2019, researchers at Carnegie Mellon showed that wearing specially printed glasses could cause commercial face recognition systems to consistently misidentify the wearer as a different person — or fail to detect a face at all. The glasses weren't hiding the face. They were mathematically confusing the model about what face they were seeing.</p>
+          <p><strong>Malware detection.</strong> Security researchers have demonstrated that malicious code can be modified — without changing its function — in ways that cause antivirus AI systems to classify it as safe. The code still does the harmful thing. The model just can't see it anymore.</p>
+          <p><strong>Medical imaging.</strong> A 2019 paper in Nature showed that adversarial attacks on radiology AI could cause a model to miss a tumor in an image or add a non-existent one — again using pixel-level modifications invisible to a radiologist reviewing the same image.</p>
+          <p>Each of these isn't just a research curiosity. Each represents a class of attacker — someone who knows how a model works and uses that knowledge to make it fail exactly when and how they want.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">The Institutional Stakes</div>
+          <p>Adversarial attacks change the security model for any system that relies on AI. Traditional computer security asks: can someone break into the system? Adversarial security asks: can someone, from the outside, without breaking into anything, cause the AI to reach any conclusion they want? That's a fundamentally different threat — and most deployed systems have no defense against it.</p>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="section-heading">Why This Is Hard to Fix — and the Ethical Dimension</div>
+      <div class="lesson-section">
+        <div class="section-body">
+          <p>The direct defense against adversarial attacks is called <strong>adversarial training</strong>: you generate adversarial examples during training and teach the model to classify them correctly too. This helps — but researchers have consistently shown that models hardened against known attacks remain vulnerable to new attacks that approach from different directions. It becomes an arms race: fix the known vulnerability, someone finds a new one.</p>
+          <p>There's also a deeper reason this is hard: adversarial examples exist because <em>the model is not perceiving the world the way humans do.</em> It found patterns that work statistically but aren't robust in the way human perception is. No amount of training data fully closes that gap, because the gap is structural — the model is doing something fundamentally different from seeing.</p>
+          <p>For older readers, this raises a policy question that real institutions are grappling with right now: should AI systems in high-stakes domains (traffic, medicine, security) be required to demonstrate adversarial robustness before deployment? Currently, most are not. The EU's AI Act, passed in 2024, begins to address this — requiring risk documentation for high-stakes AI systems — but robustness requirements are still evolving.</p>
+        </div>
+        <div class="callout">
+          <div class="callout-label">Ethical Question — No Clean Answer</div>
+          <p>If an adversarial attack on a self-driving car's perception system causes an accident — and the attacker knew this was possible — who bears legal and moral responsibility? The attacker? The company that deployed a vulnerable model? The regulators who didn't require adversarial testing? All three?</p>
+        </div>
+        <div class="gold-callout">
+          <div class="callout-label">You Can Now See What Most People Miss</div>
+          <p>Most people think AI security means protecting the server from hackers. You now understand a completely different threat: someone who never touches the server but changes a sticker on a sign — and the car does whatever they want. That reframes what "AI safety" means from the ground up. When you hear about self-driving cars, face recognition at airports, or AI in medical devices, you're now equipped to ask: what happens when someone who knows how this model works tries to break it?</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l3')">← Previous Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Take the Quiz →</button>
+      <button class="pnav-btn" onclick="goPage('p-lab4')">Go to Lab</button>
+    </div>
+  </div>
+
+  <!-- QUIZ 4 -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Lesson 4 Quiz</div>
+      <h1>Breaking the Model on Purpose</h1>
+      <div class="tagline">5 questions · Who can break an AI, how, and what does it mean?</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">1. The stop sign attack used small stickers to make a self-driving car see a speed limit sign. How was the sticker pattern determined?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">A. By trial and error — the researchers tried many random sticker patterns until one happened to work.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">B. By painting over the word STOP with color that cameras can't read.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">C. By using mathematical knowledge of how the neural network processes images — calculating which pixel modifications would most push the model toward a wrong classification.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">D. By exploiting a specific software bug in a particular self-driving car manufacturer's codebase.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The attack wasn't random — it was calculated. Knowing the model's architecture and weights, researchers could compute precisely which changes to the image would cause the misclassification. This is what makes adversarial attacks structurally different from ordinary errors.</div>
+        <div class="quiz-feedback wrong">Think about what "adversarial" means in this context. The attack wasn't guessing — it was calculated using mathematical knowledge of how the specific model makes decisions. That's what makes it different from simply damaging a sign.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">2. A researcher adds invisible perturbations to a chest X-ray image. A radiologist sees nothing wrong, but the AI model says the patient has no abnormalities — when there is actually a tumor present. What type of attack is this?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">A. Distributional shift — the X-ray comes from a different hospital than the training data.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">B. Overfitting — the model memorized patterns from training X-rays and can't generalize to this patient.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">C. An adversarial attack — the image has been deliberately modified to cause the model to miss the tumor while remaining visually identical to a radiologist.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">D. Training bias — the model was trained on datasets that underrepresented certain tumor types.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly. The modification is imperceptible to a human but mathematically optimized to deceive the model's specific perception mechanism. This is the defining feature of an adversarial attack applied to a real medical context.</div>
+        <div class="quiz-feedback wrong">The key here is intentionality and method. The image has been deliberately modified using knowledge of the model. That's what distinguishes this from a distribution shift (world changes on its own) or overfitting (model's training problem). What does "adversarial" actually mean?</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">3. Adversarial examples work because neural networks process images differently from how humans see them. What does this reveal about the nature of what neural networks learn?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">A. Neural networks are fundamentally inferior to human vision and should be replaced by other AI architectures.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">B. Any neural network can be made invulnerable to adversarial attacks if trained on enough data.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">C. Neural networks learn statistical patterns that correlate with the right answer in training data — but these patterns are not the same as the meaningful visual features humans use, making them exploitable in ways human perception is not.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">D. Neural networks only process high-frequency pixel data and ignore the shapes and objects that humans focus on.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The model learned patterns that worked statistically on training data — but those patterns aren't grounded in the same conceptual understanding of shapes and objects that makes human perception robust. That gap is structural, not just a training deficiency.</div>
+        <div class="quiz-feedback wrong">Think about the central theme of this module: models learn patterns from data, not underlying meaning. What does that imply about how the model processes an image — and why a carefully crafted perturbation could fool it while leaving a human unaffected?</div>
+      </div>
+
+      <div class="quiz-box" id="q4-4">
+        <div class="quiz-q">4. "Adversarial training" is one defense against adversarial attacks. What is its core limitation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">A. It makes models too slow to be used in real-time applications like self-driving cars.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">B. It defends against known attack types but leaves the model vulnerable to new adversarial approaches — creating an ongoing arms race between attackers and defenders.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">C. It requires the model to be retrained from scratch, which destroys all previously learned knowledge.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">D. It is only effective for image classification models and does not apply to other types of AI systems.</button>
+        </div>
+        <div class="quiz-feedback right">Right. Adversarial training is a patch against the specific attacks you've already seen — but adversarial attacks can always approach from new directions. The fundamental vulnerability — that models learn patterns, not meanings — doesn't disappear with more training.</div>
+        <div class="quiz-feedback wrong">Think about what adversarial training actually does. It shows the model examples of known attacks. But what happens when an attacker comes up with a new type of attack that the model hasn't been trained against? Does knowing the answer to the last test help you on a new one?</div>
+      </div>
+
+      <div class="quiz-box" id="q4-5">
+        <div class="quiz-q">5. A government wants to deploy a face recognition system at all major airports. A security researcher demonstrates that printed glasses can fool the system. The government's response is: "We'll make photos of the glasses classified so no one knows how to make them." Why is this an insufficient security response?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">A. It is sufficient — if no one knows the glasses design, no one can reproduce the attack.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">B. Classified information is inherently unreliable and always leaks within a year.</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-5')">C. Any attacker who knows the model's architecture and weights — or can experiment with the deployed system — can independently calculate new adversarial patterns without needing the classified photos. The vulnerability is structural, not informational.</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">D. Classified information cannot be used by security researchers to improve the model, making it impossible to patch the vulnerability.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly. The attack isn't a secret recipe — it's a mathematical consequence of how the model works. Anyone with enough knowledge of the model's structure can derive their own adversarial patterns. Hiding one particular example doesn't fix the underlying vulnerability that makes adversarial examples possible.</div>
+        <div class="quiz-feedback wrong">Think about how the sticker pattern was created — through mathematical calculation, not through discovering someone else's trick. If the vulnerability is structural (the model processes images in an exploitable way), does hiding one specific exploit actually fix it? What would a real fix require?</div>
+      </div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Review Lesson</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab4')">Go to Lab →</button>
+      <button class="pnav-btn" onclick="goPage('p-mt')">Module Test</button>
+    </div>
+  </div>
+
+  <!-- LAB 4 -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Lesson 4 Lab</div>
+      <h1>Red Team</h1>
+      <div class="tagline">You're not building the model. You're trying to break it — before someone dangerous does.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Your Role: Adversarial Security Analyst</h4>
+        <p>A hospital has just deployed an AI system that reads CT scans to detect internal bleeding. The system is 93% accurate on the validation set. Hospital administration is proud of it. Your job is to "red team" it — to think like an attacker and find scenarios where it fails before those failures cause harm.</p>
+        <p>Your lab partner is a fellow red-teamer who will push you to be more specific, more creative, and more rigorous. You need to make the case for at least three distinct failure scenarios — not just "it could be wrong sometimes."</p>
+        <div class="lab-prompt">Start with your most serious adversarial scenario. Describe who the attacker would be, what they would need to know, and what they would actually do to cause the model to fail.</div>
+      </div>
+      <div class="lab-chat" id="lab-chat-l4">
+        <div class="lab-chat-header">
+          <span>Red Team Partner</span>
+          <div class="chat-badge">Lab 4 · Adversarial Analyst</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">The hospital CTO just told me "this system has been tested extensively and no one would even know how to attack it." I think that's dangerously wrong. What's your first attack scenario — and more importantly, what does the attacker actually need to know or have access to in order to pull it off?</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Type your response..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- MODULE TEST                                         -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Module 2 · Final Test</div>
+      <h1>When the Model Gets It Dangerously Wrong</h1>
+      <div class="tagline">15 questions · All four lessons · Pass at 80% or above to complete the module.</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. Amazon's hiring AI penalized résumés containing the word "women's." No engineer programmed this. What caused it?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">A. A deliberate algorithmic choice to filter candidates by gender.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">B. The model learned from ten years of hiring data in which men were more often promoted, so it learned to associate gender-correlated words with lower success predictions.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">C. A software bug that appeared when the model processed certain text patterns.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">D. Amazon deliberately obscured the model's decision logic to avoid legal liability.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Training bias: the data carried historical unfairness, and the model learned it.</div>
+        <div class="quiz-feedback wrong">Review Lesson 1: the model learned from biased historical data, not from deliberate programming.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. A healthcare algorithm uses "total healthcare spending" to measure patient health need. Why does this produce racially biased outcomes?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">A. Spending directly correlates with how sick a patient is, so it's a valid health measure.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">B. Spending reflects access to healthcare, not just illness severity — and access is unequal across racial groups, so less spending doesn't mean less illness.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">C. The algorithm was programmed by engineers who explicitly discriminated by race.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">D. Healthcare spending data is too inaccurate to use in any predictive model.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Cost is a proxy for access — not health — and access is historically unequal.</div>
+        <div class="quiz-feedback wrong">Review Lesson 1: proxy variables carry hidden inequalities from the world into the model.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. What is a proxy variable?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">A. A backup variable used when the primary data is missing.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">C. A variable the model uses as an unintentional substitute for a characteristic — like gender or race — that it was never supposed to consider.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">B. The outcome variable a model is trained to predict.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">D. A variable deliberately added to make the model less biased.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A proxy encodes what the model wasn't supposed to see — via correlation, not direct inclusion.</div>
+        <div class="quiz-feedback wrong">Review Lesson 1: a proxy variable indirectly substitutes for a protected characteristic through correlation.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. The melanoma detection model associated rulers in photos with cancer because dermatologists measure suspicious lesions. This is an example of:</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">A. Training bias due to racial inequality in dermatology practice.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">B. Overfitting — the model memorized a spurious artifact of how images were collected, not a true medical signal.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">C. Distributional shift — the deployment environment had different imaging equipment.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">D. An adversarial attack by researchers who wanted to discredit the model.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Overfitting: the model latched onto an artifact specific to this dataset instead of the real signal.</div>
+        <div class="quiz-feedback wrong">Review Lesson 2: overfitting is when a model memorizes quirks of the training data rather than the underlying pattern.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. A model scores 97% on training data and 61% on data from a different hospital. What does this gap most likely indicate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">A. The second hospital's data is lower quality and should be excluded.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">B. The model is underfitted — it didn't train on enough data from the first hospital.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">C. The model is overfit — it memorized patterns specific to the first hospital's data rather than learning generalizable medical signals.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">D. The model's architecture is too simple to handle real-world complexity.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. A large gap between training performance and performance on genuinely new data is the signature of overfitting.</div>
+        <div class="quiz-feedback wrong">Review Lesson 2: a large gap between training accuracy and accuracy on new data means the model memorized the specific training examples rather than learning a general rule.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. Marco Ribeiro's wolf/husky classifier used snow in the background as its primary signal. What is the most important implication of this finding?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">A. Image classification models should always be trained on photos with plain backgrounds.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">B. A model can achieve high test accuracy by learning the wrong signal — meaning accuracy alone is not sufficient to confirm that a model works the right way.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">C. Neural networks cannot distinguish between animals and environments without explicit labels for both.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">D. The test set must always be larger than the training set to produce reliable accuracy measurements.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Accuracy is a measure of correct answers — not correct reasoning. A model can be right for the wrong reasons.</div>
+        <div class="quiz-feedback wrong">Review Lesson 2: the key takeaway from the husky case is that accuracy doesn't tell you what the model actually learned. It only tells you whether it got the right answer on the test set.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. What is distributional shift?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">A. When an engineer modifies the model's weights after deployment to improve performance.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">B. When a model's training data is deliberately distributed across multiple servers for faster processing.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">C. When the data a model encounters after deployment is systematically different from the data it was trained on, causing performance to degrade.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">D. When a model assigns probability distributions to multiple possible outputs rather than a single answer.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The training world and the deployment world no longer match — and performance degrades as a result.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: distributional shift happens when the world the model encounters no longer looks like the world it was trained on.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. COVID-19 triage AI systems failed partly because they were trained on pre-pandemic data. But why did some systems also fail even when trained on early COVID data?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">A. Early COVID datasets were small, skewed toward specific hospitals, and contained artifacts of local practice — so models trained on them didn't generalize to different hospitals or imaging setups.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">B. Early COVID data was classified by governments and unavailable for legitimate AI training.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">C. The models used the wrong neural network architecture for respiratory disease detection.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">D. COVID patients were always scanned using equipment that was incompatible with existing AI systems.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Even COVID-trained models overfit to the specific hospitals and practices where data was collected — another layer of the same distributional shift problem.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: the Cambridge review found that even COVID-era models overfit to the specific conditions of their training hospitals, failing to generalize to other settings.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. Financial models failed in 2008 because they had never been trained on data where U.S. housing prices fell nationally. What concept does this illustrate?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">A. Overfitting — the models memorized specific mortgage examples rather than learning general principles.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">B. Training bias — the models were built by banks with financial incentives to underestimate risk.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">C. Distributional shift — the real world moved into a scenario outside the training distribution, rendering the models' learned patterns inapplicable.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">D. Adversarial attack — hedge funds deliberately manipulated housing data to cause the models to fail.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The models were accurate within their training distribution. The world moved outside that distribution, and they had no way to handle what they'd never seen.</div>
+        <div class="quiz-feedback wrong">Review Lesson 3: the financial crisis case is a distributional shift story — the training data didn't include the scenario that actually occurred.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. A school deploys a dropout-risk model in 2019 and doesn't update it after switching to remote learning in 2020. A student who is genuinely struggling gets a "low risk" score and receives no outreach. What failure mode is this?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">A. Adversarial attack — someone deliberately altered the student's profile.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">B. Overfitting — the model memorized this student's earlier good performance.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">C. Distributional shift with silent failure — the signals that predicted dropout changed after the switch to remote learning, but the model kept producing confident (wrong) risk scores with no warning.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">D. Training bias — the model was trained on data that underrepresented students with this student's background.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The model's training world (in-person school) no longer matches deployment reality (remote learning), and it fails silently — giving no signal that its predictions have become unreliable.</div>
+        <div class="quiz-feedback wrong">Review Lessons 3: when the world changes and the model doesn't update, it continues producing outputs without flagging that those outputs may no longer be valid. That's the combination of distributional shift and silent failure.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. What is an adversarial example?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">A. A training example from a different cultural background that the model has difficulty classifying.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">B. An example that a model classified incorrectly due to overfitting on training data.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">C. An input that has been deliberately modified — often imperceptibly — to cause a model to make a specific, confident wrong prediction.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">D. A document describing the worst-case performance of a machine learning model on a standard benchmark.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The key features: deliberate, targeted, often imperceptible, causes confident misclassification.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: adversarial examples are deliberately crafted inputs designed to fool a specific model, not just hard or unusual examples that happen to cause errors.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. A security researcher wearing specially designed glasses consistently fools an airport face recognition system into identifying them as a different person. What type of attack is this, and what does the attacker need to execute it?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">A. An adversarial attack — the glasses contain a pattern calculated using knowledge of the model's architecture and weights to produce a specific misclassification.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">B. A distributional shift exploit — the airport's cameras are different from the system's training environment.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">C. A training bias exploit — the model was trained on datasets that underrepresented this person's demographic.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">D. An overfitting exploit — the model memorized the training faces so precisely that it can't handle real-world lighting.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The glasses are adversarially crafted — calculated, not random — to force a specific misidentification. The attacker needs knowledge of the model's mechanism, not access to its servers.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: the glasses case is a physical adversarial attack. The key is that the pattern was mathematically computed to exploit the model's specific decision boundaries.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. Why does "hiding the specific adversarial pattern used in a demonstrated attack" not solve the adversarial vulnerability?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">A. Because adversarial patterns are always visible to humans, so hiding them is impossible.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">B. Because adversarial attacks only work once — the model automatically learns to resist them after being fooled.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">C. Because any attacker with knowledge of the model's structure can independently calculate new adversarial patterns — the vulnerability is mathematical, not informational.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">D. Because secret adversarial patterns are automatically shared among researchers through academic journals.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The attack is a mathematical consequence of how the model processes inputs, not a secret recipe. Any sufficiently knowledgeable attacker can derive their own version independently.</div>
+        <div class="quiz-feedback wrong">Review Lesson 4: adversarial patterns are calculated from the model's own structure. Hiding one example doesn't fix the structural property that makes adversarial examples possible at all.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. Which of the following best describes what all four failure modes in this module have in common?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">A. They all result from deliberate sabotage by engineers or hackers who want AI systems to fail.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">B. They all can be fixed by simply using more training data.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">C. They all arise because models learn statistical patterns from a specific dataset — and when the world, the data, or a deliberate attacker pushes beyond that dataset's boundaries, the model fails in ways the patterns cannot handle.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">D. They all only affect AI systems deployed in high-stakes medical or financial domains.</button>
+        </div>
+        <div class="quiz-feedback right">Exactly right. Training bias, overfitting, distributional shift, and adversarial attacks are all different ways that the boundary between "what the model learned" and "what the world actually is" can break down.</div>
+        <div class="quiz-feedback wrong">Think about the through-line across all four lessons. What do training bias, overfitting, distributional shift, and adversarial attacks all share? Each involves a gap between the training data and some version of reality. The nature of that gap — and who or what caused it — differs, but the structural issue is the same.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. A company releases an AI hiring tool with 91% accuracy on their internal test set. You are a policymaker deciding whether to require disclosure before companies can use it. Based on this module, what would you most need to know?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">A. The name of the neural network architecture used to build the model.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">B. How many engineers worked on the project and their years of experience.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">C. Whether the model uses supervised or unsupervised learning.</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">D. What the training data contained and whether it reflects historical discrimination; whether the test set is genuinely independent; whether the model has been evaluated outside the original data source; and whether the deployment context matches the training conditions.</button>
+        </div>
+        <div class="quiz-feedback right">Correct. All four questions map directly onto the four failure modes: training bias (what's in the data?), overfitting (is the test set independent?), distributional shift (does deployment match training?), and adversarial robustness (has anyone tried to break it?). This is what informed AI policy oversight looks like.</div>
+        <div class="quiz-feedback wrong">Think about all four lessons together. Each one identified a different thing you'd need to know about a model before trusting it. Accuracy on an internal test set alone tells you almost nothing about any of those four concerns. What would a truly informed policymaker ask?</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-l4')">← Review Lesson 4</button>
+      <button class="pnav-btn" onclick="goPage('p-l1')">Back to Start</button>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='how-machines-learn';
+var MODULE_ID='how-m2';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
+
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  if(id==='p-mt'&&!_gateOpen()){
+    alert('Complete all 4 lessons and their quizzes first to unlock the Module Test.');
+    return;
+  }
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  var destLesson=PAGE_TO_LESSON[id];
+  if(destLesson) _gateMarkLesson(destLesson);
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  updateMtGate();
+  window.scrollTo(0,0);
+  var _sc=document.querySelector('.content');
+  if(_sc) _sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result);
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fbClass=result==='correct'?'right':'wrong';
+  var fb=box.querySelector('.quiz-feedback.'+fbClass);
+  if(fb) fb.classList.add('show');
+  var qGateId=PAGE_TO_QUIZ[currentPageId];
+  if(qGateId){_gateMarkQuiz(qGateId);updateMtGate();}
+}
+
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    el.style.display='block';
+    var pct=Math.round((mtCorrect/mtTotal)*100);
+    el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+
+      (pct>=80?' — Module passed.':' — Review lessons and retake.');
+    if(pct>=80){
+      window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+    }
+  }
+}
+
+// ── CHAT SYSTEM ─────────────────────────────────────────────
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var LAB_SYSTEM_PROMPTS={
+  l1:'You are a knowledgeable peer investigator helping audit a hospital referral algorithm for training bias. You are NOT a teacher. Do not lecture or explain concepts at length. Instead: ask sharp follow-up questions, challenge vague answers, push for specificity, and occasionally offer a brief counterpoint. You know about proxy variables, spurious correlations, and the history of algorithmic bias (Amazon 2018, COMPAS 2016, healthcare cost proxy 2019). If the user gives a surface-level answer, press them: "What specifically would you look at in the data? Why does that matter more than something else?" Keep responses to 3-5 sentences. You are doing an investigation together — both of you are figuring this out.',
+  l2:'You are a sharp peer evaluator helping assess whether a fraud detection model with 96% accuracy is actually ready to deploy across 50 banks. You are NOT a teacher. Push back on weak arguments, ask for evidence, and challenge overconfident claims. You know about overfitting, spurious correlations, validation set contamination, and distributional artifacts. If the user says "the accuracy could be from shortcuts," ask: "What kind of shortcuts specifically? What would you look for?" If they make a good point, acknowledge it briefly then raise the next concern. Keep responses to 3-5 sentences. Act like a skeptical co-investigator, not a helpful tutor.',
+  l3:'You are a peer deployment reviewer helping decide whether a pre-pandemic social services AI model should keep running in 2021 after pandemic-era economic disruption. You are NOT a teacher — you are a fellow analyst with your own view (lean toward "continue with monitoring" as a devil\'s advocate position). Challenge the user to be specific about what exactly changed and how that would affect the model\'s specific signals. Ask: "What signal in the model would be most affected by pandemic conditions? Can you name one?" Push them to quantify their concerns where possible. Keep responses to 3-5 sentences. This is a real decision with real tradeoffs — don\'t let either side be too easy.',
+  l4:'You are a fellow red-teamer helping identify adversarial vulnerabilities in a hospital CT scan AI. You are NOT a teacher. You are a skeptical peer who challenges vague attack scenarios: "Who would actually do this? What would they need? Could a non-expert pull this off?" You know about adversarial examples, physical-world attacks, model inversion, data poisoning, and the gap between digital and physical attack surfaces. If the user describes a scenario, probe its feasibility: "That requires the attacker to have what, exactly? Model weights? Just the output?" Push them toward at least three distinct attack vectors. Keep responses to 3-5 sentences. Be rigorous — bad threat models are worse than no threat models.'
+};
+
+var LAB_FALLBACKS={
+  l1:[
+    "That's a start, but you're being too general. If I asked you to open the actual dataset right now — what's the first column you'd look at, and what would you be hoping to see or not see?",
+    "Interesting. Now think about who generated this data. The referral records were created by doctors making judgment calls. What biases might those human decisions carry — and how would you even detect that in a dataset?",
+    "You keep circling around demographics. But here's a harder question: even if race and gender aren't explicit columns, what other variables might act as proxies? Can you name two specific ones that might appear in a hospital dataset?",
+    "Let's say you find a proxy variable. What would you actually do with that finding? Remove the column? Flag the model? And what's the tradeoff of each choice?"
+  ],
+  l2:[
+    "Okay, but '96% might be misleading' isn't a specific argument yet. What exactly would have to be true about the training setup for that number to be essentially meaningless? Get concrete.",
+    "You're pointing at the right area. Now: if this model trained and tested on data from a single bank, what specific artifacts of that bank's practices might it have learned that wouldn't transfer elsewhere?",
+    "Here's a counterpoint: the CEO says 96% accuracy across 100,000 transactions is statistically robust — random chance can't produce that. How would you respond to that argument without just repeating 'overfitting'?",
+    "Suppose you could run one additional test before recommending deployment or rejection. What would it be, and what result would change your mind?"
+  ],
+  l3:[
+    "Strong position, but the budget office will push back hard. 'Even a bad model is better than nothing' is actually a reasonable argument in crisis conditions. What's your specific counter to that?",
+    "You said the model's signals changed after the pandemic. Name one specific signal — something that would actually appear as a data column — and explain exactly how pandemic conditions would corrupt it.",
+    "Here's the uncomfortable part: if you suspend the model, families who would have been helped don't get outreach while you wait for retraining. How do you weigh a known harm (missed families) against an uncertain harm (wrong predictions)?",
+    "Let's say you recommend 'continue with monitoring.' What exactly would you monitor? What number or pattern would trigger a suspension decision?"
+  ],
+  l4:[
+    "That's a plausible attack. Now be honest about the attacker profile: does this require someone with deep ML expertise, or could a moderately technical person pull it off with public tools? That matters a lot for the actual risk level.",
+    "Good. Now think about a completely different attack surface — not the image input. What about the training pipeline itself? Is there a scenario where an attacker corrupts the model before it's deployed, rather than attacking it after?",
+    "You've identified the attack. What detection method would catch it? And then: could an attacker specifically design around that detection method? This is the arms race problem — play it out one level further.",
+    "Last challenge: the CTO says 'attackers would need our model weights, which are proprietary.' Is that actually a strong defense? What can an attacker learn just from querying the deployed model without ever seeing the weights?"
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=LAB_FALLBACKS[labId];
+  if(!arr||arr.length===0) return "Interesting point. Can you be more specific about the mechanism you're describing?";
+  var idx=_fallbackIdx[labId]%arr.length;
+  _fallbackIdx[labId]++;
+  return arr[idx];
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  var initialMessages={
+    l1:"You've been hired to audit a hospital referral algorithm before it scales. I've read the basic documentation. Before we dig into the data — what do you think we should look at first, and why? Don't just say \"the training data.\" Get specific. What about it?",
+    l2:"96% accuracy — that's a strong number. The startup CEO just sent me a message saying \"the data speaks for itself.\" I'm not so sure. What's your first concern about this evaluation setup, and why would that number potentially be misleading?",
+    l3:"The city's budget office is pushing hard to keep the model running — retooling it costs money they don't have, and families need help now. The argument is: \"even an imperfect model is better than no model.\" What's your position, and what's your strongest argument for it? Don't hedge. Take a side.",
+    l4:"The hospital CTO just told me \"this system has been tested extensively and no one would even know how to attack it.\" I think that's dangerously wrong. What's your first attack scenario — and more importantly, what does the attacker actually need to know or have access to in order to pull it off?"
+  };
+  container.innerHTML='';
+  var initialDiv=document.createElement('div');
+  initialDiv.className='chat-msg ai';
+  initialDiv.textContent=initialMessages[labId]||'Let\'s begin. What\'s your first observation?';
+  container.appendChild(initialDiv);
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  btn.disabled=true;
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(chatExchanges[labId]===undefined) chatExchanges[labId]=0;
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    var reply=_fallbackReply(labId);
+    chatHistories[labId].push({role:'assistant',content:reply});
+    addMsg(labId,'ai',reply);
+    chatExchanges[labId]++;
+    if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+      labSignaled[labId]=true;
+      window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+    }
+    btn.disabled=false;
+    if(inp) inp.focus();
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking...');
+
+  for(var _attempt=0;_attempt<2;_attempt++){
+    try{
+      var messages=chatHistories[labId].slice();
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:400,
+          system:LAB_SYSTEM_PROMPTS[labId],
+          messages:messages
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'I couldn\'t generate a response. Try rephrasing your message.';
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      if(thinking) thinking.remove();
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+      btn.disabled=false;
+      if(inp) inp.focus();
+      return;
+    }catch(e){
+      if(_attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','\u26a0 AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId,exchangeCount:chatExchanges[labId]},'*');
+      }
+    }
+  }
+  btn.disabled=false;
+  if(inp) inp.focus();
+}
+
+// Initialize on load
+(function(){
+  // Mark L1 as visited since it's the starting page
+  _gateMarkLesson('l1');
+  updateMtGate();
+  updateTabs();
+})();
+</script>
+</body>
+</html>

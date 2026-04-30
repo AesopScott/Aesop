@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-04-30 16:02 UTC
+**Generated:** 2026-04-30 16:58 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 142 · **Warnings:** 972
+**Errors:** 143 · **Warnings:** 980
 
 ---
 
@@ -62,7 +62,7 @@
 
 ## Cross-References
 
-### Errors (46)
+### Errors (47)
 
 - 🔴 **ORPHAN_LINK**: Course `agile` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `ai` is linked in courses.html but not defined in electives-hub or registry
@@ -109,6 +109,7 @@
 - 🔴 **ORPHAN_LINK**: Course `voice` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `what` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `whats` is linked in courses.html but not defined in electives-hub or registry
+- 🔴 **ORPHAN_LINK**: Course `wispr` is linked in courses.html but not defined in electives-hub or registry
 - 🔴 **ORPHAN_LINK**: Course `working` is linked in courses.html but not defined in electives-hub or registry
 
 
@@ -190,7 +191,7 @@
 
 ## Module File Integrity
 
-### Warnings (961)
+### Warnings (969)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -876,6 +877,10 @@
 - 🟡 **NO_COURSE_ID**: Module file `how-large-language-models-work-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `how-large-language-models-work-m7.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `how-large-language-models-work-m8.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `how-machines-learn-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `how-machines-learn-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `how-machines-learn-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `how-machines-learn-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `human-ai-interaction-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `human-ai-interaction-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `human-ai-interaction-m2.html` has no COURSE_ID constant
@@ -898,6 +903,9 @@
 - 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `is-ai-telling-you-the-truth-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `is-the-robot-being-fair-m1.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-the-robot-being-fair-m2.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-the-robot-being-fair-m3.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `is-the-robot-being-fair-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `electives-hub.html` has no COURSE_ID constant
@@ -1141,6 +1149,7 @@
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m4.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `whats-really-inside-ai-m6.html` has no COURSE_ID constant
+- 🟡 **NO_COURSE_ID**: Module file `wispr-flow-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `working-with-the-anthropic-api-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `working-with-the-anthropic-api-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `working-with-the-anthropic-api-m2.html` has no COURSE_ID constant
@@ -1158,7 +1167,7 @@
 
 ## Summary
 
-**142 error(s) require attention:**
+**143 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1245,6 +1254,7 @@
 1. Course `voice` is linked in courses.html but not defined in electives-hub or registry
 1. Course `what` is linked in courses.html but not defined in electives-hub or registry
 1. Course `whats` is linked in courses.html but not defined in electives-hub or registry
+1. Course `wispr` is linked in courses.html but not defined in electives-hub or registry
 1. Course `working` is linked in courses.html but not defined in electives-hub or registry
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`

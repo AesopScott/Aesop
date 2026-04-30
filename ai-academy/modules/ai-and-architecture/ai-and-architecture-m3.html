@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI and Architecture — M3: Floor Plan and Space Generation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<!-- ai-and-architecture-m3 -->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;scroll-behavior:smooth;}
+body{font-family:'Nunito Sans',sans-serif;background:#0a1118;color:#e8e3db;min-height:100vh;-webkit-font-smoothing:antialiased;}
+:root{--accent:#f43f5e;--accent-rgb:244,63,94;--bg:#0a1118;--panel:#0d1520;--panel2:#111c28;--border-dark:#1a2738;--text:#e8e3db;--muted:#4a5a6a;--gold:#c9a05a;}
+.tab-strip{background:#060e18;border-bottom:1px solid var(--border-dark);padding:0 2rem;display:flex;gap:0;overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+.tab-strip::-webkit-scrollbar{display:none;}
+.tab-group{display:flex;align-items:stretch;flex-shrink:0;}
+.tab-lesson{font-family:'Crimson Pro',Georgia,serif;font-size:0.92rem;color:rgba(201,160,90,0.22);padding:0.65rem 1.1rem 0.6rem;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.tab-lesson:hover{color:rgba(201,160,90,0.55);}
+.tab-lesson.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-subs{display:flex;align-items:center;padding:0 0.25rem;}
+.tab-sep{color:rgba(201,160,90,0.1);font-size:0.7rem;padding:0 0.1rem;}
+.tab-sub{font-size:0.7rem;font-weight:500;color:rgba(201,160,90,0.15);padding:0.65rem 0.5rem;cursor:pointer;transition:color 0.15s;white-space:nowrap;}
+.tab-sub:hover{color:rgba(201,160,90,0.4);}
+.tab-sub.active{color:var(--gold);}
+.tab-test{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(201,160,90,0.2);padding:0.65rem 1rem;margin-left:auto;cursor:pointer;border-bottom:1.5px solid transparent;transition:all 0.15s;flex-shrink:0;}
+.tab-test:hover{color:rgba(201,160,90,0.5);}
+.tab-test.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-test.locked{opacity:0.3;cursor:not-allowed;pointer-events:auto;}
+.tab-test.locked::after{content:' 🔒';font-style:normal;}
+.content-area{flex:1;display:flex;flex-direction:column;}
+.page{display:none;flex:1;flex-direction:column;}
+.page.active{display:flex;}
+.lesson-hero{padding:2.5rem 3.5rem 2rem;border-bottom:1px solid var(--border-dark);background:linear-gradient(180deg,rgba(var(--accent-rgb),0.03) 0%,transparent 100%);text-align:center;}
+.lesson-kicker{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.65rem;}
+.lesson-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:clamp(1.7rem,4vw,2.5rem);font-weight:600;color:#fff;line-height:1.15;margin-bottom:0.4rem;font-style:italic;}
+.lesson-hero .tagline{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;color:rgba(201,160,90,0.4);font-style:italic;line-height:1.5;max-width:700px;margin:0 auto;}
+.lesson-question{font-size:1.05rem;font-weight:700;font-style:italic;color:var(--accent);margin-top:0.5rem;line-height:1.6;max-width:700px;margin-left:auto;margin-right:auto;}
+.lesson-body{width:90%;margin:0 auto;padding:2rem 2.5rem;flex:1;}
+.story-scene{border-left:1px solid rgba(201,160,90,0.18);padding:0 0 0 1.5rem;margin-bottom:2rem;}
+.story-scene[data-label]::before{content:attr(data-label);display:block;font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:rgba(201,160,90,0.4);margin-bottom:0.75rem;}
+.story-text{font-family:'Crimson Pro',Georgia,serif;font-size:1.05rem;line-height:1.9;color:#a89f93;font-style:italic;}
+.story-text+.story-text{margin-top:0.85rem;}
+.story-text em{color:var(--accent);font-style:normal;}
+.story-text .char{color:var(--gold);font-style:normal;font-weight:600;}
+.section-heading{font-family:'Crimson Pro',Georgia,serif;font-size:1.15rem;font-weight:600;color:#e8e3db;margin:1.75rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border-dark);}
+.lesson-section{padding:0 2.5rem;}
+.section-body{font-size:0.9rem;line-height:1.85;color:#6e6861;}
+.section-body p+p{margin-top:0.85rem;}
+.section-body em{color:#a89f93;font-style:normal;}
+.section-body strong{color:#c0b8af;}
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-dark),transparent);margin:1.75rem 0;}
+.callout{background:rgba(var(--accent-rgb),0.04);border-top:1px solid rgba(var(--accent-rgb),0.12);border-bottom:1px solid rgba(var(--accent-rgb),0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.callout-label{font-size:0.6rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:0.5rem;}
+.callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.gold-callout{background:rgba(201,160,90,0.04);border-top:1px solid rgba(201,160,90,0.12);border-bottom:1px solid rgba(201,160,90,0.12);padding:1rem 1.25rem;margin:1.25rem 0;}
+.gold-callout .callout-label{color:var(--gold);}
+.gold-callout p{font-size:0.87rem;line-height:1.75;color:#a89f93;}
+.key-term{display:flex;gap:0.5rem;margin:0.75rem 0;font-size:0.87rem;}
+.kt-term{color:var(--accent);font-weight:700;white-space:nowrap;}
+.kt-def{color:#a89f93;line-height:1.75;}
+.page-nav{display:flex;gap:0.75rem;padding:1.5rem 0 2.5rem;width:90%;margin:auto auto 0;border-top:1px solid var(--border-dark);}
+.pnav-btn{flex:1;padding:0.65rem 1rem;border:1px solid var(--border-dark);border-radius:4px;font-size:0.7rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);text-align:center;cursor:pointer;transition:all 0.15s;text-decoration:none;display:block;background:transparent;font-family:inherit;}
+.pnav-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pnav-btn.primary{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);background:rgba(var(--accent-rgb),0.05);}
+.quiz-hero,.lab-hero{padding:2rem 3.5rem 1.5rem;border-bottom:1px solid var(--border-dark);text-align:center;}
+.quiz-hero h1,.lab-hero h1{font-family:'Crimson Pro',Georgia,serif;font-size:1.5rem;font-weight:600;color:#fff;font-style:italic;margin-bottom:0.3rem;}
+.quiz-hero .tagline,.lab-hero .tagline{font-size:0.78rem;color:var(--muted);}
+.quiz-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.quiz-box{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;padding:1.25rem 1.5rem;margin-bottom:1rem;}
+.quiz-q{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#fff;margin-bottom:0.85rem;line-height:1.45;}
+.quiz-opts{display:flex;flex-direction:column;gap:0.5rem;}
+.quiz-opt{background:transparent;border:1px solid var(--border-dark);color:#6e6861;padding:0.65rem 1rem;border-radius:4px;font-family:inherit;font-size:0.82rem;cursor:pointer;text-align:left;transition:all 0.15s;font-weight:500;}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);color:#e8e3db;background:rgba(var(--accent-rgb),0.04);}
+.quiz-opt.correct{border-color:#4fcf8a;background:rgba(79,207,138,0.06);color:#4fcf8a;}
+.quiz-opt.wrong{border-color:#f07070;background:rgba(240,112,112,0.05);color:#f07070;}
+.quiz-feedback{margin-top:0.75rem;font-size:0.8rem;line-height:1.6;padding:0.65rem 0.85rem;border-radius:4px;display:none!important;}
+.quiz-feedback.show{display:block!important;}
+.quiz-feedback.right{background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.25);color:#38bdf8;}
+.quiz-feedback.wrong{background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;}
+.lab-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;display:flex;flex-direction:column;}
+.lab-intro{margin-bottom:1.25rem;}
+.lab-intro h4{font-family:'Crimson Pro',Georgia,serif;font-size:1rem;font-weight:600;color:#e8e3db;margin-bottom:0.6rem;}
+.lab-intro p{font-size:0.85rem;line-height:1.75;color:#6e6861;margin-bottom:0.5rem;}
+.lab-prompt{background:rgba(var(--accent-rgb),0.04);border:1px solid rgba(var(--accent-rgb),0.12);border-radius:4px;padding:0.75rem 1rem;margin-top:0.75rem;font-size:0.82rem;font-style:italic;color:var(--accent);line-height:1.6;}
+.lab-chat{background:rgba(var(--accent-rgb),0.02);border:1px solid var(--border-dark);border-radius:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:560px;}
+.lab-chat-header{background:rgba(var(--accent-rgb),0.05);border-bottom:1px solid var(--border-dark);padding:0.6rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.lab-chat-header span{font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);}
+.chat-badge{font-size:0.6rem;font-weight:700;background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.2);color:var(--accent);padding:0.15rem 0.5rem;border-radius:3px;}
+.lab-chat-msgs{flex:1;min-height:240px;max-height:640px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.65rem;}
+.chat-msg{max-width:88%;padding:0.65rem 0.85rem;border-radius:6px;font-size:0.85rem;line-height:1.65;}
+.chat-msg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:#a89f93;}
+.chat-msg.user{align-self:flex-end;background:rgba(var(--accent-rgb),0.08);border:1px solid rgba(var(--accent-rgb),0.15);color:#e8e3db;}
+.chat-msg.thinking{align-self:flex-start;background:var(--panel2);border:1px solid var(--border-dark);color:var(--muted);font-style:italic;}
+.chat-msg.error{align-self:flex-start;background:rgba(240,112,112,0.05);border:1px solid rgba(240,112,112,0.15);color:#f07070;font-size:0.78rem;}
+.lab-chat-input{display:flex;gap:0.5rem;padding:0.65rem 0.85rem;border-top:1px solid var(--border-dark);background:rgba(0,0,0,0.1);}
+.lab-chat-input textarea{flex:1;background:rgba(255,255,255,0.02);border:1px solid var(--border-dark);border-radius:4px;color:var(--text);font-family:inherit;font-size:0.85rem;padding:0.5rem 0.75rem;resize:none;min-height:38px;max-height:100px;}
+.lab-chat-input textarea:focus{outline:none;border-color:rgba(var(--accent-rgb),0.3);}
+.chat-send-btn{background:rgba(var(--accent-rgb),0.1);border:1px solid rgba(var(--accent-rgb),0.3);color:var(--accent);border-radius:4px;padding:0 1rem;font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;height:38px;font-family:inherit;}
+.chat-send-btn:hover:not(:disabled){background:rgba(var(--accent-rgb),0.18);}
+.chat-send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.chat-reset-btn{background:transparent;border:1px solid var(--border-dark);color:var(--muted);border-radius:4px;padding:0 0.75rem;font-size:0.72rem;font-weight:600;cursor:pointer;height:38px;font-family:inherit;}
+.chat-reset-btn:hover{border-color:var(--muted);color:#e8e3db;}
+.mt-area{width:90%;margin:0 auto;padding:1.5rem 0;flex:1;}
+.mt-score{font-family:'Crimson Pro',Georgia,serif;font-size:1.25rem;font-weight:600;color:var(--accent);text-align:center;padding:1.25rem;margin-top:1rem;display:none;border:1px solid rgba(var(--accent-rgb),0.15);border-radius:6px;background:rgba(var(--accent-rgb),0.03);}
+[data-theme="light"] body{background:#faf8f4;color:#1a1a2e;}
+[data-theme="light"] .tab-strip{background:rgba(250,248,244,0.97);border-bottom-color:#e2d9cc;}
+[data-theme="light"] .section-body{color:#4a5568;}
+[data-theme="light"] .quiz-box,[data-theme="light"] .lab-chat{background:#fff;border-color:#e2d9cc;}
+@media(max-width:900px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1.5rem 2.5rem;}}
+@media(max-width:600px){.lesson-body,.quiz-area,.lab-area,.mt-area{padding:1rem 1.25rem;}.lesson-hero{padding:1.5rem 1.25rem 1.25rem;}.quiz-hero,.lab-hero{padding:1.25rem 1.25rem 1rem;}}
+</style>
+
+<div class="tab-strip">
+  <div class="tab-group">
+    <div class="tab-lesson active" data-page="p-l1" onclick="goPage('p-l1')">L1</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q1" onclick="goPage('p-q1')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab1" onclick="goPage('p-lab1')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l2" onclick="goPage('p-l2')">L2</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q2" onclick="goPage('p-q2')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab2" onclick="goPage('p-lab2')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l3" onclick="goPage('p-l3')">L3</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q3" onclick="goPage('p-q3')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab3" onclick="goPage('p-lab3')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-group">
+    <div class="tab-lesson" data-page="p-l4" onclick="goPage('p-l4')">L4</div>
+    <div class="tab-subs">
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-q4" onclick="goPage('p-q4')">Quiz</div>
+      <span class="tab-sep">·</span>
+      <div class="tab-sub" data-page="p-lab4" onclick="goPage('p-lab4')">Lab</div>
+    </div>
+  </div>
+  <div class="tab-test locked" data-page="p-mt" onclick="goPage('p-mt')">Module Test</div>
+</div>
+
+<div class="content-area">
+
+  <!-- ═══════════════════════════════════════════ LESSON 1 ═══ -->
+  <div class="page active" id="p-l1">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 1</div>
+      <h1>How Machines Learned to Draw Rooms</h1>
+      <div class="tagline">From hand-drafted blueprints to latent-space floor plans — tracing the origin of generative layout.</div>
+      <div class="lesson-question">What does it actually mean for an algorithm to "generate" a floor plan, and why did it take architects decades to trust it?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="San Francisco · 2017">
+        <p class="story-text">In a converted warehouse studio in SoMa, <span class="char">Autodesk Research</span> released a project called <em>Project Dreamcatcher</em> — a generative design system that had been quietly tested on aerospace components but was now aimed, nervously, at architecture. The team's lead researcher, <span class="char">Mark Davis</span>, remembered the first time a client saw an AI generate a residential floor plan in real time: the client went silent for nearly a minute, then asked, "Did it know the sun moves?"</p>
+        <p class="story-text">The answer was: not exactly. But it was learning. Dreamcatcher consumed thousands of floor plan images, extracted spatial relationships, and produced layout candidates ranked by stated objectives — natural light exposure, circulation efficiency, structural bay regularity. It was the first commercially demonstrated system to treat the floor plan not as a drawing but as a <em>configuration problem with computable constraints</em>.</p>
+      </div>
+
+      <h2 class="section-heading">The Pre-AI Baseline: What Architects Were Actually Doing</h2>
+      <div class="section-body">
+        <p>Before generative tools, architects produced floor plans through a well-understood iterative sequence: bubble diagrams to establish adjacencies, blocked massing to test proportions, then detailed drafting in AutoCAD or Revit. The intelligence was entirely human; the software was a precision pencil. A competent drafter could produce a buildable schematic plan in one to two days. A principal architect would review, redline, and return it for revision — sometimes five or six rounds before a client saw anything.</p>
+        <p>The bottleneck was not creativity but <em>enumeration</em>. An architect exploring a 3-bedroom, 2-bath residential layout has hundreds of topologically distinct configurations when you account for room adjacency, corridor placement, service core location, and fenestration. No human team explores more than a fraction of them. This is precisely the gap that machine generation was designed to close.</p>
+        <p>Early computational layout experiments in the 1970s — notably <strong>William Mitchell's</strong> shape grammar work at MIT — showed that a small set of formal rules could generate thousands of syntactically valid architectural plans. Mitchell's 1977 book <em>Computer-Aided Architectural Design</em> laid the theoretical groundwork, but the hardware wasn't there. The idea sat dormant for almost forty years.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">The Deep Learning Inflection: 2017–2019</h2>
+      <div class="section-body">
+        <p>The true breakthrough came when researchers stopped trying to encode architectural rules and started training neural networks on observed outcomes. In 2019, a team at <strong>Tsinghua University</strong> published <em>HouseGAN</em> — a graph-conditioned generative adversarial network that accepted a room-adjacency graph as input and produced photorealistic floor plan images as output. The model was trained on 145,000 floor plans scraped from real estate listings across China and the United States.</p>
+        <p>HouseGAN's architecture was novel in a specific way: the graph-conditioned discriminator forced the generator to respect topological constraints — bedroom must be adjacent to bathroom, kitchen must connect to dining — while still allowing geometric freedom. The result was plans that looked like they'd been drawn by a human who had studied thousands of apartments. They were imperfect but recognizable.</p>
+        <p>Simultaneously, <strong>Stanislas Chaillou</strong> at Harvard GSD was running his own experiments using a U-Net architecture trained on Parisian Haussmann apartment plans. His 2019 thesis, published as <em>ArchiGAN</em>, demonstrated that a GAN could not only generate plans but interpolate between architectural styles — producing a floor plan that was "70% Haussmann, 30% modernist" by navigating latent space. Chaillou showed the results at the Fondation d'entreprise Hermès and the response, he recalled, was equal parts fascination and mild horror.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Key Insight</div>
+        <p>The fundamental shift in AI floor plan generation was moving from <strong>rule-based enumeration</strong> (encode what architects know) to <strong>distribution learning</strong> (learn what architects have done). The first approach requires expert knowledge encoding; the second requires data. By 2018, architectural data — scraped from real estate listings, BIM repositories, and open municipal building permit archives — had become abundant enough to make the second approach viable.</p>
+      </div>
+
+      <h2 class="section-heading">What "Generating" a Floor Plan Actually Means</h2>
+      <div class="section-body">
+        <p>The word "generate" conceals substantial technical complexity. In the context of AI floor plan tools, generation means one of three distinct processes, and confusing them leads to real mistakes in practice.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Parametric Generation</span>
+        <span class="kt-def">Rules and parameters drive output. The architect sets constraints (room count, area targets, adjacency requirements) and an algorithm enumerates valid configurations. Deterministic: same inputs produce same outputs. Exemplified by Autodesk's Forma and early Grasshopper scripts.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Stochastic/GAN Generation</span>
+        <span class="kt-def">A trained neural network samples from a learned distribution of floor plans. Outputs are probabilistic: same inputs yield different but statistically plausible outputs each run. Exemplified by HouseGAN, ArchiGAN, and early Midjourney architectural outputs.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Diffusion-Based Generation</span>
+        <span class="kt-def">A diffusion model iteratively denoises a random signal conditioned on a text or graph prompt. Current state-of-the-art for photorealistic spatial imagery. Exemplified by Stable Diffusion fine-tuned on architectural corpora and tools like Architect AI and Maket.ai (2023–2024).</span>
+      </div>
+
+      <div class="section-body">
+        <p>Each method has different failure modes. Parametric generation can get stuck in local optima and produce plans that satisfy all stated constraints but feel spatially awkward — what architects call "algorithm breath." GAN-based methods can produce topologically invalid plans with rooms that don't connect or corridors that dead-end. Diffusion models produce visually compelling images that may have no buildable structural logic at all.</p>
+        <p>Understanding which generation method underlies a given tool is not academic: it determines what you can trust, what you must verify, and how you integrate the output into a real design workflow.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Historical Anchor</div>
+        <p>William Mitchell's 1977 shape grammar work at MIT established the theoretical basis for computational floor plan generation. His core claim — that architectural plans follow a generative grammar analogous to linguistic syntax — is the intellectual ancestor of every GAN, diffusion model, and large language model that generates spatial layouts today. The grammar is now learned rather than encoded, but the underlying claim has proven correct.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">Quiz →</button>
+      <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ QUIZ 1 ═══ -->
+  <div class="page" id="p-q1">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Module 3 · Quiz 1</div>
+      <h1>How Machines Learned to Draw Rooms</h1>
+      <div class="tagline">5 questions — select the best answer for each.</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q1-1">
+        <div class="quiz-q">1. What was the primary bottleneck that AI floor plan generation was designed to address in traditional architectural workflows?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The inability of architects to use CAD software effectively</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-1')">The human inability to enumerate the full range of topologically distinct layout configurations</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The high cost of building permit applications</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-1')">The slow rendering speed of BIM software</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The bottleneck was enumeration — an architect exploring a residential layout can only examine a fraction of the hundreds of valid configurations. AI addressed this gap.</div>
+        <div class="quiz-feedback wrong">Not quite. The bottleneck was enumeration — the sheer number of valid layout configurations a human team cannot explore. Review the section on the pre-AI baseline.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-2">
+        <div class="quiz-q">2. HouseGAN (2019, Tsinghua University) was notable for which specific architectural innovation in its discriminator?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">It used a transformer to encode structural load paths</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">It generated 3D building sections rather than 2D plans</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-2')">It conditioned generation on a room-adjacency graph, enforcing topological constraints while allowing geometric freedom</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-2')">It used photogrammetry data from existing buildings as its training set</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HouseGAN's graph-conditioned discriminator enforced room adjacency relationships while still allowing geometric variation — this was its key architectural contribution.</div>
+        <div class="quiz-feedback wrong">Not quite. HouseGAN's innovation was its graph-conditioned discriminator that enforced topological room adjacency while allowing geometric freedom. Review the Deep Learning Inflection section.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-3">
+        <div class="quiz-q">3. Stanislas Chaillou's ArchiGAN thesis (Harvard GSD, 2019) demonstrated which capability beyond simply generating floor plans?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Automatic code compliance checking against local building regulations</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-3')">Style interpolation — producing plans that blended architectural styles by navigating latent space</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Real-time structural analysis integration with the generated plans</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-3')">Automated conversion of floor plans into Revit BIM models</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Chaillou showed that by navigating latent space, a GAN could interpolate between architectural styles, producing plans that were combinations of different traditions.</div>
+        <div class="quiz-feedback wrong">Not quite. Chaillou's key demonstration was style interpolation through latent space navigation — blending Haussmann and modernist styles, for example. Review the Deep Learning Inflection section.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-4">
+        <div class="quiz-q">4. Which generation method is described as deterministic — producing the same output from the same inputs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">GAN-based generation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Diffusion-based generation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-4')">Parametric generation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-4')">Stochastic sampling from a learned distribution</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Parametric generation is deterministic — the same constraints produce the same enumerated configurations. GAN and diffusion methods are stochastic.</div>
+        <div class="quiz-feedback wrong">Not quite. Parametric generation is deterministic. GANs and diffusion models are stochastic — same inputs yield different but statistically plausible outputs. Review the key terms section.</div>
+      </div>
+
+      <div class="quiz-box" id="q1-5">
+        <div class="quiz-q">5. What intellectual lineage connects William Mitchell's 1970s shape grammar work to modern AI floor plan generation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Mitchell invented GAN architecture, which later researchers applied to architectural data</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Mitchell's work established the first architectural training dataset used by HouseGAN</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q1-5')">Mitchell established that architectural plans follow a generative grammar; modern AI learns that grammar from data rather than having it explicitly encoded</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q1-5')">Mitchell proved that parametric tools were superior to neural networks for layout generation</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Mitchell's core claim — that architectural plans follow a generative grammar — is inherited by modern AI. The difference is that the grammar is now learned from data rather than manually encoded.</div>
+        <div class="quiz-feedback wrong">Not quite. Mitchell's contribution was the theoretical claim that plans follow a generative grammar. Modern AI learns that grammar from data instead of encoding it manually. Review the Gold Callout.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l1')">← Lesson 1</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab1')">Lab 1 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB 1 ═══ -->
+  <div class="page" id="p-lab1">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Module 3 · Lab 1</div>
+      <h1>Interrogating Generation Methods</h1>
+      <div class="tagline">Discuss the three floor plan generation paradigms with an AI tutor. Minimum 3 exchanges to complete.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>You've learned that "generating" a floor plan means very different things depending on whether a parametric, GAN-based, or diffusion-based system is involved. In this lab, explore the practical implications with your AI tutor. Ask about failure modes, real tools, or how you'd choose between approaches on a real project.</p>
+        <div class="lab-prompt">Suggested opening: "If I'm using a tool like Autodesk Forma versus Stable Diffusion for floor plans, what should I actually expect from each when it fails?"</div>
+      </div>
+      <div class="lab-chat" id="chat-l1">
+        <div class="lab-chat-header">
+          <span>AI Tutor — Floor Plan Generation Methods</span>
+          <div class="chat-badge">Lab 1</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l1">
+          <div class="chat-msg ai">Welcome to Lab 1. I'm here to help you think through the three AI floor plan generation paradigms — parametric, GAN-based, and diffusion-based — and their real-world implications for architectural practice. What would you like to explore first? You might ask about a specific tool, a failure mode, or how you'd choose between methods for a particular project type.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l1" placeholder="Ask about generation methods, tools, or failure modes…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l1');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l1')">Reset</button>
+          <button class="chat-send-btn" id="send-l1" onclick="chatSend('l1')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q1')">← Quiz 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l2')">Lesson 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LESSON 2 ═══ -->
+  <div class="page" id="p-l2">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 2</div>
+      <h1>Constraint Graphs and the Topology of Space</h1>
+      <div class="tagline">How AI encodes the relationships between rooms — and why adjacency logic is architecture's grammar.</div>
+      <div class="lesson-question">What does an AI actually manipulate when it generates a floor plan, and how do you give it the constraints it needs to produce something buildable?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Zürich · 2021">
+        <p class="story-text">At <span class="char">ETH Zürich's Chair of Architecture and Digital Fabrication</span>, doctoral researcher <span class="char">Liane Müller</span> was debugging a floor plan generator that kept producing kitchens adjacent to master bedrooms with no intervening corridor. The model had been trained on 80,000 American apartment plans, and in a statistically significant portion of them, open-plan layouts placed kitchen and sleeping zones in close proximity. The model was not wrong by its training data. But it was wrong by every client who valued sonic privacy.</p>
+        <p class="story-text">Müller's solution was not to retrain the model. It was to enforce a <em>hard adjacency constraint graph</em> that sat between the generator and the output: a set of room-pair rules that could never be violated regardless of what the generator produced. Kitchen and master bedroom could not share a wall. Bathroom could not open directly into a dining room. The generator still controlled geometry; the graph controlled topology. The fix took a weekend. It also revealed the deeper principle: <em>in AI floor plan generation, topology and geometry must be governed separately.</em></p>
+      </div>
+
+      <h2 class="section-heading">What Is a Room Adjacency Graph?</h2>
+      <div class="section-body">
+        <p>A room adjacency graph is the mathematical backbone of most serious AI floor plan systems. It is a graph G = (V, E) where vertices V represent rooms or spatial zones and edges E represent adjacency relationships — "these two spaces share a wall or a direct door connection." The graph encodes topology, not geometry: it says what connects to what, not how big or where.</p>
+        <p>This distinction matters enormously. Two floor plans can have identical adjacency graphs — bedroom connects to bathroom connects to corridor connects to living room — and yet look completely different in drawn form because the rooms are different sizes, oriented differently, or organized around different circulation spines. The graph is the <em>structural DNA</em>; the geometric drawing is its expression.</p>
+        <p>In the HouseGAN system, the input is exactly this: a room adjacency graph, specified by the user or generated procedurally, which the model uses to condition its output. The model has learned, from 145,000 training examples, what typical geometries correspond to each adjacency pattern. It samples from that learned correspondence to produce drawn plans.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Hard Constraint</span>
+        <span class="kt-def">A topological rule that cannot be violated in any generated output. Defined in the adjacency graph or post-processing layer. Example: "bathroom must be adjacent to at least one bedroom."</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Soft Constraint</span>
+        <span class="kt-def">A preference that the generator optimizes for but may occasionally violate. Encoded as loss terms or reward signals during training. Example: "maximize natural light to living areas."</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Topological Validity</span>
+        <span class="kt-def">The property of a generated plan in which all rooms are accessible, no spaces are isolated, and stated adjacency relationships are satisfied. A plan can be topologically valid but geometrically implausible.</span>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">The Maket.ai Constraint Interface: A 2023 Case Study</h2>
+      <div class="section-body">
+        <p><strong>Maket.ai</strong>, a San Francisco–based startup founded in 2022, built its core product around a constraint-first interface for residential floor plan generation. Rather than asking users to describe spaces in natural language or sketch bubbles, Maket presented a structured input form: room types, quantity, minimum area per room, adjacency requirements, and site boundary. Behind the form was a diffusion-based generator conditioned on the structured input.</p>
+        <p>In beta testing with 200 residential architects in 2023, Maket found that architects spent <strong>40% more time</strong> on constraint specification in their system than on equivalent tasks in Revit — but produced <strong>three times as many initial layout alternatives</strong> for client review. The constraint overhead was front-loaded; the downstream variation was the payoff.</p>
+        <p>The critical finding was about failure modes. When architects specified incomplete constraint graphs — omitting adjacency requirements for utility spaces like laundry or mechanical — the generator placed these rooms in geometrically convenient but operationally problematic locations. Laundry rooms ended up adjacent to primary bedrooms; mechanical shafts ran through structural bays. The generator was not "wrong" in any absolute sense; it simply filled underspecified space with plausible-but-inconvenient guesses.</p>
+        <p>This is the fundamental discipline that AI floor plan generation demands: <em>the quality of the constraint graph determines the quality of the output</em>. Garbage in, elegant but dysfunctional plans out.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Practical Rule</div>
+        <p>Before using any AI floor plan generator, produce a complete room adjacency graph for your program — even a hand-drawn bubble diagram. Identify which adjacencies are hard constraints (non-negotiable) and which are soft (preferred). Underspecified adjacency relationships will be filled by the model's training distribution, which may not match your project's functional requirements.</p>
+      </div>
+
+      <h2 class="section-heading">Circulation as Architecture's Grammar</h2>
+      <div class="section-body">
+        <p>The most persistent failure mode in AI-generated floor plans — documented across HouseGAN, ArchiGAN, and commercial tools through 2024 — is <strong>circulation logic</strong>. Models trained on existing plans absorb the room configurations of those plans but frequently fail to reproduce the underlying circulation hierarchy: primary corridor → secondary corridor → room entry sequence that makes buildings navigable and fire-code compliant.</p>
+        <p>In 2022, researchers at <strong>Georgia Tech's School of Architecture</strong> published an analysis of 500 AI-generated residential plans from four different systems. Their finding: <strong>68% of generated plans had at least one room accessible only through another habitable room</strong> — what building codes call a "non-code-compliant room access" violation. The models had learned that bedrooms are usually near bathrooms, but had not internalized the principle that every habitable room must have independent corridor access.</p>
+        <p>The fix, implemented in later systems like <strong>LayoutGPT</strong> (2023, Stanford/Microsoft Research), was to encode circulation as an explicit node type in the adjacency graph — treating corridors and thresholds as first-class spatial elements rather than inferred gaps between rooms. When the model was forced to plan circulation explicitly, code compliance violations dropped to 12%.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Key Principle</div>
+        <p>Circulation is not the residual space between rooms. It is the primary organizing system of a floor plan. Any AI floor plan tool that does not treat corridors, thresholds, and stair landings as explicit nodes in its constraint graph will systematically underperform on navigability and code compliance. Always audit AI-generated plans for circulation logic before presenting to clients.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab1')">← Lab 1</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q2')">Quiz 2 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ QUIZ 2 ═══ -->
+  <div class="page" id="p-q2">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Module 3 · Quiz 2</div>
+      <h1>Constraint Graphs and the Topology of Space</h1>
+      <div class="tagline">5 questions — select the best answer for each.</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q2-1">
+        <div class="quiz-q">1. In a room adjacency graph G = (V, E), what do the vertices V and edges E represent respectively?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Vertices = walls; Edges = door openings</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-1')">Vertices = rooms or spatial zones; Edges = adjacency relationships between them</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Vertices = structural columns; Edges = floor plates</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-1')">Vertices = building programs; Edges = circulation distances</button>
+        </div>
+        <div class="quiz-feedback right">Correct. In a room adjacency graph, vertices represent rooms/zones and edges represent the adjacency or connection relationships between them.</div>
+        <div class="quiz-feedback wrong">Not quite. Vertices represent rooms or spatial zones, and edges represent adjacency relationships. Review the section on room adjacency graphs.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-2">
+        <div class="quiz-q">2. What is the distinction between a "hard constraint" and a "soft constraint" in an AI floor plan system?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Hard constraints apply to structural elements; soft constraints apply to interior finishes</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Hard constraints are encoded in training data; soft constraints are added post-generation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-2')">Hard constraints cannot be violated by any output; soft constraints are preferences the generator optimizes for but may occasionally not meet</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-2')">Hard constraints require human review; soft constraints are automatically validated</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Hard constraints are inviolable rules; soft constraints are optimized preferences that may occasionally be unmet in generated outputs.</div>
+        <div class="quiz-feedback wrong">Not quite. Hard constraints are inviolable; soft constraints are preferred but occasionally unmet. Review the key terms in Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-3">
+        <div class="quiz-q">3. According to the Georgia Tech 2022 study of 500 AI-generated plans, what was the most common code-compliance failure?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Rooms exceeding maximum area requirements</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Insufficient window area for natural light</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-3')">Rooms accessible only through other habitable rooms, violating independent corridor access requirements</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-3')">Structural bays inconsistent with bearing wall locations</button>
+        </div>
+        <div class="quiz-feedback right">Correct. 68% of generated plans had at least one room accessible only through another habitable room — a code violation reflecting poor circulation logic in the models.</div>
+        <div class="quiz-feedback wrong">Not quite. The study found that 68% of plans had rooms accessible only through other habitable rooms — a circulation/code-access failure. Review the Circulation section.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-4">
+        <div class="quiz-q">4. How did LayoutGPT (2023, Stanford/Microsoft Research) address circulation logic failures in AI-generated plans?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">By incorporating a real-time building code database that flagged non-compliant outputs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-4')">By encoding corridors and thresholds as explicit nodes in the constraint graph rather than inferred residual spaces</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">By training exclusively on code-compliant plans from licensed architects</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-4')">By using a human-in-the-loop review step for every generated circulation path</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LayoutGPT treated circulation — corridors, thresholds, landings — as first-class spatial nodes in the constraint graph, reducing code violations from 68% to 12%.</div>
+        <div class="quiz-feedback wrong">Not quite. LayoutGPT made corridors and thresholds explicit nodes in the adjacency graph rather than inferred residual spaces. This dropped violations from 68% to 12%.</div>
+      </div>
+
+      <div class="quiz-box" id="q2-5">
+        <div class="quiz-q">5. What did the Maket.ai beta test (2023) reveal about the practical tradeoff of using constraint-based AI floor plan generation versus conventional BIM workflows?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">AI workflows reduced constraint specification time by 40% and increased layout alternatives threefold</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">Architects spent equal time in both systems but AI produced lower-quality outputs</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q2-5')">Architects spent 40% more time on constraint specification in AI tools but produced three times as many layout alternatives for client review</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q2-5')">AI tools eliminated the need for constraint specification entirely through natural language input</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Maket.ai's beta showed constraint overhead was front-loaded (40% more time up front) but downstream variation was the payoff — three times as many layout alternatives.</div>
+        <div class="quiz-feedback wrong">Not quite. Architects spent 40% more time on constraint specification but produced three times as many alternatives. The overhead is front-loaded; the payoff is downstream. Review the Maket.ai case study.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l2')">← Lesson 2</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab2')">Lab 2 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB 2 ═══ -->
+  <div class="page" id="p-lab2">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Module 3 · Lab 2</div>
+      <h1>Building a Room Adjacency Graph</h1>
+      <div class="tagline">Practice specifying hard and soft constraints for a residential program. Minimum 3 exchanges to complete.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>In this lab, you'll work with the AI tutor to construct a room adjacency graph for a real residential program. Practice distinguishing hard from soft constraints and identify where circulation nodes must be made explicit.</p>
+        <div class="lab-prompt">Try starting with: "I'm designing a 3-bedroom, 2-bath, single-story house with an open-plan kitchen/dining/living. Help me build the adjacency graph and identify which constraints are hard versus soft."</div>
+      </div>
+      <div class="lab-chat" id="chat-l2">
+        <div class="lab-chat-header">
+          <span>AI Tutor — Constraint Graph Construction</span>
+          <div class="chat-badge">Lab 2</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l2">
+          <div class="chat-msg ai">Welcome to Lab 2. We're going to practice building room adjacency graphs and classifying constraints for residential floor plan programs. Tell me about the project you'd like to work through — room count, special requirements, site constraints — and we'll construct the graph together. I'll help you identify which connections are hard constraints and which are soft preferences, and flag any circulation nodes you'll need to make explicit.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l2" placeholder="Describe your residential program to begin…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l2');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l2')">Reset</button>
+          <button class="chat-send-btn" id="send-l2" onclick="chatSend('l2')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q2')">← Quiz 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l3')">Lesson 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LESSON 3 ═══ -->
+  <div class="page" id="p-l3">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 3</div>
+      <h1>Diffusion Models and Spatial Imagination</h1>
+      <div class="tagline">How the state-of-the-art generates floor plans from text and what it means when it hallucinates a wall.</div>
+      <div class="lesson-question">When a diffusion model generates a floor plan, is it reasoning about space or performing a learned visual trick — and does the distinction matter for practice?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="New York City · 2023">
+        <p class="story-text">When <span class="char">Midjourney v5</span> was released in March 2023, architectural firms across Manhattan began testing it for floor plan generation within days. <span class="char">SHoP Architects</span> shared early experiments internally: given the prompt "luxury residential tower floor plate, corner unit, two bedrooms, Hudson River views," the model produced images of extraordinary visual sophistication. The plans looked, at a glance, like something a Pritzker Prize winner might have sketched on a napkin.</p>
+        <p class="story-text">A junior designer at SHoP, <span class="char">Priya Nair</span>, was tasked with actually measuring one of them. She overlaid a scale grid. The master bedroom was 9 feet wide — barely enough for a double bed and circulation. The bathroom had no plumbing wall. The "Hudson River" orientation had the living room facing northeast. The plan was spatially hallucinated: <em>visually fluent, programmatically incoherent.</em> SHoP's design technology lead reportedly wrote a memo that week: "Use Midjourney for inspiration. Do not use it for anything a contractor will see."</p>
+      </div>
+
+      <h2 class="section-heading">What Diffusion Models Actually Do to Space</h2>
+      <div class="section-body">
+        <p>Diffusion models like Stable Diffusion, Midjourney, and DALL-E 3 generate images by iteratively denoising a random signal conditioned on a prompt. They do not reason about space; they reason about <em>the visual statistics of images described by text</em>. This is a fundamental distinction with serious architectural implications.</p>
+        <p>A diffusion model trained on architectural imagery has learned that "floor plan" images tend to contain thin black lines on white backgrounds, labeled rectangles, and dotted threshold indicators. It has learned the visual grammar of plan drawings. What it has not learned is what those drawings mean — which walls are load-bearing, which rooms require minimum clear dimensions, which corridors must meet egress width requirements.</p>
+        <p>The result is what researchers at <strong>MIT's Computational Design Lab</strong> called "architectural hallucination" in a 2023 paper: generated plans that are visually indistinguishable from drawn plans but contain spatial impossibilities that would be immediately apparent to any licensed architect reviewing for code compliance. In a study of 200 diffusion-generated residential plans, <strong>MIT found that 91% contained at least one room with sub-minimum code dimensions</strong> — rooms smaller than 70 square feet, corridors narrower than 36 inches, or bathrooms with zero plumbing clearance.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Critical Distinction</div>
+        <p>Diffusion models perform <strong>visual pattern completion</strong>, not spatial reasoning. They produce images that match the statistical appearance of floor plans. They do not verify dimensions, structural logic, code compliance, or buildability. Every diffusion-generated floor plan must be treated as a <em>visual sketch requiring complete architectural re-examination</em>, not as a schematic design document.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">Text-to-Floor-Plan: The Prompt Engineering Problem</h2>
+      <div class="section-body">
+        <p>The challenge of using diffusion models for floor plan work is not the model's capability limit — it's the <em>mismatch between natural language and spatial specification</em>. Natural language is excellent at conveying aesthetic intent ("warm, Japandi-influenced," "open and airy") but extremely poor at conveying dimensional and topological precision ("master bedroom minimum 180 sq ft with 9-foot ceiling and direct bathroom access without crossing a shared corridor").</p>
+        <p>In 2023, <strong>researchers at ETH Zürich</strong> published a systematic study of text-to-floor-plan prompts across GPT-4V and Stable Diffusion XL. They found that prompts including explicit room counts and adjacency specifications improved topological validity by 34%, while prompts including dimensional targets improved dimensional accuracy by only 8% — the models had largely failed to internalize metric space from their training data.</p>
+        <p>The study's most actionable finding: <strong>structured prompts outperformed natural language prompts</strong>. A prompt formatted as a structured list — "Program: [bedroom: 2, bathroom: 2, kitchen: 1, living: 1]. Adjacencies: [bedroom1-bathroom1, kitchen-dining, living-entry]. Style: contemporary open plan." — produced topologically valid outputs 58% of the time versus 31% for equivalent natural language descriptions.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Architectural Hallucination</span>
+        <span class="kt-def">A generated floor plan that is visually plausible but contains spatial impossibilities — sub-minimum dimensions, inaccessible rooms, non-structural wall configurations — that would fail code review.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Structured Spatial Prompt</span>
+        <span class="kt-def">A formatted input that specifies architectural program as a structured list of rooms, quantities, adjacencies, and constraints rather than as narrative text. Significantly improves topological validity in diffusion-model outputs.</span>
+      </div>
+
+      <h2 class="section-heading">Emerging Tools: Where Diffusion Meets Constraint</h2>
+      <div class="section-body">
+        <p>By late 2023 and into 2024, a new generation of tools began hybridizing diffusion models with constraint enforcement layers. <strong>Architect AI</strong> (formerly ARCHITECTai) coupled a Stable Diffusion XL backbone with a post-processing constraint validator that rejected outputs with rooms below code minimum dimensions and flagged circulation failures for human review. The validator ran in under 2 seconds and reduced architectural hallucination in accepted outputs to approximately 18%.</p>
+        <p><strong>TestFit</strong>, a site planning and floor plate optimization tool used by major developers including Related Companies and Hines, took a different approach: it used parametric logic for structural and code-compliance validation and diffusion-based aesthetic refinement only at the presentation layer. The bones were parametric; the skin was diffusion-generated imagery. This architectural division of labor — parametric for function, diffusion for communication — is emerging as the dominant professional hybrid approach as of 2024.</p>
+        <p>The practical implication: no serious commercial tool in 2024 uses raw diffusion generation for buildable floor plans. The diffusion component always operates behind a validation or filtering layer. Architects using standalone image-generation tools without such layers are working outside the professional standard, not inside it.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">2024 Professional Standard</div>
+        <p>The emerging professional norm is a hybrid workflow: structured constraint graphs drive parametric layout generation for functional and code-compliant spatial organization, while diffusion models produce presentation-quality imagery for client communication. These are two separate tasks requiring two separate tools. Treating diffusion output as a design document — rather than as a communication artifact — is the most common source of AI-generated error in contemporary architectural practice.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab2')">← Lab 2</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q3')">Quiz 3 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ QUIZ 3 ═══ -->
+  <div class="page" id="p-q3">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Module 3 · Quiz 3</div>
+      <h1>Diffusion Models and Spatial Imagination</h1>
+      <div class="tagline">5 questions — select the best answer for each.</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q3-1">
+        <div class="quiz-q">1. What is "architectural hallucination" as defined by MIT's Computational Design Lab?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A design concept that prioritizes visual drama over structural logic</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-1')">A generated floor plan that looks visually plausible but contains spatial impossibilities that would fail code review</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">An AI system that invents non-existent architectural styles when prompted</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-1')">A rendering that exaggerates spatial qualities for marketing purposes</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Architectural hallucination refers to generated plans that appear visually valid but contain spatial impossibilities — sub-minimum dimensions, inaccessible rooms — that would fail code review.</div>
+        <div class="quiz-feedback wrong">Not quite. Architectural hallucination means visually plausible but spatially impossible generated plans that would fail code review. Review the Key Distinctions section.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-2">
+        <div class="quiz-q">2. According to the MIT 2023 study, what percentage of diffusion-generated residential plans contained at least one sub-minimum code dimension?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">34%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">58%</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-2')">68%</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-2')">91%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. MIT found that 91% of diffusion-generated residential plans contained at least one room with sub-minimum code dimensions — underscoring the near-universal presence of architectural hallucination.</div>
+        <div class="quiz-feedback wrong">Not quite. MIT found 91% of diffusion-generated plans had at least one sub-minimum code dimension. Review the section on what diffusion models actually do to space.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-3">
+        <div class="quiz-q">3. The ETH Zürich 2023 study found that structured prompts outperformed natural language prompts for topological validity. By approximately how much?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Structured prompts improved validity by 8 percentage points</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-3')">Structured prompts produced topologically valid outputs 58% of the time versus 31% for natural language — roughly double</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">Structured prompts improved validity by 91%, essentially eliminating hallucination</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-3')">No significant difference was found between structured and natural language prompts</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Structured prompts achieved 58% topological validity versus 31% for natural language — approximately double, though still far from reliable for professional use.</div>
+        <div class="quiz-feedback wrong">Not quite. Structured prompts produced valid outputs 58% of the time versus 31% for natural language. Review the prompt engineering section.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-4">
+        <div class="quiz-q">4. How did TestFit (used by Related Companies and Hines) divide labor between parametric and diffusion-based generation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-4')">Parametric logic for structural and code-compliant spatial organization; diffusion-generated imagery only at the presentation layer</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">Diffusion models for initial massing; parametric validation for final documentation</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">Diffusion for all floor plates; parametric only for façade design</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-4')">Equal weighting of both approaches at every design stage</button>
+        </div>
+        <div class="quiz-feedback right">Correct. TestFit used parametric logic for function and compliance, and diffusion-generated imagery only for presentation — a division of labor that became the dominant professional hybrid approach.</div>
+        <div class="quiz-feedback wrong">Not quite. TestFit used parametric for functional/compliance work and diffusion only for presentation imagery. Review the Emerging Tools section.</div>
+      </div>
+
+      <div class="quiz-box" id="q3-5">
+        <div class="quiz-q">5. Why are diffusion models fundamentally limited for floor plan dimensional accuracy, even when dimensional targets are included in prompts?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Because they were trained exclusively on metric-system floor plans and cannot handle imperial dimensions</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Because they require explicit programming of minimum code dimensions before generation</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q3-5')">Because they reason about visual statistics of images, not metric space — they have not internalized dimensional meaning from training data</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q3-5')">Because dimension data is stripped from training images during preprocessing</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Diffusion models reason about visual appearance, not spatial metrics. They have not internalized the dimensional meaning of the measurements labeled on training images.</div>
+        <div class="quiz-feedback wrong">Not quite. Diffusion models reason about visual statistics, not metric space — they cannot internalize dimensional meaning from training images. Review the fundamental distinction section.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l3')">← Lesson 3</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab3')">Lab 3 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB 3 ═══ -->
+  <div class="page" id="p-lab3">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Module 3 · Lab 3</div>
+      <h1>Prompt Engineering for Floor Plans</h1>
+      <div class="tagline">Practice writing structured spatial prompts and learn to identify likely hallucination points. Minimum 3 exchanges to complete.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>Diffusion model outputs depend heavily on prompt structure. In this lab, work with the AI tutor to transform natural language architectural briefs into structured spatial prompts, and learn to predict where diffusion-generated plans are most likely to hallucinate.</p>
+        <div class="lab-prompt">Try: "Here's a brief: 'A family home for 4 people with a strong connection to the garden, a work-from-home office, and a separate guest suite.' Help me turn this into a structured spatial prompt and identify the high-risk hallucination zones."</div>
+      </div>
+      <div class="lab-chat" id="chat-l3">
+        <div class="lab-chat-header">
+          <span>AI Tutor — Spatial Prompt Engineering</span>
+          <div class="chat-badge">Lab 3</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l3">
+          <div class="chat-msg ai">Welcome to Lab 3. We're focusing on the craft of structured spatial prompts for diffusion-based floor plan generation — how to translate architectural briefs into formats that minimize hallucination and maximize topological validity. Share a project brief, a program description, or a rough design intent, and we'll work together to structure it for AI input. I'll also help you identify where diffusion models are most likely to produce spatial impossibilities for your specific program.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l3" placeholder="Share an architectural brief to begin transforming…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l3');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l3')">Reset</button>
+          <button class="chat-send-btn" id="send-l3" onclick="chatSend('l3')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q3')">← Quiz 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-l4')">Lesson 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LESSON 4 ═══ -->
+  <div class="page" id="p-l4">
+    <div class="lesson-hero">
+      <div class="lesson-kicker">Module 3 · Lesson 4</div>
+      <h1>From Generated Plan to Buildable Design</h1>
+      <div class="tagline">The professional workflow for translating AI floor plan outputs into documents that can actually be built.</div>
+      <div class="lesson-question">An AI has given you ten floor plan variants overnight. Which ones are worth pursuing, and what does it take to get any of them from pixels to permit-ready drawings?</div>
+    </div>
+    <div class="lesson-body">
+      <div class="story-scene" data-label="Amsterdam · 2023">
+        <p class="story-text"><span class="char">MVRDV</span>, the Dutch practice known for densely programmed mixed-use buildings, ran an internal experiment in early 2023. Using a combination of <em>Autodesk Forma</em> for site-level massing and a custom HouseGAN derivative for unit layout generation, they produced 1,200 apartment unit floor plan variants for a 240-unit social housing project in Amsterdam Noord over a single weekend. The project architect, <span class="char">Winy Maas</span>'s team lead <span class="char">Fokke Moerel</span>, later described the experience: "We had more options on Monday morning than we could look at in a month. The problem was no longer generation. It was evaluation."</p>
+        <p class="story-text">The team developed what they called a "triage protocol" — a four-stage filter that reduced 1,200 variants to 18 finalist schemes in two days. Stage one: automated dimensional compliance check (area, ceiling height, window-to-floor ratio). Stage two: automated circulation audit (every room independently accessible). Stage three: human review for spatial quality — light, proportion, livability. Stage four: structural feasibility scan against the project's concrete frame grid. <em>Eleven of the 18 finalists passed all four stages.</em> Two became the basis of the submitted design.</p>
+      </div>
+
+      <h2 class="section-heading">The Triage Protocol: Evaluating AI-Generated Floor Plans at Scale</h2>
+      <div class="section-body">
+        <p>MVRDV's triage approach crystallizes a principle that has emerged across multiple major firms experimenting with AI floor plan generation: <strong>the evaluation framework is more valuable than the generation tool</strong>. Generating 1,000 plans is easy; knowing which 10 are worth developing is the hard architectural judgment that AI has not yet automated.</p>
+        <p>A practical triage protocol for AI-generated floor plans operates across four dimensions:</p>
+        <p><strong>1. Dimensional Compliance.</strong> Every generated plan should be run against project-specific and code-mandated dimensional minimums before human review. This is fully automatable using parametric scripts in Rhino/Grasshopper or Dynamo for Revit. The Georgia Tech study found this filter alone eliminates 60–70% of diffusion-generated outputs. For GAN-based outputs, it typically eliminates 20–30%.</p>
+        <p><strong>2. Topological Validity.</strong> Verify that every habitable room has independent access from a corridor or common space, that no room requires traversal of another habitable room, and that required adjacencies from the brief are satisfied. This is also automatable but requires that the brief's adjacency graph has been formally specified.</p>
+        <p><strong>3. Structural Feasibility.</strong> Verify that the plan is compatible with the structural system under consideration — that walls align with bearing lines, that spans are within structural norms, that columns don't bisect rooms. This requires human judgment or structural analysis software. It cannot be delegated to the floor plan generator.</p>
+        <p><strong>4. Spatial Quality.</strong> Human review for the qualitative properties that make space livable and architecturally worthy: proportional relationships, natural light distribution, visual connections, spatial hierarchy. This is, and will remain for the foreseeable future, an exclusively human judgment.</p>
+      </div>
+
+      <div class="callout">
+        <div class="callout-label">Workflow Principle</div>
+        <p>Treat AI floor plan generation as producing a <strong>large candidate set for human curation</strong>, not a small set of finished proposals. The architectural value is in the combination of AI's breadth (hundreds of options) and human judgment's depth (discerning quality within those options). Firms that use AI to generate one or two plans and present them directly to clients are using the technology incorrectly.</p>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <h2 class="section-heading">From Pixel Plan to Permit Drawings: The Reconstruction Workflow</h2>
+      <div class="section-body">
+        <p>No AI-generated floor plan — from any system currently available — produces output that is directly usable as a construction document or permit drawing. The gap between a generated plan image and a buildable set of drawings involves multiple professional translation steps.</p>
+        <p>The most efficient reconstruction workflow documented in practice, as reported by firms including <strong>Gensler</strong>, <strong>HOK</strong>, and <strong>Perkins+Will</strong> in their 2023 AI workflow surveys, follows this sequence:</p>
+        <p><strong>Step 1: Geometric Reconstruction.</strong> Trace the selected AI plan in CAD (AutoCAD or Revit) using the generated image as a reference underlay. Do not attempt to import AI-generated images directly as CAD geometry — the lines will not align to a structural grid or coordinate system.</p>
+        <p><strong>Step 2: Grid Alignment.</strong> Align the traced plan to the project's structural grid. This almost always requires adjusting room dimensions from the AI output. The goal is preserving the topological relationships (adjacency structure) of the AI plan while correcting the geometry to structural reality.</p>
+        <p><strong>Step 3: Dimensional Correction.</strong> Verify and correct all room dimensions against code minimums, client brief requirements, and furniture planning standards. This is where the spatial quality of the AI plan is either confirmed or substantially redesigned.</p>
+        <p><strong>Step 4: Wall Type Assignment.</strong> Assign structural, partition, and wet-wall types to all walls in the reconstructed plan. Specify door and window locations with code-compliant dimensions. This is fully within standard architectural drafting practice and requires licensed judgment.</p>
+        <p><strong>Step 5: Systems Coordination.</strong> Coordinate the reconstructed plan with MEP (mechanical, electrical, plumbing) requirements — locating wet walls for plumbing, ensuring HVAC duct space is accounted for, confirming electrical panel and service core locations.</p>
+      </div>
+
+      <div class="key-term">
+        <span class="kt-term">Geometric Reconstruction</span>
+        <span class="kt-def">The process of tracing an AI-generated floor plan image into CAD geometry aligned to a structural grid and coordinate system. The necessary first step in converting any AI floor plan output to a buildable document.</span>
+      </div>
+      <div class="key-term">
+        <span class="kt-term">Topological Preservation</span>
+        <span class="kt-def">The principle of maintaining the adjacency structure and room relationship logic of a selected AI plan while correcting its geometry during reconstruction. The AI plan's value is in its topology; the architect's value is in the geometrical correction.</span>
+      </div>
+
+      <h2 class="section-heading">The Real Speed Gain: Where AI Actually Saves Time</h2>
+      <div class="section-body">
+        <p>The question architects most frequently ask about AI floor plan generation is: "How much time does it actually save?" The answer from firms with documented workflows is more nuanced than marketing materials suggest.</p>
+        <p>A 2024 survey of 85 architectural firms by the <strong>American Institute of Architects Technology Practice Group</strong> found the following measured time savings and losses from AI floor plan integration:</p>
+        <p><strong>Time saved:</strong> Schematic alternative generation (reduced from 3–5 days to 4–6 hours for a typical residential program). Client presentation of options (more alternatives, faster). Early-stage brief exploration and client expectation-setting.</p>
+        <p><strong>Time added:</strong> Constraint specification and adjacency graph preparation (new workflow step, 2–6 hours). Triage and evaluation of generated candidates (new workflow step, 4–12 hours depending on candidate volume). Geometric reconstruction from selected AI plans (roughly equivalent to conventional drafting from a bubble diagram).</p>
+        <p>The net finding: <strong>firms using AI floor plan generation saved an average of 1.2 days on schematic design phases</strong> compared to conventional workflows, with the caveat that this gain was only realized when a disciplined constraint-first workflow was followed. Firms that used AI without formal constraint specification and triage protocols reported <em>longer</em> schematic design phases due to the time spent evaluating and reconstructing unsuitable AI outputs.</p>
+      </div>
+
+      <div class="gold-callout">
+        <div class="callout-label">Bottom Line</div>
+        <p>AI floor plan generation saves time in schematic design only when practiced with discipline: specify constraints first, triage generated outputs systematically, and reconstruct selected plans into CAD with structural and dimensional correction. The net time gain is approximately 1.2 days per project at schematic phase — meaningful but not transformative. The transformative gain is in the breadth of spatial exploration that was simply impossible before AI. Architects can now test ideas that time constraints previously made unreachable.</p>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-lab3')">← Lab 3</button>
+      <button class="pnav-btn primary" onclick="goPage('p-q4')">Quiz 4 →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ QUIZ 4 ═══ -->
+  <div class="page" id="p-q4">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Module 3 · Quiz 4</div>
+      <h1>From Generated Plan to Buildable Design</h1>
+      <div class="tagline">5 questions — select the best answer for each.</div>
+    </div>
+    <div class="quiz-area">
+
+      <div class="quiz-box" id="q4-1">
+        <div class="quiz-q">1. MVRDV's triage protocol for their Amsterdam Noord housing project reduced 1,200 AI-generated variants to how many finalist schemes?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">6 finalist schemes</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-1')">18 finalist schemes, of which 11 passed all four triage stages</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">50 finalist schemes reviewed by clients</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-1')">240 finalist schemes matching the unit count</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The four-stage triage reduced 1,200 variants to 18 finalists, of which 11 passed all stages. Two became the basis of the submitted design.</div>
+        <div class="quiz-feedback wrong">Not quite. MVRDV reduced 1,200 variants to 18 finalists through a four-stage triage. 11 of those passed all four stages. Review the opening story of Lesson 4.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-2">
+        <div class="quiz-q">2. Which of the four triage dimensions is described as remaining exclusively a human judgment for the foreseeable future?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Dimensional compliance</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Topological validity</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-2')">Structural feasibility</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-2')">Spatial quality — proportional relationships, light, livability, spatial hierarchy</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Spatial quality — the qualitative assessment of proportion, light, livability, and architectural worth — remains and will remain a human judgment. The other three dimensions can be largely automated.</div>
+        <div class="quiz-feedback wrong">Not quite. Spatial quality is the dimension that remains exclusively human. Dimensional compliance and topological validity can be automated; structural feasibility requires judgment but can be tool-assisted. Review the triage protocol section.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-3">
+        <div class="quiz-q">3. What does "topological preservation" mean in the context of reconstructing an AI-generated floor plan into CAD?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Maintaining the exact pixel dimensions of the generated image when tracing into CAD</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Preserving the aesthetic style and material palette of the generated visualization</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-3')">Maintaining the adjacency structure and room relationship logic of the AI plan while correcting its geometry to structural reality</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-3')">Keeping all room areas identical to the AI-generated output during reconstruction</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Topological preservation means maintaining the adjacency relationships and spatial logic from the AI plan while the architect corrects geometry for structural alignment and dimensional accuracy.</div>
+        <div class="quiz-feedback wrong">Not quite. Topological preservation means keeping the adjacency structure intact while correcting geometry. The AI plan's value is in its topology; the architect corrects the geometry. Review the key terms.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-4">
+        <div class="quiz-q">4. According to the 2024 AIA Technology Practice Group survey, what net time saving did firms with disciplined AI floor plan workflows achieve at schematic design phase?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">No measurable time saving was found across all firms</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">An average of 3–5 days savings per project</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-4')">An average of 1.2 days savings per project at schematic phase</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-4')">An average of 2 weeks savings per project across full design phases</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The AIA survey found an average 1.2-day saving at schematic phase — meaningful but not transformative — only when a disciplined constraint-first workflow was followed.</div>
+        <div class="quiz-feedback wrong">Not quite. The AIA survey found an average 1.2-day saving at schematic phase. Notably, firms without disciplined workflows reported longer phases. Review the Real Speed Gain section.</div>
+      </div>
+
+      <div class="quiz-box" id="q4-5">
+        <div class="quiz-q">5. Why should architects never attempt to import AI-generated floor plan images directly as CAD geometry?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Because AI-generated images are always at incorrect scale and cannot be resized in CAD</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Because copyright law prohibits direct import of AI-generated content into professional documents</button>
+          <button class="quiz-opt" onclick="answer(this,'correct','q4-5')">Because the lines will not align to a structural grid or coordinate system, making the resulting geometry unbuildable and non-coordinating</button>
+          <button class="quiz-opt" onclick="answer(this,'wrong','q4-5')">Because CAD software cannot process raster image formats from AI generators</button>
+        </div>
+        <div class="quiz-feedback right">Correct. AI-generated floor plan images have no coordinate system or structural grid alignment. Direct import produces geometry that cannot coordinate with structural, MEP, or documentation workflows.</div>
+        <div class="quiz-feedback wrong">Not quite. AI-generated images have no coordinate system or structural grid. Direct import into CAD produces geometry that can't coordinate with real building systems. Review the Reconstruction Workflow section.</div>
+      </div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-l4')">← Lesson 4</button>
+        <button class="pnav-btn primary" onclick="goPage('p-lab4')">Lab 4 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ LAB 4 ═══ -->
+  <div class="page" id="p-lab4">
+    <div class="lab-hero">
+      <div class="lesson-kicker">Module 3 · Lab 4</div>
+      <h1>Triage and Reconstruction Protocol</h1>
+      <div class="tagline">Practice the four-stage evaluation framework and plan the reconstruction workflow for a real project. Minimum 3 exchanges to complete.</div>
+    </div>
+    <div class="lab-area">
+      <div class="lab-intro">
+        <h4>Lab Objective</h4>
+        <p>You now understand how to generate AI floor plans and what to do with them. In this lab, work through applying the triage protocol to a realistic scenario — and plan a reconstruction workflow from AI candidate to permit-ready document.</p>
+        <div class="lab-prompt">Try starting with: "I have 50 AI-generated floor plan variants for a 2-bedroom apartment. Walk me through applying the four-stage triage protocol and then describe what reconstruction looks like for the finalist."</div>
+      </div>
+      <div class="lab-chat" id="chat-l4">
+        <div class="lab-chat-header">
+          <span>AI Tutor — Triage and Reconstruction Workflow</span>
+          <div class="chat-badge">Lab 4</div>
+        </div>
+        <div class="lab-chat-msgs" id="msgs-l4">
+          <div class="chat-msg ai">Welcome to Lab 4 — the capstone lab for Module 3. We're going to work through the complete professional workflow for AI floor plans: evaluating a candidate set using the four-stage triage protocol and then planning the reconstruction pathway from selected AI output to buildable construction document. Describe your project scenario — program, building type, structural system if known — and we'll build the workflow together.</div>
+        </div>
+        <div class="lab-chat-input">
+          <textarea id="inp-l4" placeholder="Describe your project scenario to begin the triage workflow…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend('l4');}"></textarea>
+          <button class="chat-reset-btn" onclick="chatReset('l4')">Reset</button>
+          <button class="chat-send-btn" id="send-l4" onclick="chatSend('l4')">Send</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button class="pnav-btn" onclick="goPage('p-q4')">← Quiz 4</button>
+      <button class="pnav-btn primary" onclick="goPage('p-mt')">Module Test →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ MODULE TEST ═══ -->
+  <div class="page" id="p-mt">
+    <div class="quiz-hero">
+      <div class="lesson-kicker">Module 3 · Module Test</div>
+      <h1>Floor Plan and Space Generation</h1>
+      <div class="tagline">15 questions — 80% required to pass. Complete all 4 lessons and quizzes first.</div>
+    </div>
+    <div class="mt-area">
+
+      <div class="quiz-box" id="mt-1">
+        <div class="quiz-q">1. William Mitchell's 1977 shape grammar work established which foundational principle for AI floor plan generation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">That structural load analysis must precede any spatial organization</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-1')">That architectural plans follow a generative grammar — a principle now enacted through learned rather than encoded rules</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">That computer-aided design could fully replace hand drafting within a decade</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-1')">That spatial zoning required probabilistic rather than deterministic approaches</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Mitchell's core claim was that plans follow a generative grammar — which modern AI now learns from data rather than encoding manually.</div>
+        <div class="quiz-feedback wrong">Not quite. Mitchell's contribution was the claim that architectural plans follow a generative grammar, now learned from data by modern AI.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-2">
+        <div class="quiz-q">2. Autodesk's Project Dreamcatcher (2017) was significant because it was the first commercially demonstrated system to do what?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Generate photorealistic building renderings from text descriptions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Produce permit-ready structural drawings from residential briefs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-2')">Treat the floor plan as a configuration problem with computable constraints, ranking layout candidates by stated objectives</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-2')">Eliminate the need for architectural review by automating code compliance checking</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Dreamcatcher treated the floor plan as a configuration problem and ranked candidates by objectives like natural light exposure and circulation efficiency.</div>
+        <div class="quiz-feedback wrong">Not quite. Dreamcatcher treated floor plans as configuration problems with computable objectives — the first commercially demonstrated system to do so.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-3">
+        <div class="quiz-q">3. What is the training dataset that HouseGAN (Tsinghua University, 2019) used, and what was notable about it?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-3')">145,000 floor plans scraped from real estate listings across China and the United States</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">80,000 architectural drawings from licensed BIM repositories in Europe</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">500,000 hand-drawn bubble diagrams from architectural schools globally</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-3')">50,000 floor plans from Autodesk Revit's user-generated content library</button>
+        </div>
+        <div class="quiz-feedback right">Correct. HouseGAN trained on 145,000 floor plans from real estate listings — making actual residential distributions its training basis rather than curated architectural corpora.</div>
+        <div class="quiz-feedback wrong">Not quite. HouseGAN used 145,000 floor plans from real estate listings across China and the US.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-4">
+        <div class="quiz-q">4. In a room adjacency graph, two floor plans with identical graphs but different drawn forms demonstrate which principle?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">That adjacency graphs are insufficient to uniquely define a floor plan</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">That AI-generated plans are always geometrically equivalent regardless of input</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-4')">That topology (what connects to what) and geometry (size, orientation, shape) are independent properties that must be governed separately</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-4')">That the discriminator in GAN-based systems cannot differentiate topologically equivalent plans</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Identical topology can express as many different geometries — this is why topology and geometry must be governed separately in AI floor plan systems.</div>
+        <div class="quiz-feedback wrong">Not quite. This demonstrates that topology and geometry are independent properties requiring separate governance. Review Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-5">
+        <div class="quiz-q">5. The ETH Zürich researcher who fixed circulation failures in a HouseGAN-based system did so by implementing what solution?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Retraining the model on a curated dataset of code-compliant plans</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-5')">Enforcing a hard adjacency constraint graph that sat between the generator and output, governing topology without affecting geometry</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Adding a human review step for every generated plan before delivery</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-5')">Switching from GAN-based to parametric generation for all residential projects</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The fix was a post-generation constraint layer — a hard adjacency graph that enforced topology while leaving geometric freedom to the generator.</div>
+        <div class="quiz-feedback wrong">Not quite. The fix was a hard adjacency constraint graph between generator and output. Review the ETH Zürich story in Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-6">
+        <div class="quiz-q">6. What failure mode does the "algorithm breath" term describe in parametric floor plan generation?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Plans that exceed the computational resource limits of the generation server</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Plans generated so quickly that quality review is bypassed</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-6')">Plans that satisfy all stated constraints but feel spatially awkward — technically valid but lacking qualitative architectural merit</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-6')">Plans that contain visible generation artifacts from the underlying algorithm's computational process</button>
+        </div>
+        <div class="quiz-feedback right">Correct. "Algorithm breath" describes plans that are technically constraint-compliant but feel wrong — spatially awkward in ways that violate architectural quality even while satisfying programmatic metrics.</div>
+        <div class="quiz-feedback wrong">Not quite. "Algorithm breath" describes technically valid plans that feel spatially awkward despite satisfying constraints. Review Lesson 1's key terms section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-7">
+        <div class="quiz-q">7. LayoutGPT's improvement over earlier systems reduced code-compliance circulation violations from 68% to approximately what percentage?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">45%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">31%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-7')">12%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-7')">3%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. LayoutGPT's explicit circulation nodes in the constraint graph reduced code violations from 68% to 12% — a major improvement, though not yet eliminating the problem.</div>
+        <div class="quiz-feedback wrong">Not quite. LayoutGPT reduced violations from 68% to 12%. Review the Circulation as Grammar section of Lesson 2.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-8">
+        <div class="quiz-q">8. A diffusion model trained on architectural imagery has learned which of the following?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">The structural engineering principles underlying the plans in its training data</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">The building code requirements applicable to the plans it was trained on</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-8')">The visual statistics of plan drawings — what they look like — not the spatial meaning of what those drawings represent</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-8')">The dimensional preferences of the architects who produced the training data</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Diffusion models learn visual statistics — the appearance of floor plan drawings — not the spatial, structural, or code meaning those drawings encode.</div>
+        <div class="quiz-feedback wrong">Not quite. Diffusion models learn what floor plans look like, not what they mean. Review Lesson 3's fundamental distinction.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-9">
+        <div class="quiz-q">9. The Architect AI tool (formerly ARCHITECTai) reduced architectural hallucination in accepted outputs to approximately what percentage?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">3%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-9')">18%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">58%</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-9')">91%</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Architect AI's post-processing constraint validator reduced hallucination in accepted outputs to approximately 18% — a significant improvement over the raw 91% rate.</div>
+        <div class="quiz-feedback wrong">Not quite. Architect AI's validator reduced accepted hallucination to approximately 18%. Review the Emerging Tools section of Lesson 3.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-10">
+        <div class="quiz-q">10. Stanislas Chaillou's ArchiGAN thesis (Harvard GSD, 2019) trained on which specific architectural corpus?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Contemporary Korean apartment plans</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Modernist American single-family homes from the 1950s–70s</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-10')">Parisian Haussmann apartment plans</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-10')">Scandinavian social housing plans from the postwar period</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Chaillou trained ArchiGAN on Parisian Haussmann apartment plans — a highly specific corpus that enabled style interpolation between Haussmann and modernist conventions.</div>
+        <div class="quiz-feedback wrong">Not quite. ArchiGAN trained on Parisian Haussmann apartment plans. Review the Deep Learning Inflection section of Lesson 1.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-11">
+        <div class="quiz-q">11. According to the Maket.ai beta test, what happened when architects omitted adjacency requirements for utility spaces like laundry from their constraint graphs?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The generator refused to produce output without a complete constraint graph</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The generator placed utility spaces in the building's core, near structural shafts</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-11')">The generator placed utility spaces in geometrically convenient but operationally problematic locations — laundry adjacent to master bedrooms, for instance</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-11')">The generator defaulted to the most common utility placement from its training data regardless of adjacency context</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Underspecified utility spaces were placed by the model in geometrically convenient but operationally wrong locations — filling program gaps with plausible-but-inconvenient guesses from its training distribution.</div>
+        <div class="quiz-feedback wrong">Not quite. The generator filled underspecified utility locations with its training distribution — geometrically convenient but operationally wrong placements. Review the Maket.ai case study.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-12">
+        <div class="quiz-q">12. Which professional principle does the TestFit workflow (used by Related Companies and Hines) exemplify?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Diffusion models are sufficient for all stages of floor plan documentation</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">AI generation eliminates the need for structural engineering coordination</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-12')">Parametric logic should govern function and compliance; diffusion should be used only for presentation-layer imagery</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-12')">Natural language prompts outperform structured constraint graphs for commercial project types</button>
+        </div>
+        <div class="quiz-feedback right">Correct. TestFit exemplifies the principle that parametric governs function/compliance and diffusion governs presentation — a disciplined hybrid workflow emerging as the professional standard.</div>
+        <div class="quiz-feedback wrong">Not quite. TestFit exemplifies parametric for function/compliance, diffusion for presentation only. Review Lesson 3's Emerging Tools section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-13">
+        <div class="quiz-q">13. During geometric reconstruction of an AI floor plan into CAD, what is the primary goal of "grid alignment"?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Ensuring that room labels are aligned with standard drawing conventions</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-13')">Aligning the traced plan to the project's structural grid while preserving the adjacency relationships from the AI output</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Matching the AI plan's pixel dimensions exactly to the CAD coordinate system</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-13')">Converting the plan from raster to vector format without dimensional change</button>
+        </div>
+        <div class="quiz-feedback right">Correct. Grid alignment means aligning the reconstructed plan to the structural grid — which nearly always requires adjusting room dimensions from the AI output while preserving topological relationships.</div>
+        <div class="quiz-feedback wrong">Not quite. Grid alignment adjusts geometry to the structural grid while preserving the adjacency topology from the AI plan. Review the Reconstruction Workflow in Lesson 4.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-14">
+        <div class="quiz-q">14. What does the AIA 2024 Technology Practice Group finding imply about firms that used AI floor plan generation WITHOUT disciplined constraint-first workflows?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">They still saved time but slightly less than disciplined workflow firms</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">They reported equal time spent compared to conventional workflows</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-14')">They reported longer schematic design phases than conventional workflows, due to time spent evaluating and reconstructing unsuitable AI outputs</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-14')">They achieved the same 1.2-day saving but with higher error rates at documentation phase</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The AIA survey found that undisciplined AI use actually increased schematic design time — the overhead of evaluating unsuitable outputs exceeded the generation speed benefit.</div>
+        <div class="quiz-feedback wrong">Not quite. Firms without disciplined workflows reported longer schematic phases — undisciplined AI use is counterproductive. Review Lesson 4's Real Speed Gain section.</div>
+      </div>
+
+      <div class="quiz-box" id="mt-15">
+        <div class="quiz-q">15. What is the most transformative benefit of AI floor plan generation, according to the module's synthesis?</div>
+        <div class="quiz-opts">
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">The complete elimination of hand drafting from architectural practice</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">The 1.2-day net time saving at schematic phase per project</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'wrong','mt-15')">The ability to produce permit-ready drawings overnight without human revision</button>
+          <button class="quiz-opt" onclick="mtAnswer(this,'correct','mt-15')">The breadth of spatial exploration that was previously impossible — testing ideas that time constraints would have made unreachable in conventional workflows</button>
+        </div>
+        <div class="quiz-feedback right">Correct. The truly transformative gain is exploratory breadth — the ability to test spatial ideas that were simply unreachable before AI generation, not merely the incremental time saving.</div>
+        <div class="quiz-feedback wrong">Not quite. The transformative gain is exploratory breadth — testing spatial ideas previously impossible under time constraints. The 1.2-day saving is meaningful but secondary. Review the Gold Callout in Lesson 4.</div>
+      </div>
+
+      <div id="mt-score" class="mt-score"></div>
+
+      <div class="page-nav">
+        <button class="pnav-btn" onclick="goPage('p-lab4')">← Lab 4</button>
+        <button class="pnav-btn" onclick="window.parent.postMessage({type:'hubHome'},'*')">Course Hub</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .content-area -->
+
+<script>
+var COURSE_ID='ai-and-architecture';
+var MODULE_ID='ai--m3';
+var PROXY_URL='/aesop-api/proxy.php';
+var currentPageId='p-l1';
+var lessonSignaled={},quizSignaled={},labSignaled={};
+var PAGE_TO_LESSON={'p-l1':'l1','p-l2':'l2','p-l3':'l3','p-l4':'l4'};
+var PAGE_TO_QUIZ={'p-q1':'q1','p-q2':'q2','p-q3':'q3','p-q4':'q4'};
+
+// ── GATE ──────────────────────────────────────────────────────
+var GATE_KEY='aesop-gate-'+COURSE_ID+'-'+MODULE_ID;
+var _gate=(function(){try{return JSON.parse(localStorage.getItem(GATE_KEY))||{l:[],q:[]};}catch(e){return{l:[],q:[]};}}());
+function _gateSave(){try{localStorage.setItem(GATE_KEY,JSON.stringify(_gate));}catch(e){}}
+function _gateMarkLesson(lid){if(_gate.l.indexOf(lid)<0){_gate.l.push(lid);_gateSave();}}
+function _gateMarkQuiz(qid){if(_gate.q.indexOf(qid)<0){_gate.q.push(qid);_gateSave();}}
+var _LESSONS_REQ=['l1','l2','l3','l4'],_QUIZZES_REQ=['q1','q2','q3','q4'];
+function _gateOpen(){
+  return _LESSONS_REQ.every(function(l){return _gate.l.indexOf(l)>=0;})
+      &&_QUIZZES_REQ.every(function(q){return _gate.q.indexOf(q)>=0;});
+}
+function updateMtGate(){
+  var tab=document.querySelector('.tab-test[data-page="p-mt"]');
+  if(!tab) return;
+  var open=_gateOpen();
+  tab.classList.toggle('locked',!open);
+  tab.title=open?'':'Complete all 4 lessons and their quizzes to unlock the Module Test.';
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function goPage(id){
+  var prev=document.getElementById(currentPageId);
+  var next=document.getElementById(id);
+  if(!next) return;
+  if(id==='p-mt'&&!_gateOpen()){
+    alert('Complete all 4 lessons and their quizzes first to unlock the Module Test.');
+    return;
+  }
+  var pl=PAGE_TO_LESSON[currentPageId];
+  if(pl&&!lessonSignaled[pl]){
+    lessonSignaled[pl]=true;
+    window.parent.postMessage({type:'lessonComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:pl},'*');
+  }
+  var destLesson=PAGE_TO_LESSON[id];
+  if(destLesson) _gateMarkLesson(destLesson);
+  if(prev) prev.classList.remove('active');
+  next.classList.add('active');
+  currentPageId=id;
+  updateTabs();
+  updateMtGate();
+  window.scrollTo(0,0);
+  var sc=document.querySelector('.content');
+  if(sc) sc.scrollTop=0;
+}
+
+function updateTabs(){
+  document.querySelectorAll('.tab-lesson,.tab-sub,.tab-test').forEach(function(el){
+    el.classList.toggle('active',el.dataset.page===currentPageId);
+  });
+}
+
+// ── QUIZ ──────────────────────────────────────────────────────
+function answer(btn,result,qId){
+  var box=document.getElementById(qId);
+  if(!box) return;
+  box.querySelectorAll('.quiz-opt').forEach(function(b){b.disabled=true;});
+  btn.classList.add(result==='correct'?'correct':'wrong');
+  box.querySelectorAll('.quiz-feedback').forEach(function(fb){fb.classList.remove('show');});
+  var fb=box.querySelector('.quiz-feedback.'+(result==='correct'?'right':'wrong'));
+  if(fb) fb.classList.add('show');
+  var qGateId=PAGE_TO_QUIZ[currentPageId];
+  if(qGateId){_gateMarkQuiz(qGateId);updateMtGate();}
+}
+
+// ── MODULE TEST ───────────────────────────────────────────────
+var mtTotal=15,mtCorrect=0,mtAnswered=0;
+function mtAnswer(btn,result,qId){
+  answer(btn,result,qId);
+  mtAnswered++;
+  if(result==='correct') mtCorrect++;
+  if(mtAnswered>=mtTotal){
+    var el=document.getElementById('mt-score');
+    if(el){
+      el.style.display='block';
+      var pct=Math.round((mtCorrect/mtTotal)*100);
+      el.innerHTML='Score: <strong>'+mtCorrect+'/'+mtTotal+'</strong> ('+pct+'%)'+(pct>=80?' — Module passed.':' — Review and retake.');
+      if(pct>=80){
+        window.parent.postMessage({type:'modTestPassed',courseId:COURSE_ID,moduleId:MODULE_ID},'*');
+      }
+    }
+  }
+}
+
+// ── CHAT ──────────────────────────────────────────────────────
+var chatHistories={l1:[],l2:[],l3:[],l4:[]};
+var chatExchanges={l1:0,l2:0,l3:0,l4:0};
+var LAB_COMPLETE_THRESHOLD=3;
+var ACADEMY_GUARDRAIL='You are an AI lab assistant for AESOP AI Academy — AI and Architecture course, Module 3: Floor Plan and Space Generation. Stay strictly on topic: AI-generated floor plans, spatial constraints, generation methods, and architectural workflows. Warmly redirect off-topic requests.\n\n';
+
+var LAB_SYSTEM_PROMPTS={
+  l1: 'You are an expert AI tutor for AESOP AI Academy, Module 3 of AI and Architecture. This lab covers the three paradigms of AI floor plan generation: parametric (deterministic, constraint-driven, exemplified by Autodesk Forma and Grasshopper), GAN-based (stochastic, distribution-learned, exemplified by HouseGAN and ArchiGAN), and diffusion-based (iterative denoising, state-of-the-art for imagery, exemplified by Stable Diffusion and Maket.ai). Help students understand the practical differences between these methods: their failure modes (algorithm breath for parametric, topological invalidity for GANs, architectural hallucination for diffusion), how to choose between them for a given project type, and what each method actually does algorithmically. Reference real tools and documented cases. Stay focused on AI floor plan generation methodology. If the student asks something off-topic, warmly redirect to the lesson content.',
+  l2: 'You are an expert AI tutor for AESOP AI Academy, Module 3 of AI and Architecture. This lab focuses on constraint graphs and spatial topology for AI floor plan generation. Help students construct room adjacency graphs for real residential programs: identify vertices (rooms/zones) and edges (adjacency relationships), classify constraints as hard (inviolable, e.g., bathroom must adjoin bedroom) versus soft (preferred, e.g., maximize natural light to living areas), and make circulation nodes explicit (corridors, thresholds, landings must be first-class graph nodes, not residual spaces). Reference the Maket.ai case study showing constraint overhead is front-loaded but produces 3x alternative volume. Reference LayoutGPT\'s improvement from 68% to 12% code violations through explicit circulation nodes. Guide students through building complete constraint graphs for their stated programs, flagging underspecified adjacency requirements. Stay on topic: room adjacency graphs, constraint classification, and circulation logic.',
+  l3: 'You are an expert AI tutor for AESOP AI Academy, Module 3 of AI and Architecture. This lab focuses on prompt engineering for diffusion-based floor plan generation. Help students transform natural language architectural briefs into structured spatial prompts that improve topological validity. Key principles: structured prompts (room type lists, quantities, adjacency requirements) outperform natural language (58% vs 31% topological validity per ETH Zürich 2023 study). Dimensional targets in prompts improve accuracy by only 8% — diffusion models have not internalized metric space. Predict high-risk hallucination zones: complex adjacency junctions, utility/service spaces, circulation intersections, and spaces with tight dimensional requirements. Reference the MIT finding that 91% of diffusion-generated plans contain sub-minimum code dimensions. Reference SHoP Architects\' Midjourney v5 experiments in 2023. Help students write structured prompts for their stated design briefs. Stay on topic: structured spatial prompts, hallucination prediction, and diffusion model limitations.',
+  l4: 'You are an expert AI tutor for AESOP AI Academy, Module 3 of AI and Architecture. This lab focuses on the professional workflow for evaluating and reconstructing AI-generated floor plans. Help students apply the four-stage triage protocol: (1) Dimensional compliance — automated check against code minimums; (2) Topological validity — all rooms independently accessible, adjacency brief satisfied; (3) Structural feasibility — plan compatible with structural system, walls on bearing lines, spans within norms; (4) Spatial quality — human judgment of proportion, light, livability. Reference MVRDV\'s Amsterdam Noord protocol that reduced 1,200 variants to 18 finalists in two days. Then walk students through the geometric reconstruction workflow: trace AI plan in CAD as underlay; align to structural grid (almost always requires dimensional adjustment); verify and correct room dimensions; assign wall types; coordinate with MEP. Reference the principle of topological preservation — keep the adjacency logic, correct the geometry. Reference the AIA 2024 finding: 1.2-day average saving at schematic phase only with disciplined workflows; undisciplined use increases phase duration. Stay on topic: triage protocols, reconstruction workflows, and professional AI integration.'
+};
+
+var _offlineMode={l1:false,l2:false,l3:false,l4:false};
+var _fallbackIdx={l1:0,l2:0,l3:0,l4:0};
+
+var _fallbacks={
+  l1:[
+    "Great question about generation methods. The key practical difference: parametric tools like Forma give you the same output for the same inputs — predictable and auditable. GAN tools like HouseGAN give you statistically plausible but different outputs each run — good for exploring variation. Diffusion tools like Midjourney give you visually compelling images that may be spatially incoherent. Choose based on what you need: precision (parametric), variation (GAN), or client communication imagery (diffusion).",
+    "The most important failure mode to understand is architectural hallucination from diffusion models — they produce images that look exactly like floor plans but may have rooms that are 9 feet wide, bathrooms with no plumbing wall, or corridors that dead-end. SHoP Architects discovered this when a junior designer actually measured Midjourney v5 output and found the 'master bedroom' was barely large enough for a double bed. Always treat diffusion output as a sketch, never as a design document.",
+    "Parametric generation's 'algorithm breath' failure is subtler — plans that satisfy every stated constraint but feel wrong to inhabit. The algorithm optimizes for what you measure, not for what makes good space. If you don't encode spatial proportion, daylighting quality, or room character as objectives, it won't produce them. This is why constraint specification is an architectural skill, not just a technical task."
+  ],
+  l2:[
+    "Let's build your adjacency graph. For a standard 3-bedroom, 2-bath house, here are the essential hard constraints: bedroom 1 must adjoin bathroom 1; bedroom 2 or 3 should adjoin bathroom 2; kitchen must connect to dining or living; all bedrooms must have independent corridor access (never through another bedroom). Soft constraints: living room should have good natural light; master bedroom away from street noise; kitchen near entry for grocery access.",
+    "The most commonly omitted constraint in residential programs is the mechanical/utility zone. If you don't specify where laundry and mechanical equipment go in your graph, the generator fills that space with whatever fits geometrically — which often means laundry next to the master bedroom or a mechanical chase through the primary living space. Add a utility node explicitly and give it at least one hard constraint: adjacent to an exterior wall for venting.",
+    "Circulation is the most important node type to make explicit. If you just specify rooms, the generator will infer corridors as residual space — and residual corridors often create rooms that can only be accessed through other rooms. Add a corridor node for each bedroom zone and connect it to all bedrooms it serves. This single step, per LayoutGPT research, reduces code-access violations from 68% to 12%."
+  ],
+  l3:[
+    "Here's how to transform your brief into a structured spatial prompt. Instead of 'a family home with garden connection,' write: 'Program: [living: 1, dining: 1, kitchen: 1, bedroom-master: 1, bedroom-child: 2, bathroom-main: 1, bathroom-en-suite: 1, office: 1, guest-suite: 1, utility: 1, garden-room: 1]. Adjacencies: [master-ensuite, children-bedrooms-shared-bathroom, kitchen-dining, living-garden-room, office-separate-from-sleeping-zone]. Orientation: garden-room and living face south.' This format improves topological validity from approximately 31% to 58%.",
+    "Your highest hallucination-risk zones for that brief are: (1) the guest suite, because it requires private bathroom access without crossing the main house circulation — generators often miss this; (2) the office, because 'separate from sleeping zone' is a soft spatial relationship that diffusion models struggle to enforce geometrically; (3) the utility space, which will end up wherever is geometrically convenient unless explicitly constrained. Flag these zones for immediate code review in any generated output.",
+    "One critical prompt engineering principle: dimensional targets help very little (only 8% improvement per ETH Zürich data) because diffusion models have not internalized metric space from training images. Instead, use relative terms that correspond to visual conventions in the training data: 'open-plan' signals large connected spaces; 'compact' signals smaller rooms; 'double-height' affects section rather than plan. For precise minimum areas, the only reliable approach is post-generation dimensional validation, not prompt-level specification."
+  ],
+  l4:[
+    "Let's apply the triage protocol to your 50-variant set. Stage 1 (automated, takes minutes): filter for minimum room dimensions — bedroom ≥ 100 sq ft clear, bathroom ≥ 35 sq ft, corridor ≥ 36 inches clear. For a 2-bedroom apartment this eliminates roughly 30–40% of diffusion outputs immediately. Stage 2 (automated with script): topological check — every room independently corridor-accessible. This eliminates another 20–25%. You're now looking at 18–25 plans for human review.",
+    "For Stage 3 structural feasibility, focus on three things: Do the walls align with a rational structural bay system? Are any spans over 20 feet without apparent support? Does the plan work with the structural system you're considering — flat plate, bearing wall, or frame? You don't need a structural engineer at this stage; you need enough judgment to rule out plans with structural impossibilities. This is a 2–3 minute per-plan review.",
+    "Once you have your finalist, geometric reconstruction goes like this: Place the AI image as an underlay in CAD at rough scale. Establish your structural grid first — column lines, bearing walls. Then trace the plan topology (where rooms are and what connects to what) onto the grid. Expect to adjust every room dimension — the grid forces it. What you're preserving is the adjacency logic, not the pixel dimensions. Wall type assignment and MEP coordination come after grid alignment is confirmed. The whole reconstruction for a 2-bed apartment typically takes 4–6 hours."
+  ]
+};
+
+function _fallbackReply(labId){
+  var arr=_fallbacks[labId]||_fallbacks['l1'];
+  var idx=_fallbackIdx[labId]||0;
+  var reply=arr[idx%arr.length];
+  _fallbackIdx[labId]=(idx+1);
+  return reply;
+}
+
+function addMsg(labId,role,text){
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return null;
+  var div=document.createElement('div');
+  div.className='chat-msg '+role;
+  div.textContent=text;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+
+function chatReset(labId){
+  chatHistories[labId]=[];
+  chatExchanges[labId]=0;
+  _offlineMode[labId]=false;
+  _fallbackIdx[labId]=0;
+  var container=document.getElementById('msgs-'+labId);
+  if(!container) return;
+  container.innerHTML='';
+  var welcomes={
+    l1:'Welcome to Lab 1. I\'m here to help you think through the three AI floor plan generation paradigms — parametric, GAN-based, and diffusion-based — and their real-world implications for architectural practice. What would you like to explore first?',
+    l2:'Welcome to Lab 2. We\'re going to practice building room adjacency graphs and classifying constraints for residential floor plan programs. Tell me about the project you\'d like to work through.',
+    l3:'Welcome to Lab 3. We\'re focusing on structured spatial prompts for diffusion-based floor plan generation. Share a project brief and we\'ll transform it together.',
+    l4:'Welcome to Lab 4. We\'re going to work through the complete triage and reconstruction workflow for AI floor plans. Describe your project scenario to begin.'
+  };
+  addMsg(labId,'ai',welcomes[labId]||'Chat reset. How can I help?');
+}
+
+async function chatSend(labId){
+  var inp=document.getElementById('inp-'+labId);
+  var btn=document.getElementById('send-'+labId);
+  if(!inp||!btn) return;
+  var txt=inp.value.trim();
+  if(!txt) return;
+  inp.value='';
+  inp.style.height='';
+  btn.disabled=true;
+
+  if(!chatHistories[labId]) chatHistories[labId]=[];
+  if(!chatExchanges[labId]) chatExchanges[labId]=0;
+
+  chatHistories[labId].push({role:'user',content:txt});
+  addMsg(labId,'user',txt);
+
+  if(_offlineMode[labId]){
+    setTimeout(function(){
+      var reply=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:reply});
+      addMsg(labId,'ai',reply);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.focus();
+    },600);
+    return;
+  }
+
+  var thinking=addMsg(labId,'thinking','Thinking…');
+
+  var attempted=false;
+  for(var attempt=0;attempt<2;attempt++){
+    try{
+      var res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-opus-4-5',
+          max_tokens:450,
+          system:ACADEMY_GUARDRAIL+LAB_SYSTEM_PROMPTS[labId],
+          messages:chatHistories[labId]
+        })
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      var replyText=(data.content&&data.content[0]&&data.content[0].text)||'I didn\'t get a response — please try again.';
+      if(thinking&&thinking.parentNode) thinking.remove();
+      chatHistories[labId].push({role:'assistant',content:replyText});
+      addMsg(labId,'ai',replyText);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      btn.disabled=false;
+      inp.focus();
+      attempted=true;
+      break;
+    }catch(e){
+      if(attempt<1){
+        await new Promise(function(r){setTimeout(r,1500);});
+        continue;
+      }
+      if(thinking&&thinking.parentNode) thinking.remove();
+      _offlineMode[labId]=true;
+      _fallbackIdx[labId]=0;
+      addMsg(labId,'error','⚠ AI is temporarily unavailable. Switching to practice mode — you can still complete this lab.');
+      var fb=_fallbackReply(labId);
+      chatHistories[labId].push({role:'assistant',content:fb});
+      addMsg(labId,'ai',fb);
+      chatExchanges[labId]++;
+      if(chatExchanges[labId]>=LAB_COMPLETE_THRESHOLD&&!labSignaled[labId]){
+        labSignaled[labId]=true;
+        window.parent.postMessage({type:'labComplete',courseId:COURSE_ID,moduleId:MODULE_ID,lessonId:labId},'*');
+      }
+      attempted=true;
+    }
+  }
+  btn.disabled=false;
+  inp.focus();
+}
+
+// ── TEXTAREA AUTO-RESIZE ──────────────────────────────────────
+document.querySelectorAll('.lab-chat-input textarea').forEach(function(ta){
+  ta.addEventListener('input',function(){
+    this.style.height='auto';
+    this.style.height=Math.min(this.scrollHeight,100)+'px';
+  });
+});
+
+// ── INIT ──────────────────────────────────────────────────────
+_gateMarkLesson('l1');
+updateTabs();
+updateMtGate();
+</script>
+</body>
+</html>

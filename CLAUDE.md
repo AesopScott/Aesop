@@ -1,29 +1,34 @@
 # AESOP AI Academy — Claude Code Guidelines
 
-## Session Startup (READ FIRST) — MUST READ Memory.md FOR OBSIDIAN INTEGRATION
+## Session Startup (READ FIRST) — MANDATORY VERIFICATION CHECKLIST
 
-**⚠️ REQUIRED: Read Memory.md fully at session start to enable Obsidian integration and session logging.**
+**⚠️ BLOCKING REQUIREMENT: Verify these four items BEFORE answering any user question.**
 
-At the start of every session, read the complete memory system from disk:
+### 1. Load All Memory Files
+Read `C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md` and every `.md` file it references. Confirm at least 14+ memory files loaded (feedback_*, project_*).
 
-1. Read the memory index:
-   ```
-   Read: C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md
-   ```
+### 2. Verify Obsidian Connection
+Test connection to Obsidian REST API:
+```bash
+curl -s -H "Authorization: Bearer 6391d0528f05cc0fa09bef6519476d2b7a4974633f047c02e7d84418aee71530" http://127.0.0.1:27123/vault/
+```
+Must return `"files"` array with `"Northstar/"` and `"Sessions/"` folders.
 
-2. For each memory file referenced in the index, read it to load the actual content (MEMORY.md is just an index pointing to the real memory files):
-   ```
-   Read: C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\[filename].md
-   ```
+### 3. Read Previous Session Logs
+Fetch list of previous Northstar sessions from Obsidian:
+```bash
+curl -s -H "Authorization: Bearer 6391d0528f05cc0fa09bef6519476d2b7a4974633f047c02e7d84418aee71530" http://127.0.0.1:27123/vault/Northstar/ | grep session_
+```
+Read the most recent session file to understand what was done last.
 
-3. Load all memory files at startup—each contains standing instructions, feedback, and project context that must be active for the session
+### 4. Confirm Session Logging Enabled
+Verify you can write to Obsidian. After this session ends, you will POST the session log to:
+```
+POST http://127.0.0.1:27123/vault/northstar/session_[ISO-datetime].md
+```
+Include: what you did, what worked, what didn't work, links & references.
 
-**Critical for Obsidian integration:**
-- Memory.md contains instructions for writing session logs to Obsidian REST API
-- Must use the Read tool explicitly (not rely on system context)
-- Follow all "always," "proactive," and standing behavioral rules from all memory files
-- Follow the directions in Memory.md regarding session logging and Obsidian writes
-- This ensures every session loads the latest memory state and maintains Obsidian sync before beginning work
+**Then confirm all four items in your response to the user** before proceeding with any work.
 
 ## Layout & Page Width
 

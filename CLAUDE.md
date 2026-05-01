@@ -55,13 +55,14 @@ Include: what you did, what worked, what didn't work, links & references.
 - If server.js changes require a restart, **REQUEST it from the user** — do not execute the restart yourself.
 - mockup.html changes take effect on next browser reload (no server restart needed).
 
-## Northstar Files — Local Only
+## Northstar Files — Local Only with Git
 
-**Northstar source files are maintained locally ONLY. They are NOT in GitHub and NOT synced to any remote server. There is no git repository associated with Northstar.**
+**Northstar source files are maintained locally ONLY. They are NOT in GitHub and NOT synced to any remote server.**
 
 - **Location:** `C:\Users\Scott\Code\Northstar`
 - Files: `server.js`, `mockup.html`, and dependencies
+- **Local git repo:** Yes — uses git locally for version history and revert capability, but does NOT push to any remote
 - These files are local development files that you may edit directly
 - Do not look for them elsewhere; this is the authoritative location
-- Do not check git history, commit, or push — Northstar is not version controlled
-- Changes made here are local-only; no syncing anywhere
+- Use `git -C "C:\Users\Scott\Code\Northstar"` to check history, revert changes, or see what broke
+- Changes are tracked locally; never push to a remote server

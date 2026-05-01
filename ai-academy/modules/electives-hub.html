@@ -2917,29 +2917,6 @@ function injectModuleContent(html, cId, mId, m, c){
 
   // Save + restore page position within module (so F5 returns to same tab/lab)
   const _pageKey = 'aesop-page-' + cId + '-' + mId;
-  setTimeout(function(){
-    // Inject "passed" banner on the module test page if the test was already passed
-    if(testPassed(cId, mId)){
-      const mtPage = document.getElementById('p-mt');
-      if(mtPage && !mtPage.querySelector('.mt-passed-banner')){
-        const banner = document.createElement('div');
-        banner.className = 'mt-passed-banner';
-        banner.innerHTML = '<div class="mt-passed-icon">🏆</div><div class="mt-passed-title">Module Test Passed</div><div class="mt-passed-sub">Your result is saved. The questions below are available for review.</div>';
-        mtPage.insertBefore(banner, mtPage.firstChild);
-      }
-    }
-    // Restore saved page
-    const _savedPage = localStorage.getItem(_pageKey);
-    if(_savedPage && typeof window.goPage === 'function'){
-      try{ window.goPage(_savedPage); }catch(_){}
-    }
-    // Intercept goPage to persist position
-    const _origGoPage = window.goPage;
-    window.goPage = function(id){
-      if(_origGoPage) _origGoPage(id);
-      localStorage.setItem(_pageKey, id);
-    };
-  }, 150);
 
   // Re-execute module scripts in global scope
   // Minimal fallback used when module script has a syntax error (e.g. truncated file)
@@ -2990,6 +2967,33 @@ goPage('p-l1');`;
     }
     document.body.appendChild(scriptEl);
   } catch(e){ console.warn('Module script injection error:', e); }
+
+  // After script is injected, set up page persistence and passed banner
+  setTimeout(function(){
+    // Inject "passed" banner on the module test page if the test was already passed
+    if(testPassed(cId, mId)){
+      const mtPage = document.getElementById('p-mt');
+      if(mtPage && !mtPage.querySelector('.mt-passed-banner')){
+        const banner = document.createElement('div');
+        banner.className = 'mt-passed-banner';
+        banner.innerHTML = '<div class="mt-passed-icon">🏆</div><div class="mt-passed-title">Module Test Passed</div><div class="mt-passed-sub">Your result is saved. The questions below are available for review.</div>';
+        mtPage.insertBefore(banner, mtPage.firstChild);
+      }
+    }
+    // Restore saved page
+    const _savedPage = localStorage.getItem(_pageKey);
+    if(_savedPage && typeof window.goPage === 'function'){
+      try{ window.goPage(_savedPage); }catch(_){}
+    }
+    // Intercept goPage to persist position (now that the real goPage is defined)
+    const _origGoPage = window.goPage;
+    if(typeof _origGoPage === 'function'){
+      window.goPage = function(id){
+        _origGoPage(id);
+        localStorage.setItem(_pageKey, id);
+      };
+    }
+  }, 50);
 }
 
 

@@ -30,6 +30,34 @@ Include: what you did, what worked, what didn't work, links & references.
 
 **Then confirm all four items in your response to the user** before proceeding with any work.
 
+## Session Naming (Northstar)
+
+Every session must be named with a 5-word phrase extracted from the user's initial prompt. The five words should be the **most meaningful words that describe what the session is about**, not a mechanical extraction of the first five words.
+
+**Example:**
+- Prompt: "Tell me everything you learn from a new session perspective"
+- Session name: "Learn from new session perspective" ← describes the actual work
+- NOT: "Tell me everything you learn from" ← mechanical but meaningless
+
+**How to apply:**
+- Extract 5 meaningful words from the first user message
+- Announce the session name in your first response: "This session: **[Name]**"
+- Include it in Obsidian session logs as the title
+- If you can't extract a meaningful 5-word phrase, ask the user for clarification on session intent before proceeding
+
+## Rule Enforcement (Non-Negotiable)
+
+**ALL rules in CLAUDE.md and memory files MUST be followed without exception.** Rules are not suggestions, preferences, or "nice-to-have" guidelines. If a rule exists, it is binding.
+
+**Critical enforcement points:**
+- Session naming: ALWAYS do it, NEVER skip
+- Memory file rules: READ and FOLLOW every rule in `~/.claude/projects/*/memory/*.md`
+- Git workflow: Standing authorizations in CLAUDE.md override default behavior
+- Page width: 12.5% padding rule applies to every page, no exceptions
+- Northstar server: NEVER restart without user request
+
+If you are not following the rules, you are failing the job. Rules are how you remain useful and predictable.
+
 ## Layout & Page Width
 
 - Content sections use `padding: 0 12.5%` on left and right — not a fixed width or max-width constraint.
@@ -54,6 +82,20 @@ Include: what you did, what worked, what didn't work, links & references.
 - **NEVER kill, stop, or restart the Northstar server** — restarting creates a restart loop.
 - If server.js changes require a restart, **REQUEST it from the user** — do not execute the restart yourself.
 - mockup.html changes take effect on next browser reload (no server restart needed).
+
+## Northstar is Electron, NOT a Browser
+
+**CRITICAL:** Northstar runs as an Electron-wrapped desktop application at `C:\Users\Scott\AppData\Local\Programs\Northstar\resources\`. It is NOT a web browser window.
+
+Implications for debugging and troubleshooting:
+- **No F12 DevTools access** — do not suggest opening DevTools, inspecting elements, or using browser console
+- **No browser refresh (Ctrl+R/Cmd+R)** — Electron app reloads via file watcher or app restart, not browser reload
+- **No browser cache** — mockup.html changes apply when the app next reads the file, not on reload
+- **Diagnostics only via code inspection** — analyze source files (server.js, mockup.html) and suggest code changes, not browser debugging steps
+
+When mockup.html needs testing, suggest: "I've changed mockup.html. Close and restart the Northstar app to pick up the change."
+
+When diagnosing display freezes or crashes, analyze the code paths directly—don't ask for browser console output.
 
 ## Northstar Files — Local Only with Git
 

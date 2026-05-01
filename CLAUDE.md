@@ -54,3 +54,13 @@ Include: what you did, what worked, what didn't work, links & references.
 - **NEVER kill, stop, or restart the Northstar server** — restarting creates a restart loop.
 - If server.js changes require a restart, **REQUEST it from the user** — do not execute the restart yourself.
 - mockup.html changes take effect on next browser reload (no server restart needed).
+
+## Northstar Files — Local Only
+
+**Northstar source files are maintained locally ONLY. They are NOT in GitHub and NOT synced to any remote server.**
+
+- **Location:** `C:\Users\Scott\Code\Northstar`
+- Files: `server.js`, `mockup.html`, and dependencies
+- These files are local development files that you may edit directly
+- Do not look for them elsewhere; this is the authoritative location
+- Changes made here do not auto-sync anywhere — they are local-only until user manually commits/pushes

@@ -25,7 +25,10 @@ Read the most recent session file to understand what was done last.
 Verify you can write to Obsidian. After this session ends, you will POST the session log to:
 ```
 POST http://127.0.0.1:27123/vault/northstar/session_[ISO-datetime].md
+Content-Type: text/markdown
 ```
+Write the session log as **raw markdown text** (not JSON). Use `-H "Content-Type: text/markdown"` and `--data-binary` in curl.
+
 Include: what you did, what worked, what didn't work, links & references.
 
 **Then confirm all four items in your response to the user** before proceeding with any work.

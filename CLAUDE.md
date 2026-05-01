@@ -2,7 +2,9 @@
 
 ## Session Startup (READ FIRST)
 
-**At the start of every session, read the complete memory system from disk:**
+**⚠️ REQUIRED: Read Memory.md fully at session start to enable Obsidian integration.**
+
+At the start of every session, read the complete memory system from disk:
 
 1. Read the memory index:
    ```
@@ -16,9 +18,12 @@
 
 3. Load all memory files at startup—each contains standing instructions, feedback, and project context that must be active for the session
 
+**Critical for Obsidian integration:**
+- Memory.md contains instructions for writing session logs to Obsidian REST API
 - Must use the Read tool explicitly (not rely on system context)
 - Follow all "always," "proactive," and standing behavioral rules from all memory files
-- This ensures every session loads the latest memory state before beginning work
+- Follow the directions in Memory.md regarding session logging and Obsidian writes
+- This ensures every session loads the latest memory state and maintains Obsidian sync before beginning work
 
 ## Layout & Page Width
 

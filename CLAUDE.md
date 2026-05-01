@@ -57,10 +57,11 @@ Include: what you did, what worked, what didn't work, links & references.
 
 ## Northstar Files — Local Only
 
-**Northstar source files are maintained locally ONLY. They are NOT in GitHub and NOT synced to any remote server.**
+**Northstar source files are maintained locally ONLY. They are NOT in GitHub and NOT synced to any remote server. There is no git repository associated with Northstar.**
 
 - **Location:** `C:\Users\Scott\Code\Northstar`
 - Files: `server.js`, `mockup.html`, and dependencies
 - These files are local development files that you may edit directly
 - Do not look for them elsewhere; this is the authoritative location
-- Changes made here do not auto-sync anywhere — they are local-only until user manually commits/pushes
+- Do not check git history, commit, or push — Northstar is not version controlled
+- Changes made here are local-only; no syncing anywhere

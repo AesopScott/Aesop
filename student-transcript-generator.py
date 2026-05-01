@@ -50,8 +50,7 @@ def generate_cert_cards(certifications):
       <div class="st-cert-name">{cert.get('name', 'Certification')}</div>
       <div class="st-cert-level">{cert.get('level', 'Level X')}</div>
       <div class="st-cert-date">Earned {cert.get('earned_date', 'TBD')}</div>
-      <div class="st-cert-requirements">{cert.get('requirements', 'N/A')}</div>
-      <div class="st-cert-description">{cert.get('employer_description', 'N/A')}</div>
+      <div class="st-cert-description">{cert.get('course_value', 'N/A')}</div>
     </div>
 '''
     return html

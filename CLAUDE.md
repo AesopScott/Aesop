@@ -1,8 +1,8 @@
 # AESOP AI Academy — Claude Code Guidelines
 
-## Session Startup (READ FIRST)
+## Session Startup (READ FIRST) — MUST READ Memory.md FOR OBSIDIAN INTEGRATION
 
-**⚠️ REQUIRED: Read Memory.md fully at session start to enable Obsidian integration.**
+**⚠️ REQUIRED: Read Memory.md fully at session start to enable Obsidian integration and session logging.**
 
 At the start of every session, read the complete memory system from disk:
 

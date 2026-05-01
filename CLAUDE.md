@@ -30,6 +30,19 @@ Include: what you did, what worked, what didn't work, links & references.
 
 **Then confirm all four items in your response to the user** before proceeding with any work.
 
+### 5. Reassess Session Name After Context Load
+After loading all memory files and reading the startup checklist items, **reassess the session name** based on what the rules and context reveal. The initial extraction from the user's prompt is a first pass; reading the Obsidian vault and memory files may clarify what the session is *actually* about.
+
+**How to apply:**
+- Initial name: Extract 5 words from the user's first message before loading context
+- Announce it: "This session: **[Initial Name]**" with the startup verification
+- After loading all four startup items, pause and ask: "Does the context I just read suggest a clearer framing of what this session is about?"
+- If yes: Announce an updated name: "**Updated session name: [Better Name]**"
+- If no: Keep the initial name and proceed
+- Use the reassessed name in the Obsidian session log at end-of-session
+
+**Why:** The first message doesn't always make the session's intent fully clear. Rules, previous session logs, and the current state (git, Obsidian, Northstar) provide context that refines the name. A session named "Learn from new session perspective" reads the mandatory startup checklist; after reading it, the session is more accurately "Discover what fresh session perspective reveals."
+
 ## Session Naming (Northstar)
 
 Every session must be named with a 5-word phrase extracted from the user's initial prompt. The five words should be the **most meaningful words that describe what the session is about**, not a mechanical extraction of the first five words.

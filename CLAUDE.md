@@ -155,3 +155,6 @@ curl -s http://localhost:3742/tracker | jq
 - Header shows "App: Xs ago" (teal dot) and "Server: Xs ago" (purple dot)
 - Toast notifications appear on app reload or server restart
 - Console logs changes: `[Tracker] App reload detected: X → Y`
+
+## Working Directory
+- The last thing you do before you answer any questions is specify that the user is in the AESOP working directory. 

@@ -290,6 +290,14 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
 
 <div class="st-body">
 
+  <!-- Standards Statement -->
+  <div style="background: linear-gradient(135deg, rgba(13,27,42,0.04) 0%, rgba(201,160,90,0.04) 100%); border-left: 4px solid var(--gold); border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 3rem;">
+    <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem;">Standards Framework</div>
+    <div style="font-size: 0.95rem; line-height: 1.7; color: var(--ink); font-style: italic;">
+      {profile.get('standards_statement', '')}
+    </div>
+  </div>
+
   {overview_html}
 
   <div class="st-section-label">Certifications Earned</div>

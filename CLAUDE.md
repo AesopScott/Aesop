@@ -124,3 +124,34 @@ When diagnosing display freezes or crashes, analyze the code paths directly—do
 - Do not look for them elsewhere; this is the authoritative location
 - Use `git -C "C:\Users\Scott\Code\Northstar"` to check history, revert changes, or see what broke
 - Changes are tracked locally; never push to a remote server
+
+## Northstar Tracker: App Reload & Server Restart Detection
+
+Sessions and debugging scripts can detect when Northstar app has reloaded or server has restarted using these functions:
+
+**Available Functions:**
+
+1. **GET `/tracker`** — Returns `{ appInstanceId, serverSessionId, serverStartTime }`
+   - `appInstanceId`: Unique per Electron app session (persists across server restarts, changes on app reload)
+   - `serverSessionId`: Unique per Node.js server startup (changes on server restart, same across app reload)
+   - `serverStartTime`: Timestamp when server started (milliseconds since epoch)
+
+**Usage Example:**
+```bash
+curl -s http://localhost:3742/tracker | jq
+# Output: { "appInstanceId": "abc...", "serverSessionId": "def...", "serverStartTime": 1714521600000 }
+```
+
+**What Changed Means:**
+- **appInstanceId changed** → Electron app closed and reopened (file changes like mockup.html now loaded)
+- **serverSessionId changed** → Node.js server restarted (via Restart button or crash; within same app instance)
+
+**Sessions & Agents:**
+- Tracker fields (`appInstanceId`, `serverSessionId`, `serverStartTime`) are automatically included in every session object
+- Query `curl http://localhost:3742/tracker` from within a session to detect if infrastructure restarted
+- Use this before running file-dependent tests or operations
+
+**Mockup.html Display:**
+- Header shows "App: Xs ago" (teal dot) and "Server: Xs ago" (purple dot)
+- Toast notifications appear on app reload or server restart
+- Console logs changes: `[Tracker] App reload detected: X → Y`

@@ -43,3 +43,9 @@ At the start of every session, read the complete memory system from disk:
 - Commits to `main` deploy automatically to Mocahost via FTP (`deploy.yml`).
 - Standing authorization to commit and push every change to `main` immediately — no need to ask.
 - Use `git -C "/path"` instead of `cd` — `cd` triggers permission prompts.
+
+## Northstar Server
+
+- **DO NOT restart the Northstar server** — restarting creates a restart loop.
+- If server.js changes require a restart, **ask the user first** before killing any processes.
+- mockup.html changes take effect on next browser reload (no server restart needed).

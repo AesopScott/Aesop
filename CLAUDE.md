@@ -46,6 +46,6 @@ At the start of every session, read the complete memory system from disk:
 
 ## Northstar Server
 
-- **DO NOT restart the Northstar server** — restarting creates a restart loop.
-- If server.js changes require a restart, **ask the user first** before killing any processes.
+- **NEVER kill, stop, or restart the Northstar server** — restarting creates a restart loop.
+- If server.js changes require a restart, **REQUEST it from the user** — do not execute the restart yourself.
 - mockup.html changes take effect on next browser reload (no server restart needed).

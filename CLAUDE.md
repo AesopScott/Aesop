@@ -22,14 +22,14 @@ curl -s -H "Authorization: Bearer 6391d0528f05cc0fa09bef6519476d2b7a4974633f047c
 Read the most recent session file to understand what was done last.
 
 ### 4. Confirm Session Logging Enabled
-Verify you can write to Obsidian. After this session ends, you will POST the session log to:
+Verify you can write to Obsidian. After every prompt, you will POST the prompt log to:
 ```
-POST http://127.0.0.1:27123/vault/northstar/session_[ISO-datetime].md
+POST http://127.0.0.1:27123/vault/northstar/prompt_[ISO-datetime].md
 Content-Type: text/markdown
 ```
-Write the session log as **raw markdown text** (not JSON). Use `-H "Content-Type: text/markdown"` and `--data-binary` in curl.
+Write the prompt log as **raw markdown text** (not JSON). Use `-H "Content-Type: text/markdown"` and `--data-binary` in curl.
 
-Include: what you did, what worked, what didn't work, links & references.
+Include: what the user asked, what you did, what changed, links & references.
 
 **Then confirm all four items in your response to the user** before proceeding with any work.
 

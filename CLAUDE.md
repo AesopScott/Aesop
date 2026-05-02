@@ -2,7 +2,7 @@
 
 ## Session Startup (READ FIRST) — MANDATORY VERIFICATION CHECKLIST
 
-**⚠️ BLOCKING REQUIREMENT: Verify these four items BEFORE answering any user question.**
+**⚠️ BLOCKING REQUIREMENT: Verify these items BEFORE answering any user question.**
 
 ### 1. Load All Memory Files
 Read `C:\Users\scott\.claude\projects\C--Users-Scott-Code-Aesop\memory\MEMORY.md` and every `.md` file it references. Confirm at least 14+ memory files loaded (feedback_*, project_*).
@@ -14,14 +14,25 @@ curl -s -H "Authorization: Bearer 6391d0528f05cc0fa09bef6519476d2b7a4974633f047c
 ```
 Must return `"files"` array with `"Northstar/"` and `"Sessions/"` folders.
 
-### 3. Read Previous Session Logs
+### 3. Load Sitemap (Page Directory)
+Read `C:\Users\scott\Code\Aesop\sitemap.xml` to understand the complete site structure and find pages by category. The sitemap contains 1300+ pages organized by:
+- **Root level:** index.html, advisory-board.html, university_presentation.html, etc.
+- **ai-academy/:** Dashboard, courses, certifications, modules (highest priority)
+- **about/:** Mission, advisory boards, education boards
+- **board/:** Board meetings, governance
+- **aip/:** AI product resources
+- **policies/:** Privacy, terms, compliance
+
+**Why:** When the user asks to edit or reference a page, use the sitemap to locate it by directory and priority. Pages marked priority 0.9 are high-traffic; 0.7+ are essential content; 0.5 are admin/tools.
+
+### 5. Read Previous Session Logs
 Fetch list of previous Northstar sessions from Obsidian:
 ```bash
 curl -s -H "Authorization: Bearer 6391d0528f05cc0fa09bef6519476d2b7a4974633f047c02e7d84418aee71530" http://127.0.0.1:27123/vault/Northstar/ | grep session_
 ```
 Read the most recent session file to understand what was done last.
 
-### 4. Confirm Session Logging Enabled
+### 6. Confirm Session Logging Enabled
 Verify you can write to Obsidian. After every prompt, you will POST the prompt log to:
 ```
 POST http://127.0.0.1:27123/vault/northstar/prompt_[ISO-datetime].md
@@ -31,10 +42,10 @@ Write the prompt log as **raw markdown text** (not JSON). Use `-H "Content-Type:
 
 Include: what the user asked, what you did, what changed, links & references.
 
-**Then confirm all four items in your response to the user** before proceeding with any work.
+**Then confirm all six items in your response to the user** before proceeding with any work.
 
-### 5. Reassess Session Name After Context Load
-After loading all memory files and reading the startup checklist items, **reassess the session name** based on what the rules and context reveal. The initial extraction from the user's prompt is a first pass; reading the Obsidian vault and memory files may clarify what the session is *actually* about.
+### 7. Reassess Session Name After Context Load
+After loading all memory files, sitemap, and reading the startup checklist items, **reassess the session name** based on what the rules and context reveal. The initial extraction from the user's prompt is a first pass; reading the Obsidian vault, sitemap, and memory files may clarify what the session is *actually* about.
 
 **How to apply:**
 - Initial name: Extract 5 words from the user's first message before loading context

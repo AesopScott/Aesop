@@ -3647,29 +3647,41 @@ function hubToggleListen() {
   }
   hubSpeechChunks = hubChunkText(text);
   hubSpeechIndex = 0;
+  hubSpeechState = 'playing';
+  hubSetListenButtonState('playing');
+  hubSpeakNextChunk();
+}
+
+// Speak one chunk at a time — reads settings fresh each chunk so voice/rate/
+// volume/pitch changes in the panel take effect on the very next sentence.
+function hubSpeakNextChunk() {
+  if (hubSpeechState !== 'playing') return;
+  if (hubSpeechIndex >= hubSpeechChunks.length) { hubStopListen(); return; }
+
   const voice  = hubPickVoice();
   const rate   = parseFloat(hubSpeechSetting('rate',   '1.0'));
   const volume = parseFloat(hubSpeechSetting('volume', '1.0'));
   const pitch  = parseFloat(hubSpeechSetting('pitch',  '1.0'));
-  hubSpeechChunks.forEach((chunk, i) => {
-    const u = new SpeechSynthesisUtterance(chunk);
-    if (voice) u.voice = voice;
-    u.rate   = rate;
-    u.volume = volume;
-    u.pitch  = pitch;
-    u.lang   = (voice && voice.lang) || 'en-US';
-    u.onstart = () => { hubSpeechIndex = i; };
-    u.onend = () => {
-      if (i === hubSpeechChunks.length - 1) hubStopListen();
-    };
-    u.onerror = () => {
-      // 'interrupted' fires when we cancel — not a real error
-      if (i === hubSpeechChunks.length - 1) hubStopListen();
-    };
-    speechSynthesis.speak(u);
-  });
-  hubSpeechState = 'playing';
-  hubSetListenButtonState('playing');
+
+  const u = new SpeechSynthesisUtterance(hubSpeechChunks[hubSpeechIndex]);
+  if (voice) u.voice = voice;
+  u.rate   = rate;
+  u.volume = volume;
+  u.pitch  = pitch;
+  u.lang   = (voice && voice.lang) || 'en-US';
+
+  u.onend = () => {
+    if (hubSpeechState === 'playing') { hubSpeechIndex++; hubSpeakNextChunk(); }
+  };
+  u.onerror = (e) => {
+    // 'interrupted' / 'canceled' fires on speechSynthesis.cancel() — not a real error
+    if (e.error !== 'interrupted' && e.error !== 'canceled' && hubSpeechState === 'playing') {
+      hubSpeechIndex++;
+      hubSpeakNextChunk();
+    }
+  };
+
+  speechSynthesis.speak(u);
 }
 
 // Some browsers load voices asynchronously; prime the list so hubPickVoice

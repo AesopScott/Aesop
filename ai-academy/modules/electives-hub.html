@@ -3479,40 +3479,62 @@ function hubSpeechSaveSetting(key, val) {
   localStorage.setItem('aesop-hub-speech-' + key, String(val));
 }
 
-function hubExtractReadableText() {
-  // Find the active lesson page in the hub's content area
+// Returns [{text, pauseAfter}] — structure-aware so headings and paragraphs
+// get real silence gaps between them instead of running together.
+function hubExtractSegments() {
   const root = document.querySelector('.content-area') || document.body;
   const active = root.querySelector('.page.active') || root.querySelector('.page') || root;
-  if (!active) return '';
-  // Clone so we don't mutate the DOM, then strip controls + noise
+  if (!active) return [];
+
   const clone = active.cloneNode(true);
   clone.querySelectorAll(
     'button, input, select, textarea, script, style, .tab-strip, ' +
-    '.quiz-feedback, .quiz-result, [aria-hidden="true"]'
+    '.quiz-feedback, .quiz-result, .quiz-opt, .mt-opt, [aria-hidden="true"]'
   ).forEach(n => n.remove());
-  // innerText respects visibility and block-level line breaks; fall back to textContent
-  const text = (clone.innerText || clone.textContent || '').replace(/\s+/g, ' ').trim();
-  return text;
-}
 
-function hubChunkText(text, maxChars) {
-  maxChars = maxChars || 220;
-  // Split on sentence boundaries, then coalesce to ≤maxChars per chunk
-  const parts = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [text];
-  const chunks = [];
-  let cur = '';
-  for (const p of parts) {
-    const s = p.trim();
-    if (!s) continue;
-    if ((cur + ' ' + s).length > maxChars && cur) {
-      chunks.push(cur.trim());
-      cur = s;
+  const segs = [];
+
+  function push(text, pauseAfter) {
+    const t = text.replace(/\s+/g, ' ').trim();
+    if (t) segs.push({ text: t, pauseAfter });
+  }
+
+  function walk(node) {
+    if (node.nodeType === 3) {
+      const t = (node.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!t) return;
+      // Append to last seg if it has no pause yet (inline text within a block)
+      if (segs.length && segs[segs.length - 1].pauseAfter === 0) {
+        segs[segs.length - 1].text += ' ' + t;
+      } else {
+        segs.push({ text: t, pauseAfter: 0 });
+      }
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    const tag = node.tagName.toLowerCase();
+
+    if (/^h[1-6]$/.test(tag)) {
+      push(node.textContent, 700);
+    } else if (tag === 'p') {
+      push(node.textContent, 450);
+    } else if (tag === 'li') {
+      push(node.textContent, 300);
+    } else if (tag === 'blockquote') {
+      push(node.textContent, 500);
     } else {
-      cur = cur ? cur + ' ' + s : s;
+      for (const child of node.childNodes) walk(child);
+      // After a top-level block, ensure at least a paragraph-length pause
+      if (['div','section','article'].includes(tag) && segs.length) {
+        if (segs[segs.length - 1].pauseAfter < 350) {
+          segs[segs.length - 1].pauseAfter = 350;
+        }
+      }
     }
   }
-  if (cur.trim()) chunks.push(cur.trim());
-  return chunks;
+
+  walk(clone);
+  return segs.filter(s => s.text.length > 1);
 }
 
 function hubPickVoice() {
@@ -3643,30 +3665,35 @@ function hubToggleListen() {
   }
   // Start fresh
   speechSynthesis.cancel();
-  const text = hubExtractReadableText();
-  if (!text) {
+  hubSpeechChunks = hubExtractSegments();
+  if (!hubSpeechChunks.length) {
     alert('No readable text found on this page.');
     return;
   }
-  hubSpeechChunks = hubChunkText(text);
   hubSpeechIndex = 0;
   hubSpeechState = 'playing';
   hubSetListenButtonState('playing');
   hubSpeakNextChunk();
 }
 
-// Speak one chunk at a time — reads settings fresh each chunk so voice/rate/
+// Speak one segment at a time — reads settings fresh each time so voice/rate/
 // volume/pitch changes in the panel take effect on the very next sentence.
+// Each segment carries a pauseAfter (ms) so headings and paragraphs get
+// genuine silence between them instead of running together.
 function hubSpeakNextChunk() {
   if (hubSpeechState !== 'playing') return;
   if (hubSpeechIndex >= hubSpeechChunks.length) { hubStopListen(); return; }
+
+  const seg    = hubSpeechChunks[hubSpeechIndex];
+  const text   = (typeof seg === 'string') ? seg : seg.text;
+  const pause  = (typeof seg === 'object' && seg.pauseAfter) ? seg.pauseAfter : 0;
 
   const voice  = hubPickVoice();
   const rate   = parseFloat(hubSpeechSetting('rate',   '1.0'));
   const volume = parseFloat(hubSpeechSetting('volume', '1.0'));
   const pitch  = parseFloat(hubSpeechSetting('pitch',  '1.0'));
 
-  const u = new SpeechSynthesisUtterance(hubSpeechChunks[hubSpeechIndex]);
+  const u = new SpeechSynthesisUtterance(text);
   if (voice) u.voice = voice;
   u.rate   = rate;
   u.volume = volume;
@@ -3674,7 +3701,10 @@ function hubSpeakNextChunk() {
   u.lang   = (voice && voice.lang) || 'en-US';
 
   u.onend = () => {
-    if (hubSpeechState === 'playing') { hubSpeechIndex++; hubSpeakNextChunk(); }
+    if (hubSpeechState !== 'playing') return;
+    hubSpeechIndex++;
+    if (pause > 0) setTimeout(hubSpeakNextChunk, pause);
+    else hubSpeakNextChunk();
   };
   u.onerror = (e) => {
     // 'interrupted' / 'canceled' fires on speechSynthesis.cancel() — not a real error

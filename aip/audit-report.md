@@ -1,15 +1,15 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-05-05 14:09 UTC
+**Generated:** 2026-05-07 14:09 UTC
 **Status:** 🟡 WARNINGS ONLY
-**Errors:** 0 · **Warnings:** 26
+**Errors:** 0 · **Warnings:** 25
 
 ---
 
 ## Course Registry (course-registry.json)
 
-### Warnings (24)
-- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
+### Warnings (23)
+
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -40,23 +40,27 @@
 
 ## Electives Hub (electives-hub.html)
 
-ℹ️ Hub is **registry-driven** (loads `course-registry.json` at runtime; no hardcoded `BASE_COURSES`). Checks H-1, H-2, X-2, X-3 are not applicable — by construction, the hub cannot drift from the registry.
+_Note: `electives-hub.html` is registry-only (header comment: `Registry-only: all course data from course-registry.json`). There is no hardcoded `BASE_COURSES` block, so checks H-1, H-2, X-2, X-3 are vacuous._
+
+✅ No issues found.
 
 ## Cross-References
 
 ### Warnings (2)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
+
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 
 ---
 
 ## Summary
 
-No errors. 26 warning(s) noted above.
+No errors. 25 warning(s) — review when convenient.
 
 ### Stats
-- Registry courses: 130 (125 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 20
-- courses.html `?course=` IDs referenced: 123
-- Electives hub: registry-driven (no hardcoded courses)
-- Module files verified: 780
+- Registry courses: 130 (125 live, 3 coming soon)
+- Retired registry entries: 2
+- courses.html internal links checked: 162
+- courses.html unique `?course=` IDs: 123
+- Electives hub BASE_COURSES: 0 (registry-only mode)
+- Module files verified: 764

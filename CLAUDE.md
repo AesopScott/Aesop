@@ -1,25 +1,28 @@
-# AESOP AI Academy
+﻿# Aesop AI Academy
 
-Free AI literacy education platform. Plain HTML + CSS, no build step. Hosted via cPanel.
+Free AI literacy education platform. Rigorous, honest, no agenda. Built for people who weren't handed the keys.
 
-## Stack
-- Frontend: Plain HTML, CSS, vanilla JS — no framework, no build step
-- API: `aesop-api/` folder
-- Deploy: cPanel (see `.cpanel.yml`)
+## Project
+- **Purpose:** Free AI education courses for youth and adults entering an AI-saturated world
+- **Stack:** PHP, HTML/CSS/JS (no Node/npm), Python scripts for tooling
+- **Deployment:** cPanel (`.cpanel.yml`), FTP-based push to shared hosting
 
-## Key files
-- `academy-theme.css` / `academy-dark-mode.css` — global styles
-- `aesop-api/` — backend API
-- `.cpanel.yml` — deployment config
+## Key directories
+- `ai-academy/` — course modules and lab files (the main product)
+- `aesop-api/` — API layer
+- `assets/` — images, shared CSS
+- `scripts/` — build/automation scripts
+- `workers/` — Cloudflare workers
 
-## Project knowledge base
-Soul + why: `G:\My Drive\Aesop Academy\Obsidian\Aesop_Build\1-Soul.md`
-Architecture: `G:\My Drive\Aesop Academy\Obsidian\Aesop_Build\2-Architecture.md`
-Build plan + roadmap: `G:\My Drive\Aesop Academy\Obsidian\Aesop_Build\3-Build-Plan.md`
-Full changelog: `G:\My Drive\Aesop Academy\Obsidian\Aesop_Build\4-Changelog.md`
-Recent sessions: `G:\My Drive\Aesop Academy\Obsidian\Aesop_Sessions\`
+## Lab rules
+All lab building must follow `lab-rules.md`. Non-negotiable:
+1. Students never leave the academy — embed all reading content; external links are optional deep-dives only
+2. Writing happens through AI-driven conversation — no static textareas; AI leads the exchange
+3. Lab AI stays on topic — use `ACADEMY_GUARDRAIL` constant (defined once, applied in `chatSend()`); never duplicate inside lab prompts
+4. Every lab completable without live API — offline fallback fires after one retry; lab completion still triggers
 
-## Rules
-- Propose before writing. For file edits and writes, state the planned change and wait for explicit yes.
-- Windows paths, PowerShell for shell commands.
-- No build step — edits to HTML/CSS are live after deploy.
+## Development
+- No npm, no Node — pure PHP/HTML/JS with Python for tooling
+- Secrets in `secrets.php` / `secrets.local.php` (gitignored); never hardcode
+- Test locally before pushing; verify cPanel deploy log after push
+- Module build standards: `AESOP-MODULE-BUILD-STANDARDS.md`

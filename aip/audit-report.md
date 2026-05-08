@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-05-05 14:09 UTC
+**Generated:** 2026-05-08 14:11 UTC
 **Status:** 🟡 WARNINGS ONLY
-**Errors:** 0 · **Warnings:** 26
+**Errors:** 0 · **Warnings:** 28
 
 ---
 
@@ -34,29 +34,37 @@
 - 🟡 **EXTRA_MODULES**: `ai-in-gaming-and-interactive-media` has 6 module files but registry defines 3 modules
 - 🟡 **EXTRA_MODULES**: `is-the-robot-being-fair` has 4 module files but registry defines 1 modules
 
+
 ## courses.html
 
 ✅ No issues found.
 
 ## Electives Hub (electives-hub.html)
 
-ℹ️ Hub is **registry-driven** (loads `course-registry.json` at runtime; no hardcoded `BASE_COURSES`). Checks H-1, H-2, X-2, X-3 are not applicable — by construction, the hub cannot drift from the registry.
+✅ No issues found.
+
+> **Note:** electives-hub.html v1.1.0 is registry-driven — it loads all course data directly from `course-registry.json` rather than maintaining a hardcoded `BASE_COURSES` constant. Checks H-1, H-2, X-2, and X-3 are therefore not applicable to this implementation; the registry itself (verified in Step 1 above) is the single source of truth for the hub.
 
 ## Cross-References
 
-### Warnings (2)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+### Warnings (4)
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
+
 
 ---
 
 ## Summary
 
-No errors. 26 warning(s) noted above.
+No errors. 28 warning(s) for review:
+
+- **24 `EXTRA_MODULES`** warnings — courses with more module files in the directory than the registry defines (likely stale/draft files or in-progress modules not yet wired into the registry).
+- **4 `NOT_IN_COURSES_HTML`** warning(s) — registry courses with no link from `courses.html`.
 
 ### Stats
-- Registry courses: 130 (125 live, 3 coming soon, 2 retired)
+- Registry courses: 130 (127 live, 3 coming soon)
 - courses.html internal links checked: 20
-- courses.html `?course=` IDs referenced: 123
-- Electives hub: registry-driven (no hardcoded courses)
+- Electives hub BASE_COURSES: n/a (registry-driven; data loaded from `course-registry.json`)
 - Module files verified: 780

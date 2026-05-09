@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v1.3.0 | 2026-05-09 — Post-build disk verification + error state on zero/missing modules -->
 <!-- v1.0.7 | 2026-04-29 | cb20260430 -->
 <!-- v1.2.0 | 2026-04-27 — Verification gate in buildSystemPrompt -->
 <!-- v1.1.2 | 2026-04-23 — Recent builds history card -->
@@ -93,7 +94,7 @@ textarea{resize:vertical;min-height:80px;}
 <div class="header">
   <div>
     <div class="header-brand">AESOP AI Academy</div>
-    <div class="header-sub">Module Generator v1.1.1</div>
+    <div class="header-sub">Module Generator v1.3.0</div>
   </div>
 </div>
 
@@ -1899,6 +1900,24 @@ async function obsidianCheckpoint(type, data) {
   } catch(e) { /* silent */ }
 }
 
+async function verifyModulesOnDisk(course, cid, fromMod, toMod, lang) {
+  const missing = [];
+  for (let mn = fromMod; mn <= toMod; mn++) {
+    const isFoundations = course.isFoundations;
+    const folderName = isFoundations ? 'module-' + mn : getFolderName(cid);
+    const filename = isFoundations ? 'advanced-m' + mn + '.html' : getFilePrefix(cid) + '-m' + mn + '.html';
+    try {
+      let root = repoFolderHandle;
+      if (lang && lang !== 'en') root = await repoFolderHandle.getDirectoryHandle(lang, { create: false });
+      const dir = await root.getDirectoryHandle(folderName, { create: false });
+      await dir.getFileHandle(filename, { create: false });
+    } catch(_) {
+      missing.push('M' + mn + ' (' + filename + ')');
+    }
+  }
+  return missing;
+}
+
 async function buildFullCourse() {
   const apiKey = document.getElementById('apiKey').value.trim();
   const cid = document.getElementById('courseSelect').value;
@@ -1942,6 +1961,7 @@ async function buildFullCourse() {
 
   // Resume support — start from specified module (default 1)
   const resumeFrom = Math.max(1, Math.min(totalMods, parseInt(document.getElementById('resumeFrom').value) || 1));
+  const requested = totalMods - resumeFrom + 1;
 
   const chainStart = Date.now();
   let allSaved = true;
@@ -2079,24 +2099,36 @@ async function buildFullCourse() {
   }
 
   const totalMins = ((Date.now() - chainStart) / 60000).toFixed(1);
-  const builtCount = totalMods - resumeFrom + 1;
   log('');
-  log('=== COMPLETE: ' + (resumeFrom > 1 ? builtCount + ' of ' + totalMods : totalMods) + ' modules in ' + totalMins + ' min ===');
+  log('=== COMPLETE: ' + (resumeFrom > 1 ? requested + ' of ' + totalMods : totalMods) + ' modules in ' + totalMins + ' min ===');
 
-  if (!allSaved && !chainRunning) {
+  if (!chainRunning) {
+    // User clicked Stop — do not show success
     await obsidianCheckpoint('course-stopped', { stoppedAt: document.getElementById('moduleSelect').value, totalMods });
-  }
-
-  if (allSaved) {
-    showStatus('success', 'All ' + totalMods + ' modules built and saved! Push to GitHub — activation happens automatically via GitHub Actions.');
-    log('All modules saved. Do NOT run local activation — push to GitHub and register-courses.yml handles courses.html, course-registry.json, and stats automatically.');
-
+  } else if (completedMods === 0) {
+    allSaved = false;
+    log('ERROR: Build completed but 0 modules were written to disk.');
+    showStatus('error', 'Build error: no modules were saved. Check your repo folder selection and API key, then retry.');
     await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
-  } else if (allSaved === false) {
+  } else if (allSaved && completedMods >= requested) {
+    log('Verifying modules on disk...');
+    const missing = await verifyModulesOnDisk(course, cid, resumeFrom, totalMods, selectedLang);
+    if (missing.length > 0) {
+      allSaved = false;
+      log('ERROR: ' + missing.length + ' module(s) missing after save: ' + missing.join(', '));
+      showStatus('error', 'Build error: ' + missing.length + ' module(s) missing from disk after build (' + missing.join(', ') + '). File writes may have failed silently — re-set your repo folder and retry.');
+      await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
+    } else {
+      showStatus('info', 'All ' + requested + ' modules built and saved! Push to GitHub — activation happens automatically via GitHub Actions.');
+      log('All modules saved. Push to GitHub — register-courses.yml handles activation automatically.');
+      await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
+    }
+  } else {
     await obsidianCheckpoint('course-complete', { totalMods, mins: totalMins, activated: false });
   }
 
   } catch(unexpectedErr) {
+    allSaved = false;
     log('Unexpected error: ' + unexpectedErr.message);
     showStatus('error', 'Build stopped unexpectedly: ' + unexpectedErr.message);
   } finally {
@@ -2105,8 +2137,7 @@ async function buildFullCourse() {
     chainBtn.disabled = false;
     chainBtn.textContent = 'Build Full Course';
     if (stopBtn) { stopBtn.disabled = true; stopBtn.style.display = 'none'; }
-    if (allSaved) document.getElementById('resumeFrom').value = 1;
-    const requested = totalMods - resumeFrom + 1;
+    if (allSaved && completedMods >= requested) document.getElementById('resumeFrom').value = 1;
     const finalStatus = !allSaved ? 'error' : (completedMods >= requested ? 'complete' : 'partial');
     recordBuildComplete(buildId, finalStatus, completedMods);
   }

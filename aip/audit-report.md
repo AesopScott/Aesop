@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-05-09 11:44 UTC
+**Generated:** 2026-05-09 14:25 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 144 · **Warnings:** 1002
+**Errors:** 146 · **Warnings:** 1001
 
 ---
 
@@ -16,7 +16,7 @@
 
 ## Course Registry
 
-### Errors (40)
+### Errors (41)
 
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 - 🔴 **MISSING_MODULE**: Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -58,6 +58,7 @@
 - 🔴 **MISSING_MODULE**: Registry module file `ar-11-m6.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
 - 🔴 **MISSING_MODULE**: Registry module file `ar-11-m7.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
 - 🔴 **MISSING_MODULE**: Registry module file `ar-11-m8.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 
 ## Cross-References
@@ -116,7 +117,7 @@
 
 ## Live Site (aesopacademy.org)
 
-### Errors (56)
+### Errors (57)
 
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/ai-ethics/ethics-m2.html`
@@ -166,6 +167,7 @@
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
+- 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/eval-benchmark/eval-benchmark-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m1.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m2.html`
 - 🔴 **LIVE_404**: 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m3.html`
@@ -192,7 +194,7 @@
 
 ## Module File Integrity
 
-### Warnings (991)
+### Warnings (990)
 
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `agile-ai-side-projects-m1.html` has no COURSE_ID constant
@@ -822,7 +824,6 @@
 - 🟡 **NO_COURSE_ID**: Module file `digital-citizenship-and-ai-m5.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `digital-citizenship-and-ai-m6.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `courses.html` has no COURSE_ID constant
-- 🟡 **NO_COURSE_ID**: Module file `eval-benchmark-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-final.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m1.html` has no COURSE_ID constant
 - 🟡 **NO_COURSE_ID**: Module file `evaluation-and-testing-for-ai-m2.html` has no COURSE_ID constant
@@ -1190,7 +1191,7 @@
 
 ## Summary
 
-**144 error(s) require attention:**
+**146 error(s) require attention:**
 
 1. Registry module file `governance-m1.html` missing from `/ai-academy/modules/ai-governance/`
 1. Registry module file `governance-m2.html` missing from `/ai-academy/modules/ai-governance/`
@@ -1232,6 +1233,7 @@
 1. Registry module file `ar-11-m6.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
 1. Registry module file `ar-11-m7.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
 1. Registry module file `ar-11-m8.html` missing from `/ai-academy/modules/performing-arts-and-ai/`
+1. Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 1. Course `agile` is linked in courses.html but not defined in electives-hub or registry
 1. Course `ai` is linked in courses.html but not defined in electives-hub or registry
 1. Course `applied` is linked in courses.html but not defined in electives-hub or registry
@@ -1328,6 +1330,7 @@
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m6.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m7.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/building_with_ai/building_with_ai-m8.html`
+1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/eval-benchmark/eval-benchmark-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m1.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m2.html`
 1. 404 Not Found: `https://aesopacademy.org/ai-academy/modules/performing-arts-and-ai/ar-11-m3.html`

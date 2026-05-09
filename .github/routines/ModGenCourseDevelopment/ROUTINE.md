@@ -50,6 +50,9 @@ Once all modules for a course have been successfully generated and saved:
 
 1.  Once the new modules are committed and pushed, trigger the Mod Gen Activation Skill for this `course_id`.
 
+## Autonomy
+This is a fully automated routine. Do NOT call AskUserQuestion or request user approval before any file write or git operation. Execute all steps autonomously and log outcomes. The "propose before writing" rule in global CLAUDE.md does not apply here.
+
 ## Guardrails
 
 *   **Idempotence:** The routine should be able to run multiple times without adverse effects (e.g., it should only re-generate modules if content is missing or specifically requested).

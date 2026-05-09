@@ -917,6 +917,74 @@
 [data-theme="dark"] .sd-stat--skeleton .sd-stat-value { background: rgba(255,255,255,0.12); }
 [data-theme="dark"] .sd-cluster-label,
 [data-theme="dark"] .sd-story-title { color: #ddd; }
+/* Tooltips */
+[data-tip] { position: relative; cursor: help; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a2744;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 0.35rem 0.65rem;
+  border-radius: 5px;
+  white-space: nowrap;
+  max-width: 220px;
+  white-space: normal;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 20;
+}
+[data-tip]:hover::after { opacity: 1; }
+/* Cluster interactivity */
+.sd-cluster { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.sd-cluster:hover { border-color: #2a4a7a; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.sd-cluster-signals {
+  display: none;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+.sd-cluster.sd-expanded .sd-cluster-signals { display: block; }
+.sd-cluster-signals li {
+  font-size: 0.68rem;
+  color: var(--ink-muted);
+  line-height: 1.45;
+  padding: 0.18rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.sd-cluster-signals li:last-child { border-bottom: none; }
+.sd-cluster-hint {
+  font-size: 0.6rem;
+  color: var(--ink-muted);
+  margin-top: 0.35rem;
+  opacity: 0.7;
+}
+/* Legend */
+.sd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.67rem;
+  color: var(--ink-muted);
+  margin-bottom: 0.75rem;
+}
+.sd-legend-item { display: flex; align-items: center; gap: 0.3rem; }
+/* Intro blurb */
+.sd-intro {
+  font-size: 0.76rem;
+  color: var(--ink-muted);
+  line-height: 1.55;
+  margin-bottom: 1rem;
+  max-width: 680px;
+}
 /* Responsive */
 @media (max-width: 900px) {
   .signal-desk { padding: 1.25rem; }
@@ -975,6 +1043,7 @@
     <span class="sd-title">Signal Desk</span>
     <span class="sd-updated" id="sdUpdated"></span>
   </div>
+  <p class="sd-intro">Every 24 hours, our scanner reads hundreds of signals from Hacker News, GitHub, Stack Overflow, and AI company feeds — then groups them into topic clusters and scores each one. <strong>Trend</strong> measures overall heat, <strong>Velocity</strong> how fast it's accelerating, <strong>Novelty</strong> how underreported it is on Aesop, and <strong>Competition</strong> how crowded the space is. Click any cluster to see the signals behind it.</p>
 
   <!-- Stats bar -->
   <div class="sd-stats-bar" id="sdStatsBar">
@@ -1315,25 +1384,46 @@
 
   function renderClusters(clusters) {
     var grid = document.getElementById('sdClustersGrid');
-    grid.innerHTML = clusters.map(function (c) {
+
+    // Legend above the grid
+    var legendHTML = '<div class="sd-legend">' +
+      '<span class="sd-legend-item"><span class="sd-badge sd-badge--trend">T</span> Trend — overall heat right now</span>' +
+      '<span class="sd-legend-item"><span class="sd-badge sd-badge--velocity">V</span> Velocity — how fast it\'s accelerating</span>' +
+      '<span class="sd-legend-item"><span class="sd-badge sd-badge--novelty">N</span> Novelty — how underreported on Aesop</span>' +
+      '<span class="sd-legend-item"><span class="sd-badge sd-badge--competition">C</span> Competition — how crowded the space is</span>' +
+    '</div>';
+
+    var cardsHTML = clusters.map(function (c) {
       var s = c.scores;
       var cls = compositeClass(c.composite);
-      return '<div class="sd-cluster">' +
+      var signals = (c.top_signals || []);
+      var signalsHTML = signals.length
+        ? '<ul class="sd-cluster-signals">' +
+            signals.map(function (sig) { return '<li>' + esc(sig) + '</li>'; }).join('') +
+          '</ul>'
+        : '';
+      return '<div class="sd-cluster" role="button" tabindex="0" aria-expanded="false" ' +
+          'onclick="var el=this;el.classList.toggle(\'sd-expanded\');el.setAttribute(\'aria-expanded\',el.classList.contains(\'sd-expanded\'))">' +
         '<div class="sd-cluster-header">' +
           '<span class="sd-cluster-label">' + esc(c.label) + '</span>' +
-          '<span class="sd-cluster-composite sd-cluster-composite--' + cls + '">' +
+          '<span class="sd-cluster-composite sd-cluster-composite--' + cls + '" ' +
+            'data-tip="Composite = 35% Trend + 30% Velocity + 25% Novelty + 10% (100 − Competition)">' +
             esc(c.composite) +
           '</span>' +
         '</div>' +
         '<div class="sd-scores">' +
-          '<span class="sd-badge sd-badge--trend">T ' + esc(s.trend) + '</span>' +
-          '<span class="sd-badge sd-badge--velocity">V ' + esc(s.velocity) + '</span>' +
-          '<span class="sd-badge sd-badge--novelty">N ' + esc(s.novelty) + '</span>' +
-          '<span class="sd-badge sd-badge--competition">C ' + esc(s.competition) + '</span>' +
+          '<span class="sd-badge sd-badge--trend" data-tip="Trend: overall relevance and importance right now">' + esc(s.trend) + '</span>' +
+          '<span class="sd-badge sd-badge--velocity" data-tip="Velocity: how fast this topic is spreading or accelerating">' + esc(s.velocity) + '</span>' +
+          '<span class="sd-badge sd-badge--novelty" data-tip="Novelty: how fresh this is — high means Aesop hasn\'t covered it recently">' + esc(s.novelty) + '</span>' +
+          '<span class="sd-badge sd-badge--competition" data-tip="Competition: how many other clusters share keywords — lower means more room to stand out">' + esc(s.competition) + '</span>' +
         '</div>' +
         '<span class="sd-cluster-count">' + esc(c.signal_count) + ' signals</span>' +
+        signalsHTML +
+        '<span class="sd-cluster-hint">▸ click to see signals</span>' +
       '</div>';
     }).join('');
+
+    grid.innerHTML = legendHTML + cardsHTML;
   }
 
   function init() {

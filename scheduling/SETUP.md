@@ -28,27 +28,25 @@
 
 ---
 
-## Step 2 — Configure `config.php`
+## Step 2 - Configure secrets
 
-Fill in every blank field:
+`config.php` now reads sensitive values from environment variables or the
+gitignored root `secrets.local.php` file through `secrets.php`. Set these
+values in your host environment, or add them to `secrets.local.php` on the
+server:
 
 ```php
-define('AZURE_CLIENT_ID',     'paste-client-id-here');
-define('AZURE_CLIENT_SECRET', 'paste-secret-value-here');
-define('AZURE_TENANT_ID',     'paste-tenant-id-here');
-define('AZURE_REDIRECT_URI',  'https://yoursite.com/scheduling/auth.php');
-
-define('OWNER_NAME',  'Your Name');
-define('OWNER_EMAIL', 'you@yourdomain.com');
-define('OWNER_TIMEZONE', 'America/Chicago');  // php.net/timezones
-
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'your_db');
-define('DB_USER', 'your_user');
-define('DB_PASS', 'your_password');
+return [
+  'AESOP_AZURE_CLIENT_SECRET' => '...',
+  'AESOP_SECOND_CALENDAR_ICS' => '...',
+  'AESOP_DB_NAME' => '...',
+  'AESOP_DB_USER' => '...',
+  'AESOP_DB_PASS' => '...',
+];
 ```
 
-Adjust availability hours and `MEETING_DURATION` as needed.
+Adjust availability hours and `MEETING_DURATION` through the optional
+`AESOP_*` environment variables if needed.
 
 ---
 

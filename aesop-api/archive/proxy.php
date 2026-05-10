@@ -10,7 +10,8 @@
  */
 
 // ── CONFIG ──────────────────────────────────────────────────────────────
-$API_KEY = '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';
+require_once dirname(__DIR__, 2) . '/secrets.php';
+$API_KEY = aesop_secret('AESOP_ANTHROPIC_API_KEY', '');
 $MODEL   = 'claude-haiku-4-5-20251001';
 $MAX_TOKENS_CAP = 1024;
 

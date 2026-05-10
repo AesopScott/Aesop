@@ -39,10 +39,10 @@ Routine version uses the GitHub API directly (no clone, no shell).
 1. Configure this routine in Claude Code with the daily schedule.
 2. Verify the first 3–5 daily reports look reasonable.
 3. Delete `.github/scheduled/aesop-git-sync-v2/`.
-4. **Important:** `aesop-git-sync-v2/SKILL.md` currently has a
-   hardcoded GitHub PAT on line 14 (`ghp_RW2RCjPWg4...`). When you
-   retire the skill, **revoke that PAT on GitHub**. The Claude
-   Routine uses the connector's own auth and does not need it.
+4. **Important:** the retired `aesop-git-sync-v2/SKILL.md` contained
+   a hardcoded GitHub PAT. When you retire the skill, **revoke that PAT
+   on GitHub**. The Claude Routine uses the connector's own auth and
+   does not need it.
 
 ## How to test manually
 In the Claude Routine UI, click "Run now." You should see the

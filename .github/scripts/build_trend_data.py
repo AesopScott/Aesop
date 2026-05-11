@@ -43,6 +43,22 @@ def _dedup_key(title: str) -> str:
     return re.sub(r"[^a-z0-9]", "", title.lower())[:60]
 
 
+def _title_key(title: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(title).lower())[:80]
+
+
+def _signal_url(signal: dict) -> str:
+    metadata = signal.get("metadata") or {}
+    for key in ("url", "link", "html_url"):
+        url = str(metadata.get(key) or "").strip()
+        if url:
+            return url
+    video_id = str(metadata.get("video_id") or "").strip()
+    if video_id:
+        return f"https://www.youtube.com/watch?v={video_id}"
+    return ""
+
+
 # ── Signal collection ─────────────────────────────────────────────────────────
 
 def collect_all_signals() -> tuple[list[dict], int]:
@@ -106,6 +122,48 @@ def load_recent_article_titles(days: int = NOVELTY_WINDOW_DAYS) -> list[str]:
     except Exception as e:
         print(f"[Trend] Warning: could not load article titles: {e}")
         return []
+
+
+def load_article_links() -> dict[str, str]:
+    """Map normalized article titles to their Aesop article URLs."""
+    if not ARTICLES_INDEX_PATH.exists():
+        return {}
+
+    links: dict[str, str] = {}
+    try:
+        index = json.loads(ARTICLES_INDEX_PATH.read_text(encoding="utf-8"))
+        for path_str in index.get("articles", []):
+            json_path = REPO_ROOT / "ai-news" / path_str
+            if not json_path.exists():
+                continue
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            title = str(data.get("title") or "").strip()
+            article_id = str(data.get("id") or json_path.stem).strip()
+            if title and article_id:
+                links[_title_key(title)] = f"/ai-news/articles/{article_id}.html"
+    except Exception as e:
+        print(f"[Trend] Warning: could not load article links: {e}")
+    return links
+
+
+def enrich_story_links(top_stories: list[dict], signals: list[dict], article_links: dict[str, str]) -> list[dict]:
+    """Attach article/source URLs so the Signal Desk trend list is navigable."""
+    signal_by_title = {_title_key(s.get("topic", "")): s for s in signals}
+    enriched: list[dict] = []
+    for story in top_stories:
+        item = dict(story)
+        key = _title_key(item.get("title", ""))
+        article_url = item.get("article_url") or article_links.get(key)
+        source_url = item.get("source_url") or item.get("url")
+        signal = signal_by_title.get(key)
+        if not source_url and signal:
+            source_url = _signal_url(signal)
+        if article_url:
+            item["article_url"] = article_url
+        if source_url:
+            item["source_url"] = source_url
+        enriched.append(item)
+    return enriched
 
 
 # ── Claude clustering ─────────────────────────────────────────────────────────
@@ -301,6 +359,7 @@ def deterministic_fallback(signals: list[dict], recent_titles: list[str]) -> dic
     for i, cluster in enumerate(clusters[:MAX_STORIES]):
         sigs = buckets.get(cluster["id"], [])
         top_sig = max(sigs, key=lambda s: s["score"]) if sigs else {"topic": cluster["label"], "score": 0}
+        source_url = _signal_url(top_sig)
         top_stories.append({
             "rank": i + 1,
             "title": top_sig["topic"][:100],
@@ -308,6 +367,7 @@ def deterministic_fallback(signals: list[dict], recent_titles: list[str]) -> dic
             "score": min(1000, top_sig["score"]),
             "source_count": cluster["signal_count"],
             "cluster_id": cluster["id"],
+            **({"source_url": source_url} if source_url else {}),
         })
 
     ideas: list[dict] = []
@@ -334,6 +394,7 @@ def deterministic_fallback(signals: list[dict], recent_titles: list[str]) -> dic
 def build_trend_data() -> dict:
     signals, active_sources = collect_all_signals()
     recent_titles = load_recent_article_titles()
+    article_links = load_article_links()
 
     claude_result = cluster_and_score(signals, recent_titles)
 
@@ -344,7 +405,7 @@ def build_trend_data() -> dict:
         result = deterministic_fallback(signals, recent_titles)
 
     clusters = result.get("clusters", [])[:MAX_CLUSTERS]
-    top_stories = result.get("top_stories", [])[:MAX_STORIES]
+    top_stories = enrich_story_links(result.get("top_stories", [])[:MAX_STORIES], signals, article_links)
     ideas = result.get("ideas", [])[:MAX_IDEAS]
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

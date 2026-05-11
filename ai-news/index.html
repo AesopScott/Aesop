@@ -807,6 +807,24 @@
   display: flex;
   gap: 0.6rem;
   align-items: flex-start;
+  border-radius: 6px;
+  padding: 0.35rem;
+  margin: -0.35rem;
+  text-decoration: none;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.sd-story[href] {
+  cursor: pointer;
+}
+.sd-story[href]:hover,
+.sd-story[href]:focus-visible {
+  background: rgba(245, 230, 192, 0.06);
+  outline: none;
+  transform: translateX(2px);
+}
+.sd-story[href]:hover .sd-story-title,
+.sd-story[href]:focus-visible .sd-story-title {
+  color: var(--gold);
 }
 .sd-story-rank {
   flex-shrink: 0;
@@ -839,6 +857,11 @@
 .sd-story-meta {
   font-size: 0.65rem;
   color: var(--ink-muted);
+}
+.sd-story-action {
+  display: inline-block;
+  margin-left: 0.35rem;
+  color: var(--gold);
 }
 .sd-stories-toggle {
   margin-top: 0.75rem;
@@ -1313,6 +1336,7 @@
   'use strict';
 
   var TREND_URL = '/ai-news/trend-data.json';
+  var ARTICLES_INDEX_URL = '/ai-news/articles-index.json';
   var STALE_HOURS = 48;
   var STORIES_PREVIEW = 5;
 
@@ -1338,6 +1362,44 @@
     return 'low';
   }
 
+  function titleKey(title) {
+    return String(title || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
+  }
+
+  function storyHref(story, articleLinks) {
+    var direct = story.article_url || story.url || story.source_url;
+    if (direct) return direct;
+    return articleLinks[titleKey(story.title)] || '';
+  }
+
+  function loadArticleLinks() {
+    return fetch(ARTICLES_INDEX_URL + '?_=' + Date.now())
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (index) {
+        var articlePaths = (index.articles || []).slice(0, 80);
+        return Promise.all(articlePaths.map(function (path) {
+          return fetch('/ai-news/' + path + '?_=' + Date.now())
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; });
+        }));
+      })
+      .then(function (articles) {
+        return articles.reduce(function (links, article) {
+          if (article && article.title && article.id) {
+            links[titleKey(article.title)] = '/ai-news/articles/' + article.id + '.html';
+          }
+          return links;
+        }, {});
+      })
+      .catch(function (e) {
+        console.warn('[SignalDesk] Could not load article link map:', e);
+        return {};
+      });
+  }
+
   function renderStats(stats, generatedAt) {
     var bar = document.getElementById('sdStatsBar');
     var fields = [
@@ -1358,21 +1420,31 @@
     updated.textContent = ago ? 'Updated ' + ago + (isStale ? ' — may be stale' : '') : '';
   }
 
-  function renderStories(stories) {
+  function renderStories(stories, articleLinks) {
     var list = document.getElementById('sdStoriesList');
     var toggle = document.getElementById('sdStoriesToggle');
     var expanded = false;
 
     function buildItem(story, hidden) {
-      return '<li class="sd-story"' + (hidden ? ' style="display:none"' : '') + '>' +
+      var href = storyHref(story, articleLinks);
+      var tag = href ? 'a' : 'li';
+      var attrs = href
+        ? ' href="' + esc(href) + '" class="sd-story"'
+        : ' class="sd-story"';
+      if (hidden) attrs += ' style="display:none"';
+      if (href && /^https?:\/\//.test(href)) attrs += ' target="_blank" rel="noopener"';
+
+      return '<' + tag + attrs + '>' +
         '<span class="sd-story-rank">' + esc(story.rank) + '</span>' +
         '<div class="sd-story-body">' +
           '<span class="sd-story-title">' + esc(story.title) + '</span>' +
           '<span class="sd-story-summary">' + esc(story.summary) + '</span>' +
           '<span class="sd-story-meta">Score ' + esc(story.score) +
-            ' &middot; ' + esc(story.source_count) + ' signals</span>' +
+            ' &middot; ' + esc(story.source_count) + ' signals' +
+            (href ? '<span class="sd-story-action">Open &rarr;</span>' : '') +
+          '</span>' +
         '</div>' +
-      '</li>';
+      '</' + tag + '>';
     }
 
     list.innerHTML = stories.map(function (s, i) {
@@ -1384,7 +1456,7 @@
       toggle.textContent = 'Show ' + (stories.length - STORIES_PREVIEW) + ' more';
       toggle.onclick = function () {
         expanded = !expanded;
-        list.querySelectorAll('li').forEach(function (li, i) {
+        list.querySelectorAll('.sd-story').forEach(function (li, i) {
           if (i >= STORIES_PREVIEW) li.style.display = expanded ? '' : 'none';
         });
         toggle.textContent = expanded
@@ -1439,16 +1511,21 @@
   }
 
   function init() {
-    fetch(TREND_URL + '?_=' + Date.now())
+    Promise.all([
+      fetch(TREND_URL + '?_=' + Date.now())
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
-      })
-      .then(function (data) {
+      }),
+      loadArticleLinks()
+    ])
+      .then(function (result) {
+        var data = result[0];
+        var articleLinks = result[1];
         var desk = document.getElementById('signalDesk');
         if (!data || !data.stats || !data.clusters || !data.top_stories) return;
         renderStats(data.stats, data.generated_at);
-        renderStories(data.top_stories);
+        renderStories(data.top_stories, articleLinks);
         renderClusters(data.clusters);
         desk.style.display = '';
       })

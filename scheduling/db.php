@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/firebase-helper.php';
 
 // Database functions now use file-based storage as fallback (Firebase backend)
 // Tokens and bookings are stored in files on the server

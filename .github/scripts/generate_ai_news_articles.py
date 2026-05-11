@@ -9,12 +9,15 @@ the public news page moving when the outside routine misses a day.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[1]
@@ -77,6 +80,47 @@ def source_url(signal: dict) -> str:
     return ""
 
 
+def clean_text(value: str, limit: int = 260) -> str:
+    value = html.unescape(str(value or ""))
+    value = re.sub(r"<[^>]+>", " ", value)
+    value = re.sub(r"\s+", " ", value).strip()
+    if len(value) <= limit:
+        return value
+    cut = value[:limit].rsplit(" ", 1)[0].rstrip(".,;:")
+    return f"{cut}."
+
+
+def source_summary(url: str) -> str:
+    if not url or "aesopacademy.org/ai-news" in url:
+        return ""
+    try:
+        req = Request(url, headers={"User-Agent": "AesopAcademy/1.0 (+https://aesopacademy.org)"})
+        page = urlopen(req, timeout=12).read(350_000).decode("utf-8", "ignore")
+    except (OSError, URLError):
+        return ""
+
+    patterns = [
+        r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:description["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']description["\']',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, page, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            summary = clean_text(match.group(1))
+            if len(summary) >= 45:
+                return summary
+    return ""
+
+
+def topic_summary(title: str, source_name: str, source_desc: str) -> str:
+    if source_desc:
+        return source_desc
+    source_hint = source_name if source_name and source_name != "AI signal feed" else "the source"
+    return clean_text(f"{title} is moving through {source_hint}; the story is useful because it points to a concrete AI tool, release, research thread, or policy debate readers may need to understand.")
+
+
 def collect_candidates(limit: int) -> list[dict]:
     signals = []
     signals.extend(collect_general_signals(max_signals=80))
@@ -111,13 +155,14 @@ def fallback_article(date_str: str, candidate: dict) -> dict:
     slug = f"{date_str}-{slugify(title)}"
     source_name = candidate.get("source_detail") or candidate.get("source") or "AI signal feed"
     url = candidate.get("url") or "https://aesopacademy.org/ai-news/"
+    summary = topic_summary(title, source_name, source_summary(url))
     category = "Education" if "education" in title.lower() or "student" in title.lower() else "Industry"
     tags = [candidate.get("source", "ai"), candidate.get("signal_type", "news"), "ai"]
 
     return {
         "id": slug,
         "title": title,
-        "subtitle": f"Aesop's signal desk flagged this as a high-priority AI story from {source_name}.",
+        "subtitle": summary,
         "date": date_str,
         "author": "AESOP AI Engine",
         "category": category,
@@ -125,9 +170,9 @@ def fallback_article(date_str: str, candidate: dict) -> dict:
         "readTime": "3 min read",
         "heroEmoji": "📰",
         "body": [
-            f"The Aesop signal desk surfaced '{title}' as one of today's strongest AI signals. The item ranked highly because it appeared in active public feeds and matched the platform's AI literacy, tools, education, or governance focus.",
-            "The important learner question is not only what happened, but what capability or risk it points toward. Stories about agents, AI education, model launches, infrastructure, and regulation are all early clues about the workflows people will need to understand next.",
-            "For learners: treat a headline like this as a prompt to ask three practical questions. What changed? Who has to make a decision because of it? And what concept would help a non-expert understand the stakes without drowning in product language?",
+            summary,
+            f"The source signal came from {source_name}. Aesop included it because the topic connects to AI literacy, tool adoption, model capability, education, governance, or the way real people are learning to work with AI systems.",
+            "For learners: use the story to ask what changed, who has to make a decision because of it, and what concept would help a non-expert understand the stakes without drowning in product language.",
         ],
         "sources": [{"title": source_name, "url": url}],
         "status": "published",

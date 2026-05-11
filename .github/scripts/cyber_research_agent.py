@@ -608,9 +608,9 @@ For EACH topic, return a JSON object with exactly these fields:
 - "mega_group": always "Cybersecurity" — every course this agent produces belongs in the 🔒 Cybersecurity nav section.
 - "modules": array of module objects — 5 objects for ⚑ MODEL TOPIC, 7 objects for everything else.
     Each module object MUST have these three fields:
-    {"title": "<short module name, max 8 words>",
+    {{"title": "<short module name, max 8 words>",
      "sub":   "<one-sentence subtitle, 6-14 words, framing what the module covers>",
-     "description": "<2-4 sentences describing what the learner does, detects, or defends against in this module>"}
+     "description": "<2-4 sentences describing what the learner does, detects, or defends against in this module>"}}
 - "synopsis": 2-sentence description that makes the stakes clear
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "audience": "professional", "general", or "both"

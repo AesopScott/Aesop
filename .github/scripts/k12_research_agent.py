@@ -435,9 +435,9 @@ For EACH topic, return a JSON object with exactly these fields:
     "Code with AI"   — programming/coding with AI assistants (Copilot, Cursor, Scratch-to-Python, etc.)
     "Truth & Safety" — bias, misinformation, deepfakes, scams, ethics, privacy, digital citizenship, agentic-risk
 - "modules": array of EXACTLY 4 module objects (focused 4-module arc). Each module object MUST have these three fields:
-    {"title": "<short, max 6 words>",
+    {{"title": "<short, max 6 words>",
      "sub":   "<one-sentence subtitle, 6-12 words, framing what the module covers>",
-     "description": "<2-3 sentences explaining what the learner does, decides, or makes in this module>"}
+     "description": "<2-3 sentences explaining what the learner does, decides, or makes in this module>"}}
 - "synopsis": 2-sentence description written for a student or their teacher
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "age_band": "8-10", "11-13", or "14-16"

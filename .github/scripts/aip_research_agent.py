@@ -502,9 +502,9 @@ For EACH topic, return a JSON object with exactly these fields:
     "Cybersecurity"  — only when squarely about security (most security courses go through cyber_research_agent.py instead)
 - "modules": array of module objects — 5 objects for ⚑ MODEL TOPIC, 8 objects for everything else.
     Each module object MUST have these three fields:
-    {"title": "<short module name, max 8 words>",
+    {{"title": "<short module name, max 8 words>",
      "sub":   "<one-sentence subtitle, 6-14 words, framing what the module covers>",
-     "description": "<2-4 sentences describing what the professional does, decides, or produces in this module>"}
+     "description": "<2-4 sentences describing what the professional does, decides, or produces in this module>"}}
 - "synopsis": 2-sentence course description written for a professional audience
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for professional AI literacy

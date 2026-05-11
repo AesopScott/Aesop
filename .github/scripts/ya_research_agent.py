@@ -459,9 +459,9 @@ For EACH topic, return a JSON object with exactly these fields:
     "Business"       — entrepreneurship, freelancing, marketing, side projects with AI
 - "modules": array of module objects — 5 objects for ⚑ MODEL TOPIC, 6 objects for everything else.
     Each module object MUST have these three fields:
-    {"title": "<short module name, max 8 words>",
+    {{"title": "<short module name, max 8 words>",
      "sub":   "<one-sentence subtitle, 6-12 words, framing what the module covers>",
-     "description": "<2-3 sentences explaining what the learner does, builds, or decides in this module>"}
+     "description": "<2-3 sentences explaining what the learner does, builds, or decides in this module>"}}
 - "synopsis": 2-sentence description written for the learner directly (use "you")
 - "tier": "Beginner", "Intermediate", or "Advanced"
 - "rationale": 1 sentence on why this gap matters for young adults' AI literacy

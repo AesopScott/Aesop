@@ -1,44 +1,51 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/firebase-helper.php';
 
-function getDB(): PDO {
-    static $pdo = null;
-    if (!$pdo) {
-        $pdo = new PDO(
-            'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-            DB_USER,
-            DB_PASS,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]
-        );
-    }
-    return $pdo;
-}
+// Database functions now use file-based storage as fallback (Firebase backend)
+// Tokens and bookings are stored in files on the server
 
 function getStoredTokens(int $accountId = 1): ?array {
+    $tokensFile = __DIR__ . '/.tokens-account' . $accountId;
+    if (!file_exists($tokensFile)) {
+        return null;
+    }
     try {
-        $stmt = getDB()->prepare('SELECT * FROM oauth_tokens WHERE id = ?');
-        $stmt->execute([$accountId]);
-        $row = $stmt->fetch();
-        return $row ?: null;
+        $data = json_decode(file_get_contents($tokensFile), true);
+        return $data ?: null;
     } catch (Exception $e) {
         return null;
     }
 }
 
 function storeTokens(string $accessToken, string $refreshToken, int $expiresAt, int $accountId = 1): void {
-    $db   = getDB();
-    $stmt = $db->prepare(
-        'INSERT INTO oauth_tokens (id, access_token, refresh_token, expires_at)
-         VALUES (:id, :a, :r, :e)
-         ON DUPLICATE KEY UPDATE access_token = :a, refresh_token = :r, expires_at = :e'
-    );
-    $stmt->execute([':id' => $accountId, ':a' => $accessToken, ':r' => $refreshToken, ':e' => $expiresAt]);
+    $tokensFile = __DIR__ . '/.tokens-account' . $accountId;
+    $data = json_encode([
+        'access_token' => $accessToken,
+        'refresh_token' => $refreshToken,
+        'expires_at' => $expiresAt,
+        'accountId' => $accountId,
+    ]);
+    file_put_contents($tokensFile, $data);
+    chmod($tokensFile, 0600);
 }
 
 function logBooking(string $eventId, string $name, string $email, string $start, string $end): void {
-    $stmt = getDB()->prepare(
-        'INSERT INTO bookings (outlook_event_id, guest_name, guest_email, start_time, end_time)
-         VALUES (?, ?, ?, ?, ?)'
-    );
-    $stmt->execute([$eventId, $name, $email, $start, $end]);
+    $bookingsFile = __DIR__ . '/.bookings';
+    $booking = [
+        'outlook_event_id' => $eventId,
+        'guest_name' => $name,
+        'guest_email' => $email,
+        'start_time' => $start,
+        'end_time' => $end,
+        'created_at' => date('c'),
+    ];
+
+    $bookings = [];
+    if (file_exists($bookingsFile)) {
+        $bookings = json_decode(file_get_contents($bookingsFile), true) ?: [];
+    }
+
+    $bookings[] = $booking;
+    file_put_contents($bookingsFile, json_encode($bookings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }

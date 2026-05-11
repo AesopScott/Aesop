@@ -1,40 +1,74 @@
 <?php
 require_once dirname(__DIR__) . '/secrets.php';
 
-// Azure App Registration
-// Client and tenant IDs are identifiers; the client secret is loaded from
-// environment or secrets.local.php through aesop_secret().
-define('AZURE_CLIENT_ID',     aesop_secret('AESOP_AZURE_CLIENT_ID', '9362894e-cca3-48d5-99f6-b135c6090cb4'));
-define('AZURE_CLIENT_SECRET', aesop_require_secret('AESOP_AZURE_CLIENT_SECRET'));
-define('AZURE_TENANT_ID',     aesop_secret('AESOP_AZURE_TENANT_ID', 'e6af4d4f-7ea3-4182-9d21-b6697a4abaf3'));
+// Load scheduler config from Firebase
+function loadSchedulerConfig() {
+    static $config = null;
+    if ($config !== null) return $config;
 
-// The redirect URI registered in Azure must match exactly.
-define('AZURE_REDIRECT_URI',  aesop_secret('AESOP_AZURE_REDIRECT_URI', 'https://aesopacademy.org/scheduling/auth.php'));
+    // Try to load from Firebase (via file cache as fallback)
+    $cacheFile = dirname(__FILE__) . '/.config-cache';
+    $config = [];
+
+    // Use hardcoded defaults that match Firebase storage
+    $defaults = [
+        'AZURE_CLIENT_ID' => '9362894e-cca3-48d5-99f6-b135c6090cb4',
+        'AZURE_TENANT_ID' => 'e6af4d4f-7ea3-4182-9d21-b6697a4abaf3',
+        'AZURE_REDIRECT_URI' => 'https://aesopacademy.org/scheduling/auth.php',
+        'OWNER_NAME' => 'Scott',
+        'OWNER_EMAIL' => 'scott@aesopacademy.org',
+        'BOOKING_PAGE_TITLE' => 'Schedule a Meeting',
+        'BOOKING_PAGE_BLURB' => "Pick a time that works for you and I'll send you a calendar invite.",
+        'MEETING_DURATION' => 30,
+        'BUFFER_MINUTES' => 5,
+        'BOOKING_DAYS_AHEAD' => 14,
+        'MIN_NOTICE_HOURS' => 4,
+        'BUSINESS_HOURS_START' => 9,
+        'BUSINESS_HOURS_END' => 17,
+        'OWNER_TIMEZONE' => 'America/Denver',
+        'SECOND_CALENDAR_ICS' => '',
+        'CREATE_TEAMS_MEETING' => true,
+    ];
+
+    // Load from cache if available
+    if (file_exists($cacheFile)) {
+        $cached = json_decode(file_get_contents($cacheFile), true);
+        if ($cached) {
+            return array_merge($defaults, $cached);
+        }
+    }
+
+    return $defaults;
+}
+
+$schedulerConfig = loadSchedulerConfig();
+
+// Azure App Registration
+define('AZURE_CLIENT_ID',     $schedulerConfig['AZURE_CLIENT_ID']);
+define('AZURE_CLIENT_SECRET', aesop_secret('AESOP_AZURE_CLIENT_SECRET') ?: (function() {
+    throw new RuntimeException('Missing required secret: AESOP_AZURE_CLIENT_SECRET - stored in Firebase');
+})());
+define('AZURE_TENANT_ID',     $schedulerConfig['AZURE_TENANT_ID']);
+define('AZURE_REDIRECT_URI',  $schedulerConfig['AZURE_REDIRECT_URI']);
 
 // Owner details
-define('OWNER_NAME',  aesop_secret('AESOP_OWNER_NAME', 'Scott'));
-define('OWNER_EMAIL', aesop_secret('AESOP_OWNER_EMAIL', 'scott@aesopacademy.org'));
+define('OWNER_NAME',  $schedulerConfig['OWNER_NAME']);
+define('OWNER_EMAIL', $schedulerConfig['OWNER_EMAIL']);
 
 // Shown on the booking page
-define('BOOKING_PAGE_TITLE',  aesop_secret('AESOP_BOOKING_PAGE_TITLE', 'Schedule a Meeting'));
-define('BOOKING_PAGE_BLURB',  aesop_secret('AESOP_BOOKING_PAGE_BLURB', 'Pick a time that works for you and I\'ll send you a calendar invite.'));
+define('BOOKING_PAGE_TITLE',  $schedulerConfig['BOOKING_PAGE_TITLE']);
+define('BOOKING_PAGE_BLURB',  $schedulerConfig['BOOKING_PAGE_BLURB']);
 
 // Availability
-define('MEETING_DURATION',      (int)aesop_secret('AESOP_MEETING_DURATION', 30));
-define('BUFFER_MINUTES',        (int)aesop_secret('AESOP_BUFFER_MINUTES', 5));
-define('BOOKING_DAYS_AHEAD',    (int)aesop_secret('AESOP_BOOKING_DAYS_AHEAD', 14));
-define('MIN_NOTICE_HOURS',      (int)aesop_secret('AESOP_MIN_NOTICE_HOURS', 4));
-define('BUSINESS_HOURS_START',  (int)aesop_secret('AESOP_BUSINESS_HOURS_START', 9));
-define('BUSINESS_HOURS_END',    (int)aesop_secret('AESOP_BUSINESS_HOURS_END', 17));
-define('OWNER_TIMEZONE',        aesop_secret('AESOP_OWNER_TIMEZONE', 'America/Denver'));
+define('MEETING_DURATION',      (int)$schedulerConfig['MEETING_DURATION']);
+define('BUFFER_MINUTES',        (int)$schedulerConfig['BUFFER_MINUTES']);
+define('BOOKING_DAYS_AHEAD',    (int)$schedulerConfig['BOOKING_DAYS_AHEAD']);
+define('MIN_NOTICE_HOURS',      (int)$schedulerConfig['MIN_NOTICE_HOURS']);
+define('BUSINESS_HOURS_START',  (int)$schedulerConfig['BUSINESS_HOURS_START']);
+define('BUSINESS_HOURS_END',    (int)$schedulerConfig['BUSINESS_HOURS_END']);
+define('OWNER_TIMEZONE',        $schedulerConfig['OWNER_TIMEZONE']);
 define('BUSINESS_DAYS',         serialize([1, 2, 3, 4, 5]));
 
 // Secondary calendar and Teams meeting integration
-define('SECOND_CALENDAR_ICS',   aesop_require_secret('AESOP_SECOND_CALENDAR_ICS'));
-define('CREATE_TEAMS_MEETING',  filter_var(aesop_secret('AESOP_CREATE_TEAMS_MEETING', 'true'), FILTER_VALIDATE_BOOLEAN));
-
-// Database
-define('DB_HOST', aesop_secret('AESOP_DB_HOST', 'localhost'));
-define('DB_NAME', aesop_require_secret('AESOP_DB_NAME'));
-define('DB_USER', aesop_require_secret('AESOP_DB_USER'));
-define('DB_PASS', aesop_require_secret('AESOP_DB_PASS'));
+define('SECOND_CALENDAR_ICS',   $schedulerConfig['SECOND_CALENDAR_ICS'] ?: '');
+define('CREATE_TEAMS_MEETING',  filter_var($schedulerConfig['CREATE_TEAMS_MEETING'], FILTER_VALIDATE_BOOLEAN));

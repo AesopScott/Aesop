@@ -2,18 +2,163 @@
 """
 AESOP AI Academy Student Transcript Generator
 Generates comprehensive student transcript HTML pages based on student profile data.
+
+v1.2.0 — Adds Career Pathway Affinity section mapping a learner's skills
+to the four role lanes (Builders, Integrators, Governors, Translators)
+defined in `ai-academy/modules/pathway-mappings.json`.
 """
 
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
+
+
+PATHWAY_MAPPINGS_PATH = Path(__file__).parent / 'ai-academy' / 'modules' / 'pathway-mappings.json'
 
 
 def load_student_profile(json_path):
     """Load student profile from JSON file."""
     with open(json_path, 'r') as f:
         return json.load(f)
+
+
+def load_pathway_mappings():
+    """Load the lane taxonomy and skill→lane mappings. Returns None if file missing."""
+    try:
+        with open(PATHWAY_MAPPINGS_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _slugify_skill_name(name):
+    """Best-effort match from a display name to a skill-registry ID."""
+    slug = name.lower().strip()
+    slug = re.sub(r'[^a-z0-9]+', '-', slug)
+    slug = slug.strip('-')
+    return slug
+
+
+def compute_lane_affinity(profile, mappings):
+    """
+    Compute 0–100 affinity per lane from the student's technical_skills.
+    Each technical_skills entry may have an explicit skill_id; otherwise we
+    fall back to slugifying the display name. Skills not in the mapping
+    contribute zero. Returns {laneId: {score, contributingSkills}}.
+    """
+    if not mappings:
+        return {}
+
+    lanes = mappings.get('lanes', {})
+    skill_to_lanes = mappings.get('skillToLanes', {})
+    weights = mappings.get('weights', {})
+
+    raw_scores = {lane_id: 0.0 for lane_id in lanes}
+    max_possible = {lane_id: 0.0 for lane_id in lanes}
+    contributors = {lane_id: [] for lane_id in lanes}
+
+    # Max possible: every skill at 100% counted at full weight per lane it maps to.
+    for skill_id, entry in skill_to_lanes.items():
+        for lane_id, weight_key in entry.get('lanes', {}).items():
+            if lane_id in max_possible:
+                max_possible[lane_id] += weights.get(weight_key, 0)
+
+    for tech_skill in profile.get('technical_skills', []):
+        proficiency_pct = tech_skill.get('proficiency', 0)
+        if proficiency_pct <= 0:
+            continue
+        skill_id = tech_skill.get('skill_id') or _slugify_skill_name(tech_skill.get('name', ''))
+        mapping_entry = skill_to_lanes.get(skill_id)
+        if not mapping_entry:
+            continue
+        for lane_id, weight_key in mapping_entry.get('lanes', {}).items():
+            if lane_id not in raw_scores:
+                continue
+            contribution = (proficiency_pct / 100.0) * weights.get(weight_key, 0)
+            raw_scores[lane_id] += contribution
+            contributors[lane_id].append({
+                'name': tech_skill.get('name', skill_id),
+                'proficiency': proficiency_pct,
+                'role': weight_key,
+            })
+
+    affinity = {}
+    for lane_id in lanes:
+        ceiling = max_possible[lane_id]
+        score_pct = int(round((raw_scores[lane_id] / ceiling) * 100)) if ceiling > 0 else 0
+        score_pct = max(0, min(100, score_pct))
+        affinity[lane_id] = {
+            'score': score_pct,
+            'contributing_skills': contributors[lane_id],
+        }
+    return affinity
+
+
+def generate_pathway_section(profile):
+    """Generate the Career Pathway Affinity section HTML."""
+    mappings = load_pathway_mappings()
+    if not mappings:
+        return ''
+
+    affinity = compute_lane_affinity(profile, mappings)
+    if not affinity:
+        return ''
+
+    # Show lanes in order of affinity score (descending) so the strongest fit reads first.
+    ordered = sorted(
+        mappings.get('lanes', {}).items(),
+        key=lambda item: affinity.get(item[0], {}).get('score', 0),
+        reverse=True,
+    )
+
+    cards = ''
+    for lane_id, lane in ordered:
+        score = affinity.get(lane_id, {}).get('score', 0)
+        contributors = affinity.get(lane_id, {}).get('contributing_skills', [])
+        top_contributors = sorted(contributors, key=lambda s: s.get('proficiency', 0), reverse=True)[:3]
+        contributors_text = ', '.join(c['name'] for c in top_contributors) if top_contributors else 'No qualifying skills yet'
+
+        roles_list = ''.join(f'<li>{role}</li>' for role in lane.get('exampleRoles', [])[:4])
+
+        cards += f'''    <div class="st-lane-card" data-lane="{lane_id}" style="border-top-color: {lane.get('color', 'var(--gold)')};">
+      <div class="st-lane-header">
+        <div class="st-lane-icon">{lane.get('icon', '✦')}</div>
+        <div>
+          <div class="st-lane-title">{lane.get('title', lane_id.title())}</div>
+          <div class="st-lane-tagline">{lane.get('tagline', '')}</div>
+        </div>
+        <div class="st-lane-score">
+          <div class="st-lane-score-num">{score}%</div>
+          <div class="st-lane-score-label">Affinity</div>
+        </div>
+      </div>
+      <div class="st-lane-bar">
+        <div class="st-lane-fill" style="width: {score}%; background: {lane.get('color', 'var(--gold)')};"></div>
+      </div>
+      <div class="st-lane-desc">{lane.get('description', '')}</div>
+      <div class="st-lane-meta">
+        <div class="st-lane-meta-title">Top contributing skills</div>
+        <div class="st-lane-meta-text">{contributors_text}</div>
+      </div>
+      <div class="st-lane-meta">
+        <div class="st-lane-meta-title">Example roles</div>
+        <ul class="st-lane-roles">{roles_list}</ul>
+      </div>
+    </div>
+'''
+
+    return f'''  <div class="st-section-label">Career Pathway Affinity</div>
+
+  <div class="st-pathway-intro">
+    Career pathways are not predictions &mdash; they describe where current skills point. AESOP groups AI-era work into four lanes. Strong affinity in a lane suggests the learner is already building toward roles in that family; low affinity is information, not a verdict. Pathways shift as new skills are earned. Learn more at <a href="/pathways.html">aesopacademy.org/pathways</a>.
+  </div>
+
+  <div class="st-lanes">
+{cards}  </div>
+
+'''
 
 
 def calculate_totals(profile):
@@ -138,6 +283,7 @@ def generate_html(profile):
     foundation_rows = generate_course_rows(foundations_courses, 'foundations')
     elective_rows = generate_course_rows(electives_courses, 'electives')
     standards = generate_standards_mappings(profile)
+    pathway_section = generate_pathway_section(profile)
 
     # Technical skills
     tech_skills_html = ""
@@ -167,7 +313,7 @@ def generate_html(profile):
 '''
 
     html = f'''<!DOCTYPE html>
-<!-- v1.1.0 | Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} -->
+<!-- v1.2.0 | Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -241,6 +387,29 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
 .st-skill-bar {{ flex: 1; background: var(--border-light); height: 6px; border-radius: 99px; overflow: hidden; }}
 .st-skill-fill {{ height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--green)); transition: width 0.6s ease; }}
 .st-skill-pct {{ flex-shrink: 0; width: 40px; text-align: right; font-weight: 700; color: var(--gold); font-size: 0.9rem; }}
+
+/* Career Pathway Affinity */
+.st-pathway-intro {{ font-size: 0.95rem; line-height: 1.7; color: var(--ink-muted); margin-bottom: 1.75rem; }}
+.st-pathway-intro a {{ color: var(--gold); text-decoration: none; border-bottom: 1px solid var(--gold-light); }}
+.st-pathway-intro a:hover {{ color: var(--navy); }}
+.st-lanes {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }}
+.st-lane-card {{ background: var(--white); border: 1.5px solid var(--border); border-top: 5px solid var(--gold); border-radius: var(--radius-lg); padding: 1.5rem 1.4rem; display: flex; flex-direction: column; gap: 0.9rem; transition: border-color 0.15s, box-shadow 0.15s; }}
+.st-lane-card:hover {{ box-shadow: 0 4px 16px rgba(0,0,0,0.06); }}
+.st-lane-header {{ display: grid; grid-template-columns: auto 1fr auto; gap: 0.75rem; align-items: center; }}
+.st-lane-icon {{ font-size: 1.85rem; line-height: 1; }}
+.st-lane-title {{ font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--ink); line-height: 1.1; }}
+.st-lane-tagline {{ font-size: 0.78rem; color: var(--ink-muted); margin-top: 0.2rem; line-height: 1.3; }}
+.st-lane-score {{ text-align: right; }}
+.st-lane-score-num {{ font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--ink); line-height: 1; }}
+.st-lane-score-label {{ font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); margin-top: 0.2rem; }}
+.st-lane-bar {{ background: var(--border-light); height: 6px; border-radius: 99px; overflow: hidden; }}
+.st-lane-fill {{ height: 100%; border-radius: 99px; transition: width 0.6s ease; }}
+.st-lane-desc {{ font-size: 0.85rem; line-height: 1.55; color: var(--ink-muted); }}
+.st-lane-meta {{ font-size: 0.8rem; }}
+.st-lane-meta-title {{ font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 0.3rem; }}
+.st-lane-meta-text {{ color: var(--ink); font-size: 0.85rem; line-height: 1.5; }}
+.st-lane-roles {{ list-style: none; padding: 0; margin: 0; font-size: 0.83rem; color: var(--ink); line-height: 1.65; }}
+.st-lane-roles li::before {{ content: '· '; color: var(--gold); }}
 
 .st-footer {{ background: var(--navy); color: #fff; padding: 3rem 2rem; text-align: center; margin-top: 5rem; }}
 .st-footer-inner {{ max-width: 900px; margin: 0 auto; }}
@@ -340,6 +509,7 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
     <div class="st-skills-title">Technical Competencies Developed</div>
 {tech_skills_html}  </div>
 
+{pathway_section}
 </div>
 
 <section class="st-footer">

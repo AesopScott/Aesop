@@ -354,14 +354,22 @@ def generate_standards_mappings(profile):
     return html
 
 
-def generate_html(profile):
+def generate_html(profile, audience='learner'):
     """Generate complete student transcript HTML."""
 
+    copy = get_audience_copy(audience)
     totals = calculate_totals(profile)
     student_name = profile.get('name', 'Student')
     credential_line = profile.get('credential_line', 'AI Literacy Track')
     issued_date = profile.get('issued_date', datetime.now().strftime('%B %d, %Y'))
     student_id = profile.get('student_id', 'AESOP-XXXX')
+
+    hero_intro_text = copy['hero_intro'].format(name=student_name) if copy['hero_intro'] else ''
+    hero_intro_html = (
+        f'<p style="margin-top: 1.25rem; font-size: 1.02rem; line-height: 1.65; color: rgba(255,255,255,0.78); max-width: 720px; margin-left: auto; margin-right: auto;">{hero_intro_text}</p>'
+        if hero_intro_text else ''
+    )
+    footer_disclaimer = copy['footer_template'].format(name=student_name, date=issued_date)
 
     cert_cards = generate_cert_cards(profile.get('certifications', []))
     foundations_courses = profile.get('courses', {}).get('foundations', [])
@@ -369,7 +377,7 @@ def generate_html(profile):
     foundation_rows = generate_course_rows(foundations_courses, 'foundations')
     elective_rows = generate_course_rows(electives_courses, 'electives')
     standards = generate_standards_mappings(profile)
-    pathway_section = generate_pathway_section(profile)
+    pathway_section = generate_pathway_section(profile, audience=audience)
 
     # Technical skills
     tech_skills_html = ""
@@ -399,7 +407,7 @@ def generate_html(profile):
 '''
 
     html = f'''<!DOCTYPE html>
-<!-- v1.2.0 | Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} -->
+<!-- v1.3.0 | audience={audience} | Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -514,13 +522,14 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
 
 <section class="st-hero">
   <div class="st-hero-inner">
-    <div class="st-credential">Official Academic Record</div>
-    <h1>AI Literacy Transcript</h1>
+    <div class="st-credential">{copy['hero_eyebrow_label']}</div>
+    <h1>{copy['hero_title']}</h1>
     <div class="st-hero-name">{student_name}</div>
     <div class="st-hero-meta">
       {credential_line} · Completed {issued_date}<br>
       Student ID: {student_id} · Issued: {issued_date}
     </div>
+    {hero_intro_html}
     <div class="st-stats">
       <div class="st-stat">
         <span class="st-stat-num">{totals['total_courses']}</span>
@@ -546,7 +555,7 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
 
   <!-- Standards Statement -->
   <div style="background: linear-gradient(135deg, rgba(13,27,42,0.04) 0%, rgba(201,160,90,0.04) 100%); border-left: 4px solid var(--gold); border-radius: var(--radius-md); padding: 1.75rem; margin-bottom: 3rem;">
-    <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem;">Standards Framework</div>
+    <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem;">{copy['standards_intro_label']}</div>
     <div style="font-size: 0.95rem; line-height: 1.7; color: var(--ink); font-style: italic;">
       {profile.get('standards_statement', '')}
     </div>
@@ -605,7 +614,7 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
       <button class="st-footer-btn" onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied!')">Share</button>
     </div>
     <div class="st-footer-disclaimer">
-      This is a student transcript for {student_name} showing their AI Literacy learning journey. The transcript includes all courses completed, certifications earned, and alignment with education and employment standards. Generated on {issued_date}.
+      {footer_disclaimer}
     </div>
   </div>
 </section>
@@ -619,23 +628,42 @@ body {{ overflow-x: hidden; padding-top: 118px; }}
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python student-transcript-generator.py <student-profile.json> [output-path]")
-        print("\nExample: python student-transcript-generator.py students/jordan-williams.json output/jordan-transcript.html")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description='Generate an AESOP student transcript HTML page from a profile JSON.',
+        epilog=(
+            'Audience modes change copy only, not data:\n'
+            '  learner  (default) full transcript, neutral student tone\n'
+            '  parent   plain-language summary for families\n'
+            '  employer competency summary for hiring contexts'
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument('profile', help='Path to the student profile JSON file')
+    parser.add_argument('output', nargs='?', default=None, help='Output HTML path (default: alongside the JSON)')
+    parser.add_argument(
+        '--audience',
+        choices=AUDIENCES,
+        default='learner',
+        help='Which audience the transcript is for (default: learner)',
+    )
+    args = parser.parse_args()
 
-    json_path = sys.argv[1]
-    output_path = sys.argv[2] if len(sys.argv) > 2 else json_path.replace('.json', '.html')
+    json_path = args.profile
+    if args.output:
+        output_path = args.output
+    else:
+        suffix = '' if args.audience == 'learner' else f'-{args.audience}'
+        output_path = json_path.replace('.json', f'{suffix}.html')
 
     try:
         profile = load_student_profile(json_path)
-        html = generate_html(profile)
+        html = generate_html(profile, audience=args.audience)
 
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
 
-        print(f"✓ Transcript generated: {output_path}")
+        print(f"✓ Transcript generated ({args.audience}): {output_path}")
         return 0
     except FileNotFoundError:
         print(f"Error: Student profile not found: {json_path}")

@@ -1,6 +1,6 @@
 # AESOP AI Academy — Module Build Standards
 > Single reference for building all module files across both systems.
-> Version 2.0.0 | April 2026
+> Version 3.1.0 | May 2026
 
 ---
 
@@ -1298,6 +1298,24 @@ V2 exists because v1 built how education used to be delivered. V2 builds how it 
 | Text volume | Long-form narrative | 60% reduction — reading earns its place |
 | Learner outcome | Completion record | Portfolio artifact — something produced and owned |
 | Lab duration | Short (3–5 exchanges) | 15–30 minutes, substantive |
+
+---
+
+### 4.2 Credentialing Vision
+
+> **We need to move toward student portfolios of measured projects with specific skill development within the context of ethical and governed decisions mapped to education and employment standards. Through this process we must demonstrate how students have used critical thinking in developing outcomes and have had the opportunity to justify their decisions.**
+
+Every v2 module is designed against this standard. The implications for how modules are built:
+
+- **Measured projects** — every lab produces a named, typed artifact (Debate / Skill / Build). Not a quiz score. Not a completion flag. A thing.
+- **Specific skill development** — each module targets a discrete, nameable skill. The Intro names it. The Lab requires the student to demonstrate it. The artifact is evidence.
+- **Ethical and governed context** — skills are never taught in a vacuum. Every scenario is a real-world ethical or governance situation. The skill is learned by applying it to a decision that matters.
+- **Mapped to education and employment standards** — AI4K12, CSTA, ISTE, UNESCO, EU AI Act, NIST AI RMF, O*NET, World Economic Forum. Every artifact maps to specific standards, not just the course.
+- **Critical thinking demonstrated** — debate labs require students to take and defend a position. Skill labs require students to apply a framework to a novel case. Build labs require students to make design decisions and justify them. The justification is part of the artifact.
+- **Decisions justified** — students don't just produce an output. They explain why they made the choices they made. The lab AI presses for reasoning, not just answers.
+
+**The transcript implication:** Aesop transcripts should not read as a list of courses completed. They should read as a record of competencies demonstrated — each entry a project, each project mapped to standards, each project with a verified artifact. This is the direction all transcript and credentialing work must move toward.
+
 
 **The core promise:** Learners don't leave with a certificate. They leave with a portfolio of decisions made and defended, skills built and used, and content and tools they developed.
 

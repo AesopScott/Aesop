@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.7.0 | 2026-05-14 -->
+<!-- v1.8.0 | 2026-05-14 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -274,8 +274,9 @@ body{font-family:'Nunito Sans',sans-serif;background:#080e16;color:#e8e3db;min-h
 
 /* L1 — course list */
 .std-courses{list-style:none;display:flex;flex-direction:column;gap:0.5rem;}
+.std-course-row{display:flex;align-items:stretch;gap:0.4rem;}
 .std-course-btn{
-  width:100%;display:flex;align-items:center;justify-content:space-between;
+  flex:1;display:flex;align-items:center;justify-content:space-between;
   background:var(--surface);border:1px solid var(--border);border-radius:6px;
   padding:0.85rem 1.1rem;cursor:pointer;text-align:left;
   transition:border-color 0.15s,background 0.15s;
@@ -286,6 +287,28 @@ body{font-family:'Nunito Sans',sans-serif;background:#080e16;color:#e8e3db;min-h
 .std-course-meta{font-size:0.65rem;color:var(--text-muted);margin-top:0.1rem;}
 .std-course-arrow{font-size:0.75rem;color:var(--gold);transition:transform 0.2s;flex-shrink:0;}
 .std-course-btn.open .std-course-arrow{transform:rotate(90deg);}
+.audit-btn{flex-shrink:0;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:0 0.85rem;font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;font-family:'Nunito Sans',sans-serif;transition:all 0.15s;white-space:nowrap;}
+.audit-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+/* audit modal */
+.audit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:flex-start;justify-content:center;padding:3rem 1.25rem 2rem;overflow-y:auto;}
+.audit-overlay.open{display:flex;}
+.audit-modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:100%;max-width:740px;flex-shrink:0;}
+.audit-mhdr{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);background:var(--surface2);border-radius:8px 8px 0 0;}
+.audit-mtitle{font-family:'Crimson Pro',Georgia,serif;font-size:1.1rem;font-weight:600;color:#fff;}
+.audit-msub{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-top:0.15rem;}
+.audit-mclose{background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;padding:0.22rem 0.65rem;font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'Nunito Sans',sans-serif;transition:all 0.15s;}
+.audit-mclose:hover{border-color:rgba(var(--accent-rgb),0.4);color:var(--accent);}
+.audit-mbody{padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;}
+.audit-std-block{border:1px solid var(--border);border-radius:5px;overflow:hidden;}
+.audit-std-hdr{display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0.85rem;background:var(--surface2);border-bottom:1px solid var(--border);}
+.audit-std-abbr{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);flex-shrink:0;min-width:70px;}
+.audit-std-full{font-size:0.7rem;color:var(--text-muted);flex:1;line-height:1.4;}
+.audit-comp-row{display:flex;align-items:flex-start;gap:0.65rem;padding:0.48rem 0.85rem;border-bottom:1px solid rgba(255,255,255,0.04);}
+.audit-comp-row:last-child{border-bottom:none;}
+.audit-comp-info{flex:1;}
+.audit-comp-code{font-size:0.74rem;color:var(--text);line-height:1.4;}
+.audit-comp-desc{font-size:0.66rem;color:var(--text-muted);margin-top:0.1rem;line-height:1.45;}
 
 /* L1 panel */
 .std-course-panel{display:none;padding:0.35rem 0 0.2rem;}
@@ -873,21 +896,49 @@ function renderStandards(courseId) {
   }).join('');
 }
 
+function renderAudit(courseId) {
+  return STANDARDS.map(std => {
+    const cov = COVERAGE[courseId][std.id];
+    const overall = overallLevel(cov);
+    const comps = std.components.map((c,i) => {
+      const level = cov[i]||'none';
+      return `<div class="audit-comp-row">
+        <div style="flex-shrink:0;padding-top:0.1rem;">${BADGE[level]||BADGE.none}</div>
+        <div class="audit-comp-info">
+          <div class="audit-comp-code">${c.code}</div>
+          <div class="audit-comp-desc">${c.desc}</div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="audit-std-block">
+      <div class="audit-std-hdr">
+        <span class="audit-std-abbr">${std.abbr}</span>
+        <span class="audit-std-full">${std.full}</span>
+        ${BADGE[overall]||BADGE.none}
+      </div>
+      ${comps}
+    </div>`;
+  }).join('');
+}
+
 const root = document.getElementById('stdCourses');
 root.innerHTML = COURSES.map(c => {
   const r = avgRating(c.id);
   return `
   <li>
-    <button class="std-course-btn" data-course="${c.id}">
-      <span>
-        <div class="std-course-name">${c.name}</div>
-        <div class="std-course-meta">${c.modules}</div>
-      </span>
-      <span style="display:flex;align-items:center;gap:0.6rem;">
-        <span class="cnav-rating ${r.cls}">${r.label}</span>
-        <span class="std-course-arrow">▶</span>
-      </span>
-    </button>
+    <div class="std-course-row">
+      <button class="std-course-btn" data-course="${c.id}">
+        <span>
+          <div class="std-course-name">${c.name}</div>
+          <div class="std-course-meta">${c.modules}</div>
+        </span>
+        <span style="display:flex;align-items:center;gap:0.6rem;">
+          <span class="cnav-rating ${r.cls}">${r.label}</span>
+          <span class="std-course-arrow">▶</span>
+        </span>
+      </button>
+      <button class="audit-btn" data-audit="${c.id}">◆ Audit</button>
+    </div>
     <div class="std-course-panel" id="coursepanel-${c.id}">
       <ul class="std-std-list">${renderStandards(c.id)}</ul>
     </div>
@@ -895,9 +946,19 @@ root.innerHTML = COURSES.map(c => {
 }).join('');
 
 root.addEventListener('click', e => {
+  const auditBtn  = e.target.closest('.audit-btn');
   const courseBtn = e.target.closest('.std-course-btn');
   const stdBtn    = e.target.closest('.std-std-btn');
 
+  if (auditBtn) {
+    const courseId = auditBtn.dataset.audit;
+    const course = COURSES.find(c => c.id === courseId);
+    document.getElementById('auditModalTitle').textContent = course.name;
+    document.getElementById('auditModalSub').textContent = 'Standards Alignment Audit — All Components';
+    document.getElementById('auditModalBody').innerHTML = renderAudit(courseId);
+    document.getElementById('auditOverlay').classList.add('open');
+    return;
+  }
   if (courseBtn) {
     const panel = document.getElementById('coursepanel-' + courseBtn.dataset.course);
     const open  = courseBtn.classList.toggle('open');
@@ -910,8 +971,28 @@ root.addEventListener('click', e => {
     panel.classList.toggle('open', open);
   }
 });
+
+document.getElementById('auditClose').addEventListener('click', () => {
+  document.getElementById('auditOverlay').classList.remove('open');
+});
+document.getElementById('auditOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) document.getElementById('auditOverlay').classList.remove('open');
+});
 })();
 </script>
 
+<!-- AUDIT MODAL -->
+<div class="audit-overlay" id="auditOverlay">
+  <div class="audit-modal">
+    <div class="audit-mhdr">
+      <div>
+        <div class="audit-mtitle" id="auditModalTitle"></div>
+        <div class="audit-msub" id="auditModalSub"></div>
+      </div>
+      <button class="audit-mclose" id="auditClose">✕ Close</button>
+    </div>
+    <div class="audit-mbody" id="auditModalBody"></div>
+  </div>
+</div>
 </body>
 </html>

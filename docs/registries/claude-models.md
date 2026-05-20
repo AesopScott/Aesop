@@ -23,7 +23,7 @@ Lab chat endpoint for student interactions. Lightweight, cost-efficient model fo
 
 ---
 
-## `claude-sonnet-4-20250514`
+## `claude-sonnet-4-6`
 
 Research and recommendation synthesis for course development planning phase. Higher quality reasoning for analyzing course corpus and generating recommendations.
 
@@ -48,7 +48,7 @@ Research and recommendation synthesis for course development planning phase. Hig
 | Model | Context | Producers | Consumers | Status |
 |-------|---------|-----------|-----------|--------|
 | `claude-haiku-4-5-20251001` | Lab chat | proxy.php:16 | proxy.php + labs | ✓ |
-| `claude-sonnet-4-20250514` | Research & recommendations | research-engine.js, recommendation-generator.js (Task #1) | research module, recommendation generator | ⚠ Planned |
+| `claude-sonnet-4-6` | Research & recommendations | research-engine.js, recommendation-generator.js (Task #1) | research module, recommendation generator | ⚠ Planned |
 
 ---
 
@@ -61,7 +61,7 @@ Research and recommendation synthesis for course development planning phase. Hig
 **Evidence recorded:**
 - 1 entry with current producer/consumer pairs ✓ (Haiku in proxy.php)
 - 1 entry with planned usage ⚠ (Sonnet for Task #1)
-- New identifiers introduced: `claude-sonnet-4-20250514` (Task #1 planning introduces this)
+- New identifiers introduced: `claude-sonnet-4-6` (Task #1 planning introduces this)
 - Registries match current code diff: Yes
 
 **Gaps identified:**

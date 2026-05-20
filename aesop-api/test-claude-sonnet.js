@@ -19,7 +19,7 @@ if (!ANTHROPIC_API_KEY) {
 
     // Test: Make a simple API call to Sonnet
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 100,
       messages: [
         {

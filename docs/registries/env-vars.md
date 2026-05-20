@@ -6,17 +6,38 @@ Every environment variable referenced in this project. For each: where it's set,
 
 ## `AESOP_ANTHROPIC_API_KEY`
 
-Anthropic API key for lab chat proxy endpoint. Server-side only; not exposed to client.
+Anthropic API key for lab chat proxy endpoint (PHP server-side). Not exposed to client.
 
 **Schema:** String (API key, sensitive)
 
 **Producers** (where set)
-- Environment/deployment: `.cpanel.yml` or hosting provider secrets (not in code)
+- Environment/deployment: cPanel secrets / hosting provider (not in code)
 - `secrets.php` — referenced as `aesop_secret('AESOP_ANTHROPIC_API_KEY', '')`
 
 **Consumers** (where read)
 - `aesop-api/proxy.php:15` — `$API_KEY = aesop_secret('AESOP_ANTHROPIC_API_KEY', '')`
-- Used to authenticate requests to Anthropic Messages API
+
+**Note:** This is the PHP-layer credential. Node.js research modules use `ANTHROPIC_API_KEY` (see below) — two separate env vars for the same upstream service.
+
+---
+
+## `ANTHROPIC_API_KEY`
+
+Anthropic API key for Node.js research modules (research engine, recommendation generator). Separate from `AESOP_ANTHROPIC_API_KEY` used by PHP proxy.
+
+**Schema:** String (API key, sensitive)
+
+**Producers** (where set)
+- Environment/deployment: must be set in the Node.js execution environment (shell, CI, or skill runner)
+
+**Consumers** (where read)
+- `aesop-api/lib/research-engine.js:15` — `apiKey: process.env.ANTHROPIC_API_KEY`
+- `aesop-api/lib/recommendation-generator.js:10` — `apiKey: process.env.ANTHROPIC_API_KEY`
+- `aesop-api/test-claude-sonnet.js:7` — `const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY`
+
+**Adjacent constraint:** Must be set before invoking `/aesop-course-builder` research phase. Missing key causes graceful fallback to registry-only recommendations.
+
+**Status:** ✓ Properly gated; missing key triggers fallback, not crash
 
 **Adjacent constraint:** Must be present at runtime; missing key returns 500 error (proxy.php:34-37)
 
@@ -95,17 +116,18 @@ Voyage AI embeddings API key (for semantic search in Pinecone).
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-20 19:45 UTC (by /cross-boundary-audit, Task #1 planning)
+**Last audit:** 2026-05-20 22:00 UTC (by /cross-boundary-audit, Task #1 build complete)
 
 **Boundaries checked:** Environment variables used across codebase
 
 **Evidence recorded:**
-- 4 entries with complete producer/consumer pairs ✓
+- 5 entries with complete producer/consumer pairs ✓ (added ANTHROPIC_API_KEY for Node.js layer)
 - All secrets gated through environment (not in code)
-- All consumers have fallback handling (empty string defaults)
-- New identifiers introduced: None (Task #1 reuses existing env vars)
+- All consumers have fallback handling
+- New identifiers introduced: `ANTHROPIC_API_KEY` (Task #1 Node.js research modules)
 - Registries match current code diff: Yes
 
-**Gaps identified:** None — all env vars properly gated
+**Gaps identified:**
+- `AESOP_ANTHROPIC_API_KEY` (PHP proxy) and `ANTHROPIC_API_KEY` (Node.js libs) are two separate env vars for the same upstream Anthropic service. Intentional split by runtime layer; document where each must be set.
 
-**Status:** Audit complete — env vars ready for Task #1 skill usage
+**Status:** Audit complete

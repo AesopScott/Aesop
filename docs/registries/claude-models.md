@@ -30,16 +30,18 @@ Research and recommendation synthesis for course development planning phase. Hig
 **Usage context:** Course builder planning phase (Task #1) — research engine and recommendation generator
 
 **Producers** (model selection)
-- `.claude/skills/aesop-course-builder/research-engine.js` — planned for Task #1 (TBD exact line)
-- `.claude/skills/aesop-course-builder/recommendation-generator.js` — planned for Task #1 (TBD exact line)
+- `aesop-api/lib/research-engine.js:88` — web search synthesis via Claude
+- `aesop-api/lib/research-engine.js:147` — findings synthesis via Claude
+- `aesop-api/lib/recommendation-generator.js:26` — prescriptive recommendation generation
 
 **Consumers** (model invocations)
-- Research module — calls Anthropic Messages API with Sonnet for synthesis
-- Recommendation generator — calls Anthropic Messages API with Sonnet for prescriptive recommendations
+- `aesop-api/lib/research-engine.js` — Anthropic Messages API calls for web search and synthesis
+- `aesop-api/lib/recommendation-generator.js` — Anthropic Messages API calls for recommendations
+- `aesop-api/test-claude-sonnet.js:22` — connectivity test
 
 **Purpose:** Higher-quality reasoning for research synthesis and course recommendations.
 
-**Status:** ⚠ Planned (Task #1) — not yet in code
+**Status:** ✓ In code (Task #1 complete)
 
 ---
 
@@ -54,17 +56,16 @@ Research and recommendation synthesis for course development planning phase. Hig
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-20 19:45 UTC (by /cross-boundary-audit, Task #1 planning)
+**Last audit:** 2026-05-20 22:00 UTC (by /cross-boundary-audit, Task #1 build complete)
 
 **Boundaries checked:** Claude model versions and usage sites
 
 **Evidence recorded:**
-- 1 entry with current producer/consumer pairs ✓ (Haiku in proxy.php)
-- 1 entry with planned usage ⚠ (Sonnet for Task #1)
-- New identifiers introduced: `claude-sonnet-4-6` (Task #1 planning introduces this)
+- 2 entries with complete producer/consumer pairs ✓ (Haiku in proxy.php, Sonnet in lib/)
+- New identifiers introduced on this task: `claude-sonnet-4-6` (added to research-engine.js, recommendation-generator.js, test-claude-sonnet.js)
+- Note: original plan used `claude-sonnet-4-20250514` (deprecated); updated to `claude-sonnet-4-6` in same task
 - Registries match current code diff: Yes
 
-**Gaps identified:**
-- Sonnet model not yet in code (expected — Task #1 not started yet)
+**Gaps identified:** None — all models have producers and consumers paired
 
-**Status:** Audit complete (planning phase) — Sonnet producer location TBD in Task #1 build phase
+**Status:** Audit complete

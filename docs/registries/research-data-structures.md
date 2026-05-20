@@ -151,18 +151,17 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-20 19:45 UTC (by /cross-boundary-audit, Task #1 planning)
+**Last audit:** 2026-05-20 22:00 UTC (by /cross-boundary-audit, Task #1 build complete)
 
 **Boundaries checked:** Research data structures (inter-module contracts)
 
 **Evidence recorded:**
-- 0 entries currently in code (all planned for Task #1)
-- 3 new data structure contracts introduced by Task #1
-- Schema defined and documented for each
-- Producer/consumer mapping clear (research → recommendation → planning → generation)
-- New identifiers introduced: `researchFindings`, `recommendations`, `planningInput` (all Task #1)
-- Registries match current code diff: Yes (no code yet; spec-level audit)
+- 2 entries with complete producer/consumer pairs ✓ (researchFindings, recommendations)
+- 1 entry with consumer in tests only ⚠ (planningInput — skill integration pending)
+- New identifiers introduced on this task: `researchFindings`, `recommendations`, `planningInput`
+- Registries match current code diff: Yes
 
-**Gaps identified:** None — all structures designed to avoid orphaned producers/consumers and shape mismatches
+**Gaps identified:**
+- `planningInput` (from `processPlanningApprovals`) consumed by test files but not yet by the live `/aesop-course-builder` skill. Expected gap — skill integration is the manual Phase 4 step (Proof Unit #9). Accept and annotate.
 
-**Status:** Audit complete (planning phase) — ready for implementation in Task #1 build phase
+**Status:** Audit complete — planningInput gap is intentional (pending skill integration)

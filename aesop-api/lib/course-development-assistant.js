@@ -54,7 +54,7 @@ function formatForApproval(courseConcept, recommendations) {
     })),
     metadata: {
       generatedAt: recommendations.generatedAt,
-      researchBacked: true,
+      researchBacked: !recommendations.fallback,
       fallback: recommendations.fallback || false,
     },
   };

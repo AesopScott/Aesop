@@ -59,14 +59,23 @@ export async function generateRecommendations(courseConcept, researchFindings) {
   }
 }
 
+function sanitizeConcept(concept) {
+  return concept
+    .replace(/[\x00-\x1f\x7f]/g, '')
+    .replace(/```|<\/?[a-z]+>|---/gi, ' ')
+    .slice(0, 200)
+    .trim();
+}
+
 /**
  * Build the prompt for Claude to generate recommendations
  */
 function buildPrompt(courseConcept, research) {
+  const safeConcept = sanitizeConcept(courseConcept);
   return `
 You are a course design expert. Based on the research findings below, generate prescriptive course recommendations.
 
-COURSE CONCEPT: "${courseConcept}"
+COURSE CONCEPT: "${safeConcept}"
 
 RESEARCH FINDINGS:
 - Audience gaps: ${JSON.stringify(research.audienceGaps)}
@@ -166,7 +175,7 @@ function generateFallbackRecommendations(courseConcept, research) {
  */
 function inferAudience(research) {
   const gaps = research.audienceGaps || [];
-  const lowestCoverage = gaps.sort((a, b) => a.currentCoverage - b.currentCoverage)[0];
+  const lowestCoverage = [...gaps].sort((a, b) => a.currentCoverage - b.currentCoverage)[0];
 
   if (lowestCoverage) {
     const level =

@@ -95,11 +95,11 @@ Voyage AI embeddings API key (for semantic search in Pinecone).
 
 **Consumers** (where read)
 - `.github/scripts/test-pinecone.py:11` — `VOYAGE_API_KEY = os.environ.get("VOYAGE_API_KEY", "")`
-- Pinecone index operations that need embeddings
+- `aesop-api/lib/pinecone-query.js` — `process.env.VOYAGE_API_KEY` in `generateEmbedding()`
 
-**Adjacent constraint:** Used alongside `PINECONE_API_KEY` for semantic queries
+**Adjacent constraint:** Must be set alongside `PINECONE_API_KEY` for Pinecone queries to work. Missing key causes graceful Pinecone skip (not a crash).
 
-**Status:** ✓ Currently used; Task #1 may extend usage for research
+**Status:** ✓ In code (Task #1 — Voyage AI embedding integration)
 
 ---
 

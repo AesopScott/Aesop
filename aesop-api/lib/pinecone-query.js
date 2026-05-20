@@ -1,48 +1,43 @@
 /**
  * Pinecone Query Wrapper
- * Queries the aesop-academy index for course-related semantic searches
- * Gracefully degrades if Pinecone unavailable (warns user, continues with web search)
+ * Queries the aesop-academy index for course-related semantic searches.
+ * Requires PINECONE_API_KEY + VOYAGE_API_KEY for real queries.
+ * Gracefully degrades when either credential is absent.
  */
 
 import { Pinecone } from '@pinecone-database/pinecone';
 
 const PINECONE_INDEX = 'aesop-academy';
-const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-const PINECONE_HOST = process.env.PINECONE_HOST;
+const VOYAGE_EMBED_URL = 'https://api.voyageai.com/v1/embeddings';
+const VOYAGE_MODEL = 'voyage-3'; // 1024-dimensional, matches index
 
 let client = null;
 let isAvailable = false;
 
-/**
- * Initialize Pinecone client
- * Returns: true if initialization successful, false otherwise
- */
 async function initialize() {
-  if (client !== null) {
-    return isAvailable; // Already initialized
+  if (client !== null) return isAvailable;
+
+  const apiKey = process.env.PINECONE_API_KEY;
+  const voyageKey = process.env.VOYAGE_API_KEY;
+
+  if (!apiKey) {
+    console.warn('⚠ Pinecone unavailable: PINECONE_API_KEY not set');
+    return false;
+  }
+  if (!voyageKey) {
+    console.warn('⚠ Pinecone unavailable: VOYAGE_API_KEY not set (required for embeddings)');
+    return false;
   }
 
   try {
-    if (!PINECONE_API_KEY || !PINECONE_HOST) {
-      console.warn('⚠ Pinecone credentials missing (PINECONE_API_KEY, PINECONE_HOST)');
-      isAvailable = false;
-      return false;
-    }
-
-    client = new Pinecone({
-      apiKey: PINECONE_API_KEY,
-    });
-
-    // Test connectivity by listing indexes
+    client = new Pinecone({ apiKey });
     const indexes = await client.listIndexes();
     const indexExists = indexes.indexes?.some(idx => idx.name === PINECONE_INDEX);
-
     if (!indexExists) {
       console.warn(`⚠ Pinecone index "${PINECONE_INDEX}" not found`);
       isAvailable = false;
       return false;
     }
-
     isAvailable = true;
     return true;
   } catch (error) {
@@ -54,9 +49,38 @@ async function initialize() {
 }
 
 /**
- * Query Pinecone for courses matching a concept
- * Returns: { results: [...], source: 'pinecone', queryText: concept }
- * Or graceful degradation: { results: [], source: 'none', warning: '...' }
+ * Generate embeddings via Voyage AI API.
+ * Throws if VOYAGE_API_KEY is missing or the API call fails.
+ */
+async function generateEmbedding(text) {
+  const voyageKey = process.env.VOYAGE_API_KEY;
+  if (!voyageKey) throw new Error('VOYAGE_API_KEY not set');
+
+  const response = await fetch(VOYAGE_EMBED_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${voyageKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: VOYAGE_MODEL,
+      input: [text],
+      input_type: 'query',
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Voyage AI error ${response.status}: ${body}`);
+  }
+
+  const data = await response.json();
+  return data.data[0].embedding;
+}
+
+/**
+ * Query Pinecone for courses semantically matching a concept.
+ * Returns graceful degradation object when Pinecone / embeddings unavailable.
  */
 export async function queryPinecone(concept, limit = 10) {
   const initialized = await initialize();
@@ -65,15 +89,15 @@ export async function queryPinecone(concept, limit = 10) {
     return {
       results: [],
       source: 'none',
-      warning: `⚠ Pinecone unavailable. Using web search + course registry only.`,
+      warning: '⚠ Pinecone unavailable — using web search + course registry only.',
     };
   }
 
   try {
-    // Query the index
+    const embedding = await generateEmbedding(concept);
     const index = client.Index(PINECONE_INDEX);
     const queryResponse = await index.query({
-      vector: await generateEmbedding(concept),
+      vector: embedding,
       topK: limit,
       includeMetadata: true,
     });
@@ -84,53 +108,22 @@ export async function queryPinecone(concept, limit = 10) {
       metadata: match.metadata,
     })) || [];
 
-    return {
-      results,
-      source: 'pinecone',
-      queryText: concept,
-      count: results.length,
-    };
+    return { results, source: 'pinecone', queryText: concept, count: results.length };
   } catch (error) {
-    console.warn(`⚠ Pinecone query failed: ${error.message}. Falling back to web search.`);
+    console.warn(`⚠ Pinecone query failed: ${error.message}. Falling back.`);
     return {
       results: [],
       source: 'pinecone_failed',
-      warning: `⚠ Pinecone query error. Continuing with web search + course registry.`,
+      warning: '⚠ Pinecone query error — continuing with web search + course registry.',
     };
   }
 }
 
-/**
- * Generate embeddings for a text query
- * Uses Voyage AI (separate from Anthropic)
- * For now, returns a dummy vector (placeholder for actual embedding)
- */
-async function generateEmbedding(text) {
-  // Placeholder: In production, use Voyage AI embeddings
-  // For testing, return a random vector
-  const dimension = 1024; // Adjust to match Pinecone index dimension
-  return Array(dimension)
-    .fill(0)
-    .map(() => Math.random());
-}
-
-/**
- * Check Pinecone status
- */
 export async function checkStatus() {
   const initialized = await initialize();
-
-  if (initialized) {
-    return { status: 'OK', message: `Pinecone index "${PINECONE_INDEX}" is available` };
-  } else {
-    return {
-      status: 'UNAVAILABLE',
-      message: 'Pinecone is not available. Graceful degradation enabled.',
-    };
-  }
+  return initialized
+    ? { status: 'OK', message: `Pinecone index "${PINECONE_INDEX}" is available` }
+    : { status: 'UNAVAILABLE', message: 'Pinecone unavailable — graceful degradation enabled.' };
 }
 
-export default {
-  queryPinecone,
-  checkStatus,
-};
+export default { queryPinecone, checkStatus };

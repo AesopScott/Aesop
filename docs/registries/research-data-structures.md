@@ -21,7 +21,7 @@ Output of research module; input to recommendation generator. Contains structure
   "topicCoverage": [
     {
       "topic": "string",
-      "existingCourses": ["course-id-1", "course-id-2"],
+      "existingCourseIds": ["course-id-1", "course-id-2"],
       "gaps": "string (description of gap)"
     }
   ],
@@ -41,21 +41,21 @@ Output of research module; input to recommendation generator. Contains structure
 ```
 
 **Producers** (who generates this)
-- `aesop-api/research-engine.js` (or skill module) — Task #1, Phase 2
-  - Queries: Pinecone index (`aesop-academy`)
+- `aesop-api/lib/research-engine.js` — Task #1, Phase 2
+  - Queries: Pinecone index (`aesop-academy`) via Voyage AI embeddings
   - Queries: courses-v2.html and courses.html registries
-  - Queries: Claude web search tool
+  - Queries: Claude `web_search_20250305` tool
   - Synthesizes findings into structured format
 
 **Consumers** (who uses this)
-- `aesop-api/recommendation-generator.js` — Task #1, Phase 3
+- `aesop-api/lib/recommendation-generator.js` — Task #1, Phase 3
   - Reads `researchFindings` object
   - Maps findings to planning questions
   - Generates recommendations with reasoning
 
 **Purpose:** Decouple research collection from recommendation synthesis; allow research to be cached/logged independently
 
-**Status:** ⚠ Planned (Task #1, Phase 2) — not yet in code
+**Status:** ✓ In code (Task #1)
 
 ---
 
@@ -89,17 +89,17 @@ Output of recommendation generator; input to planning phase. Prescriptive answer
   - Structures output into recommendations array
 
 **Consumers** (who uses this)
-- `.claude/skills/aesop-course-builder/` planning phase — Task #1, Phase 4
-  - Displays recommendations to user
+- `.claude/skills/aesop-course-builder/SKILL.md` Stage 0 (via `aesop-api/run-research.js`) — Task #1, Phase 4
+  - Displays recommendations to user with Approve / Modify / Reject options
   - Collects approvals/modifications
-  - Passes approved recommendations to course generator
+  - Passes approved values into Stage 1 interview
 
 **Adjacent constraint:** 
 - Recommendation count must match planning question count (1:1 mapping)
 - Each recommendation must answer a specific planning question (no orphaned recommendations)
 - Reasoning must be concise (1-2 sentences) per design spec
 
-**Status:** ⚠ Planned (Task #1, Phase 3) — not yet in code
+**Status:** ✓ In code (Task #1)
 
 ---
 
@@ -135,7 +135,7 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 
 **Purpose:** Bridge recommendations to course generation; maintain approval audit trail
 
-**Status:** ⚠ Planned (Task #1, Phase 4) — not yet in code
+**Status:** ✓ In code (Task #1) — produced by `course-development-assistant.js:processPlanningApprovals()`; consumed by skill Stage 1 and test files
 
 ---
 
@@ -143,20 +143,20 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 
 | Structure | Producer | Consumer | Status |
 |-----------|----------|----------|--------|
-| `researchFindings` | research-engine.js (Task #1) | recommendation-generator.js (Task #1) | ⚠ Planned |
-| `recommendations` | recommendation-generator.js (Task #1) | planning phase (Task #1) | ⚠ Planned |
-| `planningInput` | planning phase (Task #1) | course generator (Task #1) | ⚠ Planned |
+| `researchFindings` | lib/research-engine.js | lib/recommendation-generator.js | ✓ |
+| `recommendations` | lib/recommendation-generator.js | SKILL.md Stage 0 via run-research.js | ✓ |
+| `planningInput` | lib/course-development-assistant.js | SKILL.md Stage 1 + test files | ✓ |
 
 ---
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-20 22:00 UTC (by /cross-boundary-audit, Task #1 build complete)
+**Last audit:** 2026-05-20 23:30 UTC (by review remediation, Task #1)
 
 **Boundaries checked:** Research data structures (inter-module contracts)
 
 **Evidence recorded:**
-- 2 entries with complete producer/consumer pairs ✓ (researchFindings, recommendations)
+- 3 entries with complete producer/consumer pairs ✓ (researchFindings, recommendations, planningInput)
 - 1 entry with consumer in tests only ⚠ (planningInput — skill integration pending)
 - New identifiers introduced on this task: `researchFindings`, `recommendations`, `planningInput`
 - Registries match current code diff: Yes

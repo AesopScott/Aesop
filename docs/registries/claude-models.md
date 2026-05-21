@@ -50,7 +50,7 @@ Research and recommendation synthesis for course development planning phase. Hig
 | Model | Context | Producers | Consumers | Status |
 |-------|---------|-----------|-----------|--------|
 | `claude-haiku-4-5-20251001` | Lab chat | proxy.php:16 | proxy.php + labs | ✓ |
-| `claude-sonnet-4-6` | Research & recommendations | research-engine.js, recommendation-generator.js (Task #1) | research module, recommendation generator | ⚠ Planned |
+| `claude-sonnet-4-6` | Research & recommendations | research-engine.js, recommendation-generator.js (Task #1) | research module, recommendation generator | ✓ |
 
 ---
 

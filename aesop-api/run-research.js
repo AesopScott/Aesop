@@ -5,6 +5,7 @@
  * Called by the /aesop-course-builder skill during Stage 0.
  */
 
+import path from 'path';
 import { developCoursePlanning, displayRecommendations } from './lib/course-development-assistant.js';
 
 const concept = process.argv.slice(2).join(' ').trim();
@@ -24,12 +25,12 @@ if (!process.env.ANTHROPIC_API_KEY) {
     const planningPackage = await developCoursePlanning(concept);
     console.log(displayRecommendations(planningPackage));
 
-    // Also emit machine-readable JSON to stdout for skill consumption
-    const jsonOutput = JSON.stringify(planningPackage, null, 2);
-    // Write to a temp file the skill can read
+    // Write machine-readable JSON to a temp file the skill can read
     const { writeFile } = await import('fs/promises');
-    await writeFile('/tmp/aesop-research-output.json', jsonOutput, 'utf8');
-    console.log('\n[Research output saved to /tmp/aesop-research-output.json]\n');
+    const { tmpdir } = await import('os');
+    const outPath = path.join(tmpdir(), 'aesop-research-output.json');
+    await writeFile(outPath, JSON.stringify(planningPackage, null, 2), 'utf8');
+    console.log(`\n[Research output saved to ${outPath}]\n`);
   } catch (error) {
     console.error(`✗ Research failed: ${error.message}`);
     process.exit(1);

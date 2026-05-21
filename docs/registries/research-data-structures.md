@@ -70,15 +70,12 @@ Output of recommendation generator; input to planning phase. Prescriptive answer
     {
       "question": "string (e.g., 'target_audience')",
       "recommendation": "string (specific answer, e.g., 'High school students (ages 14-18) interested in AI basics')",
-      "reasoning": "string (1-2 sentences explaining why)",
-      "derivedFrom": {
-        "researchSources": ["string"],
-        "highConfidence": "boolean"
-      }
+      "reasoning": "string (1-2 sentences explaining why)"
     }
   ],
   "generatedAt": "ISO 8601 timestamp",
-  "researchInputHash": "string (SHA256 of researchFindings for audit trail)"
+  "researchInputHash": "string (djb2-32 hash of researchFindings for change detection)",
+  "fallback": "boolean (true when Claude API unavailable — recommendations are registry-derived)"
 }
 ```
 
@@ -111,16 +108,17 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 ```json
 {
   "courseConcept": "string (original user input)",
-  "targetAudience": "string (approved recommendation or user modification)",
-  "coreTopics": ["string"],
-  "moduleStructure": "string (e.g., '8 modules: Intro, Scenario, Lesson, Context, Lab')",
-  "prerequisites": ["string"],
-  "assessmentApproach": "string",
-  "approvedAt": "ISO 8601 timestamp",
-  "approvalNotes": "string (user comments if any modifications made)",
-  "derivedFromRecommendations": "boolean (true if all fields came from recommendations)"
+  "parameters": {
+    "target_audience": "string (approved recommendation or user override)",
+    "core_topics": "string (approved recommendation or user override)",
+    "module_structure": "string (approved recommendation or user override)",
+    "assessment_approach": "string (approved recommendation or user override)",
+    "prerequisites": "string (approved recommendation or user override)"
+  },
+  "approvalNotes": ["string (one entry per parameter showing approval/modification/rejection)"]
 }
 ```
+Note: `parameters` keys use snake_case to match the recommendation question keys exactly.
 
 **Producers** (who generates this)
 - `.claude/skills/aesop-course-builder/` planning phase — Task #1, Phase 4

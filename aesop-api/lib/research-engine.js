@@ -144,7 +144,8 @@ Generate structured findings (JSON only, no markdown):
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const jsonText = response.content[0].type === 'text' ? response.content[0].text : '{}';
+    const raw = response.content[0].type === 'text' ? response.content[0].text : '{}';
+    const jsonText = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const findings = JSON.parse(jsonText);
 
     return {

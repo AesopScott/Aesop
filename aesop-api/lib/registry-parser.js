@@ -102,8 +102,44 @@ export function parseCoursesV1() {
   const html = fs.readFileSync(filePath, 'utf8');
   const courses = [];
 
-  // Placeholder: v1 parsing would go here
-  // For now, return empty (v1 structure differs)
+  // courses.html uses core-panel divs: <div class="core-panel" data-course="slug">
+  const panelRegex = /<div class="core-panel"[^>]*data-course="([^"]+)"[^>]*>([\s\S]*?)(?=<div class="core-panel"|$)/g;
+  let match;
+
+  while ((match = panelRegex.exec(html)) !== null) {
+    const slug = match[1];
+    const block = match[2];
+
+    const titleMatch = block.match(/<div class="core-panel__title">([^<]+)<\/div>/);
+    const title = titleMatch ? titleMatch[1].trim() : slug;
+
+    const descMatch = block.match(/<div class="core-panel__desc">([^<]+)<\/div>/);
+    const description = descMatch ? descMatch[1].trim() : '';
+
+    const modCountMatch = block.match(/<span class="core-badge-mods">(\d+)\s+Modules?<\/span>/i);
+    const moduleCount = modCountMatch ? parseInt(modCountMatch[1], 10) : 0;
+
+    const modules = [];
+    const modTitleRegex = /<div class="core-mod__title">([^<]+)<\/div>/g;
+    let modMatch;
+    while ((modMatch = modTitleRegex.exec(block)) !== null) {
+      modules.push(modMatch[1].trim());
+    }
+
+    courses.push({
+      id: `v1-${slug}`,
+      version: 'v1',
+      title,
+      slug,
+      description,
+      moduleCount,
+      modules,
+      assessmentTypes: [],
+      audience: extractAudience(description),
+      topics: extractTopics(title, description),
+    });
+  }
+
   return courses;
 }
 
@@ -145,6 +181,7 @@ function extractTopics(title, description) {
     'pipeline', 'governance', 'command center', 'prompt', 'models',
     'evaluation', 'testing', 'security', 'creativity', 'careers',
     'society', 'decision', 'policy', 'oversight', 'reasoning',
+    'healthcare', 'education', 'finance', 'media', 'leadership',
   ];
 
   topics.forEach(topic => {

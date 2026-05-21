@@ -33,10 +33,9 @@ export async function generateRecommendations(courseConcept, researchFindings) {
       ],
     });
 
-    const jsonText =
-      response.content[0].type === 'text' ? response.content[0].text : '{}';
+    const raw = response.content[0].type === 'text' ? response.content[0].text : '{}';
+    const jsonText = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-    // Parse response
     const parsed = JSON.parse(jsonText);
 
     // Validate structure

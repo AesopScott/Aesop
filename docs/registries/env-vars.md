@@ -108,9 +108,10 @@ Voyage AI embeddings API key (for semantic search in Pinecone).
 | Variable | Type | Producers | Consumers | Status |
 |----------|------|-----------|-----------|--------|
 | `AESOP_ANTHROPIC_API_KEY` | Secret | cPanel secrets | proxy.php | ✓ |
-| `PINECONE_API_KEY` | Secret | cPanel secrets | test-pinecone.py, index_aesop.py, Task #1 research (planned) | ✓ |
-| `PINECONE_HOST` | Config | cPanel secrets | test-pinecone.py, Task #1 research (planned) | ✓ |
-| `VOYAGE_API_KEY` | Secret | cPanel secrets | Pinecone operations, Task #1 (planned) | ✓ |
+| `ANTHROPIC_API_KEY` | Secret | shell / CI | research-engine.js, recommendation-generator.js, test-claude-sonnet.js | ✓ |
+| `PINECONE_API_KEY` | Secret | cPanel secrets | test-pinecone.py, index_aesop.py, pinecone-query.js | ✓ |
+| `PINECONE_HOST` | Config | cPanel secrets | test-pinecone.py | ✓ |
+| `VOYAGE_API_KEY` | Secret | cPanel secrets | test-pinecone.py, pinecone-query.js | ✓ |
 
 ---
 

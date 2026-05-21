@@ -621,3 +621,88 @@ All dependencies are in place: course registry (courses-v2.html, courses.html), 
 ---
 
 *Saved: 2026-05-21 Design Discussion locked. Ready for Outline Plan.*
+
+## OUTLINE PLAN — Build the Student Assessment
+
+**Phases**
+
+1. **Infrastructure & Learner Schema** — Extend Firebase Firestore learner record schema to store `assessment_results`, `recommended_pathway`, and `qr_recovery_token`. Build utility functions for schema queries and updates.
+
+2. **Assessment Page & QR Recovery System** — Build new assessment page with chat interface (reusing lab chat components). Implement QR code generation on assessment completion and display recovery QR to student for backup.
+
+3. **Assessment AI Engine** — Build conversation logic and assessment-specific guardrails (distinct from lab guardrail). AI dynamically determines flow based on student responses; extracts aptitude and interest signals from conversation.
+
+4. **Taxonomy Mapping Engine** — Build logic to convert assessment conversation data into skill affinity scores and course pathway recommendations. Map to existing skill taxonomy from `courses-v2.html`.
+
+5. **Homepage Integration** — Add "Take Assessment" button/link to homepage. Route to assessment page.
+
+6. **Student Page Integration** — Add "Recommended Pathway" section to student dashboard. Display recommended courses from learner record. Implement QR recovery flow (scan QR to restore lost learner ID).
+
+7. **End-to-End Testing & Validation** — Full flow testing: assessment → recommendations → persistence → display on student page. Validate AI recommendation quality, QR recovery mechanism, Firebase persistence.
+
+**Phase Dependencies**
+
+- Phase 1 (Infrastructure) blocks Phases 2 and 6 — Cannot persist or retrieve data without schema in place.
+- Phase 2 (Assessment Page) blocks Phases 3 and 5 — Chat interface structure must be defined before AI engine wires in; homepage needs page to link to.
+- Phase 3 (AI Engine) depends on Phase 2 — Must understand chat interface structure and message format.
+- Phase 4 (Taxonomy Mapper) has no hard dependencies — Can be built in parallel with phases 2-3.
+- Phase 5 (Homepage) depends on Phase 2 — Assessment page must exist before button can link to it.
+- Phase 6 (Student Page) depends on Phases 1, 2, and 4 — Needs schema (phase 1), QR system (phase 2), and recommendation data (phase 4).
+- Phase 7 (Testing) depends on all previous phases — Cannot validate full flow until all components are integrated.
+
+**Components Modified**
+
+- **Firebase Firestore** — Extend learner record schema with `assessment_results`, `recommended_pathway`, `qr_recovery_token` fields.
+- **Homepage** (`ai-academy/index.html` or equivalent) — Add "Take Assessment" button/navigation link.
+- **Assessment Page** (new) — New HTML page or modal with chat interface, assessment flow, QR code display.
+- **Assessment AI Engine** (new) — Conversation orchestration, guardrails, response parsing (integration with `aesop-api/proxy.php`).
+- **Taxonomy Mapper** (new) — Core recommendation logic; maps assessment signals to course pathway.
+- **Student Page** (`ai-academy/students.html` or equivalent) — Add "Recommended Pathway" section; display courses; implement QR recovery UI.
+- **QR Code Generator** (new utility) — Generate QR codes encoding learner ID/recovery token.
+
+**Scope Boundaries**
+
+**IN SCOPE:**
+- Extend Firestore schema and build query/update utilities
+- Assessment chat page with QR display on completion
+- Assessment AI conversation engine (guardrails, dynamic flow)
+- Taxonomy mapping engine (signal extraction → course recommendations)
+- Homepage assessment button
+- Student page pathway display and QR recovery flow
+- QR code generation and recovery mechanism
+- End-to-end integration testing (assessment → recommendation → persistence → display)
+- Validation of AI recommendation quality (manual spot-checks)
+
+**OUT OF SCOPE (defer to later tasks):**
+- Advanced analytics on assessment results
+- Gamification or incentives for assessment completion
+- Multi-language support
+- Mobile-specific UI optimizations
+- A/B testing different assessment flows
+
+**Key Assumptions & Risks**
+
+- **AI Recommendation Quality (HIGH RISK)** — Assessment AI must accurately infer aptitude and interest from conversation. If AI misunderstands, students get bad pathways and bounce.
+  - Mitigation: Build AI prompt iteratively; manual spot-check recommendations during phase 7 testing; allow students to re-take assessment if needed (future).
+
+- **Taxonomy Mapper Complexity (MEDIUM RISK)** — Assumption: we can programmatically map assessment signals to skill taxonomy and courses. If taxonomy is opaque, mapping fails.
+  - Mitigation: During phase 4, validate that `courses-v2.html` skills are accessible and mappable. Test mapper against known courses.
+
+- **QR Recovery Reliability (MEDIUM RISK)** — QR code could be lost, forgotten, or scanned incorrectly. If recovery fails, learner record is unrecoverable.
+  - Mitigation: QR code is backup only; primary use is localStorage. Display recovery instructions clearly. Test recovery flow in phase 7.
+
+- **Chat Interface Reuse (LOW RISK)** — Assessment uses lab chat components. Assumption: single-turn assessment pattern works with existing multi-turn lab infrastructure.
+  - Mitigation: Design phase 2 carefully; test chat message flow before phase 3 AI engine integrates.
+
+**Estimate**
+
+Phases: 7  
+Estimated complexity: **Medium-High**
+- Assessment AI engine quality is the critical blocker
+- Taxonomy mapping complexity is moderate (depends on course data accessibility)
+- QR recovery adds operational complexity but is well-understood
+- Integration is straightforward given existing systems (Firebase, chat proxy, course registry)
+
+---
+
+*Saved: 2026-05-21 Outline Plan locked. Ready for Detailed Plan.*

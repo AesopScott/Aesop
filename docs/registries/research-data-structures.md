@@ -21,7 +21,7 @@ Output of research module; input to recommendation generator. Contains structure
   "topicCoverage": [
     {
       "topic": "string",
-      "existingCourses": ["course-id-1", "course-id-2"],
+      "existingCourseIds": ["course-id-1", "course-id-2"],
       "gaps": "string (description of gap)"
     }
   ],
@@ -41,21 +41,21 @@ Output of research module; input to recommendation generator. Contains structure
 ```
 
 **Producers** (who generates this)
-- `aesop-api/research-engine.js` (or skill module) — Task #1, Phase 2
-  - Queries: Pinecone index (`aesop-academy`)
+- `aesop-api/lib/research-engine.js` — Task #1, Phase 2
+  - Queries: Pinecone index (`aesop-academy`) via Voyage AI embeddings
   - Queries: courses-v2.html and courses.html registries
-  - Queries: Claude web search tool
+  - Queries: Claude `web_search_20250305` tool
   - Synthesizes findings into structured format
 
 **Consumers** (who uses this)
-- `aesop-api/recommendation-generator.js` — Task #1, Phase 3
+- `aesop-api/lib/recommendation-generator.js` — Task #1, Phase 3
   - Reads `researchFindings` object
   - Maps findings to planning questions
   - Generates recommendations with reasoning
 
 **Purpose:** Decouple research collection from recommendation synthesis; allow research to be cached/logged independently
 
-**Status:** ⚠ Planned (Task #1, Phase 2) — not yet in code
+**Status:** ✓ In code (Task #1)
 
 ---
 
@@ -70,15 +70,12 @@ Output of recommendation generator; input to planning phase. Prescriptive answer
     {
       "question": "string (e.g., 'target_audience')",
       "recommendation": "string (specific answer, e.g., 'High school students (ages 14-18) interested in AI basics')",
-      "reasoning": "string (1-2 sentences explaining why)",
-      "derivedFrom": {
-        "researchSources": ["string"],
-        "highConfidence": "boolean"
-      }
+      "reasoning": "string (1-2 sentences explaining why)"
     }
   ],
   "generatedAt": "ISO 8601 timestamp",
-  "researchInputHash": "string (SHA256 of researchFindings for audit trail)"
+  "researchInputHash": "string (djb2-32 hash of researchFindings for change detection)",
+  "fallback": "boolean (true when Claude API unavailable — recommendations are registry-derived)"
 }
 ```
 
@@ -89,17 +86,17 @@ Output of recommendation generator; input to planning phase. Prescriptive answer
   - Structures output into recommendations array
 
 **Consumers** (who uses this)
-- `.claude/skills/aesop-course-builder/` planning phase — Task #1, Phase 4
-  - Displays recommendations to user
+- `.claude/skills/aesop-course-builder/SKILL.md` Stage 0 (via `aesop-api/run-research.js`) — Task #1, Phase 4
+  - Displays recommendations to user with Approve / Modify / Reject options
   - Collects approvals/modifications
-  - Passes approved recommendations to course generator
+  - Passes approved values into Stage 1 interview
 
 **Adjacent constraint:** 
 - Recommendation count must match planning question count (1:1 mapping)
 - Each recommendation must answer a specific planning question (no orphaned recommendations)
 - Reasoning must be concise (1-2 sentences) per design spec
 
-**Status:** ⚠ Planned (Task #1, Phase 3) — not yet in code
+**Status:** ✓ In code (Task #1)
 
 ---
 
@@ -111,16 +108,17 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 ```json
 {
   "courseConcept": "string (original user input)",
-  "targetAudience": "string (approved recommendation or user modification)",
-  "coreTopics": ["string"],
-  "moduleStructure": "string (e.g., '8 modules: Intro, Scenario, Lesson, Context, Lab')",
-  "prerequisites": ["string"],
-  "assessmentApproach": "string",
-  "approvedAt": "ISO 8601 timestamp",
-  "approvalNotes": "string (user comments if any modifications made)",
-  "derivedFromRecommendations": "boolean (true if all fields came from recommendations)"
+  "parameters": {
+    "target_audience": "string (approved recommendation or user override)",
+    "core_topics": "string (approved recommendation or user override)",
+    "module_structure": "string (approved recommendation or user override)",
+    "assessment_approach": "string (approved recommendation or user override)",
+    "prerequisites": "string (approved recommendation or user override)"
+  },
+  "approvalNotes": ["string (one entry per parameter showing approval/modification/rejection)"]
 }
 ```
+Note: `parameters` keys use snake_case to match the recommendation question keys exactly.
 
 **Producers** (who generates this)
 - `.claude/skills/aesop-course-builder/` planning phase — Task #1, Phase 4
@@ -135,7 +133,7 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 
 **Purpose:** Bridge recommendations to course generation; maintain approval audit trail
 
-**Status:** ⚠ Planned (Task #1, Phase 4) — not yet in code
+**Status:** ✓ In code (Task #1) — produced by `course-development-assistant.js:processPlanningApprovals()`; consumed by skill Stage 1 and test files
 
 ---
 
@@ -143,26 +141,25 @@ Approved (or modified) recommendations, ready for course generation. User has ap
 
 | Structure | Producer | Consumer | Status |
 |-----------|----------|----------|--------|
-| `researchFindings` | research-engine.js (Task #1) | recommendation-generator.js (Task #1) | ⚠ Planned |
-| `recommendations` | recommendation-generator.js (Task #1) | planning phase (Task #1) | ⚠ Planned |
-| `planningInput` | planning phase (Task #1) | course generator (Task #1) | ⚠ Planned |
+| `researchFindings` | lib/research-engine.js | lib/recommendation-generator.js | ✓ |
+| `recommendations` | lib/recommendation-generator.js | SKILL.md Stage 0 via run-research.js | ✓ |
+| `planningInput` | lib/course-development-assistant.js | SKILL.md Stage 1 + test files | ✓ |
 
 ---
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-20 19:45 UTC (by /cross-boundary-audit, Task #1 planning)
+**Last audit:** 2026-05-20 23:30 UTC (by review remediation, Task #1)
 
 **Boundaries checked:** Research data structures (inter-module contracts)
 
 **Evidence recorded:**
-- 0 entries currently in code (all planned for Task #1)
-- 3 new data structure contracts introduced by Task #1
-- Schema defined and documented for each
-- Producer/consumer mapping clear (research → recommendation → planning → generation)
-- New identifiers introduced: `researchFindings`, `recommendations`, `planningInput` (all Task #1)
-- Registries match current code diff: Yes (no code yet; spec-level audit)
+- 3 entries with complete producer/consumer pairs ✓ (researchFindings, recommendations, planningInput)
+- 1 entry with consumer in tests only ⚠ (planningInput — skill integration pending)
+- New identifiers introduced on this task: `researchFindings`, `recommendations`, `planningInput`
+- Registries match current code diff: Yes
 
-**Gaps identified:** None — all structures designed to avoid orphaned producers/consumers and shape mismatches
+**Gaps identified:**
+- `planningInput` (from `processPlanningApprovals`) consumed by test files but not yet by the live `/aesop-course-builder` skill. Expected gap — skill integration is the manual Phase 4 step (Proof Unit #9). Accept and annotate.
 
-**Status:** Audit complete (planning phase) — ready for implementation in Task #1 build phase
+**Status:** Audit complete — planningInput gap is intentional (pending skill integration)

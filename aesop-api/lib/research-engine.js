@@ -107,13 +107,16 @@ async function performWebSearch(concept) {
   }
 }
 
-async function synthesizeFindings(concept, registry, pinecone, webSearch, sourcesUsed) {
+/**
+ * Build the synthesis prompt. Exported for unit testing.
+ */
+export function buildSynthesisPrompt(concept, registry, pinecone, webSearch) {
   const topPineconeMatches = (pinecone.results || [])
     .slice(0, 5)
     .map(r => `  - "${r.metadata?.title || r.id}" (score: ${(r.score || 0).toFixed(3)})`)
     .join('\n') || '  (none)';
 
-  const prompt = `You are analyzing research for a new AI course: "${concept}"
+  return `You are analyzing research for a new AI course: "${concept}"
 
 Existing courses on related topics: ${registry.existingCourses.length} of ${registry.totalCoursesInCatalog} total
 Audience distribution:
@@ -133,6 +136,10 @@ Generate structured findings (JSON only, no markdown):
   "prerequisites": [{ "skill": "string", "recommendedLevel": "foundational|intermediate|advanced" }],
   "researchSources": ["string"]
 }`;
+}
+
+async function synthesizeFindings(concept, registry, pinecone, webSearch, sourcesUsed) {
+  const prompt = buildSynthesisPrompt(concept, registry, pinecone, webSearch);
 
   try {
     const response = await client.messages.create({
@@ -211,4 +218,4 @@ function inferStructuralPatterns(registry) {
   };
 }
 
-export default { runResearch };
+export default { runResearch, buildSynthesisPrompt };

@@ -6,7 +6,21 @@
  */
 
 import path from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { developCoursePlanning, displayRecommendations } from './lib/course-development-assistant.js';
+
+// Load .env if present (for local development — key stored in GitHub secrets for CI)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.join(__dirname, '.env');
+if (existsSync(envPath)) {
+  for (const line of readFileSync(envPath, 'utf8').split('\n')) {
+    const match = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (match && !process.env[match[1]]) {
+      process.env[match[1]] = match[2].trim();
+    }
+  }
+}
 
 const concept = process.argv.slice(2).join(' ').trim();
 

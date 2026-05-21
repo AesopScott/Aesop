@@ -560,3 +560,64 @@ Manual review by Scott. If some findings are hallucinated, note refinement neede
 ---
 
 *All proof units ready for verification during /start-build and /finish-build phases.*
+
+---
+
+# Task #2 Planning — Build the Student Assessment
+
+## DESIGN DISCUSSION — Build the Student Assessment
+
+**User Problem**
+
+Students arrive at Aesop Academy not knowing where to begin or which courses fit them. The assessment solves this by gauging their *interest in AI* and *aptitude in AI* early — before they commit to courses — and pointing them toward a personalized pathway that increases their likelihood of success and engagement.
+
+**End-to-End Reachability**
+
+The student flow is complete:
+1. Student lands on homepage → option to take assessment or dive in
+2. Assessment via chat (lab-style, AI-driven with guardrails)
+3. AI generates recommendation based on aptitude/interest → maps to skill taxonomy
+4. Student accepts pathway
+5. Pathway persists on learner record → visible on student page
+6. Student follows pathway through courses
+
+All dependencies are in place: course registry (courses-v2.html, courses.html), skill taxonomy mapping, learner records in Firebase, student page dashboard.
+
+**System Components**
+
+- **Homepage** — New "Take Assessment" button
+- **Assessment Page/Modal** — Chat interface (reusing lab chat pattern)
+- **Assessment AI Engine** — Conversation logic via `proxy.php` → Anthropic API
+- **Taxonomy Mapper** — Converts assessment conversation → skill scores → course recommendations
+- **QR Code Generator** — Creates recovery mechanism for learner ID
+- **Student Page/Dashboard** — Displays recommended pathway
+- **Firebase Firestore** — Persists learner record with assessment results, pathway, QR recovery token
+
+**Architectural Dependencies**
+
+1. **Chat architecture reuse** — Assessment uses existing `proxy.php` → Anthropic API pattern (designed for multi-turn labs; assessment is single-turn + recommendation).
+2. **Taxonomy engine accessibility** — Skill taxonomy mapping exists; assumption: we can programmatically query and map assessment responses to courses.
+3. **Learner records** — Firestore schema extends to store `assessment_results`, `pathway`, `qr_code_token` fields.
+4. **Learner ID with QR recovery** (ARCHITECTURAL GAP ADDRESSED) — Learner ID stored in localStorage for primary use; QR code generated on assessment completion as a recovery mechanism (not primary flow). If student loses ID, they scan QR to recover it. This is pragmatic for a free/no-login model, though not foolproof.
+
+**Scope of Changes**
+
+- **Homepage** — Add "Take Assessment" button/link
+- **Assessment Page** — New page with chat interface
+- **Assessment AI Engine** — New system prompt/guardrail specific to assessment (vs. lab guardrail)
+- **Taxonomy Mapper** — Logic to map conversation responses → skill affinity scores → course pathway
+- **QR Code Generator** — Generate and display QR code at assessment completion
+- **Student Page** — New "Recommended Pathway" section displaying courses
+- **Firestore Schema** — Extend learner record with assessment fields
+
+**Key Risk**
+
+**AI Recommendation Quality** — The assessment AI must accurately infer student aptitude and interest from natural conversation, then map to courses correctly. If the AI misunderstands the student or recommends poorly, they get a bad pathway and bounce. This is the critical success factor.
+
+**Design Verdict**
+
+✅ **This design is sound and serves the student end-to-end.** The QR code recovery mechanism addresses the learner ID persistence risk pragmatically. The biggest dependency is building a high-quality recommendation engine that doesn't waste student time on mismatched courses.
+
+---
+
+*Saved: 2026-05-21 Design Discussion locked. Ready for Outline Plan.*

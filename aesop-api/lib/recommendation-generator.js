@@ -25,7 +25,7 @@ export async function generateRecommendations(courseConcept, researchFindings) {
   try {
     const prompt = buildPrompt(courseConcept, researchFindings);
 
-    const response = await client.messages.create({
+    const response = await getClient().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
       messages: [

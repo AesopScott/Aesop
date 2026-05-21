@@ -85,9 +85,10 @@ export function processPlanningApprovals(planningPackage, userApprovals) {
     }
 
     if (userResponse.approved === false && !userResponse.userValue) {
-      // User rejected recommendation without providing alternative
+      // User rejected without providing alternative — preserve original recommendation
+      approved.parameters[rec.question] = rec.recommendation;
       approved.approvalNotes.push(
-        `⚠ Recommendation for ${rec.question} rejected without alternative`
+        `⚠ ${rec.question}: Rejected without alternative — using original recommendation`
       );
       return;
     }

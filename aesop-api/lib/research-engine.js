@@ -10,22 +10,11 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import { queryPinecone } from './pinecone-query.js';
 import { getAllCourses, getCoverageSummary } from './registry-parser.js';
+import { sanitizeConcept } from './sanitize.js';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
-
-/**
- * Strip control characters and prompt-delimiter patterns from user input.
- * Prevents prompt injection via the course concept string.
- */
-function sanitizeConcept(concept) {
-  return concept
-    .replace(/[\x00-\x1f\x7f]/g, '')   // control characters
-    .replace(/```|<\/?[a-z]+>|---/gi, ' ') // markdown/HTML delimiters
-    .slice(0, 200)
-    .trim();
-}
 
 /**
  * Main research entry point
@@ -119,11 +108,19 @@ async function performWebSearch(concept) {
 }
 
 async function synthesizeFindings(concept, registry, pinecone, webSearch, sourcesUsed) {
+  const topPineconeMatches = (pinecone.results || [])
+    .slice(0, 5)
+    .map(r => `  - "${r.metadata?.title || r.id}" (score: ${(r.score || 0).toFixed(3)})`)
+    .join('\n') || '  (none)';
+
   const prompt = `You are analyzing research for a new AI course: "${concept}"
 
 Existing courses on related topics: ${registry.existingCourses.length} of ${registry.totalCoursesInCatalog} total
 Audience distribution:
 ${registry.existingCourses.map(c => `- ${c.title}: ${Array.isArray(c.audience) ? c.audience.join(', ') : c.audience}`).join('\n') || '(none found)'}
+
+Semantically similar courses from vector index (Pinecone):
+${topPineconeMatches}
 
 Web research insights:
 ${webSearch.searchResults || '(web search unavailable)'}

@@ -5,6 +5,7 @@
  */
 
 import { Anthropic } from '@anthropic-ai/sdk';
+import { sanitizeConcept } from './sanitize.js';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -56,14 +57,6 @@ export async function generateRecommendations(courseConcept, researchFindings) {
     // Fallback: generate basic recommendations from research data
     return generateFallbackRecommendations(courseConcept, researchFindings);
   }
-}
-
-function sanitizeConcept(concept) {
-  return concept
-    .replace(/[\x00-\x1f\x7f]/g, '')
-    .replace(/```|<\/?[a-z]+>|---/gi, ' ')
-    .slice(0, 200)
-    .trim();
 }
 
 /**
@@ -212,7 +205,7 @@ function hashObject(obj) {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash |= 0; // Convert to 32-bit integer
   }
   return Math.abs(hash).toString(16);
 }

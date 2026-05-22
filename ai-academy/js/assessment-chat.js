@@ -5,6 +5,8 @@ import { getOrCreateLearnerId, initializeLearnerRecord, addAssessmentMessage, up
 import { generateQRCode, displayQRCode } from './qr-generator.js';
 import { ASSESSMENT_SYSTEM_PROMPT, FALLBACK_REPLIES } from './assessment-prompts.js';
 import { parseAssessmentResponse, buildProfileSummary } from './assessment-parser.js';
+import { generatePathway } from './taxonomy-mapper.js';
+import { updateRecommendedPathway } from './firebase-helpers.js';
 
 const PROXY_URL = '/aesop-api/assessment-proxy.php';
 
@@ -159,6 +161,10 @@ async function handleAssessmentComplete(signals) {
     reasoning,
   });
 
+  // Generate personalized pathway from taxonomy mapper
+  const pathway = generatePathway(aptitudeScore, interestTags);
+  await updateRecommendedPathway(learnerId, pathway);
+
   // Generate QR recovery token
   const recoveryToken = generateRecoveryToken(learnerId);
   const qrResult = await generateQRCode(learnerId, recoveryToken);
@@ -173,7 +179,7 @@ async function handleAssessmentComplete(signals) {
   }
 
   // Show completion UI
-  showCompletionCard(qrResult, recoveryToken, { aptitudeScore, interestTags });
+  showCompletionCard(qrResult, recoveryToken, { aptitudeScore, interestTags, pathway });
 }
 
 /**
@@ -183,10 +189,25 @@ function showCompletionCard(qrResult, recoveryToken, signals) {
   const card = document.getElementById('assessment-complete');
   if (!card) return;
 
-  // Populate pathway placeholder
+  // Populate pathway hint with actual recommendation
   const pathwayEl = document.getElementById('completion-pathway-hint');
-  if (pathwayEl && signals.interestTags.length > 0) {
-    pathwayEl.textContent = `Based on your interests in ${signals.interestTags.slice(0, 2).join(' and ')}, we're generating your personalized learning path.`;
+  if (pathwayEl) {
+    const { pathway, interestTags } = signals;
+    if (pathway && pathway.primaryCourse) {
+      pathwayEl.innerHTML =
+        `Your recommended starting course: <strong>${pathway.primaryCourse.title}</strong>. ` +
+        `${pathway.reasoningBrief}`;
+    } else if (interestTags && interestTags.length > 0) {
+      pathwayEl.textContent =
+        `Based on your interests in ${interestTags.slice(0, 2).join(' and ')}, we've built your learning path.`;
+    }
+  }
+
+  // Populate the "View My Pathway" link with real course URL if available
+  const ctaLink = card.querySelector('a.btn-primary');
+  if (ctaLink && signals.pathway && signals.pathway.primaryCourse) {
+    ctaLink.href = signals.pathway.primaryCourse.path;
+    ctaLink.textContent = `Start ${signals.pathway.primaryCourse.title} →`;
   }
 
   // Show QR code

@@ -2,39 +2,11 @@
 // Drives the student assessment conversation and completion flow
 
 import { getOrCreateLearnerId, initializeLearnerRecord, addAssessmentMessage, updateAssessmentResults, updateQRRecoveryToken, setupOfflineSync } from './firebase-helpers.js';
-import { generateQRCode, displayQRCode, getRecoveryInstructionsHTML } from './qr-generator.js';
+import { generateQRCode, displayQRCode } from './qr-generator.js';
+import { ASSESSMENT_SYSTEM_PROMPT, FALLBACK_REPLIES } from './assessment-prompts.js';
+import { parseAssessmentResponse, buildProfileSummary } from './assessment-parser.js';
 
-const PROXY_URL = '/aesop-api/proxy.php';
-
-// Assessment-specific guardrail (distinct from lab guardrail per lab-rules.md)
-const ASSESSMENT_GUARDRAIL = `You are an AESOP AI Academy assessment assistant helping a student discover their best learning pathway.
-Your ONLY job is to assess the student's current knowledge of and interest in AI topics through friendly conversation.
-Stay strictly on topic: AI, machine learning, data science, technology, and learning preferences.
-If students go off-topic, warmly redirect: "That's interesting — let's keep our focus on your AI learning journey for now."
-Keep responses concise (under 120 words). Be encouraging and curiosity-driven.`;
-
-const ASSESSMENT_SYSTEM_PROMPT = `${ASSESSMENT_GUARDRAIL}
-
-You are running a structured but conversational AI aptitude and interest assessment. Your goal is to determine:
-1. The student's APTITUDE: their existing AI/tech knowledge and reasoning ability (score 0-100)
-2. Their INTERESTS: which AI topics excite them (tags: python, nlp, vision, ethics, robotics, business, creative, data, security, policy)
-
-Conversation flow (5-7 exchanges total):
-- Start: warm opener asking about their background with tech/computers
-- Explore: 2-3 questions probing knowledge (what they've heard about AI, tools they've used, concepts they understand)
-- Interest: 1-2 questions about what fascinates or worries them about AI
-- Wrap-up: 1 closing question confirming their learning goals
-
-When you have enough signal (5+ exchanges), include a special JSON block at the END of your response (hidden in HTML comment so it's parseable):
-<!--ASSESSMENT_COMPLETE:{"aptitudeScore":XX,"interestTags":["tag1","tag2"],"completionFlag":true,"reasoning":"brief explanation"}-->
-
-Do NOT reveal this JSON to the student. End the visible conversation warmly before including it.`;
-
-const FALLBACK_REPLIES = [
-  "That's a great starting point! Tell me — have you ever tried using any AI tools, even casually? Things like ChatGPT, image generators, or even Siri?",
-  "Interesting! AI is definitely changing a lot. What draws you toward learning about it — is it more curiosity, career goals, or something else?",
-  "Based on what you've shared, you seem to have a good intuition for how AI fits into the world. One more question: if you could pick one area to go deep on — things like coding, ethics, creative AI, or how it affects jobs — which feels most interesting to you?",
-];
+const PROXY_URL = '/aesop-api/assessment-proxy.php';
 
 // Session state
 let conversationHistory = [];
@@ -120,9 +92,8 @@ export async function assessmentSend() {
 
       if (thinkingEl && thinkingEl.parentNode) thinkingEl.remove();
 
-      // Check for completion signal embedded in response
-      const completionMatch = rawText.match(/<!--ASSESSMENT_COMPLETE:(.*?)-->/s);
-      const visibleText = rawText.replace(/<!--ASSESSMENT_COMPLETE:.*?-->/s, '').trim();
+      // Extract completion signal via parser; strip it from visible text
+      const { signals, visibleText } = parseAssessmentResponse(rawText);
 
       conversationHistory.push({ role: 'assistant', content: visibleText });
       addMsgToUI('ai', visibleText);
@@ -130,13 +101,8 @@ export async function assessmentSend() {
       exchangeCount++;
       updateProgress();
 
-      if (completionMatch) {
-        try {
-          const signals = JSON.parse(completionMatch[1]);
-          await handleAssessmentComplete(signals);
-        } catch (e) {
-          console.error('Failed to parse completion signals:', e);
-        }
+      if (signals && signals.completionFlag) {
+        await handleAssessmentComplete(signals);
       }
 
       sendBtn.disabled = false;
@@ -171,7 +137,9 @@ export async function assessmentSend() {
 async function handleAssessmentComplete(signals) {
   assessmentComplete = true;
 
-  const { aptitudeScore = 0, interestTags = [], completionFlag = true, reasoning = '' } = signals;
+  const { aptitudeScore = 0, interestTags = [], completionFlag = true, reasoning = '', aptitudeBand = 'beginner' } = signals;
+
+  console.info('Assessment complete:', buildProfileSummary(signals));
 
   // Disable input
   const input = document.getElementById('assessment-input');
@@ -185,6 +153,7 @@ async function handleAssessmentComplete(signals) {
     completedAt: new Date().toISOString(),
     conversationHistory,
     aptitudeScore,
+    aptitudeBand,
     interestTags,
     completionFlag,
     reasoning,

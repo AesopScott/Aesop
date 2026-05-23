@@ -8,6 +8,9 @@ This directory contains registries of named boundaries in the Aesop AI Academy p
 - **`env-vars.md`** — Environment variables (API keys, config values) and where they're read/set
 - **`pinecone-integration.md`** — Pinecone vector database index names and access points
 - **`research-data-structures.md`** — Data structure contracts between research, recommendation, and planning modules (Task #1)
+- **`collections.md`** — Firestore collections, document shapes, and all producers/consumers (Task #6)
+- **`localStorage.md`** — localStorage keys, value formats, and all producers/consumers (Task #6)
+- **`api-endpoints.md`** — HTTP API endpoints, request/response shapes, and all callers (Task #6)
 
 Each registry lists:
 - **Producers** — where the name is written/set/defined
@@ -59,10 +62,13 @@ Periodically (or before major releases), run `/cross-boundary-audit` to verify a
 
 These are the boundary kinds detected in the Aesop AI Academy project. As the codebase evolves, new kinds may emerge.
 
-- **Claude Model Names** — e.g., `claude-haiku-4-5-20251001`, `claude-sonnet-4-20250514`
+- **Claude Model Names** — e.g., `claude-haiku-4-5-20251001`, `claude-sonnet-4-6`
 - **Environment Variables** — e.g., `AESOP_ANTHROPIC_API_KEY`, `PINECONE_API_KEY`
 - **Pinecone Indexes** — e.g., `aesop-academy`
 - **Research Data Structures** — e.g., `researchFindings`, `recommendations` (Task #1)
+- **Firestore Collections** — e.g., `learners`, `examResults` (Task #6)
+- **localStorage Keys** — e.g., `aesop-learner-id`, `aesop-assessment-complete` (Task #6)
+- **API Endpoints** — e.g., `/aesop-api/proxy.php`, `/aesop-api/assessment-proxy.php` (Task #6)
 
 ## Audit Trail Example
 

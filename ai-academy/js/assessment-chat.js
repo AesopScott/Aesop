@@ -82,7 +82,7 @@ export async function assessmentSend() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           max_tokens: 500,
-          system: ASSESSMENT_SYSTEM_PROMPT,
+          system_prompt: ASSESSMENT_SYSTEM_PROMPT,
           messages: conversationHistory,
         }),
       });

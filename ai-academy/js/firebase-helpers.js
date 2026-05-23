@@ -14,14 +14,14 @@ import {
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Firebase configuration (same as admin pages)
+// Firebase configuration (matches students.html / main app)
 const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyAPLGIn4wqgTL92VZFXuu8-ZgxMBBT2eKY",
+  apiKey:            "AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU",
   authDomain:        "playagame-f733d.firebaseapp.com",
   projectId:         "playagame-f733d",
-  storageBucket:     "playagame-f733d.firebasestorage.app",
+  storageBucket:     "playagame-f733d.appspot.com",
   messagingSenderId: "610508714644",
-  appId:             "1:610508714644:web:b7df8f61ce21cf1281ba81"
+  appId:             "1:610508714644:web:63ca4374e5d5be1c81ba81"
 };
 
 // Initialize Firebase
@@ -30,7 +30,7 @@ const db = getFirestore(app);
 
 // Offline queue for write operations when Firestore is unavailable
 const OFFLINE_QUEUE_KEY = 'aesop_firebase_offline_queue';
-const LEARNER_ID_KEY = 'aesop_learner_id';
+const LEARNER_ID_KEY = 'aesop-learner-id';  // matches students.html LS_ID
 
 /**
  * Initialize learner record in Firestore

@@ -8,6 +8,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  arrayUnion,
   collection,
   query,
   where,
@@ -21,6 +22,7 @@ const db = getFirestore(app);
 
 // Offline queue for write operations when Firestore is unavailable
 const OFFLINE_QUEUE_KEY = 'aesop_firebase_offline_queue';
+const OFFLINE_QUEUE_MAX = 100;
 const LEARNER_ID_KEY = 'aesop-learner-id';  // matches students.html LS_ID
 
 /**
@@ -261,22 +263,10 @@ export async function addAssessmentMessage(learnerId, role, content) {
     }
 
     const learnerRef = doc(db, 'learners', learnerId);
-
-    // Get current conversation
-    const docSnap = await getDoc(learnerRef);
-    const currentHistory = docSnap.exists()
-      ? docSnap.data().assessmentResults?.conversationHistory || []
-      : [];
-
-    // Add new message
-    const newMessage = {
-      role,
-      content,
-      timestamp: new Date().toISOString()
-    };
+    const newMessage = { role, content, timestamp: new Date().toISOString() };
 
     await updateDoc(learnerRef, {
-      'assessmentResults.conversationHistory': [...currentHistory, newMessage],
+      'assessmentResults.conversationHistory': arrayUnion(newMessage),
       lastActiveAt: new Date().toISOString()
     });
 
@@ -300,11 +290,8 @@ export async function addAssessmentMessage(learnerId, role, content) {
 function queueOfflineWrite(operation, data) {
   try {
     const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
-    queue.push({
-      operation,
-      data,
-      timestamp: new Date().toISOString()
-    });
+    queue.push({ operation, data, timestamp: new Date().toISOString() });
+    if (queue.length > OFFLINE_QUEUE_MAX) queue.splice(0, queue.length - OFFLINE_QUEUE_MAX);
     localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
   } catch (error) {
     console.error('Failed to queue offline write:', error);
@@ -317,9 +304,10 @@ function queueOfflineWrite(operation, data) {
  */
 export async function processOfflineQueue() {
   try {
-    const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    const snapshot = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    const snapshotLen = snapshot.length;
 
-    if (queue.length === 0) {
+    if (snapshotLen === 0) {
       return { success: true, processed: 0, errors: [] };
     }
 
@@ -327,7 +315,7 @@ export async function processOfflineQueue() {
     const failedItems = [];
     let processed = 0;
 
-    for (const item of queue) {
+    for (const item of snapshot) {
       try {
         switch (item.operation) {
           case 'initializeLearnerRecord':
@@ -349,15 +337,13 @@ export async function processOfflineQueue() {
         processed++;
       } catch (error) {
         failedItems.push(item);
-        errors.push({
-          operation: item.operation,
-          error: error.message
-        });
+        errors.push({ operation: item.operation, error: error.message });
       }
     }
 
-    // Preserve failed items so they can be retried on the next reconnect
-    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(failedItems));
+    // Merge failed retries with any items queued during replay, then persist
+    const currentQueue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify([...failedItems, ...currentQueue.slice(snapshotLen)]));
 
     return { success: true, processed, errors };
 

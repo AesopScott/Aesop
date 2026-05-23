@@ -82,7 +82,6 @@ export async function assessmentSend() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           max_tokens: 500,
-          system_prompt: ASSESSMENT_SYSTEM_PROMPT,
           messages: conversationHistory,
         }),
       });
@@ -103,7 +102,7 @@ export async function assessmentSend() {
       exchangeCount++;
       updateProgress();
 
-      if (signals && signals.completionFlag) {
+      if (signals && signals.completionFlag && exchangeCount >= COMPLETION_THRESHOLD) {
         await handleAssessmentComplete(signals);
       }
 
@@ -124,6 +123,7 @@ export async function assessmentSend() {
       const reply = fallbackReply();
       conversationHistory.push({ role: 'assistant', content: reply });
       addMsgToUI('ai', reply);
+      addAssessmentMessage(learnerId, 'assistant', reply).catch(() => {});
       exchangeCount++;
       updateProgress();
     }

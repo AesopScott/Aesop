@@ -20,6 +20,8 @@ export async function recoverByToken(token) {
   }
 
   const normalized = token.trim();
+  // QR codes encode "learnerId|token" — accept either the full payload or just the token
+  const queryToken = normalized.includes('|') ? normalized.split('|')[1] : normalized;
 
   try {
     const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
@@ -29,7 +31,7 @@ export async function recoverByToken(token) {
     const db  = getFirestore(app);
 
     const learnersRef = collection(db, 'learners');
-    const q = query(learnersRef, where('qrRecoveryToken.token', '==', normalized));
+    const q = query(learnersRef, where('qrRecoveryToken.token', '==', queryToken));
     const snap = await getDocs(q);
 
     if (snap.empty) {

@@ -28,7 +28,7 @@ export function renderPathway(containerId, pathway) {
 
   container.textContent = '';
 
-  if (!pathway || !pathway.primaryCourse) {
+  if (!pathway || !pathway.primaryCourse || !pathway.primaryCourse.courseId) {
     const p = document.createElement('p');
     p.style.cssText = 'color:var(--ink-muted,#718096);font-size:0.9rem;margin:0';
     p.textContent = 'No pathway yet. ';

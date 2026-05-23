@@ -163,6 +163,13 @@ async function handleAssessmentComplete(signals) {
 
   // Generate personalized pathway from taxonomy mapper
   const pathway = generatePathway(aptitudeScore, interestTags);
+
+  // Persist to localStorage immediately — before any async ops that could delay/fail.
+  // students.html reads this key as the primary (no-latency) pathway source.
+  markAssessmentComplete();
+  try { localStorage.setItem('aesop_pathway_record', JSON.stringify(pathway)); } catch (_) {}
+
+  // Persist to Firestore (async, failure queued for offline sync)
   await updateRecommendedPathway(learnerId, pathway);
 
   // Generate QR recovery token
@@ -177,12 +184,6 @@ async function handleAssessmentComplete(signals) {
       expiresAt: null,
     });
   }
-
-  // Mark assessment complete in localStorage (drives homepage CTA)
-  markAssessmentComplete();
-
-  // Save full pathway record to localStorage (fallback for students.html)
-  try { localStorage.setItem('aesop_pathway_record', JSON.stringify(pathway)); } catch (_) {}
 
   // Save pathway to localStorage in the format courses-v2.html expects
   try {

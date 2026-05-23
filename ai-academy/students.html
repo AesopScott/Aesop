@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.13 | 2026-04-28 -->
+<!-- v1.0.14 | 2026-05-23 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -145,29 +145,28 @@
       document.getElementById('challengeQ').textContent = ch.q;
       document.getElementById('challengeA').textContent = ch.a;
 
-      // Recommended pathway — Firestore first, localStorage fallback
-      let pathwayShown = false;
+      // Recommended pathway — localStorage first (no latency), Firestore refresh on success
+      try {
+        const local = JSON.parse(localStorage.getItem('aesop_pathway_record') || 'null');
+        if (local && local.primaryCourse && local.primaryCourse.courseId) {
+          document.getElementById('pathwayCard').style.display = '';
+          renderPathway('pathway-display-area', local);
+        }
+      } catch(_) {}
+
+      // Firestore refresh: if the user took the assessment on another device,
+      // or if Firestore has a more recent pathway, update the card.
       try {
         const pathSnap = await getDoc(doc(db, 'learners', id));
         if (pathSnap.exists()) {
           const record = pathSnap.data();
-          const pathway = record.recommendedPathway;
-          if (pathway && pathway.primaryCourse) {
+          const fsPathway = record.recommendedPathway;
+          if (fsPathway && fsPathway.primaryCourse && fsPathway.primaryCourse.courseId) {
             document.getElementById('pathwayCard').style.display = '';
-            renderPathway('pathway-display-area', pathway);
-            pathwayShown = true;
+            renderPathway('pathway-display-area', fsPathway);
           }
         }
-      } catch(e) { console.warn('Pathway load error:', e); }
-      if (!pathwayShown) {
-        try {
-          const local = JSON.parse(localStorage.getItem('aesop_pathway_record') || 'null');
-          if (local && local.primaryCourse) {
-            document.getElementById('pathwayCard').style.display = '';
-            renderPathway('pathway-display-area', local);
-          }
-        } catch(_) {}
-      }
+      } catch(e) { console.warn('Pathway Firestore sync error:', e); }
 
       // Recovery widget
       renderRecoveryWidget('qr-recovery-widget', (recoveredId) => {

@@ -13,16 +13,7 @@ import {
   where,
   getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// Firebase configuration (matches students.html / main app)
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU",
-  authDomain:        "playagame-f733d.firebaseapp.com",
-  projectId:         "playagame-f733d",
-  storageBucket:     "playagame-f733d.appspot.com",
-  messagingSenderId: "610508714644",
-  appId:             "1:610508714644:web:63ca4374e5d5be1c81ba81"
-};
+import { FIREBASE_CONFIG } from './firebase-config.js';
 
 // Initialize Firebase
 const app = initializeApp(FIREBASE_CONFIG);

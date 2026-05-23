@@ -2,6 +2,8 @@
 // Restores learner ID from a manually-entered recovery token.
 // Rendered into students.html and assessment.html recovery sections.
 
+import { FIREBASE_CONFIG } from './firebase-config.js';
+
 const LEARNER_ID_KEY = 'aesop-learner-id';
 
 /**
@@ -22,15 +24,6 @@ export async function recoverByToken(token) {
   try {
     const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
     const { getFirestore, collection, query, where, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-
-    const FIREBASE_CONFIG = {
-      apiKey:            'AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU',
-      authDomain:        'playagame-f733d.firebaseapp.com',
-      projectId:         'playagame-f733d',
-      storageBucket:     'playagame-f733d.appspot.com',
-      messagingSenderId: '610508714644',
-      appId:             '1:610508714644:web:63ca4374e5d5be1c81ba81'
-    };
 
     const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
     const db  = getFirestore(app);
@@ -88,7 +81,6 @@ export function renderRecoveryWidget(containerId, onRecovered) {
         />
         <button
           id="recovery-submit-btn"
-          onclick="window._aesopRecoverSubmit()"
           style="
             background:var(--teal-dark,#2ba898);color:white;
             font-weight:700;font-size:0.85rem;padding:0.5rem 1.1rem;
@@ -99,12 +91,11 @@ export function renderRecoveryWidget(containerId, onRecovered) {
       <div id="recovery-status" style="font-size:0.82rem;min-height:1.2rem;margin-top:0.5rem;"></div>
     </div>`;
 
-  window._aesopRecoverSubmit = async () => {
-    const input   = document.getElementById('recovery-token-input');
-    const status  = document.getElementById('recovery-status');
-    const btn     = document.getElementById('recovery-submit-btn');
-    if (!input || !status || !btn) return;
+  const input  = container.querySelector('#recovery-token-input');
+  const status = container.querySelector('#recovery-status');
+  const btn    = container.querySelector('#recovery-submit-btn');
 
+  async function handleSubmit() {
     const token = input.value.trim();
     btn.disabled = true;
     btn.textContent = 'Checking…';
@@ -124,12 +115,10 @@ export function renderRecoveryWidget(containerId, onRecovered) {
       btn.disabled = false;
       btn.textContent = 'Recover';
     }
-  };
-
-  const input = document.getElementById('recovery-token-input');
-  if (input) {
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') window._aesopRecoverSubmit();
-    });
   }
+
+  btn.addEventListener('click', handleSubmit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleSubmit();
+  });
 }

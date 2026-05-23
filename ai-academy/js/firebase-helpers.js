@@ -25,8 +25,6 @@ const OFFLINE_QUEUE_KEY = 'aesop_firebase_offline_queue';
 const OFFLINE_QUEUE_MAX = 100;
 const LEARNER_ID_KEY = 'aesop-learner-id';  // matches students.html LS_ID
 
-// Suppresses re-queuing inside helpers called during processOfflineQueue replay
-let _replayActive = false;
 
 /**
  * Initialize learner record in Firestore
@@ -293,7 +291,6 @@ export async function addAssessmentMessage(learnerId, role, content) {
  * @private
  */
 function queueOfflineWrite(operation, data) {
-  if (_replayActive) return;
   try {
     const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
     queue.push({ operation, data, timestamp: new Date().toISOString() });
@@ -321,8 +318,6 @@ export async function processOfflineQueue() {
     const failedItems = [];
     let processed = 0;
 
-    _replayActive = true;
-    try {
     for (const item of snapshot) {
       try {
         let result;
@@ -355,9 +350,6 @@ export async function processOfflineQueue() {
         failedItems.push(item);
         errors.push({ operation: item.operation, error: error.message });
       }
-    }
-    } finally {
-      _replayActive = false;
     }
 
     // Merge failed retries with any items queued during replay, then persist

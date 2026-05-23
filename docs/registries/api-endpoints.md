@@ -40,36 +40,37 @@ On error: `{"error": "message string"}`
 
 ## `POST /aesop-api/assessment-proxy.php`
 
-Assessment chat proxy. Forwards assessment conversation to Anthropic API using `claude-sonnet-4-6`. Separate from lab proxy to allow higher token cap and different model.
+Assessment chat proxy. Forwards assessment conversation to Anthropic API using `claude-sonnet-4-6`. Separate from lab proxy to allow higher token cap and hardcoded system prompt.
 
 **Request shape (JSON body):**
 ```
 {
-  messages:      Array<{role: "user"|"assistant", content: string}>,  // required
-  system_prompt: string,                                               // optional — see gap note
-  max_tokens:    number                                                // optional; capped at 800
+  messages:   Array<{role: "user"|"assistant", content: string}>,  // required; each ≤4000 chars; ≤20 turns
+  max_tokens: number                                                // optional; capped at 800
 }
 ```
 
+Note: system prompt is **hardcoded server-side** (PHP nowdoc). Any `system_prompt` field sent by the client is silently ignored. Client cannot override the guardrail.
+
 **Response shape (JSON):**
-Anthropic API response passthrough:
+Anthropic API response passthrough on success:
 ```
 {
   content: [{type: "text", text: string}],
   ...
 }
 ```
-On error: `{"error": "message string"}`
+On error: `{"error": "human-readable message"}` (no raw Anthropic body or internal details exposed)
+
+**Rate limit:** 10 requests/minute per IP (atomic file lock)
 
 **Producer**
-- `aesop-api/assessment-proxy.php:11` — handler; reads `system_prompt` (line 54), caps `max_tokens` at 800, slices conversation to last 20 turns
+- `aesop-api/assessment-proxy.php:26` — hardcoded `$SYSTEM_PROMPT` nowdoc; reads only `messages` + `max_tokens` from request; caps at 800 tokens / 20 turns; per-IP rate limit via `flock(LOCK_EX)` temp file
 
 **Consumers**
-- `ai-academy/js/assessment-chat.js:80` — `fetch(PROXY_URL, ...)` where `PROXY_URL = '/aesop-api/assessment-proxy.php'`
+- `ai-academy/js/assessment-chat.js:80` — `fetch(PROXY_URL, {messages, max_tokens})`; no `system_prompt` sent
 
-**Bug fixed (Task #6 audit):** `assessment-chat.js` originally sent `system: ASSESSMENT_SYSTEM_PROMPT` but the proxy reads `$input['system_prompt']`. Fixed in same commit as this registry — key renamed to `system_prompt` in `assessment-chat.js:85`.
-
-**Status:** ✓ (post-fix) — field name aligned
+**Status:** ✓ — system prompt server-side; client contract: `{messages, max_tokens}` only
 
 ---
 
@@ -78,23 +79,18 @@ On error: `{"error": "message string"}`
 | Endpoint | Method | Model | Token cap | History cap | Status |
 |----------|--------|-------|-----------|-------------|--------|
 | `/aesop-api/proxy.php` | POST | claude-haiku-4-5-20251001 | 1024 | 40 turns | ✓ |
-| `/aesop-api/assessment-proxy.php` | POST | claude-sonnet-4-6 | 800 | 20 turns | ✓ (fixed) |
+| `/aesop-api/assessment-proxy.php` | POST | claude-sonnet-4-6 | 800 | 20 turns | ✓ system prompt server-side |
 
 ---
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-23T00:00:00Z (by /cross-boundary-audit, Task #6 branch)
+**Last audit:** 2026-05-23T00:00:00Z (by /cross-boundary-audit, Task #6 branch); updated 2026-05-23 (Codex review remediation)
 
 **Boundaries checked:** All PHP files in aesop-api/ serving HTTP responses; all JS fetch() calls in ai-academy/js/ and module HTML files
 
 **Evidence recorded:**
 - 1 endpoint with complete match ✓ (`proxy.php`)
-- 1 endpoint with critical field name mismatch discovered and fixed (`assessment-proxy.php`)
-- New identifiers introduced on this task: `/aesop-api/assessment-proxy.php` (Task #6)
-- Registries match current code diff: yes (post-fix)
+- `assessment-proxy.php` client contract updated: `system_prompt` field removed (system prompt now hardcoded server-side, client sends only `{messages, max_tokens}`)
 
-**Gaps identified:**
-- `assessment-proxy.php` — consumer sent `system` key; proxy expected `system_prompt`. System prompt was silently dropped. Fixed: `assessment-chat.js:85` updated from `system:` to `system_prompt:`.
-
-**Status:** Audit complete
+**Status:** Audit current

@@ -9,7 +9,7 @@ export const COURSE_CATALOGUE = [
   {
     id: 'ethics',
     name: 'AI Ethics & Decision Making',
-    path: '/ai-academy/modules/v2/ethics/m1.html',
+    path: '/ai-academy/modules/v2/ai-ethics-decision-making/m1.html',
     difficulty: 'intermediate',
     modules: 8,
     description: 'Evaluate AI impacts across society, governance, and human rights. Build a governance framework from first principles.',
@@ -33,7 +33,7 @@ export const COURSE_CATALOGUE = [
   {
     id: 'leveraging-rag',
     name: 'Leveraging RAG for AI Development',
-    path: '/ai-academy/modules/v2/leveraging-rag/m1.html',
+    path: '/ai-academy/modules/v2/leveraging-rag-ai-development/m1.html',
     difficulty: 'advanced',
     modules: 8,
     description: 'Build retrieval-augmented generation systems. Connect AI to your own data for grounded, accurate outputs.',

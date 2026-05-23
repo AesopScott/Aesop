@@ -38,9 +38,11 @@ export function generatePathway(aptitudeScore, interestTags) {
     return buildFallbackPathway(aptitudeBand);
   }
 
+  const MAX_FOLLOW_UPS = 7; // 1 primary + 7 follow-ups = 8-course pathway
+
   const primaryEntry = ranked[0];
   const followUps = ranked
-    .slice(1)
+    .slice(1, MAX_FOLLOW_UPS + 1)
     .map(({ course, score }) => buildFollowUpEntry(course, score, interestTags));
 
   const primaryCourse = buildPrimaryCourseEntry(primaryEntry.course, interestTags, aptitudeBand);

@@ -45,7 +45,7 @@ try {
     }
 
     $coursesData = json_decode($jsonContent, true);
-    if ($coursesData === null || !isset($coursesData['courses'])) {
+    if ($coursesData === null || !isset($coursesData['courses']) || !is_array($coursesData['courses'])) {
         http_response_code(500);
         echo json_encode(['error' => 'Invalid courses-data.json format']);
         exit;

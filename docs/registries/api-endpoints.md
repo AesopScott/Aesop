@@ -107,10 +107,10 @@ On error: `{"error": "error message"}` with HTTP 5xx
 - 25experts.com Cloud Function (`syncVideoToCourses` in experts project) — fetches periodically, compares `catalog_hash` to cached hash, updates local cache if changed
 
 **Data source**
-- `ai-academy/modules/courses-data.json` — single source of truth for course metadata (179 courses: 125 live + 12 coming-soon as of 2026-05-24)
+- `ai-academy/modules/courses-data.json` — single source of truth for course metadata (137 courses: 125 live + 12 coming-soon as of 2026-05-24)
 - Kept in sync by idempotent reconciliation system (`reconcile_all.py` + daily safety-net workflow)
 
-**Status:** ✓ new; deployed to Mocahost FTP via GitHub Actions on push to main
+**Status:** ✓ new; ready for deployment to Mocahost FTP via GitHub Actions (deployment verification pending post-merge)
 
 ---
 

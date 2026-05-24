@@ -97,7 +97,7 @@ No request body. Query parameters: none.
 ```
 
 **`url` shapes (set server-side per course `format`):**
-- **V1 courses** (no `format`, or `format != "v2"`): `https://aesopacademy.org/ai-academy/electives-hub.html?course={id}` (`urlencode`d query param)
+- **V1 courses** (no `format`, or `format != "v2"`): `https://aesopacademy.org/ai-academy/modules/electives-hub.html?course={id}` (`urlencode`d query param)
 - **V2 courses** (`format: "v2"`): `https://aesopacademy.org/ai-academy/modules/v2/{slug}/m1.html`, where `{slug}` is `id` with the trailing `-v2` stripped (`rawurlencode`d path segment). V2 is no longer served from the electives hub.
 
 On error: `{"error": "error message"}` with HTTP 5xx

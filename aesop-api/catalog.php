@@ -65,7 +65,7 @@ try {
             $slug = preg_replace('/-v2$/', '', $courseId);
             $url = 'https://aesopacademy.org/ai-academy/modules/v2/' . rawurlencode($slug) . '/m1.html';
         } else {
-            $url = 'https://aesopacademy.org/ai-academy/electives-hub.html?course=' . urlencode($courseId);
+            $url = 'https://aesopacademy.org/ai-academy/modules/electives-hub.html?course=' . urlencode($courseId);
         }
         $courses[] = [
             'id' => $courseId,

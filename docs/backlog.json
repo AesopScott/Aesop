@@ -81,10 +81,63 @@
       "category": "feature",
       "priority": 90,
       "impact": "minor",
-      "status": "backlog",
+      "status": "planned",
       "created_at": "2026-05-24",
       "completed_at": null,
-      "dependencies": []
+      "dependencies": [],
+      "plan": "## Overview\n\n25experts.com maps YouTube videos to Aesop Academy courses. They need a REST API endpoint that returns a catalog of courses (id, name, description, URL) plus a version hash for change detection. The API will be called periodically by their Cloud Function, which will cache the courses locally and use them for video-to-course matching.\n\n## API Specification\n\nEndpoint: GET https://aesopacademy.org/aesop-api/catalog.php\nResponse: { catalog_hash, generated_at, courses[] }\nEach course: { id, name, desc, url, live }\nData source: courses-data.json (179 courses)\nVersioning: SHA-256 content hash of courses-data.json\nDeployment: Mocahost shared hosting via GitHub Actions FTP CI/CD\n\n## Phases\n\n1. Create PHP endpoint (read courses-data.json, compute hash, return JSON)\n2. Configure CORS headers (allow cross-origin requests)\n3. Test the endpoint (verify JSON, hash, CORS locally)\n4. Deploy to Mocahost (commit, push, verify in production)\n\n## Proof Units\n\nSee proofUnits array for detailed verification steps for each phase.",
+      "proofUnits": [
+        {
+          "number": 1,
+          "title": "Endpoint returns valid JSON with all required fields",
+          "expectedBehavior": "GET https://aesopacademy.org/aesop-api/catalog.php returns HTTP 200 with JSON containing catalog_hash, generated_at, and courses array with id, name, desc, url, live fields per course.",
+          "proofType": "api-check",
+          "exactCommand": "curl -s https://aesopacademy.org/aesop-api/catalog.php | jq '.'",
+          "expectedInitialFailure": "File does not exist (404), or returns HTML error, or JSON is malformed, or missing fields",
+          "expectedPassingEvidence": "HTTP 200 with valid JSON; catalog_hash is 64-char hex string; courses array has >170 elements; each course has all 5 fields",
+          "waiverGuidance": "N/A — API response is the proof"
+        },
+        {
+          "number": 2,
+          "title": "SHA-256 hash changes when courses-data.json changes",
+          "expectedBehavior": "After modifying courses-data.json, the endpoint's catalog_hash value changes. Reverting the file restores the original hash.",
+          "proofType": "smoke-command",
+          "exactCommand": "curl -s http://localhost:8000/aesop-api/catalog.php | jq '.catalog_hash' (before) → modify courses-data.json → curl again (after) → compare hashes",
+          "expectedInitialFailure": "Hash does not change after modifying file, or hash is empty/null",
+          "expectedPassingEvidence": "Hash values differ when file modified; match when reverted; at least 3 distinct values shown",
+          "waiverGuidance": "N/A — hash comparison is deterministic"
+        },
+        {
+          "number": 3,
+          "title": "CORS headers allow cross-origin requests",
+          "expectedBehavior": "Calling endpoint from different origin (curl with Origin header, or browser fetch) succeeds and returns CORS headers.",
+          "proofType": "api-check",
+          "exactCommand": "curl -s -H 'Origin: https://25experts.com' http://localhost:8000/aesop-api/catalog.php | verify 'Access-Control-Allow-Origin: *' header present",
+          "expectedInitialFailure": "CORS headers missing, or Origin not allowed, or fetch fails with CORS error",
+          "expectedPassingEvidence": "Response headers show Access-Control-Allow-Origin: *; fetch succeeds from external domain",
+          "waiverGuidance": "N/A — CORS headers verifiable via curl or browser DevTools"
+        },
+        {
+          "number": 4,
+          "title": "Endpoint deployed to production and accessible",
+          "expectedBehavior": "https://aesopacademy.org/aesop-api/catalog.php is accessible, returns HTTP 200 and same JSON structure as development.",
+          "proofType": "smoke-command",
+          "exactCommand": "curl -s https://aesopacademy.org/aesop-api/catalog.php | jq '.courses | length' (should return >=170)",
+          "expectedInitialFailure": "HTTP 404, 500, or 503; endpoint not deployed",
+          "expectedPassingEvidence": "HTTP 200; JSON returned; course count >=170",
+          "waiverGuidance": "Wait 5-10 minutes after pushing main for FTP deployment to complete"
+        },
+        {
+          "number": 5,
+          "title": "25experts.com can call API and parse response",
+          "expectedBehavior": "25experts.com Cloud Function successfully calls endpoint, receives JSON, extracts and caches courses array.",
+          "proofType": "manual-script",
+          "exactCommand": "Coordinate with 25experts.com team: trigger their syncVideoToCourses function, check logs for 'Fetched N courses' message, verify Firestore document written with course data",
+          "expectedInitialFailure": "25experts cannot fetch endpoint (404, 500, timeout, CORS), response not JSON, courses empty",
+          "expectedPassingEvidence": "Cloud Function logs show successful fetch and parsing; courses >=170; Firestore documents with course data",
+          "waiverGuidance": "Accept manual verification from 25experts.com engineer: API reachable, response valid JSON, courses populated, CORS ok, no errors"
+        }
+      ]
     }
   ]
 }

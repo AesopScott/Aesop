@@ -87,28 +87,32 @@ No request body. Query parameters: none.
   catalog_hash: string,                    // SHA-256 hash of courses-data.json; use for change detection
   generated_at: string,                    // ISO 8601 timestamp (UTC)
   courses: Array<{
-    id:    string,                         // immutable course identifier (kebab-case)
+    id:    string,                         // immutable course identifier (kebab-case); V2 courses are keyed `{slug}-v2`
     name:  string,                         // display name (may change if course renamed)
     desc:  string,                         // short description/blurb
-    url:   string,                         // full URL to course hub (https://aesopacademy.org/ai-academy/electives-hub.html?course={id})
+    url:   string,                         // full URL to course; shape depends on format (see below)
     live:  boolean                         // true if live, false if coming-soon
   }>
 }
 ```
+
+**`url` shapes (set server-side per course `format`):**
+- **V1 courses** (no `format`, or `format != "v2"`): `https://aesopacademy.org/ai-academy/electives-hub.html?course={id}` (`urlencode`d query param)
+- **V2 courses** (`format: "v2"`): `https://aesopacademy.org/ai-academy/modules/v2/{slug}/m1.html`, where `{slug}` is `id` with the trailing `-v2` stripped (`rawurlencode`d path segment). V2 is no longer served from the electives hub.
 
 On error: `{"error": "error message"}` with HTTP 5xx
 
 **CORS headers:** `Access-Control-Allow-Origin: *` — allows requests from any origin
 
 **Producer**
-- `aesop-api/catalog.php:1` — reads `ai-academy/modules/courses-data.json`, computes `hash_file('sha256')`, extracts course fields, returns JSON
+- `aesop-api/catalog.php:1` — reads `ai-academy/modules/courses-data.json`, computes `hash_file('sha256')`, extracts course fields, returns JSON. Branches `url` on `format` (`catalog.php:64-69`): V2 → `/modules/v2/{slug}/m1.html`, V1 → electives-hub query URL
 
 **Consumers**
 - 25experts.com Cloud Function (`syncVideoToCourses` in experts project) — fetches periodically, compares `catalog_hash` to cached hash, updates local cache if changed
 
 **Data source**
-- `ai-academy/modules/courses-data.json` — single source of truth for course metadata (137 courses: 125 live + 12 coming-soon as of 2026-05-24)
-- Kept in sync by idempotent reconciliation system (`reconcile_all.py` + daily safety-net workflow)
+- `ai-academy/modules/courses-data.json` — single source of truth for course metadata (187 courses: 133 live + 54 coming-soon as of 2026-05-24; includes 8 V2 courses, all live)
+- Kept in sync by idempotent reconciliation system (`reconcile_all.py` → `reconcile_modgen_data.py` for V1 + `reconcile_v2_to_modgen.py` for V2, + daily safety-net workflow). V2 courses (`format: "v2"`) are sourced from `ai-academy/courses-v2.html`
 
 **Status:** ✓ new; ready for deployment to Mocahost FTP via GitHub Actions (deployment verification pending post-merge)
 

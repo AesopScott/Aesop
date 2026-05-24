@@ -126,12 +126,25 @@ On error: `{"error": "error message"}` with HTTP 5xx
 
 ## Audit Trail — Proof of Registry Verification
 
-**Last audit:** 2026-05-23T00:00:00Z (by /cross-boundary-audit, Task #6 branch); updated 2026-05-23 (Codex review remediation)
+**Last audit:** 2026-05-24T00:00:00Z (by /cross-boundary-audit, Task #15 branch)
 
-**Boundaries checked:** All PHP files in aesop-api/ serving HTTP responses; all JS fetch() calls in ai-academy/js/ and module HTML files
+**Boundaries checked:** All PHP files in aesop-api/; producer/consumer pairs for each endpoint
 
 **Evidence recorded:**
-- 1 endpoint with complete match ✓ (`proxy.php`)
-- `assessment-proxy.php` client contract updated: `system_prompt` field removed (system prompt now hardcoded server-side, client sends only `{messages, max_tokens}`)
+- 3 endpoints with complete documentation ✓
+  - `proxy.php` (POST, lab chat)
+  - `assessment-proxy.php` (POST, assessment chat)
+  - `catalog.php` (GET, course catalog export) — NEW in task #15
+- All endpoints have CORS headers documented
+- All endpoints have request/response shape documented
+- All endpoints have producers and consumers identified
 
-**Status:** Audit current
+**New identifiers introduced on task #15:**
+- Endpoint: `GET /aesop-api/catalog.php`
+- Response fields: `catalog_hash`, `generated_at`, `courses[]` with shape `{id, name, desc, url, live}`
+- Producer: `aesop-api/catalog.php:1`
+- Consumer: 25experts.com Cloud Function (external)
+
+**Code matches registry:** Yes — task #15 commit added endpoint and updated this registry in same commit
+
+**Status:** Audit complete

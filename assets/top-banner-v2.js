@@ -73,7 +73,8 @@
     '.tb-pills .ico { font-size: 0.95rem; line-height: 1; }' +
     '.tb-pills .tb-pill-right-start { margin-left: auto; }' +
     '.tb-stats { display: flex; align-items: center; gap: 1rem;' +
-    '  padding: 0.5rem 1.25rem; flex-wrap: wrap; }' +
+    '  padding: 0.5rem 1.25rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }' +
+    '.tb-stats::-webkit-scrollbar { display: none; }' +
     '.tb-live { display: inline-flex; align-items: center; gap: 0.35rem;' +
     '  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em;' +
     '  color: var(--teal, #2ba898); font-weight: 700; flex-shrink: 0; }' +
@@ -100,7 +101,7 @@
     '  border: 1px solid rgba(255,255,255,0.12); border-radius: 2rem;' +
     '  overflow: hidden; padding: 0; }' +
     '.tb-lang .lang-btn { background: transparent; color: #fff !important;' +
-    '  border: none; padding: 0.3rem 0.55rem; font-size: 0.72rem;' +
+    '  border: none; padding: 0.22rem 0.4rem; font-size: 0.65rem;' +
     '  font-weight: 600; letter-spacing: 0.03em; cursor: pointer;' +
     '  display: inline-flex; align-items: center; gap: 0.3rem;' +
     '  transition: background 0.15s, color 0.15s; }' +
@@ -142,6 +143,18 @@
     '  background: rgba(255,255,255,0.05); color: #fff !important;' +
     '  border-color: rgba(255,255,255,0.1); }' +
     '[data-theme="dark"] .tb-stat-lbl { color: rgba(255,255,255,0.55); }' +
+    '@media (max-width: 1700px) {' +
+    '  .tb-pills { gap: 0.35rem; padding: 0.5rem 1rem; }' +
+    '  .tb-pills a { font-size: 0.78rem; padding: 0.35rem 0.75rem; }' +
+    '  .tb-brand { font-size: 0.95rem; }' +
+    '  .tb-stats { gap: 0.75rem; padding: 0.45rem 1rem; }' +
+    '}' +
+    '@media (max-width: 1300px) {' +
+    '  .tb-pills a { font-size: 0.72rem; padding: 0.3rem 0.6rem; }' +
+    '  .tb-pills .ico { display: none; }' +
+    '  .tb-stat-num { font-size: 1.05rem; }' +
+    '  .tb-lang .lang-btn { padding: 0.2rem 0.32rem; font-size: 0.6rem; }' +
+    '}' +
     '@media (max-width: 760px) {' +
     '  html { scroll-padding-top: 160px; }' +
     '  body { padding-top: 140px; }' +

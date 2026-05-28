@@ -126,7 +126,23 @@ Rules:
 
 ---
 
-## Step 6 — Create Module Directory and Stub Files
+## Step 6 — Add to Assessment Catalogue (taxonomy-parser.js)
+
+Load `ai-academy/js/taxonomy-parser.js`. Append a new entry to the `COURSE_CATALOGUE` array in the appropriate difficulty section (Beginner / Intermediate / Advanced v1). Required structure:
+
+```js
+{ id: "{slug}", name: "{Title}", path: V1("{slug}"), difficulty: "{beginner|intermediate|advanced}", modules: {N}, desc: "{description}" },
+```
+
+Rules:
+- `difficulty` must be `"beginner"`, `"intermediate"`, or `"advanced"` — lowercase
+- `desc` should be 1–2 sentences, matching the description in courses-data.json
+- Append within the correct difficulty section comment block; do not add to the V2 section
+- `name` is required — a missing name causes blank slots in student assessment results
+
+---
+
+## Step 7 — Create Module Directory and Stub Files
 
 Create the directory: `ai-academy/modules/{slug}/`
 
@@ -150,11 +166,12 @@ These stubs let CI and the activation workflow detect that the course folder exi
 
 ---
 
-## Step 7 — Commit and Push
+## Step 8 — Commit and Push
 
 Stage only these files:
 - `ai-academy/modules/courses-data.json`
 - `ai-academy/modules/course-registry.json`
+- `ai-academy/js/taxonomy-parser.js`
 - `ai-academy/modules/{slug}/` (all stub files)
 
 Commit message format:
@@ -169,7 +186,7 @@ Push to `main` immediately (standing authorization per CLAUDE.md).
 
 ---
 
-## Step 8 — Completion Report
+## Step 9 — Completion Report
 
 Print this summary after pushing:
 
@@ -184,6 +201,7 @@ Course Created: {Title}
 Files written:
    courses-data.json     — new entry added (live: false)
    course-registry.json  — new entry added (status: coming-soon)
+   taxonomy-parser.js    — new entry added to assessment catalogue
    ai-academy/modules/{slug}/ — {N} stub HTML files
 
 Next step: Open ModGen, select "{Title}", set your repo folder, and build each module.
@@ -205,6 +223,7 @@ Verify every item before committing:
 - [ ] Slug is URL-safe: lowercase, hyphens only, no spaces, no special characters
 - [ ] Module directory exists at `ai-academy/modules/{slug}/`
 - [ ] No duplicate slug in either file
+- [ ] Entry added to `taxonomy-parser.js` with `name`, `path: V1("{slug}")`, `difficulty`, `modules`, and `desc`
 
 ---
 
@@ -219,4 +238,6 @@ Verify every item before committing:
 | `"live": true` on a new course | Always `false` — activation sets this |
 | Slug with uppercase or spaces | Lowercase, hyphens only |
 | Forgetting the module directory | Always create `ai-academy/modules/{slug}/` with stubs |
+| No `name` in taxonomy-parser.js | Always set — blank name causes empty slot in assessment results |
+| Omitting taxonomy-parser.js entirely | Every new course must appear in the assessment catalogue |
 | Module count mismatch between files | courses-data modules array length must equal registry modules array length |

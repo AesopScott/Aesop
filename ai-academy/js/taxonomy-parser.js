@@ -1,9 +1,9 @@
-// taxonomy-parser.js -- generated course catalogue (78 courses)
+// taxonomy-parser.js -- generated course catalogue (80 courses)
 
 const V1 = (id) => `/ai-academy/modules/electives-hub.html?course=${id}`;
 
 export const COURSE_CATALOGUE = [
-  // --- V2 courses (7) ---
+  // --- V2 courses (9) ---
   { id: 'brainstorming-with-ai', name: 'Brainstorming with AI', path: '/ai-academy/modules/v2/brainstorming-with-ai/m1.html', difficulty: 'beginner' },
   { id: 'ethics', name: 'AI Ethics & Decision-Making', path: '/ai-academy/modules/v2/ai-ethics-decision-making/m1.html', difficulty: 'intermediate' },
   { id: 'building-with-ai', name: 'Building with AI', path: '/ai-academy/modules/v2/building-with-ai/m1.html', difficulty: 'intermediate' },
@@ -11,6 +11,8 @@ export const COURSE_CATALOGUE = [
   { id: 'leveraging-rag', name: 'Leveraging RAG for AI Development', path: '/ai-academy/modules/v2/leveraging-rag-ai-development/m1.html', difficulty: 'advanced' },
   { id: 'building-agentic-pipelines', name: 'Building Agentic Pipelines', path: '/ai-academy/modules/v2/building-agentic-pipelines/m1.html', difficulty: 'advanced' },
   { id: 'ai-command-center', name: 'AI Command Center', path: '/ai-academy/modules/v2/ai-command-center/m1.html', difficulty: 'advanced' },
+  { id: 'ai-project-scaffolding', name: 'AI Project Scaffolding', path: '/ai-academy/modules/v2/ai-project-scaffolding/m1.html', difficulty: 'intermediate' },
+  { id: 'memory-optimization', name: 'Memory Optimization', path: '/ai-academy/modules/v2/memory-optimization/m1.html', difficulty: 'advanced' },
 
   // --- Beginner v1 (11) ---
   { id: "ai-and-creativity", name: "AI & Creativity", path: V1("ai-and-creativity"), difficulty: "beginner", modules: 8, desc: "Dive deep into generative AI for writing, art, music, and storytelling. Collaborate with AI as a creative partner." },

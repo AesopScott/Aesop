@@ -86,7 +86,7 @@
     '}' +
     '.tb-stat-row { display: flex; gap: 1.5rem; align-items: baseline;' +
     '  flex-wrap: nowrap; flex: 0 1 auto; }' +
-    '.tb-stat { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }' +
+    '.tb-stat { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; flex-shrink: 0; }' +
     '.tb-stat-num { font-family: var(--font-display), Georgia, serif;' +
     '  font-weight: 700; font-size: 1.25rem; color: var(--gold, #c9a05a);' +
     '  letter-spacing: -0.02em; line-height: 1; }' +

@@ -71,7 +71,7 @@
     '.tb-pills .ico { font-size: 0.9rem; line-height: 1; }' +
     '.tb-pills .tb-pill-right-start { margin-left: auto; }' +
     '.tb-stats { display: flex; align-items: center; gap: 1rem;' +
-    '  padding: 0.45rem 12.5%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }' +
+    '  padding: 0.45rem 1.25rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }' +
     '.tb-stats::-webkit-scrollbar { display: none; }' +
     '.tb-live { display: inline-flex; align-items: center; gap: 0.35rem;' +
     '  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em;' +
@@ -86,7 +86,7 @@
     '}' +
     '.tb-stat-row { display: flex; gap: 1.5rem; align-items: baseline;' +
     '  flex-wrap: wrap; flex: 1 1 auto; }' +
-    '.tb-stat { display: inline-flex; align-items: baseline; gap: 0.35rem; }' +
+    '.tb-stat { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }' +
     '.tb-stat-num { font-family: var(--font-display), Georgia, serif;' +
     '  font-weight: 700; font-size: 1.25rem; color: var(--gold, #c9a05a);' +
     '  letter-spacing: -0.02em; line-height: 1; }' +
@@ -143,7 +143,7 @@
     '  .tb-pills { padding: 0 8%; }' +
     '  .tb-pills a { font-size: 0.84rem; padding: 0 0.75rem; }' +
     '  .tb-brand { font-size: 0.95rem; }' +
-    '  .tb-stats { gap: 0.75rem; padding: 0.45rem 8%; }' +
+    '  .tb-stats { gap: 0.75rem; padding: 0.4rem 1rem; }' +
     '  .tb-stat-num { font-size: 1.05rem; }' +
     '  .tb-lang .lang-btn { padding: 0.2rem 0.32rem; font-size: 0.6rem; }' +
     '}' +

@@ -180,7 +180,7 @@
   var HTML = '' +
     '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
     '  <nav class="tb-pills" aria-label="Primary navigation">' +
-    '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home">AESOP<em>AI Academy</em></a>' +
+    '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home"><img src="/favicon_512.png" width="28" height="28" alt="" aria-hidden="true" style="border-radius:4px;margin-right:0.5rem;flex-shrink:0;">AESOP<em>AI Academy</em></a>' +
     '    <a href="/about/mission.html">About</a>' +
     '    <a href="/institutional-procurement.html">For Schools</a>' +
     '  </nav>' +
@@ -246,6 +246,12 @@
       // <body> not parsed yet — wait for it.
       document.addEventListener('DOMContentLoaded', mount, { once: true });
       return;
+    }
+    // Measure actual banner height and set body padding precisely.
+    var banner = document.getElementById('topBanner');
+    if (banner) {
+      var h = banner.getBoundingClientRect().height;
+      if (h > 0) document.body.style.paddingTop = h + 'px';
     }
     wireBehaviors();
   }

@@ -37,7 +37,12 @@ MAX_HISTORY_LOOK = 30     # how many commits back to search for intact version
 
 STRUCTURAL_MARKERS = (
     "</html>", "</body>", "</head>",
-    "</svg>", "</script>", "</style>",
+    "</script>", "</style>",
+    # "</svg>" intentionally omitted: SVG elements are commonly embedded
+    # in CSS background-image data URIs and are not a reliable top-level
+    # HTML structural indicator. Removing it prevents false-positive
+    # truncation alerts when a page is intentionally redesigned to drop
+    # inline SVG (e.g. homepage v2.0.0, 2026-05-28).
 )
 
 INCLUDE_EXTS = {".html", ".htm", ".css", ".js", ".json", ".xml", ".svg"}

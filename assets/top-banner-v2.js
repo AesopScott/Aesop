@@ -85,7 +85,7 @@
     '  100% { box-shadow: 0 0 0 0 rgba(43,168,152,0); }' +
     '}' +
     '.tb-stat-row { display: flex; gap: 1.5rem; align-items: baseline;' +
-    '  flex-wrap: wrap; flex: 1 1 auto; }' +
+    '  flex-wrap: nowrap; flex: 0 1 auto; overflow: hidden; }' +
     '.tb-stat { display: inline-flex; align-items: baseline; gap: 0.35rem; white-space: nowrap; }' +
     '.tb-stat-num { font-family: var(--font-display), Georgia, serif;' +
     '  font-weight: 700; font-size: 1.25rem; color: var(--gold, #c9a05a);' +
@@ -152,8 +152,8 @@
     '  body { padding-top: 140px; }' +
     '  .tb-pills { padding: 0 1.25rem; }' +
     '  .tb-stats { gap: 0.6rem; padding: 0.5rem 1.25rem; }' +
-    '  .tb-stat-row { gap: 1rem; }' +
-    '  .tb-stat-num { font-size: 1.1rem; }' +
+    '  .tb-stat-row { gap: 0.75rem; }' +
+    '  .tb-stat-num { font-size: 1rem; }' +
     '}' +
     '@media (max-width: 520px) {' +
     '  html { scroll-padding-top: 184px; }' +

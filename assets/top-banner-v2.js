@@ -39,17 +39,17 @@
     '  background: var(--navy-mid, #16293d); color: #fff;' +
     '  box-shadow: 0 2px 16px rgba(13,27,42,0.45);' +
     '  font-family: var(--font-sans), system-ui, sans-serif; }' +
-    '.tb-pills { display: flex; gap: 0.5rem; padding: 0.55rem 1.25rem;' +
+    '.tb-pills { display: flex; align-items: center; gap: 0;' +
+    '  padding: 0 12.5%; height: 54px;' +
     '  overflow-x: auto; -webkit-overflow-scrolling: touch;' +
-    '  scrollbar-width: none; border-bottom: 1px solid rgba(201,160,90,0.20);' +
-    '  align-items: center; }' +
+    '  scrollbar-width: none; border-bottom: 1px solid rgba(201,160,90,0.20); }' +
     '.tb-pills::-webkit-scrollbar { display: none; }' +
     '.tb-brand { flex-shrink: 0; display: inline-flex; align-items: center;' +
     '  color: #fff !important; text-decoration: none;' +
     '  background: none !important; border: none !important; border-radius: 0 !important;' +
     '  font-family: var(--font-display), Georgia, serif; font-weight: 800;' +
     '  font-size: 1.05rem; letter-spacing: 0.02em;' +
-    '  padding: 0.1rem 0.9rem 0.1rem 0; margin-right: 0.35rem;' +
+    '  padding: 0 1rem 0 0; margin-right: 0.75rem;' +
     '  border-right: 1px solid rgba(255,255,255,0.14) !important;' +
     '  transition: color 0.15s; white-space: nowrap; }' +
     '.tb-brand em { font-style: italic; color: var(--gold, #c9a05a);' +
@@ -58,22 +58,20 @@
     '  color: var(--gold, #c9a05a) !important; background: none !important;' +
     '  border-color: transparent !important; outline: none; }' +
     '.tb-brand:hover { border-right-color: rgba(255,255,255,0.14) !important; }' +
-    '.tb-pills a { display: inline-flex; align-items: center; gap: 0.4rem;' +
-    '  flex-shrink: 0; background: rgba(255,255,255,0.08);' +
-    '  color: #fff !important; padding: 0.4rem 0.9rem; border-radius: 2rem;' +
-    '  text-decoration: none; font-size: 0.85rem; font-weight: 600;' +
-    '  border: 1px solid rgba(255,255,255,0.12);' +
-    '  transition: background 0.15s, color 0.15s, border-color 0.15s;' +
+    '.tb-pills a { display: inline-flex; align-items: center; gap: 0.3rem;' +
+    '  flex-shrink: 0; background: transparent;' +
+    '  color: rgba(255,255,255,0.72) !important; padding: 0 0.9rem; height: 100%;' +
+    '  text-decoration: none; font-size: 0.9rem; font-weight: 500;' +
+    '  border: none; border-radius: 0;' +
+    '  transition: color 0.15s, background 0.15s;' +
     '  white-space: nowrap; }' +
     '.tb-pills a:hover, .tb-pills a:focus-visible {' +
-    '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important;' +
-    '  border-color: var(--gold, #c9a05a); outline: none; }' +
-    '.tb-pills a.is-active { background: var(--gold, #c9a05a);' +
-    '  color: var(--navy, #0f1923) !important; border-color: var(--gold, #c9a05a); }' +
-    '.tb-pills .ico { font-size: 0.95rem; line-height: 1; }' +
+    '  color: #fff !important; background: rgba(255,255,255,0.07); outline: none; }' +
+    '.tb-pills a.is-active { color: var(--gold, #c9a05a) !important; }' +
+    '.tb-pills .ico { font-size: 0.9rem; line-height: 1; }' +
     '.tb-pills .tb-pill-right-start { margin-left: auto; }' +
     '.tb-stats { display: flex; align-items: center; gap: 1rem;' +
-    '  padding: 0.5rem 1.25rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }' +
+    '  padding: 0.45rem 12.5%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }' +
     '.tb-stats::-webkit-scrollbar { display: none; }' +
     '.tb-live { display: inline-flex; align-items: center; gap: 0.35rem;' +
     '  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em;' +
@@ -139,34 +137,29 @@
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__thumb {' +
     '  transform: translateX(12px); background: #0f1923; }' +
     '[data-theme="dark"] .top-banner { background: #16293d; }' +
-    '[data-theme="dark"] .tb-pills a {' +
-    '  background: rgba(255,255,255,0.05); color: #fff !important;' +
-    '  border-color: rgba(255,255,255,0.1); }' +
+    '[data-theme="dark"] .tb-pills a { color: rgba(255,255,255,0.65) !important; }' +
     '[data-theme="dark"] .tb-stat-lbl { color: rgba(255,255,255,0.55); }' +
-    '@media (max-width: 1700px) {' +
-    '  .tb-pills { gap: 0.35rem; padding: 0.5rem 1rem; }' +
-    '  .tb-pills a { font-size: 0.78rem; padding: 0.35rem 0.75rem; }' +
-    '  .tb-brand { font-size: 0.95rem; }' +
-    '  .tb-stats { gap: 0.75rem; padding: 0.45rem 1rem; }' +
-    '}' +
     '@media (max-width: 1300px) {' +
-    '  .tb-pills a { font-size: 0.72rem; padding: 0.3rem 0.6rem; }' +
-    '  .tb-pills .ico { display: none; }' +
+    '  .tb-pills { padding: 0 8%; }' +
+    '  .tb-pills a { font-size: 0.84rem; padding: 0 0.75rem; }' +
+    '  .tb-brand { font-size: 0.95rem; }' +
+    '  .tb-stats { gap: 0.75rem; padding: 0.45rem 8%; }' +
     '  .tb-stat-num { font-size: 1.05rem; }' +
     '  .tb-lang .lang-btn { padding: 0.2rem 0.32rem; font-size: 0.6rem; }' +
     '}' +
     '@media (max-width: 760px) {' +
     '  html { scroll-padding-top: 160px; }' +
     '  body { padding-top: 140px; }' +
-    '  .tb-stats { gap: 0.6rem; padding: 0.5rem 1rem; }' +
+    '  .tb-pills { padding: 0 1.25rem; }' +
+    '  .tb-stats { gap: 0.6rem; padding: 0.5rem 1.25rem; }' +
     '  .tb-stat-row { gap: 1rem; }' +
     '  .tb-stat-num { font-size: 1.1rem; }' +
     '}' +
     '@media (max-width: 520px) {' +
     '  html { scroll-padding-top: 184px; }' +
     '  body { padding-top: 164px; }' +
-    '  .tb-pills { padding: 0.45rem 0.9rem; }' +
-    '  .tb-pills a { padding: 0.35rem 0.75rem; font-size: 0.8rem; }' +
+    '  .tb-pills { padding: 0 1rem; }' +
+    '  .tb-pills a { font-size: 0.82rem; padding: 0 0.6rem; }' +
     '  .tb-stats { flex-direction: column; align-items: flex-start; }' +
     '}' +
     /* Cert chip — earned state gets a gold ring + gold text */
@@ -188,7 +181,8 @@
     '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
     '  <nav class="tb-pills" aria-label="Primary navigation">' +
     '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home">AESOP<em>AI Academy</em></a>' +
-    '    <a href="/ai-news/"><span class="ico" aria-hidden="true">\uD83D\uDCF0</span>AI News</a>' +
+    '    <a href="/about/mission.html">About</a>' +
+    '    <a href="/institutional-procurement.html">For Schools</a>' +
     '  </nav>' +
     '  <div class="tb-stats">' +
     '    <span class="tb-live"><span class="tb-live-dot" aria-hidden="true"></span>Live</span>' +

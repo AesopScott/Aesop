@@ -7,6 +7,12 @@ const PROXY_URL = '/aesop-api/proxy.php';
 const LS_ID = 'aesop-learner-id';
 const LS_STATE = 'aesop-ladder-state';
 const PLACEMENT_REGEX = /<!--LADDER_PLACEMENT_COMPLETE:([\s\S]*?)-->/;
+const TRANSCRIPT_STATUS = {
+  COMPLETED: 'completed',
+  PLACED_OUT: 'placed_out',
+  VERIFIED: 'verified',
+  SELF_REPORTED: 'self_reported'
+};
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
@@ -166,8 +172,18 @@ function normalizePlacementSignals(raw) {
     grantedTierIds,
     assignedTopicIds: assignedTopicsForPlacement(grantedTierIds, interestTags),
     reasoning: String(raw.reasoning || '').slice(0, 500),
-    evidence: 'AI-guided Ladder placement assessment'
+    evidence: TRANSCRIPT_STATUS.VERIFIED
   };
+}
+
+function statusLabel(status) {
+  const labels = {
+    [TRANSCRIPT_STATUS.COMPLETED]: 'Completed',
+    [TRANSCRIPT_STATUS.PLACED_OUT]: 'Placed out',
+    [TRANSCRIPT_STATUS.VERIFIED]: 'Verified',
+    [TRANSCRIPT_STATUS.SELF_REPORTED]: 'Self-reported'
+  };
+  return labels[status] || 'Self-reported';
 }
 
 function normalizeTags(value) {
@@ -278,16 +294,17 @@ function loadLocal() {
   }
 }
 
-function addTranscript(eventType, title, detail) {
+function addTranscript(eventType, title, detail, options = {}) {
   state.progress.transcriptEvents.unshift({
     eventType,
+    status: options.status || TRANSCRIPT_STATUS.SELF_REPORTED,
     title,
     detail,
     topicId: getActiveTopic().id,
     topicTitle: getActiveTopic().title,
     tierTitle: getActiveTier().title,
     timestamp: new Date().toISOString(),
-    evidence: 'self-reported'
+    evidence: options.evidence || TRANSCRIPT_STATUS.SELF_REPORTED
   });
   state.progress.transcriptEvents = state.progress.transcriptEvents.slice(0, 80);
 }
@@ -416,7 +433,7 @@ function applyPlacement(placement) {
   const now = new Date().toISOString();
   const granted = new Set(placement.grantedTierIds);
   Object.keys(state.progress.completedTopics).forEach((key) => {
-    if (state.progress.completedTopics[key]?.status === 'placed_out') {
+    if (state.progress.completedTopics[key]?.status === TRANSCRIPT_STATUS.PLACED_OUT) {
       delete state.progress.completedTopics[key];
     }
   });
@@ -424,9 +441,9 @@ function applyPlacement(placement) {
     if (!granted.has(tier.id)) return;
     tier.topics.forEach((topic) => {
       state.progress.completedTopics[topicKey(topic.id)] = {
-        status: 'placed_out',
+        status: TRANSCRIPT_STATUS.PLACED_OUT,
         completedAt: now,
-        evidence: 'ladder_placement_assessment',
+        evidence: TRANSCRIPT_STATUS.VERIFIED,
         language: state.language
       };
     });
@@ -439,7 +456,8 @@ function applyPlacement(placement) {
   addTranscript(
     'placement_assessment_completed',
     'Ladder placement completed',
-    `Placed out of ${placement.grantedTierIds.length} tiers and assigned ${placement.assignedTopicIds.length} rungs. Interests: ${interestText(placement)}.`
+    `Placed out of ${placement.grantedTierIds.length} tiers and assigned ${placement.assignedTopicIds.length} rungs. Interests: ${interestText(placement)}.`,
+    { status: TRANSCRIPT_STATUS.VERIFIED, evidence: TRANSCRIPT_STATUS.VERIFIED }
   );
 }
 
@@ -447,7 +465,7 @@ async function resetPlacementAssessment() {
   state.progress.placement = null;
   state.progress.assessmentMessages = [];
   Object.keys(state.progress.completedTopics).forEach((key) => {
-    if (state.progress.completedTopics[key]?.status === 'placed_out') {
+    if (state.progress.completedTopics[key]?.status === TRANSCRIPT_STATUS.PLACED_OUT) {
       delete state.progress.completedTopics[key];
     }
   });
@@ -559,7 +577,7 @@ function renderTopicPicker(tier) {
     const record = state.progress.completedTopics[topicKey(topic.id)];
     const done = record ? 'done' : '';
     const assigned = state.progress.placement?.assignedTopicIds?.includes(topic.id) ? 'assigned' : '';
-    const placed = record?.status === 'placed_out' ? 'placed' : '';
+    const placed = record?.status === TRANSCRIPT_STATUS.PLACED_OUT ? 'placed' : '';
     const active = topic.id === state.activeTopicId ? 'active' : '';
     return `<button class="secondary ${done} ${assigned} ${placed} ${active}" type="button" data-topic-id="${topic.id}" title="${topic.title}">${topic.order}</button>`;
   }).join('');
@@ -615,7 +633,7 @@ function labChecklist(topic) {
     'Use one researched resource or video to challenge your first explanation.',
     'Apply the idea to your selected goal or role.',
     'Identify one risk, limitation, or failure mode.',
-    'Ask the AI guide to decide whether you are ready to mark the rung confident.'
+    'Ask the AI guide whether this should be transcripted as completed, verified, or self-reported.'
   ];
 }
 
@@ -642,7 +660,7 @@ function renderTranscript() {
   }
 
   el.transcriptList.innerHTML = state.progress.transcriptEvents.map((event) => (
-    `<div class="transcript-event"><strong>${event.title}</strong><small>${event.eventType} - ${new Date(event.timestamp).toLocaleString()}</small><p>${event.detail}</p></div>`
+    `<div class="transcript-event"><strong>${event.title}</strong><small>${statusLabel(event.status)} - ${statusLabel(event.evidence)} evidence - ${new Date(event.timestamp).toLocaleString()}</small><p>${event.detail}</p></div>`
   )).join('');
 }
 
@@ -652,10 +670,10 @@ function renderTopic() {
   const topicRecord = state.progress.completedTopics[topicKey(topic.id)];
   el.activeTierLabel.textContent = `${tier.name} - ${topic.id}`;
   el.activeTopicTitle.textContent = topic.title;
-  el.completeTopicBtn.textContent = topicRecord?.status === 'placed_out'
+  el.completeTopicBtn.textContent = topicRecord?.status === TRANSCRIPT_STATUS.PLACED_OUT
     ? 'Placed out'
-    : topicRecord ? 'Confident' : 'Mark confident';
-  el.completeTopicBtn.disabled = topicRecord?.status === 'placed_out';
+    : topicRecord ? statusLabel(topicRecord.status) : 'Mark self-reported';
+  el.completeTopicBtn.disabled = topicRecord?.status === TRANSCRIPT_STATUS.PLACED_OUT;
   renderTopicPicker(tier);
   renderVocabulary(tier);
   renderResources(topic);
@@ -692,7 +710,7 @@ function escapeHtml(value) {
 function systemPromptFor(topic, tier) {
   const placement = state.progress.placement;
   const assigned = placement?.assignedTopicIds?.includes(topic.id) ? 'yes' : 'no';
-  const placedOut = state.progress.completedTopics[topicKey(topic.id)]?.status === 'placed_out' ? 'yes' : 'no';
+  const placedOut = state.progress.completedTopics[topicKey(topic.id)]?.status === TRANSCRIPT_STATUS.PLACED_OUT ? 'yes' : 'no';
   return `You are The Ladder guide inside AESOP AI Academy. You are strictly scoped to the selected topic: ${topic.title}.
 
 Placement interests: ${interestText(placement)}.
@@ -710,7 +728,7 @@ Use this guarded teaching pattern:
 3. Force discovery by asking the learner to compare, question, and verify.
 4. Push application to the learner's role or goal.
 5. Ask for one risk, limitation, or misconception.
-6. End by telling the learner whether they are ready to mark the rung confident.
+6. End by telling the learner whether this rung should be transcripted as completed, verified, self-reported, or not yet ready.
 
 Do not act as a general assistant. If the learner goes off topic, warmly redirect them back to ${topic.title}. Do not simply lecture. Ask questions and require the learner to reason. Keep responses concise enough for an interactive learning session.`;
 }
@@ -767,11 +785,16 @@ async function submitChat(event) {
 async function markTopicComplete() {
   const topic = getActiveTopic();
   state.progress.completedTopics[topicKey(topic.id)] = {
-    status: 'confident',
+    status: TRANSCRIPT_STATUS.SELF_REPORTED,
     completedAt: new Date().toISOString(),
     language: state.language
   };
-  addTranscript('topic_confident', topic.title, `Marked ${topic.id} confident on The Ladder.`);
+  addTranscript(
+    'topic_self_reported',
+    topic.title,
+    `Marked ${topic.id} as self-reported on The Ladder.`,
+    { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: TRANSCRIPT_STATUS.SELF_REPORTED }
+  );
   await persist();
   render();
 }
@@ -779,11 +802,16 @@ async function markTopicComplete() {
 async function markLabComplete() {
   const topic = getActiveTopic();
   state.progress.completedLabs[topicKey(topic.id)] = {
-    status: 'completed',
+    status: TRANSCRIPT_STATUS.COMPLETED,
     completedAt: new Date().toISOString(),
-    evidence: 'self-reported'
+    evidence: TRANSCRIPT_STATUS.SELF_REPORTED
   };
-  addTranscript('lab_completed', `${topic.title} lab`, `Completed the guarded lab checklist for ${topic.id}.`);
+  addTranscript(
+    'lab_completed',
+    `${topic.title} lab`,
+    `Completed the guarded lab checklist for ${topic.id}.`,
+    { status: TRANSCRIPT_STATUS.COMPLETED, evidence: TRANSCRIPT_STATUS.SELF_REPORTED }
+  );
   await persist();
   render();
 }

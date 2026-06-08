@@ -53,8 +53,10 @@ Per-student record. Stores learner ID, course progress, assessment results, reco
     customLanguage:   string,
     activeTierId:     string,
     activeTopicId:    string,
-    completedTopics:  { [topicKey]: {status, completedAt, language} },
+    completedTopics:  { [topicKey]: {status, completedAt, language, evidence?} },
+                       // status: "completed" | "placed_out" | "verified" | "self_reported"
     completedLabs:    { [topicKey]: {status, completedAt, evidence} },
+                       // status/evidence use the same transcript vocabulary above
     vocabulary:       { [termKey]: boolean },
     placement: {
       completedAt:       ISO 8601 string,
@@ -68,7 +70,8 @@ Per-student record. Stores learner ID, course progress, assessment results, reco
       evidence:          string
     } | null,
     assessmentMessages: Array<{role: "user"|"assistant", content: string}>,
-    transcriptEvents: Array<{eventType, title, detail, topicId, topicTitle, tierTitle, timestamp, evidence}>
+    transcriptEvents: Array<{eventType, status, title, detail, topicId, topicTitle, tierTitle, timestamp, evidence}>
+                       // status/evidence: "completed" | "placed_out" | "verified" | "self_reported"
   }
 }
 ```

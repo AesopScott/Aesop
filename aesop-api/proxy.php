@@ -9,10 +9,13 @@
  * No user account needed — key is server-side only.
  */
 
-require_once dirname(__DIR__) . '/secrets.php';
+$secretsFile = dirname(__DIR__) . '/secrets.php';
+if (file_exists($secretsFile)) {
+    require_once $secretsFile;
+}
 
 // ── CONFIG ──────────────────────────────────────────────────────────────
-$API_KEY = aesop_secret('AESOP_ANTHROPIC_API_KEY', '');
+$API_KEY = function_exists('aesop_secret') ? aesop_secret('AESOP_ANTHROPIC_API_KEY', '') : '';
 $MODEL   = 'claude-haiku-4-5-20251001';
 $MAX_TOKENS_CAP = 1024;
 
@@ -79,23 +82,46 @@ if (!empty($system)) {
 $jsonPayload = json_encode($payload);
 
 // ── CALL ANTHROPIC API ──────────────────────────────────────────────────
-$ch = curl_init('https://api.anthropic.com/v1/messages');
-curl_setopt_array($ch, [
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $jsonPayload,
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT        => 30,
-    CURLOPT_HTTPHEADER     => [
-        'Content-Type: application/json',
-        'x-api-key: ' . $API_KEY,
-        'anthropic-version: 2023-06-01',
-    ],
-]);
+$headers = [
+    'Content-Type: application/json',
+    'x-api-key: ' . $API_KEY,
+    'anthropic-version: 2023-06-01',
+];
 
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlErr  = curl_error($ch);
-curl_close($ch);
+if (function_exists('curl_init')) {
+    $ch = curl_init('https://api.anthropic.com/v1/messages');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $jsonPayload,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_HTTPHEADER     => $headers,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr  = curl_error($ch);
+    curl_close($ch);
+} else {
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => implode("\r\n", $headers),
+            'content' => $jsonPayload,
+            'ignore_errors' => true,
+            'timeout' => 30,
+        ],
+    ]);
+    $response = file_get_contents('https://api.anthropic.com/v1/messages', false, $context);
+    $httpCode = 0;
+    $curlErr = '';
+    if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
+        $httpCode = (int) $matches[1];
+    }
+    if ($response === false) {
+        $curlErr = 'PHP cURL is unavailable and stream fallback failed.';
+    }
+}
 
 // ── HANDLE ERRORS ───────────────────────────────────────────────────────
 if ($curlErr) {

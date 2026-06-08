@@ -116,7 +116,7 @@ const db = getFirestore(app);
 
 const state = {
   learnerId: localStorage.getItem(LS_ID) || '',
-  theme: 'light',
+  theme: localStorage.getItem(LS_THEME) === 'dark' ? 'dark' : 'light',
   language: 'en',
   customLanguage: '',
   activeTierId: LADDER_TIERS[0].id,

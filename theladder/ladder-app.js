@@ -97,6 +97,10 @@ function allTopics() {
   return LADDER_TIERS.flatMap((tier) => tier.topics);
 }
 
+function topicById(topicId) {
+  return allTopics().find((topic) => topic.id === topicId);
+}
+
 function languageLabel() {
   if (state.language === 'custom') return state.customLanguage || 'the learner selected language';
   return LANGUAGES.find((item) => item.code === state.language)?.label || 'English';
@@ -105,6 +109,14 @@ function languageLabel() {
 function interestText(placement) {
   if (!placement || !placement.interestTags?.length) return 'general AI fluency';
   return placement.interestTags.join(', ');
+}
+
+function assignedTopicsByTier(assignedTopicIds = []) {
+  const assigned = new Set(assignedTopicIds);
+  return LADDER_TIERS.map((tier) => ({
+    tier,
+    topics: tier.topics.filter((topic) => assigned.has(topic.id))
+  })).filter((group) => group.topics.length);
 }
 
 function grantRules(capabilityScore, technicalScore, governanceScore) {
@@ -505,16 +517,41 @@ function renderPlacement() {
       : 'Take the Ladder assessment to test out of tiers and receive assigned rungs based on both capability and interest.';
     el.placementMetrics.innerHTML = '';
   } else {
-    el.placementStatus.textContent = `${placement.grantedTierIds.length} tiers granted`;
-    el.placementSummary.textContent = placement.reasoning || `Interests: ${interestText(placement)}.`;
-    const assignedPreview = placement.assignedTopicIds.slice(0, 6).join(', ');
+    el.placementStatus.textContent = `Placed out of ${placement.grantedTierIds.length} tiers`;
+    const placementReason = placement.reasoning || `Interests: ${interestText(placement)}.`;
+    el.placementSummary.textContent = `${placementReason} Green tiers are already completed by placement. Assigned rungs are your next items to work through.`;
+    const assignedGroups = assignedTopicsByTier(placement.assignedTopicIds);
+    const assignedList = assignedGroups.map(({ tier, topics }) => `
+      <li>
+        <strong>${tier.name}</strong>
+        <span>${tier.title}</span>
+        <ol>
+          ${topics.map((topic) => `<li><button type="button" class="assigned-rung-link" data-topic-id="${topic.id}">T${String(tier.order).padStart(2, '0')}-L${String(topic.order).padStart(2, '0')} ${escapeHtml(topic.title)}</button></li>`).join('')}
+        </ol>
+      </li>
+    `).join('');
     el.placementMetrics.innerHTML = `
       <span>Fluency ${placement.capabilityScore}</span>
       <span>Technical ${placement.technicalScore}</span>
       <span>Governance ${placement.governanceScore}</span>
-      <span>${placement.assignedTopicIds.length} assigned rungs</span>
-      <small>${assignedPreview}${placement.assignedTopicIds.length > 6 ? '...' : ''}</small>
+      <span>${placement.grantedTierIds.length} tiers placed out</span>
+      <details class="assigned-rungs-panel" open>
+        <summary>${placement.assignedTopicIds.length} assigned rungs to complete</summary>
+        <ul>${assignedList}</ul>
+      </details>
     `;
+    el.placementMetrics.querySelectorAll('[data-topic-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const topic = topicById(button.dataset.topicId);
+        if (!topic) return;
+        state.activeTierId = topic.tierId;
+        state.activeTopicId = topic.id;
+        state.messages = [];
+        persist();
+        render();
+        document.querySelector('.topic-column')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   }
 
   el.assessmentTurnCount.textContent = `${userTurns} ${userTurns === 1 ? 'response' : 'responses'}`;
@@ -553,19 +590,31 @@ function renderProgress() {
 
 function renderTiers() {
   const granted = new Set(state.progress.placement?.grantedTierIds || []);
+  const assigned = new Set(state.progress.placement?.assignedTopicIds || []);
   el.tierList.innerHTML = LADDER_TIERS.map((tier) => {
     const done = tier.topics.filter((topic) => state.progress.completedTopics[topicKey(topic.id)]).length;
     const active = tier.id === state.activeTierId ? ' active' : '';
-    const grantLabel = granted.has(tier.id) ? 'granted' : `${done}/${tier.topics.length}`;
+    const assignedCount = tier.topics.filter((topic) => assigned.has(topic.id)).length;
+    const statusLabel = granted.has(tier.id)
+      ? 'completed'
+      : assignedCount
+        ? `${assignedCount} assigned`
+        : `${done}/${tier.topics.length}`;
+    const tierClasses = [
+      'tier-button',
+      active.trim(),
+      granted.has(tier.id) ? 'placed-out' : '',
+      assignedCount && !granted.has(tier.id) ? 'has-assigned' : ''
+    ].filter(Boolean).join(' ');
     return `
       <div class="tier-item">
-        <button class="tier-button${active}${granted.has(tier.id) ? ' granted' : ''}" type="button" data-tier-id="${tier.id}" style="--tier-accent:${tier.accent}">
+        <button class="${tierClasses}" type="button" data-tier-id="${tier.id}" style="--tier-accent:${tier.accent}">
           <span class="tier-number">${tier.order}</span>
           <span class="tier-meta">
             <strong>${tier.name}</strong>
             <small>${tier.title}</small>
           </span>
-          <span class="tier-progress">${grantLabel}</span>
+          <span class="tier-progress">${statusLabel}</span>
         </button>
       </div>
     `;

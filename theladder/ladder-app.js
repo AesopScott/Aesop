@@ -630,8 +630,8 @@ function renderResources(topic) {
 function labChecklist(topic) {
   return [
     `Explain ${topic.title} in your own words.`,
-    'Use one researched resource or video to challenge your first explanation.',
-    'Apply the idea to your selected goal or role.',
+    'Use one additional lesson, link, or video to challenge your first explanation.',
+    'Apply the idea to your assessment results, interests, or assigned path.',
     'Identify one risk, limitation, or failure mode.',
     'Ask the AI guide whether this should be transcripted as completed, verified, or self-reported.'
   ];
@@ -838,7 +838,7 @@ function exportTranscript() {
 function findVideos() {
   const topic = getActiveTopic();
   const query = encodeURIComponent(`${topic.title} AI explained tutorial`);
-  addTranscript('resource_discovery_requested', topic.title, `Requested YouTube discovery for "${topic.title}".`);
+  addTranscript('additional_links_requested', topic.title, `Requested more videos and links for "${topic.title}".`);
   persist();
   window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank', 'noopener');
   renderTranscript();

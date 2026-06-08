@@ -14,6 +14,32 @@ const TRANSCRIPT_STATUS = {
   VERIFIED: 'verified',
   SELF_REPORTED: 'self_reported'
 };
+const LAB_TYPES = {
+  DEBATE: {
+    id: 'debate',
+    label: 'Debate',
+    title: 'Defend a position',
+    summary: 'Take a position, respond to challenge, and decide whether your reasoning holds.',
+    action: 'debate',
+    completion: 'A defended position with at least one revision or justification under pressure.'
+  },
+  SKILL: {
+    id: 'skill',
+    label: 'Skill',
+    title: 'Apply a technique',
+    summary: 'Use a repeatable framework or technique on a concrete example.',
+    action: 'skill',
+    completion: 'A completed application of the technique with evidence, limits, and next steps.'
+  },
+  BUILD: {
+    id: 'build',
+    label: 'Build',
+    title: 'Produce an artifact',
+    summary: 'Create a small usable output, then explain the choices that shaped it.',
+    action: 'build',
+    completion: 'A concrete artifact such as a policy, checklist, prompt, workflow, spec, or plan.'
+  }
+};
 
 const VOCAB_DEFINITIONS = {
   'artificial intelligence': 'Computer systems that perform tasks usually associated with human intelligence, such as reasoning, language, perception, planning, prediction, or decision support.',
@@ -154,8 +180,11 @@ const el = {
   chatLog: document.getElementById('chatLog'),
   chatForm: document.getElementById('chatForm'),
   chatInput: document.getElementById('chatInput'),
-  labScenario: document.getElementById('labScenario'),
-  labChecklist: document.getElementById('labChecklist'),
+  assignmentSummary: document.getElementById('assignmentSummary'),
+  assignmentTypeBadge: document.getElementById('assignmentTypeBadge'),
+  assignmentTitle: document.getElementById('assignmentTitle'),
+  assignmentPrompt: document.getElementById('assignmentPrompt'),
+  assignmentChecklist: document.getElementById('assignmentChecklist'),
   completeLabBtn: document.getElementById('completeLabBtn'),
   transcriptList: document.getElementById('transcriptList'),
   exportTranscriptBtn: document.getElementById('exportTranscriptBtn')
@@ -911,7 +940,6 @@ function renderTopicPicker(tier) {
 
   const strip = document.createElement('div');
   strip.className = 'topic-strip';
-  strip.style.cssText = 'display:flex;gap:.45rem;overflow:auto;padding:.75rem;background:#fff;border:1px solid var(--ladder-line);border-top:0';
   strip.innerHTML = tier.topics.map((topic) => {
     const record = state.progress.completedTopics[topicKey(topic.id)];
     const done = record ? 'done' : '';
@@ -999,19 +1027,70 @@ function renderResources(topic) {
   )).join('');
 }
 
-function labChecklist(topic) {
+function labTypeForTopic(topic, tier) {
+  const haystack = `${topic.title} ${tier.title}`.toLowerCase();
+  if (/(should|when not|ethic|governance|risk|privacy|copyright|bias|compliance|law|oversight|red-team|red team|security|vendor|evaluation|assessment)/.test(haystack)) {
+    return LAB_TYPES.DEBATE;
+  }
+  if (/(build|design|create|workflow|template|policy|plan|roadmap|api|json|agent|rag|retrieval|database|tool|automation|deploy|product|strategy|prompt)/.test(haystack)) {
+    return LAB_TYPES.BUILD;
+  }
+  return LAB_TYPES.SKILL;
+}
+
+function assignmentChecklist(topic, tier) {
+  const labType = labTypeForTopic(topic, tier);
+  const common = [
+    `Ground the work in "${topic.title}".`,
+    'Use one concrete example, source, role, or use case.',
+    'Name one risk, limitation, or failure mode.',
+    'Finish with a short artifact or evidence statement for your transcript.'
+  ];
+  if (labType.id === 'debate') {
+    return [
+      'State your position clearly.',
+      'Answer the AI guide when it challenges your reasoning.',
+      'Revise or defend your position with evidence.',
+      ...common.slice(2)
+    ];
+  }
+  if (labType.id === 'build') {
+    return [
+      'Choose the artifact you will produce.',
+      'Draft the artifact in the conversation.',
+      'Explain the design choices behind it.',
+      ...common.slice(2)
+    ];
+  }
   return [
-    `Explain ${topic.title} in your own words.`,
-    'Use one additional lesson, link, or video to challenge your first explanation.',
-    'Apply the idea to your assessment results, interests, or assigned path.',
-    'Identify one risk, limitation, or failure mode.',
-    'Ask the AI guide whether this should be transcripted as completed, verified, or self-reported.'
+    'Apply a specific framework, checklist, or technique.',
+    'Work through a real or realistic example.',
+    'Explain what changed in your understanding.',
+    ...common.slice(2)
   ];
 }
 
-function renderLab(topic) {
-  el.labScenario.textContent = `Lab: use AI as a guarded coach to investigate "${topic.title}", then produce a short evidence trail that shows discovery, critical thinking, and application.`;
-  el.labChecklist.innerHTML = labChecklist(topic).map((item) => `<li>${item}</li>`).join('');
+function assignmentPromptFor(topic, tier) {
+  const labType = labTypeForTopic(topic, tier);
+  const starters = {
+    debate: `Take a position on a real decision involving "${topic.title}". The AI guide will challenge your reasoning until you can defend, revise, or narrow the claim.`,
+    skill: `Apply a repeatable technique for "${topic.title}" to a concrete example. The AI guide will press for specificity and help you turn the work into evidence.`,
+    build: `Create a small usable artifact connected to "${topic.title}". The AI guide will review the artifact for completeness, risk, and practical use.`
+  };
+  return starters[labType.id];
+}
+
+function renderAssignment(topic, tier) {
+  const labType = labTypeForTopic(topic, tier);
+  const completed = state.progress.completedLabs[topicKey(topic.id)];
+  el.assignmentSummary.textContent = `${labType.label} lab - ${labType.summary}`;
+  el.assignmentTypeBadge.textContent = labType.label;
+  el.assignmentTypeBadge.dataset.type = labType.id;
+  el.assignmentTitle.textContent = labType.title;
+  el.assignmentPrompt.textContent = assignmentPromptFor(topic, tier);
+  el.assignmentChecklist.innerHTML = assignmentChecklist(topic, tier).map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+  el.completeLabBtn.textContent = completed ? 'Assignment completed' : 'Complete assignment';
+  el.completeLabBtn.disabled = Boolean(completed);
 }
 
 function renderChat() {
@@ -1049,7 +1128,7 @@ function renderTopic() {
   renderTopicPicker(tier);
   renderVocabulary(tier);
   renderResources(topic);
-  renderLab(topic);
+  renderAssignment(topic, tier);
   renderChat();
 }
 
@@ -1104,6 +1183,8 @@ function systemPromptFor(topic, tier) {
   const assigned = placement?.assignedTopicIds?.includes(topic.id) ? 'yes' : 'no';
   const selfAssigned = state.progress.selfAssignedTopicIds?.includes(topic.id) ? 'yes' : 'no';
   const placedOut = state.progress.completedTopics[topicKey(topic.id)]?.status === TRANSCRIPT_STATUS.PLACED_OUT ? 'yes' : 'no';
+  const labType = labTypeForTopic(topic, tier);
+  const checklist = assignmentChecklist(topic, tier).map((item) => `- ${item}`).join('\n');
   return `You are The Ladder guide inside AESOP AI Academy. You are strictly scoped to the selected topic: ${topic.title}.
 
 Placement interests: ${interestText(placement)}.
@@ -1116,13 +1197,19 @@ Was this rung placed out by assessment? ${placedOut}.
 Tier: ${tier.name} - ${tier.title}.
 Preferred language: ${languageLabel()}. Translate your learner-facing responses into this language unless the learner asks otherwise.
 
+Every rung is now an assignment lab conversation. This assignment's lab type is ${labType.label.toUpperCase()}: ${labType.summary}
+Assignment prompt: ${assignmentPromptFor(topic, tier)}
+Completion target: ${labType.completion}
+Checklist:
+${checklist}
+
 Use this guarded teaching pattern:
 1. Diagnose what the learner already understands.
 2. Ask vocabulary questions using relevant terms from this tier.
-3. Force discovery by asking the learner to compare, question, and verify.
-4. Push application to the learner's role or goal.
+3. Run the ${labType.id} assignment: make the learner ${labType.action}, not just read or summarize.
+4. Push application to the learner's role or goal and require a concrete artifact, defense, or worked example.
 5. Ask for one risk, limitation, or misconception.
-6. End by telling the learner whether this rung should be transcripted as completed, verified, self-reported, or not yet ready.
+6. End by telling the learner whether this assignment should be transcripted as completed, verified, self-reported, or not yet ready.
 
 Do not act as a general assistant. If the learner goes off topic, warmly redirect them back to ${topic.title}. Do not simply lecture. Ask questions and require the learner to reason. Keep responses concise enough for an interactive learning session.`;
 }
@@ -1155,13 +1242,15 @@ async function callGuide() {
 
 async function startConversation() {
   const topic = getActiveTopic();
+  const tier = getActiveTier();
+  const labType = labTypeForTopic(topic, tier);
   state.messages = [{
     role: 'user',
-    content: `Start my guided conversation for "${topic.title}". Diagnose my current understanding first, then lead me through discovery, critical thinking, and application.`
+    content: `Start my ${labType.label} assignment lab for "${topic.title}". Diagnose my current understanding first, then make me ${labType.action} through a concrete assignment. The assignment prompt is: ${assignmentPromptFor(topic, tier)}`
   }];
   renderChat();
   await callGuide();
-  addTranscript('guided_conversation_started', topic.title, `Started a guided conversation for ${topic.id}.`);
+  addTranscript('assignment_lab_started', `${topic.title} ${labType.label} lab`, `Started a ${labType.label.toLowerCase()} assignment lab for ${topic.id}.`);
   await persist();
   renderTranscript();
 }
@@ -1214,15 +1303,19 @@ async function markTopicComplete() {
 
 async function markLabComplete() {
   const topic = getActiveTopic();
+  const tier = getActiveTier();
+  const labType = labTypeForTopic(topic, tier);
   state.progress.completedLabs[topicKey(topic.id)] = {
     status: TRANSCRIPT_STATUS.COMPLETED,
     completedAt: new Date().toISOString(),
-    evidence: TRANSCRIPT_STATUS.SELF_REPORTED
+    evidence: TRANSCRIPT_STATUS.SELF_REPORTED,
+    labType: labType.id,
+    artifactDesc: labType.completion
   };
   addTranscript(
-    'lab_completed',
-    `${topic.title} lab`,
-    `Completed the guarded lab checklist for ${topic.id}.`,
+    'assignment_lab_completed',
+    `${topic.title} ${labType.label} lab`,
+    `Completed the ${labType.label.toLowerCase()} assignment lab for ${topic.id}: ${labType.completion}`,
     { status: TRANSCRIPT_STATUS.COMPLETED, evidence: TRANSCRIPT_STATUS.SELF_REPORTED }
   );
   await persist();

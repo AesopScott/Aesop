@@ -51,13 +51,23 @@ Per-student record. Stores learner ID, course progress, assessment results, reco
     version:          string,
     language:         string,
     customLanguage:   string,
-    goal:             string,
-    role:             string,
     activeTierId:     string,
     activeTopicId:    string,
     completedTopics:  { [topicKey]: {status, completedAt, language} },
     completedLabs:    { [topicKey]: {status, completedAt, evidence} },
     vocabulary:       { [termKey]: boolean },
+    placement: {
+      completedAt:       ISO 8601 string,
+      capabilityScore:   number,
+      technicalScore:    number,
+      governanceScore:   number,
+      interestTags:      string[],
+      grantedTierIds:    string[],
+      assignedTopicIds:  string[],
+      reasoning:         string,
+      evidence:          string
+    } | null,
+    assessmentMessages: Array<{role: "user"|"assistant", content: string}>,
     transcriptEvents: Array<{eventType, title, detail, topicId, topicTitle, tierTitle, timestamp, evidence}>
   }
 }
@@ -75,9 +85,10 @@ Per-student record. Stores learner ID, course progress, assessment results, reco
 - `ai-academy/js/firebase-helpers.js:287` — `updateDoc` from `addAssessmentMessage()` (appends to conversationHistory)
 - `ai-academy/index.html:3285` — `setDoc` from exam result (progress write on exam completion)
 
-- `theladder/ladder-app.js:99` - `setDoc` with `{merge:true}` from `saveRemote()`; writes `ladderProgress`
-- `theladder/ladder-app.js:130` - `setDoc` when an existing learner ID does not exist; initializes slim learner record plus `ladderProgress`
-- `theladder/ladder-app.js:538` - `setDoc` when creating a new Ladder learner ID; initializes slim learner record
+- `theladder/ladder-app.js:199` - `setDoc` with `{merge:true}` from `saveRemote()`; writes `ladderProgress`
+- `theladder/ladder-app.js:230` - `setDoc` when an existing learner ID does not exist; initializes slim learner record plus `ladderProgress`
+- `theladder/ladder-app.js:349` - `setDoc` when placement assessment creates a learner ID; initializes slim learner record
+- `theladder/ladder-app.js:849` - `setDoc` when creating a new Ladder learner ID; initializes slim learner record
 
 **Consumers**
 - `ai-academy/students.html:120` — `getDoc` on ID lookup
@@ -94,7 +105,7 @@ Per-student record. Stores learner ID, course progress, assessment results, reco
 - `ai-academy/js/firebase-helpers.js:275` — `getDoc` in `addAssessmentMessage()` (to read current history)
 - `ai-academy/js/qr-recovery.js:38` — `collection` + `query` by `qrRecoveryToken.token`
 
-- `theladder/ladder-app.js:128` - `getDoc` in `loadRemote()` to load `ladderProgress`
+- `theladder/ladder-app.js:228` - `getDoc` in `loadRemote()` to load `ladderProgress`
 
 **Shape mismatch note:** `students.html`, `transcript.html`, and `dashboard.html` create records with only `{learnerId, createdAt, courseProgress:{}}`. `initializeLearnerRecord()` returns early when the document already exists (line 51) and does not backfill the assessment sub-objects. Existing students who enrolled before taking the assessment will have `assessmentResults`, `recommendedPathway`, `qrRecoveryToken`, and `progressData` absent until `updateDoc` calls create them. `updateDoc` will succeed (Firestore creates missing nested fields), but reads of missing paths will return `undefined`.
 

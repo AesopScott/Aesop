@@ -6,6 +6,7 @@ import { DEFAULT_RESOURCES, LADDER_TIERS, LADDER_VERSION, LANGUAGES } from './la
 const PROXY_URL = '/aesop-api/proxy.php';
 const LS_ID = 'aesop-learner-id';
 const LS_STATE = 'aesop-ladder-state';
+const PLACEMENT_REGEX = /<!--LADDER_PLACEMENT_COMPLETE:([\s\S]*?)-->/;
 
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
@@ -14,8 +15,6 @@ const state = {
   learnerId: localStorage.getItem(LS_ID) || '',
   language: 'en',
   customLanguage: '',
-  goal: 'general',
-  role: 'self-directed learner',
   activeTierId: LADDER_TIERS[0].id,
   activeTopicId: LADDER_TIERS[0].topics[0].id,
   messages: [],
@@ -23,6 +22,8 @@ const state = {
     completedTopics: {},
     completedLabs: {},
     vocabulary: {},
+    placement: null,
+    assessmentMessages: [],
     transcriptEvents: []
   }
 };
@@ -34,8 +35,15 @@ const el = {
   learnerLookup: document.getElementById('learnerLookup'),
   lookupBtn: document.getElementById('lookupBtn'),
   newLearnerBtn: document.getElementById('newLearnerBtn'),
-  goalSelect: document.getElementById('goalSelect'),
-  roleInput: document.getElementById('roleInput'),
+  placementStatus: document.getElementById('placementStatus'),
+  placementSummary: document.getElementById('placementSummary'),
+  placementMetrics: document.getElementById('placementMetrics'),
+  startPlacementBtn: document.getElementById('startPlacementBtn'),
+  resetPlacementBtn: document.getElementById('resetPlacementBtn'),
+  assessmentLog: document.getElementById('assessmentLog'),
+  assessmentForm: document.getElementById('assessmentForm'),
+  assessmentInput: document.getElementById('assessmentInput'),
+  assessmentSend: document.getElementById('assessmentSend'),
   progressBar: document.getElementById('progressBar'),
   progressText: document.getElementById('progressText'),
   tierList: document.getElementById('tierList'),
@@ -81,12 +89,104 @@ function allTopics() {
   return LADDER_TIERS.flatMap((tier) => tier.topics);
 }
 
+function languageLabel() {
+  if (state.language === 'custom') return state.customLanguage || 'the learner selected language';
+  return LANGUAGES.find((item) => item.code === state.language)?.label || 'English';
+}
+
+function interestText(placement) {
+  if (!placement || !placement.interestTags?.length) return 'general AI fluency';
+  return placement.interestTags.join(', ');
+}
+
+function grantRules(capabilityScore, technicalScore, governanceScore) {
+  const rules = [
+    ['tier-01', capabilityScore >= 25],
+    ['tier-02', capabilityScore >= 35],
+    ['tier-03', capabilityScore >= 45],
+    ['tier-04', capabilityScore >= 55],
+    ['tier-05', capabilityScore >= 60],
+    ['tier-06', capabilityScore >= 65],
+    ['tier-07', capabilityScore >= 70],
+    ['tier-08', capabilityScore >= 70 && technicalScore >= 45],
+    ['tier-09', capabilityScore >= 75 && technicalScore >= 55],
+    ['tier-10', capabilityScore >= 80 && technicalScore >= 65],
+    ['tier-11', capabilityScore >= 85 && technicalScore >= 75],
+    ['tier-12', capabilityScore >= 75 && technicalScore >= 55],
+    ['tier-13', capabilityScore >= 70 && governanceScore >= 55],
+    ['tier-14', capabilityScore >= 88 && technicalScore >= 80],
+    ['tier-15', capabilityScore >= 80 && governanceScore >= 50]
+  ];
+  return rules.filter(([, granted]) => granted).map(([tierId]) => tierId);
+}
+
+function topicMatchesInterest(topic, tier, tags) {
+  const haystack = `${topic.title} ${tier.title}`.toLowerCase();
+  return tags.some((tag) => {
+    const words = {
+      technical: ['api', 'json', 'structured', 'function', 'tool', 'rag', 'vector', 'agent', 'model', 'code', 'deployment'],
+      business: ['business', 'workflow', 'marketing', 'sales', 'support', 'operations', 'strategy', 'roi'],
+      governance: ['governance', 'law', 'ethics', 'policy', 'privacy', 'risk', 'compliance', 'copyright', 'bias'],
+      creative: ['creative', 'image', 'video', 'audio', 'media', 'content', 'design', 'synthetic'],
+      automation: ['automation', 'workflow', 'trigger', 'action', 'agent', 'tool', 'orchestration'],
+      research: ['research', 'source', 'citation', 'fact', 'study', 'information', 'search'],
+      security: ['security', 'prompt injection', 'red team', 'abuse', 'threat', 'privacy'],
+      data: ['data', 'embedding', 'vector', 'retrieval', 'rag', 'search', 'metadata']
+    }[tag] || [tag];
+    return words.some((word) => haystack.includes(word));
+  });
+}
+
+function assignedTopicsForPlacement(grantedTierIds, interestTags) {
+  const granted = new Set(grantedTierIds);
+  const assigned = [];
+  LADDER_TIERS.forEach((tier) => {
+    if (granted.has(tier.id)) return;
+    const core = tier.topics.filter((topic) => topic.order <= 4 || topic.title.toLowerCase().includes('self-assessment'));
+    const matched = tier.topics.filter((topic) => topicMatchesInterest(topic, tier, interestTags));
+    [...core, ...matched].forEach((topic) => {
+      if (!assigned.includes(topic.id)) assigned.push(topic.id);
+    });
+  });
+  return assigned;
+}
+
+function normalizePlacementSignals(raw) {
+  const capabilityScore = clampInt(raw.capabilityScore ?? raw.aptitudeScore ?? 0, 0, 100);
+  const technicalScore = clampInt(raw.technicalScore ?? raw.technical_score ?? 0, 0, 100);
+  const governanceScore = clampInt(raw.governanceScore ?? raw.governance_score ?? 0, 0, 100);
+  const interestTags = normalizeTags(raw.interestTags ?? raw.interest_tags);
+  const grantedTierIds = grantRules(capabilityScore, technicalScore, governanceScore);
+  return {
+    completedAt: new Date().toISOString(),
+    capabilityScore,
+    technicalScore,
+    governanceScore,
+    interestTags,
+    grantedTierIds,
+    assignedTopicIds: assignedTopicsForPlacement(grantedTierIds, interestTags),
+    reasoning: String(raw.reasoning || '').slice(0, 500),
+    evidence: 'AI-guided Ladder placement assessment'
+  };
+}
+
+function normalizeTags(value) {
+  const allowed = ['technical', 'business', 'governance', 'creative', 'automation', 'research', 'security', 'data', 'strategy', 'education'];
+  const raw = Array.isArray(value) ? value : [];
+  const tags = raw.map((tag) => String(tag).toLowerCase().trim()).filter((tag) => allowed.includes(tag));
+  return [...new Set(tags)].slice(0, 5);
+}
+
+function clampInt(value, min, max) {
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n)) return min;
+  return Math.min(Math.max(n, min), max);
+}
+
 function saveLocal() {
   localStorage.setItem(LS_STATE, JSON.stringify({
     language: state.language,
     customLanguage: state.customLanguage,
-    goal: state.goal,
-    role: state.role,
     activeTierId: state.activeTierId,
     activeTopicId: state.activeTopicId,
     progress: state.progress
@@ -103,13 +203,13 @@ async function saveRemote() {
         version: LADDER_VERSION,
         language: state.language,
         customLanguage: state.customLanguage,
-        goal: state.goal,
-        role: state.role,
         activeTierId: state.activeTierId,
         activeTopicId: state.activeTopicId,
         completedTopics: state.progress.completedTopics,
         completedLabs: state.progress.completedLabs,
         vocabulary: state.progress.vocabulary,
+        placement: state.progress.placement,
+        assessmentMessages: state.progress.assessmentMessages,
         transcriptEvents: state.progress.transcriptEvents
       }
     }, { merge: true });
@@ -144,13 +244,13 @@ async function loadRemote(learnerId) {
     const ladder = data.ladderProgress;
     state.language = ladder.language || state.language;
     state.customLanguage = ladder.customLanguage || state.customLanguage;
-    state.goal = ladder.goal || state.goal;
-    state.role = ladder.role || state.role;
     state.activeTierId = ladder.activeTierId || state.activeTierId;
     state.activeTopicId = ladder.activeTopicId || state.activeTopicId;
     state.progress.completedTopics = ladder.completedTopics || {};
     state.progress.completedLabs = ladder.completedLabs || {};
     state.progress.vocabulary = ladder.vocabulary || {};
+    state.progress.placement = ladder.placement || null;
+    state.progress.assessmentMessages = ladder.assessmentMessages || [];
     state.progress.transcriptEvents = ladder.transcriptEvents || [];
   } catch (error) {
     console.warn('Could not load ladder progress:', error);
@@ -164,11 +264,15 @@ function loadLocal() {
     const saved = JSON.parse(raw);
     state.language = saved.language || state.language;
     state.customLanguage = saved.customLanguage || state.customLanguage;
-    state.goal = saved.goal || state.goal;
-    state.role = saved.role || state.role;
     state.activeTierId = saved.activeTierId || state.activeTierId;
     state.activeTopicId = saved.activeTopicId || state.activeTopicId;
     state.progress = saved.progress || state.progress;
+    state.progress.completedTopics ||= {};
+    state.progress.completedLabs ||= {};
+    state.progress.vocabulary ||= {};
+    state.progress.placement ||= null;
+    state.progress.assessmentMessages ||= [];
+    state.progress.transcriptEvents ||= [];
   } catch (error) {
     console.warn('Could not load local ladder state:', error);
   }
@@ -188,6 +292,170 @@ function addTranscript(eventType, title, detail) {
   state.progress.transcriptEvents = state.progress.transcriptEvents.slice(0, 80);
 }
 
+function parsePlacementResponse(rawText) {
+  const visibleText = String(rawText || '').replace(PLACEMENT_REGEX, '').trim();
+  const match = String(rawText || '').match(PLACEMENT_REGEX);
+  if (!match) return { placement: null, visibleText };
+  try {
+    return { placement: normalizePlacementSignals(JSON.parse(match[1])), visibleText };
+  } catch (error) {
+    console.warn('Could not parse placement signal:', error);
+    return { placement: null, visibleText };
+  }
+}
+
+function placementSystemPrompt() {
+  return `You are The Ladder placement assessor inside AESOP AI Academy.
+
+Your job is to assess BOTH interest and capability, then decide what the learner can test out of and what they should be assigned.
+
+Preferred language: ${languageLabel()}.
+
+Run a 5-7 exchange assessment. Ask one question at a time. Be warm, direct, and practical.
+
+Assess these dimensions:
+1. General AI fluency: vocabulary, limits, prompting, verification, everyday use.
+2. Technical depth: APIs, JSON, code, data, RAG, agents, evals, deployment.
+3. Governance depth: privacy, copyright, ethics, law, security, vendor risk, policy.
+4. Interests: what topics energize them enough to keep learning.
+5. Application context: what they want to be able to do after learning.
+
+Use light scenario questions, not trivia. Include at least one technical calibration question and one governance/risk question. Do not make beginners feel punished. If they are technical, increase depth.
+
+Allowed interestTags:
+technical, business, governance, creative, automation, research, security, data, strategy, education
+
+When you have enough signal after at least 5 learner replies:
+1. Give a short visible summary.
+2. Append this exact marker on a new line:
+<!--LADDER_PLACEMENT_COMPLETE:{"capabilityScore":NN,"technicalScore":NN,"governanceScore":NN,"interestTags":["tag1","tag2"],"reasoning":"one concise sentence"}-->
+
+Rules:
+- Scores are integers 0-100.
+- interestTags must use the allowed list.
+- Do not mention the marker or JSON to the learner.
+- Stay on assessment. If they go off topic, redirect to AI learning placement.`;
+}
+
+function placementOpener() {
+  return 'Let us place you on The Ladder. I will assess both what you already know and what you actually care about learning. First: describe your current relationship with AI. What tools have you used, what have you built or tried, and what feels most interesting or useful to you?';
+}
+
+async function ensureLearnerId() {
+  if (state.learnerId) return;
+  state.learnerId = generateLearnerId();
+  localStorage.setItem(LS_ID, state.learnerId);
+  try {
+    await setDoc(doc(db, 'learners', state.learnerId), {
+      learnerId: state.learnerId,
+      createdAt: new Date().toISOString(),
+      courseProgress: {}
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Could not create learner record immediately:', error);
+  }
+}
+
+async function startPlacementAssessment() {
+  await ensureLearnerId();
+  state.progress.assessmentMessages = [{ role: 'assistant', content: placementOpener() }];
+  state.progress.placement = null;
+  addTranscript('placement_assessment_started', 'Ladder placement started', 'Started the Ladder placement assessment.');
+  await persist();
+  render();
+}
+
+async function submitPlacementAssessment(event) {
+  event.preventDefault();
+  const text = el.assessmentInput.value.trim();
+  if (!text) return;
+  await ensureLearnerId();
+  el.assessmentInput.value = '';
+  el.assessmentSend.disabled = true;
+  state.progress.assessmentMessages.push({ role: 'user', content: text });
+  renderPlacement();
+
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: state.progress.assessmentMessages,
+        system_prompt: placementSystemPrompt(),
+        max_tokens: 800
+      })
+    });
+    const data = await response.json();
+    const rawText = data?.content?.[0]?.text || data?.error || '';
+    const { placement, visibleText } = parsePlacementResponse(rawText);
+    state.progress.assessmentMessages.push({
+      role: 'assistant',
+      content: visibleText || 'Tell me a little more about what you have used, what you understand, and where you want to go next.'
+    });
+    if (placement && userAssessmentTurns() >= 5) {
+      applyPlacement(placement);
+    }
+  } catch (error) {
+    state.progress.assessmentMessages.push({
+      role: 'assistant',
+      content: 'AI is temporarily unavailable. Practice placement mode: tell me what AI tools you use, whether you code, what risks you understand, and what you want to learn. You can continue when the guide reconnects.'
+    });
+  }
+
+  el.assessmentSend.disabled = false;
+  await persist();
+  render();
+}
+
+function userAssessmentTurns() {
+  return state.progress.assessmentMessages.filter((message) => message.role === 'user').length;
+}
+
+function applyPlacement(placement) {
+  state.progress.placement = placement;
+  const now = new Date().toISOString();
+  const granted = new Set(placement.grantedTierIds);
+  Object.keys(state.progress.completedTopics).forEach((key) => {
+    if (state.progress.completedTopics[key]?.status === 'placed_out') {
+      delete state.progress.completedTopics[key];
+    }
+  });
+  LADDER_TIERS.forEach((tier) => {
+    if (!granted.has(tier.id)) return;
+    tier.topics.forEach((topic) => {
+      state.progress.completedTopics[topicKey(topic.id)] = {
+        status: 'placed_out',
+        completedAt: now,
+        evidence: 'ladder_placement_assessment',
+        language: state.language
+      };
+    });
+  });
+  const firstAssigned = allTopics().find((topic) => placement.assignedTopicIds.includes(topic.id));
+  if (firstAssigned) {
+    state.activeTopicId = firstAssigned.id;
+    state.activeTierId = firstAssigned.tierId;
+  }
+  addTranscript(
+    'placement_assessment_completed',
+    'Ladder placement completed',
+    `Placed out of ${placement.grantedTierIds.length} tiers and assigned ${placement.assignedTopicIds.length} rungs. Interests: ${interestText(placement)}.`
+  );
+}
+
+async function resetPlacementAssessment() {
+  state.progress.placement = null;
+  state.progress.assessmentMessages = [];
+  Object.keys(state.progress.completedTopics).forEach((key) => {
+    if (state.progress.completedTopics[key]?.status === 'placed_out') {
+      delete state.progress.completedTopics[key];
+    }
+  });
+  addTranscript('placement_assessment_reset', 'Ladder placement reset', 'Cleared assessment-based tier grants and assigned rungs.');
+  await persist();
+  render();
+}
+
 function renderLanguages() {
   el.languageSelect.innerHTML = LANGUAGES.map((language) => (
     `<option value="${language.code}">${language.label}</option>`
@@ -198,6 +466,42 @@ function renderLanguages() {
 function renderLearner() {
   el.learnerIdLabel.textContent = state.learnerId || 'Not started';
   el.learnerLookup.value = state.learnerId || '';
+}
+
+function renderPlacement() {
+  const placement = state.progress.placement;
+  const messages = state.progress.assessmentMessages || [];
+  if (!placement) {
+    el.placementStatus.textContent = messages.length ? 'Assessment in progress' : 'Not placed yet';
+    el.placementSummary.textContent = messages.length
+      ? 'Keep answering the placement guide. It will assess interest, AI fluency, technical depth, and governance readiness.'
+      : 'Take the Ladder assessment to test out of tiers and receive assigned rungs based on both capability and interest.';
+    el.placementMetrics.innerHTML = '';
+  } else {
+    el.placementStatus.textContent = `${placement.grantedTierIds.length} tiers granted`;
+    el.placementSummary.textContent = placement.reasoning || `Interests: ${interestText(placement)}.`;
+    const assignedPreview = placement.assignedTopicIds.slice(0, 6).join(', ');
+    el.placementMetrics.innerHTML = `
+      <span>Fluency ${placement.capabilityScore}</span>
+      <span>Technical ${placement.technicalScore}</span>
+      <span>Governance ${placement.governanceScore}</span>
+      <span>${placement.assignedTopicIds.length} assigned rungs</span>
+      <small>${assignedPreview}${placement.assignedTopicIds.length > 6 ? '...' : ''}</small>
+    `;
+  }
+
+  if (!messages.length) {
+    el.assessmentLog.innerHTML = '<div class="message assistant"><strong>Placement Guide</strong>Start the assessment to let the Ladder assign your path.</div>';
+  } else {
+    el.assessmentLog.innerHTML = messages.map((message) => (
+      `<div class="message ${message.role === 'user' ? 'user' : 'assistant'}"><strong>${message.role === 'user' ? 'You' : 'Placement Guide'}</strong>${escapeHtml(message.content)}</div>`
+    )).join('');
+    el.assessmentLog.scrollTop = el.assessmentLog.scrollHeight;
+  }
+
+  el.assessmentInput.disabled = !!placement;
+  el.assessmentSend.disabled = !!placement;
+  el.startPlacementBtn.textContent = messages.length ? 'Restart assessment' : 'Start assessment';
 }
 
 function completedCount() {
@@ -213,18 +517,20 @@ function renderProgress() {
 }
 
 function renderTiers() {
+  const granted = new Set(state.progress.placement?.grantedTierIds || []);
   el.tierList.innerHTML = LADDER_TIERS.map((tier) => {
     const done = tier.topics.filter((topic) => state.progress.completedTopics[topicKey(topic.id)]).length;
     const active = tier.id === state.activeTierId ? ' active' : '';
+    const grantLabel = granted.has(tier.id) ? 'granted' : `${done}/${tier.topics.length}`;
     return `
       <div class="tier-item">
-        <button class="tier-button${active}" type="button" data-tier-id="${tier.id}" style="--tier-accent:${tier.accent}">
+        <button class="tier-button${active}${granted.has(tier.id) ? ' granted' : ''}" type="button" data-tier-id="${tier.id}" style="--tier-accent:${tier.accent}">
           <span class="tier-number">${tier.order}</span>
           <span class="tier-meta">
             <strong>${tier.name}</strong>
             <small>${tier.title}</small>
           </span>
-          <span class="tier-progress">${done}/${tier.topics.length}</span>
+          <span class="tier-progress">${grantLabel}</span>
         </button>
       </div>
     `;
@@ -250,9 +556,12 @@ function renderTopicPicker(tier) {
   strip.className = 'topic-strip';
   strip.style.cssText = 'display:flex;gap:.45rem;overflow:auto;padding:.75rem;background:#fff;border:1px solid var(--ladder-line);border-top:0';
   strip.innerHTML = tier.topics.map((topic) => {
-    const done = state.progress.completedTopics[topicKey(topic.id)] ? 'done' : '';
+    const record = state.progress.completedTopics[topicKey(topic.id)];
+    const done = record ? 'done' : '';
+    const assigned = state.progress.placement?.assignedTopicIds?.includes(topic.id) ? 'assigned' : '';
+    const placed = record?.status === 'placed_out' ? 'placed' : '';
     const active = topic.id === state.activeTopicId ? 'active' : '';
-    return `<button class="secondary ${done} ${active}" type="button" data-topic-id="${topic.id}" title="${topic.title}">${topic.order}</button>`;
+    return `<button class="secondary ${done} ${assigned} ${placed} ${active}" type="button" data-topic-id="${topic.id}" title="${topic.title}">${topic.order}</button>`;
   }).join('');
 
   document.querySelector('.topic-head').after(strip);
@@ -340,9 +649,13 @@ function renderTranscript() {
 function renderTopic() {
   const tier = getActiveTier();
   const topic = getActiveTopic();
+  const topicRecord = state.progress.completedTopics[topicKey(topic.id)];
   el.activeTierLabel.textContent = `${tier.name} - ${topic.id}`;
   el.activeTopicTitle.textContent = topic.title;
-  el.completeTopicBtn.textContent = state.progress.completedTopics[topicKey(topic.id)] ? 'Confident' : 'Mark confident';
+  el.completeTopicBtn.textContent = topicRecord?.status === 'placed_out'
+    ? 'Placed out'
+    : topicRecord ? 'Confident' : 'Mark confident';
+  el.completeTopicBtn.disabled = topicRecord?.status === 'placed_out';
   renderTopicPicker(tier);
   renderVocabulary(tier);
   renderResources(topic);
@@ -354,13 +667,12 @@ function renderControls() {
   el.languageSelect.value = state.language;
   el.customLanguageInput.value = state.customLanguage || '';
   el.customLanguageInput.style.display = state.language === 'custom' ? '' : 'none';
-  el.goalSelect.value = state.goal;
-  el.roleInput.value = state.role;
 }
 
 function render() {
   renderLearner();
   renderControls();
+  renderPlacement();
   renderProgress();
   renderTiers();
   renderTopic();
@@ -378,15 +690,19 @@ function escapeHtml(value) {
 }
 
 function systemPromptFor(topic, tier) {
-  const language = state.language === 'custom'
-    ? (state.customLanguage || 'the learner selected language')
-    : (LANGUAGES.find((item) => item.code === state.language)?.label || 'English');
+  const placement = state.progress.placement;
+  const assigned = placement?.assignedTopicIds?.includes(topic.id) ? 'yes' : 'no';
+  const placedOut = state.progress.completedTopics[topicKey(topic.id)]?.status === 'placed_out' ? 'yes' : 'no';
   return `You are The Ladder guide inside AESOP AI Academy. You are strictly scoped to the selected topic: ${topic.title}.
 
-Learner role: ${state.role}.
-Learner goal: ${state.goal}.
+Placement interests: ${interestText(placement)}.
+Assessment capability score: ${placement?.capabilityScore ?? 'not placed'}.
+Assessment technical score: ${placement?.technicalScore ?? 'not placed'}.
+Assessment governance score: ${placement?.governanceScore ?? 'not placed'}.
+Was this rung assigned by assessment? ${assigned}.
+Was this rung placed out by assessment? ${placedOut}.
 Tier: ${tier.name} - ${tier.title}.
-Preferred language: ${language}. Translate your learner-facing responses into this language unless the learner asks otherwise.
+Preferred language: ${languageLabel()}. Translate your learner-facing responses into this language unless the learner asks otherwise.
 
 Use this guarded teaching pattern:
 1. Diagnose what the learner already understands.
@@ -477,6 +793,7 @@ function exportTranscript() {
     learnerId: state.learnerId,
     ladderVersion: LADDER_VERSION,
     exportedAt: new Date().toISOString(),
+    placement: state.progress.placement,
     completedTopics: state.progress.completedTopics,
     completedLabs: state.progress.completedLabs,
     transcriptEvents: state.progress.transcriptEvents
@@ -511,15 +828,9 @@ function bindEvents() {
     await persist();
   });
 
-  el.goalSelect.addEventListener('change', async () => {
-    state.goal = el.goalSelect.value;
-    await persist();
-  });
-
-  el.roleInput.addEventListener('change', async () => {
-    state.role = el.roleInput.value.trim() || 'self-directed learner';
-    await persist();
-  });
+  el.startPlacementBtn.addEventListener('click', startPlacementAssessment);
+  el.resetPlacementBtn.addEventListener('click', resetPlacementAssessment);
+  el.assessmentForm.addEventListener('submit', submitPlacementAssessment);
 
   el.lookupBtn.addEventListener('click', async () => {
     const id = el.learnerLookup.value.trim().toUpperCase();

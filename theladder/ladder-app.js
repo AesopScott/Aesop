@@ -23,6 +23,7 @@ const state = {
   customLanguage: '',
   activeTierId: LADDER_TIERS[0].id,
   activeTopicId: LADDER_TIERS[0].topics[0].id,
+  placementExpanded: false,
   messages: [],
   progress: {
     completedTopics: {},
@@ -40,11 +41,16 @@ const el = {
   learnerIdLabel: document.getElementById('learnerIdLabel'),
   learnerLookup: document.getElementById('learnerLookup'),
   lookupBtn: document.getElementById('lookupBtn'),
+  placementSection: document.getElementById('placementSection'),
   placementStatus: document.getElementById('placementStatus'),
   placementSummary: document.getElementById('placementSummary'),
   placementMetrics: document.getElementById('placementMetrics'),
   startPlacementBtn: document.getElementById('startPlacementBtn'),
+  togglePlacementBtn: document.getElementById('togglePlacementBtn'),
   resetPlacementBtn: document.getElementById('resetPlacementBtn'),
+  placementProfilePrompt: document.getElementById('placementProfilePrompt'),
+  applyPlacementProfileBtn: document.getElementById('applyPlacementProfileBtn'),
+  dismissProfilePromptBtn: document.getElementById('dismissProfilePromptBtn'),
   assessmentTurnCount: document.getElementById('assessmentTurnCount'),
   assessmentTopBtn: document.getElementById('assessmentTopBtn'),
   assessmentLatestBtn: document.getElementById('assessmentLatestBtn'),
@@ -219,6 +225,7 @@ function saveLocal() {
     customLanguage: state.customLanguage,
     activeTierId: state.activeTierId,
     activeTopicId: state.activeTopicId,
+    placementExpanded: state.placementExpanded,
     progress: state.progress
   }));
 }
@@ -282,6 +289,7 @@ async function loadRemote(learnerId) {
     state.progress.placement = ladder.placement || null;
     state.progress.assessmentMessages = ladder.assessmentMessages || [];
     state.progress.transcriptEvents = ladder.transcriptEvents || [];
+    state.placementExpanded = !state.progress.placement;
   } catch (error) {
     console.warn('Could not load ladder progress:', error);
   }
@@ -296,6 +304,7 @@ function loadLocal() {
     state.customLanguage = saved.customLanguage || state.customLanguage;
     state.activeTierId = saved.activeTierId || state.activeTierId;
     state.activeTopicId = saved.activeTopicId || state.activeTopicId;
+    state.placementExpanded = saved.placementExpanded ?? state.placementExpanded;
     state.progress = saved.progress || state.progress;
     state.progress.completedTopics ||= {};
     state.progress.completedLabs ||= {};
@@ -303,6 +312,7 @@ function loadLocal() {
     state.progress.placement ||= null;
     state.progress.assessmentMessages ||= [];
     state.progress.transcriptEvents ||= [];
+    if (state.progress.placement && saved.placementExpanded === undefined) state.placementExpanded = false;
   } catch (error) {
     console.warn('Could not load local ladder state:', error);
   }
@@ -389,6 +399,7 @@ async function ensureLearnerId() {
 
 async function startPlacementAssessment() {
   await ensureLearnerId();
+  state.placementExpanded = true;
   state.progress.assessmentMessages = [{ role: 'assistant', content: placementOpener() }];
   state.progress.placement = null;
   addTranscript('placement_assessment_started', 'Ladder placement started', 'Started the Ladder placement assessment.');
@@ -449,7 +460,12 @@ function scrollAssessment(position) {
 }
 
 function applyPlacement(placement) {
-  state.progress.placement = placement;
+  state.progress.placement = {
+    ...placement,
+    profileAppliedAt: null,
+    profileDeclinedAt: null
+  };
+  state.placementExpanded = false;
   const now = new Date().toISOString();
   const granted = new Set(placement.grantedTierIds);
   Object.keys(state.progress.completedTopics).forEach((key) => {
@@ -482,6 +498,7 @@ function applyPlacement(placement) {
 }
 
 async function resetPlacementAssessment() {
+  state.placementExpanded = true;
   state.progress.placement = null;
   state.progress.assessmentMessages = [];
   Object.keys(state.progress.completedTopics).forEach((key) => {
@@ -490,6 +507,64 @@ async function resetPlacementAssessment() {
     }
   });
   addTranscript('placement_assessment_reset', 'Ladder placement reset', 'Cleared assessment-based tier grants and assigned rungs.');
+  await persist();
+  render();
+}
+
+async function applyPlacementToProfile() {
+  const placement = state.progress.placement;
+  if (!placement) return;
+  await ensureLearnerId();
+  const now = new Date().toISOString();
+  const assignedGroups = assignedTopicsByTier(placement.assignedTopicIds).map(({ tier, topics }) => ({
+    tierId: tier.id,
+    tierName: tier.name,
+    tierTitle: tier.title,
+    topicIds: topics.map((topic) => topic.id),
+    topicTitles: topics.map((topic) => topic.title)
+  }));
+  try {
+    await setDoc(doc(db, 'learners', state.learnerId), {
+      learnerId: state.learnerId,
+      profile: {
+        ladderPlacement: {
+          version: LADDER_VERSION,
+          updatedAt: now,
+          placedOutTierIds: placement.grantedTierIds,
+          assignedTopicIds: placement.assignedTopicIds,
+          assignedGroups,
+          interestTags: placement.interestTags,
+          capabilityScore: placement.capabilityScore,
+          technicalScore: placement.technicalScore,
+          governanceScore: placement.governanceScore,
+          reasoning: placement.reasoning || ''
+        }
+      }
+    }, { merge: true });
+    state.progress.placement = {
+      ...placement,
+      profileAppliedAt: now,
+      profileDeclinedAt: null
+    };
+    addTranscript(
+      'profile_updated_from_placement',
+      'Profile updated from Ladder placement',
+      `Saved placement profile with ${placement.grantedTierIds.length} placed-out tiers and ${placement.assignedTopicIds.length} assigned rungs.`,
+      { status: TRANSCRIPT_STATUS.VERIFIED, evidence: TRANSCRIPT_STATUS.VERIFIED }
+    );
+    await persist();
+  } catch (error) {
+    console.warn('Could not update learner profile from placement:', error);
+  }
+  render();
+}
+
+async function dismissPlacementProfilePrompt() {
+  if (!state.progress.placement) return;
+  state.progress.placement = {
+    ...state.progress.placement,
+    profileDeclinedAt: new Date().toISOString()
+  };
   await persist();
   render();
 }
@@ -510,6 +585,18 @@ function renderPlacement() {
   const placement = state.progress.placement;
   const messages = state.progress.assessmentMessages || [];
   const userTurns = userAssessmentTurns();
+  if (!placement) state.placementExpanded = true;
+  const isCollapsed = !!placement && !state.placementExpanded;
+  el.placementSection.classList.toggle('is-collapsed', isCollapsed);
+  el.placementSection.classList.toggle('is-expanded', !isCollapsed);
+  el.placementSection.setAttribute('aria-expanded', String(!isCollapsed));
+  el.togglePlacementBtn.hidden = !placement;
+  el.togglePlacementBtn.textContent = isCollapsed ? 'View results' : 'Minimize';
+  el.resetPlacementBtn.hidden = !!placement && isCollapsed;
+  el.placementProfilePrompt.hidden = !placement || !!placement.profileAppliedAt || !!placement.profileDeclinedAt;
+  el.applyPlacementProfileBtn.disabled = !placement;
+  el.dismissProfilePromptBtn.disabled = !placement;
+
   if (!placement) {
     el.placementStatus.textContent = messages.length ? 'Assessment in progress' : 'Not placed yet';
     el.placementSummary.textContent = messages.length
@@ -573,7 +660,7 @@ function renderPlacement() {
 
   el.assessmentInput.disabled = !!placement;
   el.assessmentSend.disabled = !!placement;
-  el.startPlacementBtn.textContent = messages.length ? 'Restart assessment' : 'Start assessment';
+  el.startPlacementBtn.textContent = placement ? 'Retake assessment' : messages.length ? 'Restart assessment' : 'Start assessment';
 }
 
 function completedCount() {
@@ -923,7 +1010,14 @@ function bindEvents() {
   });
 
   el.startPlacementBtn.addEventListener('click', startPlacementAssessment);
+  el.togglePlacementBtn.addEventListener('click', async () => {
+    state.placementExpanded = !state.placementExpanded;
+    await persist();
+    render();
+  });
   el.resetPlacementBtn.addEventListener('click', resetPlacementAssessment);
+  el.applyPlacementProfileBtn.addEventListener('click', applyPlacementToProfile);
+  el.dismissProfilePromptBtn.addEventListener('click', dismissPlacementProfilePrompt);
   el.assessmentTopBtn.addEventListener('click', () => scrollAssessment('top'));
   el.assessmentLatestBtn.addEventListener('click', () => scrollAssessment('latest'));
   el.assessmentForm.addEventListener('submit', submitPlacementAssessment);

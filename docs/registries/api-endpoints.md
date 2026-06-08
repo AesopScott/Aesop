@@ -34,6 +34,9 @@ On error: `{"error": "message string"}`
 - All course module HTML files under `ai-academy/modules/` — `var PROXY_URL='/aesop-api/proxy.php'` convention
 - `ai-academy/modules/admin-review.js:5` — `const PROXY='/aesop-api/proxy.php'`
 
+- `theladder/ladder-app.js:6` - `const PROXY_URL='/aesop-api/proxy.php'`
+- `theladder/ladder-app.js:406` - `fetch(PROXY_URL, {messages, system_prompt, max_tokens})` for guided topic conversations
+
 **Status:** ✓ widely consumed; field names consistent
 
 ---

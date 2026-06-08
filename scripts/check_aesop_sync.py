@@ -9,7 +9,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OBSIDIAN_BUILD = Path("G:/My Drive/Aesop Academy/Obsidian/Aesop_Build")
+OBSIDIAN_BUILD = Path("G:/My Drive/Obsidian/Aesop_Build")
 
 JSON_TARGETS = [
     ROOT / "ai-academy/modules/course-registry.json",

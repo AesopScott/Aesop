@@ -13,7 +13,7 @@ Run `gh repo set-default AesopScott/polaris` at the start of every session befor
 5. **Server restarts:** never from code — tell Scott.
 6. **Windows:** Use PowerShell or Node `fs` for file operations. When `gh` or `git` must run in Bash, use forward-slash paths (`C:/Users/scott/Code/Polaris`) — backslash paths silently corrupt in bash and will fail.
 7. **Commit after every change:** After any file edit or write, immediately commit with a conventional message (feat, fix, refactor, docs, chore, perf, ci). Never leave changes uncommitted. Bump `package.json` version **at delivery time** — in the same edit as the code change, not retroactively, not at end of session, not when the build runs.
-8. **Never give up after one tool failure.** If `QueryMemory` returns an error or empty content, fall back to `Read`, `Glob`, or `Grep` against the filesystem — do not stop and ask the user. Canonical paths to try first: `C:\Users\scott\Code\Polaris\CLAUDE.md` (project rules) and `G:\My Drive\Aesop Academy\Obsidian\Polaris_Build\1-Soul.md` through `8-Logs.md` (project knowledge base, listed in detail under "Project knowledge base" below). Bash and PowerShell tools are available — use them. Asking the user to "advise" or "provide the path" is a last resort, not a first response.
+8. **Never give up after one tool failure.** If `QueryMemory` returns an error or empty content, fall back to `Read`, `Glob`, or `Grep` against the filesystem — do not stop and ask the user. Canonical paths to try first: `C:\Users\scott\Code\Polaris\CLAUDE.md` (project rules) and `G:\My Drive\Obsidian\Polaris_Build\1-Soul.md` through `8-Logs.md` (project knowledge base, listed in detail under "Project knowledge base" below). Bash and PowerShell tools are available — use them. Asking the user to "advise" or "provide the path" is a last resort, not a first response.
 9. **Config archives.** Every write to `%APPDATA%\.claude\polaris\config.json` auto-copies the prior content to `%APPDATA%\.claude\polaris\config-archive\config.<ISO>.json`. Append-only, capped at 200 files / 10 MB total — oldest pruned first. If a save corrupts or wipes config (the 2026-05-05 incident wiped `obsidianDir`, MCP servers, and routines from every project), restore from the most recent pre-incident archive. Do not trust `config.backup.json` alone — single-level, gets rotated past loss points.
 10. **Never run the installer without explicit approval.** Running `build-install.ps1` or any `dist` build launches an NSIS installer that can trigger a Windows reboot. Always ask Scott before running any build+install command. Building with `npm start` or `npm run pack` is safe (no installer, no reboot risk).
 11. **Project isolation.** Do not read files, inspect git history, or browse the directory structure of any other project directory without explicit approval from Scott. Cross-project access is permitted only when Scott explicitly names the other project in the request.
@@ -47,7 +47,7 @@ Run `gh repo set-default AesopScott/polaris` at the start of every session befor
 - Windows Defender exclusions for the source dir, `dist/`, and `%LOCALAPPDATA%\Programs\Polaris` cut Electron build time 30-50% — set manually in Windows Security.
 
 ## Changelog maintenance (mandatory after every version bump)
-After bumping `package.json` version, prepend a row to the **Build Index** table at the top of `G:\My Drive\Aesop Academy\Obsidian\Polaris_Build\4-Changelog.md`. Newest build at the top of the table.
+After bumping `package.json` version, prepend a row to the **Build Index** table at the top of `G:\My Drive\Obsidian\Polaris_Build\4-Changelog.md`. Newest build at the top of the table.
 
 **Format:** `| <version> | <YYYY-MM-DD> | **<type>:** <multi-sentence description with markdown> |`
 
@@ -94,10 +94,10 @@ The detailed prose history continues below the table — keep both. The table is
 - Hard-fail: missing proof units in backlog.json, stale registry line refs, unexplained out-of-scope diff
 
 ## Project knowledge base
-Soul + why: `G:\My Drive\Aesop Academy\Obsidian\Polaris_Build\1-Soul.md`
-Architecture decisions: `G:\My Drive\Aesop Academy\Obsidian\Polaris_Build\2-Architecture.md`
-Build plan + roadmap: `G:\My Drive\Aesop Academy\Obsidian\Polaris_Build\3-Build-Plan.md`
-Full changelog: `G:\My Drive\Aesop Academy\Obsidian\Polaris_Build\4-Changelog.md`
+Soul + why: `G:\My Drive\Obsidian\Polaris_Build\1-Soul.md`
+Architecture decisions: `G:\My Drive\Obsidian\Polaris_Build\2-Architecture.md`
+Build plan + roadmap: `G:\My Drive\Obsidian\Polaris_Build\3-Build-Plan.md`
+Full changelog: `G:\My Drive\Obsidian\Polaris_Build\4-Changelog.md`
 
 ## Coding discipline
 General behavior rules, subordinate to the Polaris-specific rules above. Adapted from `multica-ai/andrej-karpathy-skills` `CLAUDE.md`:

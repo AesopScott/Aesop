@@ -45,6 +45,9 @@ const el = {
   placementMetrics: document.getElementById('placementMetrics'),
   startPlacementBtn: document.getElementById('startPlacementBtn'),
   resetPlacementBtn: document.getElementById('resetPlacementBtn'),
+  assessmentTurnCount: document.getElementById('assessmentTurnCount'),
+  assessmentTopBtn: document.getElementById('assessmentTopBtn'),
+  assessmentLatestBtn: document.getElementById('assessmentLatestBtn'),
   assessmentLog: document.getElementById('assessmentLog'),
   assessmentForm: document.getElementById('assessmentForm'),
   assessmentInput: document.getElementById('assessmentInput'),
@@ -427,6 +430,12 @@ function userAssessmentTurns() {
   return state.progress.assessmentMessages.filter((message) => message.role === 'user').length;
 }
 
+function scrollAssessment(position) {
+  if (!el.assessmentLog) return;
+  el.assessmentLog.scrollTop = position === 'top' ? 0 : el.assessmentLog.scrollHeight;
+  el.assessmentLog.focus({ preventScroll: true });
+}
+
 function applyPlacement(placement) {
   state.progress.placement = placement;
   const now = new Date().toISOString();
@@ -488,6 +497,7 @@ function renderLearner() {
 function renderPlacement() {
   const placement = state.progress.placement;
   const messages = state.progress.assessmentMessages || [];
+  const userTurns = userAssessmentTurns();
   if (!placement) {
     el.placementStatus.textContent = messages.length ? 'Assessment in progress' : 'Not placed yet';
     el.placementSummary.textContent = messages.length
@@ -507,12 +517,20 @@ function renderPlacement() {
     `;
   }
 
+  el.assessmentTurnCount.textContent = `${userTurns} ${userTurns === 1 ? 'response' : 'responses'}`;
+
   if (!messages.length) {
     el.assessmentLog.innerHTML = '<div class="message assistant"><strong>Placement Guide</strong>Start the assessment to let the Ladder assign your path.</div>';
   } else {
-    el.assessmentLog.innerHTML = messages.map((message) => (
-      `<div class="message ${message.role === 'user' ? 'user' : 'assistant'}"><strong>${message.role === 'user' ? 'You' : 'Placement Guide'}</strong>${escapeHtml(message.content)}</div>`
-    )).join('');
+    let userIndex = 0;
+    let guideIndex = 0;
+    el.assessmentLog.innerHTML = messages.map((message) => {
+      const isUser = message.role === 'user';
+      if (isUser) userIndex += 1;
+      else guideIndex += 1;
+      const label = isUser ? `You ${userIndex}` : `Guide ${guideIndex}`;
+      return `<div class="message ${isUser ? 'user' : 'assistant'}"><strong>${label}</strong>${escapeHtml(message.content)}</div>`;
+    }).join('');
     el.assessmentLog.scrollTop = el.assessmentLog.scrollHeight;
   }
 
@@ -857,7 +875,14 @@ function bindEvents() {
 
   el.startPlacementBtn.addEventListener('click', startPlacementAssessment);
   el.resetPlacementBtn.addEventListener('click', resetPlacementAssessment);
+  el.assessmentTopBtn.addEventListener('click', () => scrollAssessment('top'));
+  el.assessmentLatestBtn.addEventListener('click', () => scrollAssessment('latest'));
   el.assessmentForm.addEventListener('submit', submitPlacementAssessment);
+  el.assessmentInput.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+    event.preventDefault();
+    el.assessmentForm.requestSubmit();
+  });
 
   el.lookupBtn.addEventListener('click', async () => {
     const id = el.learnerLookup.value.trim().toUpperCase();

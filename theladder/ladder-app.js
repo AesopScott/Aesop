@@ -14,6 +14,76 @@ const TRANSCRIPT_STATUS = {
   SELF_REPORTED: 'self_reported'
 };
 
+const VOCAB_DEFINITIONS = {
+  'artificial intelligence': 'Computer systems that perform tasks usually associated with human intelligence, such as reasoning, language, perception, planning, prediction, or decision support.',
+  'machine learning': 'A way of building software where patterns are learned from data instead of being written as fixed rules by a programmer.',
+  'generative AI': 'AI that creates new outputs such as text, images, audio, video, code, plans, summaries, or structured data.',
+  'model': 'The trained system that receives inputs and produces outputs based on patterns learned during training and instructions provided at use time.',
+  'chatbot': 'A conversational interface that lets a user interact with software or an AI model through messages.',
+  'assistant': 'An AI system designed to help with tasks through conversation, tool use, reasoning, or workflow support.',
+  'prompt': 'The instruction, question, context, or data a user gives an AI system to guide its response.',
+  'response': 'The output produced by an AI system after receiving a prompt or other input.',
+  'token': 'A chunk of text used by language models, often a word fragment, word, punctuation mark, or symbol.',
+  'context': 'The information available to the model in the current interaction, including messages, files, retrieved data, and instructions.',
+  'training data': 'The examples used to train a model before it is deployed, separate from the user input it sees during a live conversation.',
+  'inference': 'The moment a trained model is used to produce an output from a new input.',
+  'hallucination': 'A confident AI response that is inaccurate, unsupported, fabricated, or not grounded in reliable evidence.',
+  'multimodal': 'Able to work with more than one type of input or output, such as text, images, audio, video, or files.',
+  'privacy': 'The protection and responsible handling of personal, sensitive, confidential, or identifying information.',
+  'system prompt': 'A high-priority instruction that shapes how an AI assistant should behave across a conversation.',
+  'user prompt': 'The instruction, question, or message supplied by the user during an AI interaction.',
+  'role prompt': 'A prompt that asks the AI to respond from a particular perspective, job, expertise, or audience role.',
+  'instruction': 'A directive that tells the AI what to do, avoid, prioritize, or produce.',
+  'constraint': 'A limit or rule placed on an AI response, such as format, length, source use, tone, or allowed actions.',
+  'example': 'A sample input or output used to show the AI the pattern, style, or quality expected.',
+  'few-shot': 'Prompting with a small number of examples so the model can imitate the desired pattern.',
+  'output format': 'The required structure of the AI response, such as bullets, JSON, a table, a checklist, or a short paragraph.',
+  'tone': 'The style or emotional quality of writing, such as formal, plainspoken, encouraging, technical, or concise.',
+  'persona': 'The role, voice, or identity a prompt asks the AI to adopt for a response.',
+  'grounding': 'Connecting an AI answer to provided facts, documents, sources, data, or verified context.',
+  'source': 'The origin of information used to support a claim, such as a document, article, dataset, official page, or primary record.',
+  'citation': 'A reference that points to the source supporting a statement, quote, fact, or claim.',
+  'follow-up': 'A later question or instruction that builds on the previous answer in the same conversation.',
+  'prompt template': 'A reusable prompt structure with slots for task-specific details.',
+  'primary source': 'Original evidence or first-hand material, such as a law, study, dataset, official documentation, transcript, or direct record.',
+  'secondary source': 'A source that summarizes, interprets, or comments on primary sources.',
+  'claim': 'A statement that can be checked, supported, challenged, or refined with evidence.',
+  'evidence': 'Information that supports or weakens a claim, such as data, examples, citations, observations, or source material.',
+  'summary': 'A shortened version of information that preserves the main points.',
+  'synthesis': 'Combining information from multiple sources or ideas into a coherent understanding.',
+  'literature review': 'A structured review of existing research and sources on a topic.',
+  'fact-checking': 'The process of verifying whether a claim is accurate, supported, current, and properly sourced.',
+  'recency': 'How current information is and whether it may have changed since publication.',
+  'credibility': 'How trustworthy a source or claim is based on evidence, expertise, transparency, and reliability.',
+  'bias': 'A systematic slant, preference, omission, or distortion that affects how information is produced or interpreted.',
+  'media literacy': 'The ability to evaluate, interpret, verify, and responsibly use information from media and digital sources.',
+  'epistemic humility': 'Recognizing the limits of what you know and staying open to correction when evidence changes.',
+  'workflow': 'A repeatable sequence of tasks, decisions, tools, and handoffs used to get work done.',
+  'sop': 'A standard operating procedure: a documented process for doing a task consistently.',
+  'template': 'A reusable structure for producing similar outputs with less repeated setup.',
+  'knowledge base': 'An organized collection of information used for reference, support, retrieval, or training.',
+  'meeting note': 'A record of discussion, decisions, questions, and action items from a meeting.',
+  'action item': 'A specific task assigned to a person or team after a discussion or decision.',
+  'human-in-the-loop': 'A workflow where a person reviews, approves, corrects, or guides AI output before it is used.',
+  'api': 'An application programming interface: a structured way for software systems to communicate with each other.',
+  'json': 'A common structured data format using key-value pairs and arrays, often used in APIs and AI outputs.',
+  'rag': 'Retrieval-augmented generation: a pattern where an AI retrieves relevant information before generating an answer.',
+  'embedding': 'A numeric representation of text, images, or other data that helps compare meaning or similarity.',
+  'vector database': 'A database optimized for storing and searching embeddings by similarity.',
+  'agent': 'An AI system that can pursue a goal through multiple steps, often using tools, memory, or external systems.',
+  'tool use': 'The ability for an AI system to call external tools, APIs, functions, files, or services.',
+  'function calling': 'A structured way for an AI model to request a predefined function or tool with specific arguments.',
+  'evaluation': 'The process of testing whether an AI system performs well, safely, and reliably for a defined task.',
+  'red-teaming': 'Adversarial testing that tries to find failures, harms, misuse paths, or vulnerabilities before deployment.',
+  'prompt injection': 'An attack or failure mode where malicious or conflicting instructions try to override the intended behavior of an AI system.',
+  'governance': 'The policies, roles, reviews, and accountability structures that guide responsible AI use.',
+  'compliance': 'Following applicable laws, regulations, contracts, policies, and standards.',
+  'copyright': 'A legal framework that protects original creative works and affects how content can be copied, transformed, or reused.',
+  'risk': 'The possibility that an AI system or use case could cause harm, error, cost, exposure, or unintended consequences.',
+  'audit trail': 'A record of actions, decisions, changes, approvals, or outputs that can be reviewed later.',
+  'vendor risk': 'Risk created by relying on an outside provider, including privacy, reliability, security, lock-in, cost, and compliance concerns.'
+};
+
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getFirestore(app);
 
@@ -23,6 +93,7 @@ const state = {
   customLanguage: '',
   activeTierId: LADDER_TIERS[0].id,
   activeTopicId: LADDER_TIERS[0].topics[0].id,
+  activeVocabTerm: LADDER_TIERS[0].vocabulary[0],
   placementExpanded: false,
   messages: [],
   progress: {
@@ -66,6 +137,10 @@ const el = {
   completeTopicBtn: document.getElementById('completeTopicBtn'),
   vocabCount: document.getElementById('vocabCount'),
   vocabList: document.getElementById('vocabList'),
+  vocabDefinitionTerm: document.getElementById('vocabDefinitionTerm'),
+  vocabDefinitionBox: document.getElementById('vocabDefinitionBox'),
+  vocabPromptForm: document.getElementById('vocabPromptForm'),
+  vocabPromptInput: document.getElementById('vocabPromptInput'),
   resourceList: document.getElementById('resourceList'),
   researchBtn: document.getElementById('researchBtn'),
   startConversationBtn: document.getElementById('startConversationBtn'),
@@ -225,6 +300,7 @@ function saveLocal() {
     customLanguage: state.customLanguage,
     activeTierId: state.activeTierId,
     activeTopicId: state.activeTopicId,
+    activeVocabTerm: state.activeVocabTerm,
     placementExpanded: state.placementExpanded,
     progress: state.progress
   }));
@@ -242,6 +318,7 @@ async function saveRemote() {
         customLanguage: state.customLanguage,
         activeTierId: state.activeTierId,
         activeTopicId: state.activeTopicId,
+        activeVocabTerm: state.activeVocabTerm,
         completedTopics: state.progress.completedTopics,
         completedLabs: state.progress.completedLabs,
         vocabulary: state.progress.vocabulary,
@@ -283,6 +360,7 @@ async function loadRemote(learnerId) {
     state.customLanguage = ladder.customLanguage || state.customLanguage;
     state.activeTierId = ladder.activeTierId || state.activeTierId;
     state.activeTopicId = ladder.activeTopicId || state.activeTopicId;
+    state.activeVocabTerm = ladder.activeVocabTerm || state.activeVocabTerm;
     state.progress.completedTopics = ladder.completedTopics || {};
     state.progress.completedLabs = ladder.completedLabs || {};
     state.progress.vocabulary = ladder.vocabulary || {};
@@ -304,6 +382,7 @@ function loadLocal() {
     state.customLanguage = saved.customLanguage || state.customLanguage;
     state.activeTierId = saved.activeTierId || state.activeTierId;
     state.activeTopicId = saved.activeTopicId || state.activeTopicId;
+    state.activeVocabTerm = saved.activeVocabTerm || state.activeVocabTerm;
     state.placementExpanded = saved.placementExpanded ?? state.placementExpanded;
     state.progress = saved.progress || state.progress;
     state.progress.completedTopics ||= {};
@@ -746,25 +825,58 @@ function renderTopicPicker(tier) {
   });
 }
 
+function definitionForTerm(term, tier) {
+  const normalized = String(term || '').toLowerCase();
+  return VOCAB_DEFINITIONS[normalized]
+    || `${term} is a key term in ${tier.title}. In this tier, focus on what it means, how it changes AI use, where it can fail, and how you would recognize it in a real workflow.`;
+}
+
+function renderVocabularyDefinition(tier) {
+  if (!tier.vocabulary.includes(state.activeVocabTerm)) {
+    state.activeVocabTerm = tier.vocabulary[0];
+  }
+  const term = state.activeVocabTerm;
+  const definition = definitionForTerm(term, tier);
+  el.vocabDefinitionTerm.textContent = term;
+  el.vocabDefinitionBox.innerHTML = `
+    <strong>${escapeHtml(term)}</strong>
+    <p>${escapeHtml(definition)}</p>
+    <small>Use the prompt below to start an AI conversation about this term.</small>
+  `;
+  el.vocabPromptInput.placeholder = `Ask about ${term}`;
+}
+
+async function selectVocabularyTerm(tier, term) {
+  state.activeVocabTerm = term;
+  const key = `${tier.id}:${term}`;
+  if (!state.progress.vocabulary[key]) {
+    state.progress.vocabulary[key] = true;
+    addTranscript('vocabulary_marked', term, `Reviewed vocabulary definition in ${tier.title}.`);
+  }
+  await persist();
+  renderVocabulary(tier);
+  renderVocabularyDefinition(tier);
+  renderTranscript();
+}
+
 function renderVocabulary(tier) {
+  if (!tier.vocabulary.includes(state.activeVocabTerm)) {
+    state.activeVocabTerm = tier.vocabulary[0];
+  }
   el.vocabCount.textContent = `${tier.vocabulary.length} terms`;
   el.vocabList.innerHTML = tier.vocabulary.map((term) => {
     const key = `${tier.id}:${term}`;
     const done = state.progress.vocabulary[key] ? ' done' : '';
-    return `<button class="vocab-pill${done}" type="button" data-vocab="${term}">${term}</button>`;
+    const active = term === state.activeVocabTerm ? ' active' : '';
+    return `<button class="vocab-pill${done}${active}" type="button" data-vocab="${term}">${term}</button>`;
   }).join('');
 
   el.vocabList.querySelectorAll('[data-vocab]').forEach((button) => {
     button.addEventListener('click', async () => {
-      const key = `${tier.id}:${button.dataset.vocab}`;
-      state.progress.vocabulary[key] = !state.progress.vocabulary[key];
-      if (state.progress.vocabulary[key]) {
-        addTranscript('vocabulary_marked', button.dataset.vocab, `Marked vocabulary term in ${tier.title}.`);
-      }
-      await persist();
-      render();
+      await selectVocabularyTerm(tier, button.dataset.vocab);
     });
   });
+  renderVocabularyDefinition(tier);
 }
 
 function resourcesForTopic(topic) {
@@ -925,6 +1037,25 @@ async function startConversation() {
   renderTranscript();
 }
 
+async function startVocabularyConversation(event) {
+  event.preventDefault();
+  const tier = getActiveTier();
+  const term = state.activeVocabTerm || tier.vocabulary[0];
+  const definition = definitionForTerm(term, tier);
+  const userQuestion = el.vocabPromptInput.value.trim();
+  state.messages = [{
+    role: 'user',
+    content: `Start a guided vocabulary conversation about "${term}" in the context of "${tier.title}". Begin with this definition: ${definition} Ask me whether I have any additional questions about this vocabulary word, then help me understand it through examples, misconceptions, and one application question.${userQuestion ? ` My specific question is: ${userQuestion}` : ''}`
+  }];
+  el.vocabPromptInput.value = '';
+  renderChat();
+  await callGuide();
+  addTranscript('vocabulary_conversation_started', term, `Started a guided vocabulary conversation for ${term}.`);
+  await persist();
+  renderTranscript();
+  document.querySelector('.conversation-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 async function submitChat(event) {
   event.preventDefault();
   const value = el.chatInput.value.trim();
@@ -1038,6 +1169,7 @@ function bindEvents() {
   });
 
   el.startConversationBtn.addEventListener('click', startConversation);
+  el.vocabPromptForm.addEventListener('submit', startVocabularyConversation);
   el.chatForm.addEventListener('submit', submitChat);
   el.completeTopicBtn.addEventListener('click', markTopicComplete);
   el.completeLabBtn.addEventListener('click', markLabComplete);

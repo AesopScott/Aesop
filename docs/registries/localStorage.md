@@ -158,6 +158,22 @@ Dark mode preference.
 
 ---
 
+## `aesop-product-course-requests-v1`
+
+Local fallback queue for product training requests from `/theladder-products/` when Firestore does not accept the write. This is not the primary approval system; it exists so the learner gets a recoverable record instead of losing the request.
+
+**Value format:** `JSON string` - array of product request objects matching the `productCourseRequests` shape, plus `id`, `localOnly`, and `error` fields.
+
+**Producers**
+- `theladder-products/products-app.js` - `setItem` when Firestore `addDoc` fails
+
+**Consumers**
+- `theladder-products/products-admin.js` - `getItem` to show same-browser fallback requests on the admin queue
+
+**Status:** ⚠ same-browser fallback only; production approval should use Firestore `productCourseRequests`
+
+---
+
 ## Summary
 
 | Key | Format | Producers | Consumers | Status |
@@ -171,6 +187,7 @@ Dark mode preference.
 | `aesop-cert-fdn` | integer string | cert tracking | students.html | ✓ |
 | `aesop-cert-mpts` | integer string | cert tracking | students.html | ✓ |
 | `aesop-theme` | `'dark'\|'light'` | theme toggles | theme init scripts | ✓ |
+| `aesop-product-course-requests-v1` | JSON array | products-app.js | products-admin.js | ⚠ local fallback only |
 
 ---
 

@@ -1,5 +1,8 @@
 const catalogUrl = '/docs/theladder-products-catalog.md?v=1';
 const storageKey = 'aesop-ladder-products-state-v1';
+const requestStorageKey = 'aesop-product-course-requests-v1';
+const requestCollection = 'productCourseRequests';
+let requestDbContext = null;
 
 const categoryRanges = [
   { label: 'All products', start: 1, end: 250 },
@@ -51,7 +54,10 @@ const elements = {
   totalProducts: document.querySelector('#totalProducts'),
   advancedCount: document.querySelector('#advancedCount'),
   educationFocusSelect: document.querySelector('#educationFocusSelect'),
-  themeToggle: document.querySelector('#themeToggle')
+  themeToggle: document.querySelector('#themeToggle'),
+  productRequestForm: document.querySelector('#productRequestForm'),
+  productRequestMessage: document.querySelector('#productRequestMessage'),
+  submitProductRequest: document.querySelector('#submitProductRequest')
 };
 
 init();
@@ -118,6 +124,8 @@ function bindEvents() {
     saveState();
     renderProducts();
   });
+
+  elements.productRequestForm?.addEventListener('submit', handleProductRequestSubmit);
 
   window.addEventListener('beforeunload', saveState);
 }
@@ -367,6 +375,113 @@ function formatSavedDate(value) {
     hour: 'numeric',
     minute: '2-digit'
   });
+}
+
+async function handleProductRequestSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const productName = String(formData.get('productName') || '').trim();
+  const productType = String(formData.get('productType') || '').trim();
+  const reason = String(formData.get('reason') || '').trim();
+  const requesterEmail = String(formData.get('requesterEmail') || '').trim();
+
+  if (!productName || !reason) {
+    showRequestMessage('Add the product name and why it should be taught.', 'error');
+    return;
+  }
+
+  const selectedProduct = getSelectedProduct();
+  const submittedAtIso = new Date().toISOString();
+  const request = {
+    productName,
+    productType: productType || 'Unassigned',
+    reason,
+    requesterEmail,
+    sourcePath: window.location.pathname,
+    sourceProductId: selectedProduct?.id || null,
+    sourceProductName: selectedProduct?.name || '',
+    status: 'requested',
+    createdAtIso: submittedAtIso,
+    updatedAtIso: submittedAtIso,
+    history: [{
+      status: 'requested',
+      at: submittedAtIso,
+      actor: requesterEmail || 'requester',
+      note: 'Submitted from The Ladder Products page.'
+    }]
+  };
+
+  setRequestSubmitting(true);
+  try {
+    const { collection, addDoc, serverTimestamp, db } = await getRequestDbContext();
+    await addDoc(collection(db, requestCollection), {
+      ...request,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    form.reset();
+    showRequestMessage('Request sent to the admin review queue.', 'success');
+  } catch (error) {
+    const offlineRequest = {
+      ...request,
+      id: `local-${Date.now()}`,
+      localOnly: true,
+      error: error.message || 'Firebase write failed'
+    };
+    saveOfflineRequest(offlineRequest);
+    form.reset();
+    showRequestMessage('Firebase did not accept the request, so it was saved locally on this browser for admin review.', 'warning');
+    console.warn('Product request saved locally', error);
+  } finally {
+    setRequestSubmitting(false);
+  }
+}
+
+async function getRequestDbContext() {
+  if (requestDbContext) return requestDbContext;
+  const [{ initializeApp, getApps, getApp }, firestoreModule, configModule] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
+    import('/ai-academy/js/firebase-config.js')
+  ]);
+  const app = getApps().length ? getApp() : initializeApp(configModule.FIREBASE_CONFIG);
+  requestDbContext = {
+    db: firestoreModule.getFirestore(app),
+    collection: firestoreModule.collection,
+    addDoc: firestoreModule.addDoc,
+    serverTimestamp: firestoreModule.serverTimestamp
+  };
+  return requestDbContext;
+}
+
+function saveOfflineRequest(request) {
+  const existing = readOfflineRequests();
+  existing.unshift(request);
+  localStorage.setItem(requestStorageKey, JSON.stringify(existing.slice(0, 50)));
+}
+
+function readOfflineRequests() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(requestStorageKey) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn('Could not read local product requests', error);
+    return [];
+  }
+}
+
+function setRequestSubmitting(isSubmitting) {
+  if (!elements.submitProductRequest) return;
+  elements.submitProductRequest.disabled = isSubmitting;
+  elements.submitProductRequest.textContent = isSubmitting ? 'Sending...' : 'Send request';
+}
+
+function showRequestMessage(message, tone = 'success') {
+  if (!elements.productRequestMessage) return;
+  elements.productRequestMessage.hidden = false;
+  elements.productRequestMessage.dataset.tone = tone;
+  elements.productRequestMessage.textContent = message;
 }
 
 function renderLoading() {

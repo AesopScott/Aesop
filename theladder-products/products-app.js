@@ -1,4 +1,4 @@
-const catalogUrl = '/docs/theladder-products-catalog.md?v=1';
+const catalogUrl = '/docs/theladder-products-catalog.md?v=2';
 const storageKey = 'aesop-ladder-products-state-v1';
 const requestStorageKey = 'aesop-product-course-requests-v1';
 const requestCollection = 'productCourseRequests';
@@ -7,7 +7,7 @@ const courseProxyUrl = '/aesop-api/proxy.php';
 let requestDbContext = null;
 
 const categoryRanges = [
-  { label: 'All products', start: 1, end: 250 },
+  { label: 'All products', start: 1, end: 500 },
   { label: 'AI assistants', start: 1, end: 20 },
   { label: 'Workplace + writing', start: 21, end: 35 },
   { label: 'Coding tools', start: 36, end: 61 },
@@ -19,7 +19,17 @@ const categoryRanges = [
   { label: 'Sales + support', start: 167, end: 191 },
   { label: 'Agents + automation', start: 192, end: 210 },
   { label: 'Model APIs + cloud', start: 211, end: 230 },
-  { label: 'Regulated AI', start: 231, end: 250 }
+  { label: 'Regulated AI', start: 231, end: 250 },
+  { label: 'HR + recruiting', start: 251, end: 275 },
+  { label: 'Education + tutoring', start: 276, end: 300 },
+  { label: 'Ecommerce + retail', start: 301, end: 325 },
+  { label: 'Finance + accounting', start: 326, end: 350 },
+  { label: 'AIOps + incidents', start: 351, end: 375 },
+  { label: 'AI governance', start: 376, end: 400 },
+  { label: 'Construction + real estate', start: 401, end: 425 },
+  { label: 'Manufacturing + supply chain', start: 426, end: 450 },
+  { label: 'Science + clinical AI', start: 451, end: 475 },
+  { label: 'Personal productivity', start: 476, end: 500 }
 ];
 
 const certificationOptions = [

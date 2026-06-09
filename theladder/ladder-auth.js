@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
 
 const IDENTITY_ASSURANCE_LEVELS = [
@@ -169,33 +169,6 @@ async function handleCreateAccount() {
   }
 }
 
-async function handleGoogleSignIn() {
-  console.log('[Google Sign-In] Button clicked');
-  setError('');
-  try {
-    console.log('[Google Sign-In] Creating provider and redirecting...');
-    const provider = new GoogleAuthProvider();
-    console.log('[Google Sign-In] Calling signInWithRedirect...');
-    await signInWithRedirect(auth, provider);
-    console.log('[Google Sign-In] Redirect initiated');
-    // Page will redirect to Google, then return here after sign-in
-  } catch (error) {
-    console.error('[Google Sign-In] Error:', error);
-    setError(`Google sign in failed: ${error.message}`);
-  }
-}
-
-// Handle redirect result when page loads (after returning from Google Sign-In)
-async function handleRedirectResult() {
-  try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      setError(''); // Sign-in successful, clear any errors
-    }
-  } catch (error) {
-    setError(`Google sign in failed: ${error.message}`);
-  }
-}
 
 function handleProceed() {
   // Validate required fields
@@ -243,9 +216,6 @@ renderProctoringModeSelect();
 updateProctoringModeVisibility();
 initializeDarkMode();
 
-// Handle redirect result from Google Sign-In (if returning from redirect)
-handleRedirectResult();
-
 // Event listeners
 if (el.authIdentityAssuranceSelect) {
   el.authIdentityAssuranceSelect.addEventListener('change', (e) => {
@@ -270,13 +240,6 @@ if (el.authSignInBtn) {
 
 if (el.authCreateBtn) {
   el.authCreateBtn.addEventListener('click', handleCreateAccount);
-}
-
-if (el.authGoogleBtn) {
-  console.log('[Init] Google Sign-In button found, attaching listener');
-  el.authGoogleBtn.addEventListener('click', handleGoogleSignIn);
-} else {
-  console.warn('[Init] Google Sign-In button NOT found');
 }
 
 if (el.authProceedBtn) {

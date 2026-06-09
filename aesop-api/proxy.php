@@ -9,13 +9,25 @@
  * No user account needed — key is server-side only.
  */
 
+// Try to load secrets from multiple locations
 $secretsFile = dirname(__DIR__) . '/secrets.php';
+$apiKeyLoaded = false;
+
 if (file_exists($secretsFile)) {
     require_once $secretsFile;
+    if (function_exists('aesop_secret')) {
+        $API_KEY = aesop_secret('AESOP_ANTHROPIC_API_KEY', '');
+        $apiKeyLoaded = ($API_KEY !== '');
+    }
+}
+
+// Fallback: check environment variable directly
+if (!$apiKeyLoaded) {
+    $API_KEY = getenv('AESOP_ANTHROPIC_API_KEY') ?: '';
+    $apiKeyLoaded = ($API_KEY !== '');
 }
 
 // ── CONFIG ──────────────────────────────────────────────────────────────
-$API_KEY = function_exists('aesop_secret') ? aesop_secret('AESOP_ANTHROPIC_API_KEY', '') : '';
 $MODEL_DEFAULT = 'claude-haiku-4-5-20251001';
 $ALLOWED_MODELS = [
     'claude-haiku-4-5-20251001',

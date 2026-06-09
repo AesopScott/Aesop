@@ -843,7 +843,8 @@ function certificationTranscriptLines() {
       depthLabel: 'Assessment certified',
       evidence: TRANSCRIPT_STATUS.VERIFIED,
       earnedAt: latest.earnedAt,
-      transcriptLine: `Placed out of ${assessment.length} ${assessment.length === 1 ? 'tier' : 'tiers'}: ${assessment.map((record) => record.title).join(', ')}.`
+      transcriptLine: `Placed out of ${assessment.length} ${assessment.length === 1 ? 'tier' : 'tiers'}:`,
+      tiersList: assessment.map((record) => record.title)
     });
   }
   return [...lines, ...exams];
@@ -1859,9 +1860,15 @@ function renderTranscript() {
     return;
   }
 
-  el.transcriptList.innerHTML = certificationLines.map((record) => (
-    `<div class="transcript-event"><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.depthLabel)} - ${escapeHtml(record.evidence)} evidence - ${new Date(record.earnedAt).toLocaleString()}</small><p>${escapeHtml(record.transcriptLine || record.rationale || '')}</p></div>`
-  )).join('');
+  el.transcriptList.innerHTML = certificationLines.map((record) => {
+    let content = `<p>${escapeHtml(record.transcriptLine || record.rationale || '')}</p>`;
+    if (record.tiersList && record.tiersList.length > 0) {
+      content += `<ul style="margin: 0.75rem 0 0 0; padding-left: 1.5rem;">
+        ${record.tiersList.map(tier => `<li>${escapeHtml(tier)}</li>`).join('')}
+      </ul>`;
+    }
+    return `<div class="transcript-event"><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.depthLabel)} - ${escapeHtml(record.evidence)} evidence - ${new Date(record.earnedAt).toLocaleString()}</small>${content}</div>`;
+  }).join('');
 }
 
 function renderTopic() {

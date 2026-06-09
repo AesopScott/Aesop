@@ -1952,7 +1952,11 @@ function renderIdentityAssurance() {
 
 function renderAccountGate() {
   const gate = accountGateForCertificationTier();
-  const shouldShow = !certificationTierRequiresAccount() && Boolean(state.authUser);
+  if (certificationTierRequiresAccount()) {
+    if (el.accountGatePanel) el.accountGatePanel.hidden = true;
+    return gate;
+  }
+  const shouldShow = Boolean(state.authUser);
   if (el.accountGatePanel) el.accountGatePanel.hidden = !shouldShow;
   if (el.accountStatusText) {
     el.accountStatusText.textContent = state.authUser

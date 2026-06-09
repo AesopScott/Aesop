@@ -2014,6 +2014,9 @@ function renderEvaluationPanel() {
   if (el.authRequiredLink) {
     el.authRequiredLink.hidden = !certificationTierRequiresAccount();
   }
+  if (el.startEvaluationBtn && certificationTierRequiresAccount()) {
+    el.startEvaluationBtn.hidden = true;
+  }
   if (el.identityAssuranceField) {
     el.identityAssuranceField.hidden = true;
   }

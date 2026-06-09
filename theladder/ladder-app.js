@@ -2102,9 +2102,32 @@ function renderChat() {
     return;
   }
   el.chatLog.innerHTML = state.messages.map((message) => (
-    `<div class="message ${message.role === 'user' ? 'user' : 'assistant'}"><strong>${message.role === 'user' ? 'You' : state.evaluationContext ? 'Examiner' : 'Guide'}</strong>${escapeHtml(message.content)}</div>`
+    `<div class="message ${message.role === 'user' ? 'user' : 'assistant'}"><strong>${message.role === 'user' ? 'You' : state.evaluationContext ? 'Examiner' : 'Guide'}</strong>${formatChatMessage(message.content)}</div>`
   )).join('') + renderStandardsReviewPrompt();
   el.chatLog.scrollTop = el.chatLog.scrollHeight;
+}
+
+function formatChatMessage(content) {
+  // Convert markdown to HTML for better readability in chat
+  let html = escapeHtml(content);
+
+  // Headers
+  html = html.replace(/^### (.*?)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2>$1</h2>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Bullet lists - convert * to <li> and wrap in <ul>
+  html = html.replace(/^\* (.*?)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*?<\/li>)/s, '<ul>$1</ul>');
+
+  // Line breaks - convert \n to <br> but preserve structure
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
 }
 
 function renderTranscript() {

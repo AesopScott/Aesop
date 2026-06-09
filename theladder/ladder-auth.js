@@ -214,20 +214,27 @@ async function handleCreateAccount() {
 
 
 function handleProceed() {
+  console.log('[ATTESTATION] handleProceed called');
   // Validate required fields
   const selectedLevel = IDENTITY_ASSURANCE_LEVELS.find(l => l.id === state.identityAssuranceId);
 
+  console.log('[ATTESTATION] Identity assurance level:', state.identityAssuranceId);
   if (!state.identityAssuranceId) {
+    console.log('[ATTESTATION] ERROR: No identity assurance level selected');
     setError('Please select an identity assurance level.');
     return;
   }
 
+  console.log('[ATTESTATION] Proctoring required:', selectedLevel?.proctoringRequired, 'Mode selected:', state.proctoringModeId);
   if (selectedLevel?.proctoringRequired && !state.proctoringModeId) {
+    console.log('[ATTESTATION] ERROR: Proctoring required but not selected');
     setError('Please select a proctoring method for the selected assurance level.');
     return;
   }
 
+  console.log('[ATTESTATION] Attestation checkbox checked:', el.authIdentityAttestationCheck?.checked);
   if (!el.authIdentityAttestationCheck?.checked) {
+    console.log('[ATTESTATION] ERROR: Attestation not checked');
     setError('Please confirm that you will take this certification attempt yourself.');
     return;
   }

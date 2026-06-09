@@ -2102,6 +2102,7 @@ function render() {
   renderTiers();
   renderTopic();
   renderTranscript();
+  updatePageTranslations();
 }
 
 function escapeHtml(value) {

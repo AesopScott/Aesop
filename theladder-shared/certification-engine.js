@@ -262,10 +262,43 @@ Validate BOTH sides:
 
 Reject validation if the conversation is too short, mostly leading, off-topic, missing evidence, mismatched to the blueprint, or if the proposed result is unsupported.
 
+CATEGORIZING FAILURE REASONS:
+
+If returning valid === false, categorize the concern in the concerns array to enable appropriate remediation:
+
+1. NOT_STRINGENT_ENOUGH
+   Situation: Learner understood concepts and can apply them, but evidence is incomplete, shallow, or needs more specificity.
+   Example: Correct explanation but artifact lacks implementation details, edge cases not explored, defense incomplete.
+   Recoverable: true — offer 3-5 follow-up questions targeting missing evidence.
+
+2. EXAMINER_PROCESS_ISSUE
+   Situation: Examiner rushed, missed evidence, or certified too easily.
+   Example: Conversation too short, leading questions, insufficient challenge.
+   Recoverable: false — require new full attempt.
+
+3. CRITICAL_FAILURE
+   Situation: Learner misunderstood core concept, gave unsafe advice, or evidence contradicts.
+   Example: Harmful recommendations, privacy misunderstanding, fundamental concept confusion.
+   Recoverable: false — require full reattempt with remediation.
+
+4. INSUFFICIENT_EDUCATION_TIER_MATCH
+   Situation: Learner's response level doesn't match selected education tier.
+   Example: College-tier evidence for high-school certification.
+   Recoverable: false — offer to drop to lower tier or retry.
+
+For EACH concern in the concerns array, include:
+- type: one of the above (NOT_STRINGENT_ENOUGH, EXAMINER_PROCESS_ISSUE, CRITICAL_FAILURE, INSUFFICIENT_EDUCATION_TIER_MATCH)
+- dimension: which rubric dimension failed (e.g., "Evidence quality", "Applied judgment")
+- severity: "low" | "moderate" | "high"
+- detail: one sentence explaining the gap
+- recoverable: true/false (can follow-up questions help resolve this?)
+
+Use recoverable === true ONLY for NOT_STRINGENT_ENOUGH with clear, narrow gaps. All other types should be recoverable === false.
+
 Return only this hidden marker, on one line:
 <!--LADDER_CERTIFICATION_VALIDATION:{"valid":true,"learner_valid":true,"examiner_valid":true,"confidence":0.0,"rationale":"one concise reason","learner_evidence":"one concise evidence summary","examiner_review":"one concise process review","concerns":[]}-->
 
-Set valid to true only when learner_valid and examiner_valid are both true. If invalid, set valid false and include concrete concerns. Do not include markdown, prose, or any text outside the marker.`;
+Set valid to true only when learner_valid and examiner_valid are both true. If invalid, set valid false and include concrete concerns with type/dimension/severity/recoverable fields. Do not include markdown, prose, or any text outside the marker.`;
   }
 
   function buildValidationMessages(context, result, conversationMessages = []) {
@@ -338,6 +371,34 @@ ${transcript}`
     }, context, result, validatorModel);
   }
 
+  // ---- Retry eligibility logic ------------------------------------------
+
+  function shouldOfferRetry(validation) {
+    // Never offer retry on pass
+    if (validation.valid) return false;
+    // Never offer retry if no concerns array
+    if (!Array.isArray(validation.concerns)) return false;
+
+    const hasRecoverableConcern = validation.concerns.some(c =>
+      c?.type === 'NOT_STRINGENT_ENOUGH' && c?.recoverable === true
+    );
+    const hasCriticalConcern = validation.concerns.some(c =>
+      c?.type === 'CRITICAL_FAILURE' ||
+      c?.type === 'EXAMINER_PROCESS_ISSUE'
+    );
+
+    return hasRecoverableConcern && !hasCriticalConcern;
+  }
+
+  function retryableFailureDimensions(validation) {
+    // Extract rubric dimensions flagged as recoverable NOT_STRINGENT_ENOUGH
+    if (!Array.isArray(validation.concerns)) return [];
+    return validation.concerns
+      .filter(c => c?.type === 'NOT_STRINGENT_ENOUGH' && c?.recoverable === true)
+      .map(c => c?.dimension)
+      .filter(Boolean);
+  }
+
   async function validateCertification(context, result, conversationMessages = []) {
     try {
       const response = await fetchImpl(proxyUrl, {
@@ -398,7 +459,15 @@ ${transcript}`
       validationStatus: validation ? (validation.valid ? 'valid' : 'invalid') : 'pending',
       humanReviewRecommended: Boolean(extra.humanReviewRecommended),
       challengeStatus: 'none',
-      finalDecision: validation && validation.valid && isCertifiedResult(result) ? 'certified' : 'not_certified'
+      finalDecision: validation && validation.valid && isCertifiedResult(result) ? 'certified' : 'not_certified',
+      // NEW: Retry attempt tracking
+      retryAttempts: extra.retryAttempts || [],
+      originalValidationFailed: Boolean(extra.originalValidationFailed),
+      finalValidationStatus: extra.finalValidationStatus || (validation?.valid ? 'valid' : 'invalid'),
+      validationAttempts: extra.validationAttempts || 1,
+      retryEligible: Boolean(extra.retryEligible),
+      retryAccepted: Boolean(extra.retryAccepted),
+      retryPath: extra.retryPath || 'none' // 'immediate' | 'deferred' | 'none'
     };
   }
 
@@ -414,6 +483,22 @@ ${transcript}`
 
     // INVARIANT: failed validation -> logged, never credentialed.
     if (!validation.valid) {
+      // NEW: Check if retry is appropriate
+      const offerRetry = shouldOfferRetry(validation);
+      const retryDimensions = offerRetry ? retryableFailureDimensions(validation) : [];
+
+      if (offerRetry && typeof hooks.onRetryEligible === 'function') {
+        // Signal that retry should be offered to the learner
+        hooks.onRetryEligible({ validation, retryDimensions });
+        return {
+          outcome: 'retry_offered',
+          validation,
+          record: null,
+          retryEligible: true,
+          retryDimensions
+        };
+      }
+      // Existing non-retry failure path
       return { outcome: 'validation_failed', validation, record: null };
     }
     if (!isCertified) {
@@ -513,6 +598,8 @@ ${transcript}`
     normalizeValidation,
     failedValidation,
     validateCertification,
+    shouldOfferRetry,
+    retryableFailureDimensions,
     buildEvidencePacket,
     recordCertificationResult,
     buildChallenge,

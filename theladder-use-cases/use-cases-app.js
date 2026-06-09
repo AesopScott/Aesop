@@ -7,7 +7,6 @@ const courseProxyUrl = '/aesop-api/proxy.php';
 let requestDbContext = null;
 
 const topicRanges = [
-  { label: 'All use cases', start: 1, end: 300 },
   { label: 'Personal productivity + planning', start: 1, end: 15 },
   { label: 'Writing + communication', start: 16, end: 30 },
   { label: 'Research + knowledge work', start: 31, end: 45 },
@@ -29,6 +28,7 @@ const topicRanges = [
   { label: 'Government, nonprofit + public services', start: 271, end: 285 },
   { label: 'Strategy, leadership + governance', start: 286, end: 300 }
 ];
+const defaultTopic = topicRanges[0];
 
 const certificationOptions = [
   {
@@ -48,7 +48,7 @@ const certificationOptions = [
 const state = {
   useCases: [],
   selectedId: 1,
-  activeTopic: topicRanges[0],
+  activeTopic: defaultTopic,
   query: '',
   depth: 'all',
   courseStarts: {},
@@ -144,7 +144,6 @@ function setupEducationFocusSelect() {
 function renderTopicRequestOptions() {
   if (!elements.requestUseCaseTopic) return;
   elements.requestUseCaseTopic.insertAdjacentHTML('beforeend', topicRanges
-    .filter((topic) => topic.label !== 'All use cases')
     .map((topic) => `<option>${escapeHtml(topic.label)}</option>`)
     .join(''));
 }
@@ -192,7 +191,7 @@ function renderTopics() {
     button.addEventListener('click', () => {
       const start = Number(button.dataset.start);
       const end = Number(button.dataset.end);
-      state.activeTopic = topicRanges.find((topic) => topic.start === start && topic.end === end) || topicRanges[0];
+      state.activeTopic = topicRanges.find((topic) => topic.start === start && topic.end === end) || defaultTopic;
       saveState();
       renderTopics();
       renderUseCases();
@@ -617,8 +616,7 @@ function restoreSavedState() {
   if (Number.isFinite(saved.selectedId)) state.selectedId = saved.selectedId;
   if (typeof saved.query === 'string') state.query = saved.query;
   if (['all', 'B', 'B/I', 'B/I/A'].includes(saved.depth)) state.depth = saved.depth;
-  const savedTopic = topicRanges.find((topic) => topic.start === saved.activeTopic?.start && topic.end === saved.activeTopic?.end);
-  if (savedTopic) state.activeTopic = savedTopic;
+  state.activeTopic = defaultTopic;
   if (saved.courseStarts && typeof saved.courseStarts === 'object') {
     state.courseStarts = Object.fromEntries(Object.entries(saved.courseStarts)
       .filter(([useCaseId, record]) => Number.isFinite(Number(useCaseId)) && typeof record?.level === 'string')
@@ -658,10 +656,6 @@ function saveState() {
   try {
     localStorage.setItem(storageKey, JSON.stringify({
       selectedId: state.selectedId,
-      activeTopic: {
-        start: state.activeTopic.start,
-        end: state.activeTopic.end
-      },
       query: state.query,
       depth: state.depth,
       courseStarts: state.courseStarts,

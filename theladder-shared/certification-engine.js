@@ -399,6 +399,167 @@ ${transcript}`
       .filter(Boolean);
   }
 
+  // ---- Retry question generation and re-validation ----------------------
+
+  function generateRetryQuestions(context, retryValidation, retryDimensions) {
+    // Map flagged dimensions to question strategies
+    const questionsByDimension = {
+      'Evidence quality': {
+        count: 2,
+        types: ['deeperArtifact', 'implementationDetail']
+      },
+      'Applied judgment': {
+        count: 1,
+        types: ['edgeCase']
+      },
+      'Reasoning defense': {
+        count: 1,
+        types: ['defend']
+      },
+      'Risk awareness': {
+        count: 1,
+        types: ['limitation']
+      },
+      'Vocabulary fluency': {
+        count: 1,
+        types: ['terminology']
+      },
+      'Conceptual accuracy': {
+        count: 1,
+        types: ['clarify']
+      }
+    };
+
+    const questions = [];
+    for (const dimension of retryDimensions) {
+      const spec = questionsByDimension[dimension] || { count: 1, types: ['clarify'] };
+      for (let i = 0; i < spec.count && questions.length < 5; i++) {
+        const type = spec.types[i] || spec.types[0];
+        questions.push({
+          questionId: `retry_q${questions.length + 1}`,
+          dimension,
+          type,
+          promptInstruction: buildRetryQuestionPrompt(dimension, type)
+        });
+      }
+    }
+
+    return questions.slice(0, 5); // Max 5 follow-up questions
+  }
+
+  function buildRetryQuestionPrompt(dimension, type) {
+    const prompts = {
+      'Evidence quality:deeperArtifact': 'Ask for a more detailed walkthrough or breakdown of the artifact mentioned.',
+      'Evidence quality:implementationDetail': 'Ask for actual implementation details, code examples, or step-by-step execution.',
+      'Applied judgment:edgeCase': 'Ask what happens in an edge case or unusual scenario related to the topic.',
+      'Reasoning defense:defend': 'Ask why they chose their approach over alternatives and how they justified it.',
+      'Risk awareness:limitation': 'Ask about risks, limitations, failure modes, or safety considerations.',
+      'Vocabulary fluency:terminology': 'Ask them to define or use three key technical terms correctly.',
+      'Conceptual accuracy:clarify': 'Ask for clarification on a specific concept they mentioned briefly.'
+    };
+    return prompts[`${dimension}:${type}`] || 'Ask for more evidence or clarification on this dimension.';
+  }
+
+  function buildRetrySystemPrompt(blueprint, originalValidation, retryDimensions) {
+    const dimensionList = retryDimensions.join(', ');
+    return `You are still the AI examiner, now asking follow-up questions to collect more evidence.
+
+CONTEXT: The first certification attempt was validated. Independent review identified these gaps:
+${dimensionList}
+
+YOUR ROLE: Ask 3-5 targeted follow-up questions (not original exam questions) to collect deeper evidence on these specific gaps.
+
+INSTRUCTIONS:
+1. Do NOT repeat original exam questions.
+2. Focus ONLY on the flagged dimensions above.
+3. Ask for deeper evidence: implementation details, edge cases, risk awareness, or stronger defense of reasoning.
+4. Keep questions focused and brief — one per message.
+5. After the learner answers all follow-up questions, say: "Thank you. I have enough for re-evaluation."
+6. Then append this marker on a new line (exactly as written, nothing else):
+<!--LADDER_CERTIFICATION_RETRY_COMPLETE-->
+
+Do not mention the marker to the learner or indicate it in any way.`;
+  }
+
+  function buildCombinedEvidenceForRetryValidation(originalConversation, retryConversation, originalResult, retryQuestions) {
+    return {
+      originalAttemptSummary: {
+        result: originalResult.result || originalResult.status || '',
+        score: originalResult.score || null,
+        rationale: originalResult.rationale || originalResult.evidenceSummary || '',
+        messageCount: originalConversation.length
+      },
+      retryEvidence: {
+        questionsAsked: retryQuestions,
+        messageCount: retryConversation.length
+      },
+      combinedForValidation: `ORIGINAL CERTIFICATION ATTEMPT:
+${originalConversation.map((m, i) => `${i + 1}. ${String(m.role).toUpperCase()}: ${m.content}`).join('\n\n')}
+
+FOLLOW-UP QUESTIONS AND RESPONSES:
+${retryConversation.map((m, i) => `${i + 1}. ${String(m.role).toUpperCase()}: ${m.content}`).join('\n\n')}`
+    };
+  }
+
+  async function revalidateCertificationWithRetry(context, originalResult, originalValidation, originalConversation, retryConversation, retryQuestions) {
+    const combined = buildCombinedEvidenceForRetryValidation(
+      originalConversation,
+      retryConversation,
+      originalResult,
+      retryQuestions
+    );
+
+    try {
+      const response = await fetchImpl(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: validatorModel,
+          messages: [{
+            role: 'user',
+            content: `Re-validate this certification with follow-up evidence.
+
+Original validation decision (failed):
+${JSON.stringify(originalValidation, null, 2)}
+
+Original exam + Follow-up questions + Learner responses:
+${combined.combinedForValidation}
+
+TASK: Re-evaluate whether the COMBINED evidence (original + follow-up) now satisfies the validation criteria.
+
+Apply the SAME validation standard as before. Consider:
+1. Does the follow-up evidence resolve the gaps identified in the original validation?
+2. Does the learner's response to follow-up questions demonstrate the missing competency?
+3. Is there NOW enough evidence to certify, or are there still gaps?
+
+Return your validation in this exact marker format:
+<!--LADDER_CERTIFICATION_VALIDATION:{"valid":true,"learner_valid":true,"examiner_valid":true,"confidence":0.0,"rationale":"one concise reason","learner_evidence":"one concise evidence summary","examiner_review":"one concise process review","concerns":[]}-->`
+          }],
+          system_prompt: buildValidationSystemPrompt(),
+          max_tokens: 700
+        })
+      });
+
+      const data = await response.json();
+      const rawText = data?.content?.[0]?.text || '';
+      const parsed = parseValidationResponse(rawText);
+
+      if (!response.ok || !parsed) {
+        return failedValidation(context, originalResult,
+          'Re-validation could not be completed.');
+      }
+
+      return {
+        ...normalizeValidation(parsed, context, originalResult, data?.model),
+        isRetryValidation: true,
+        retryCount: 1
+      };
+    } catch (error) {
+      return failedValidation(context, originalResult,
+        'Re-validation validator could not be reached.');
+    }
+  }
+
   async function validateCertification(context, result, conversationMessages = []) {
     try {
       const response = await fetchImpl(proxyUrl, {
@@ -600,6 +761,10 @@ ${transcript}`
     validateCertification,
     shouldOfferRetry,
     retryableFailureDimensions,
+    generateRetryQuestions,
+    buildRetrySystemPrompt,
+    buildCombinedEvidenceForRetryValidation,
+    revalidateCertificationWithRetry,
     buildEvidencePacket,
     recordCertificationResult,
     buildChallenge,

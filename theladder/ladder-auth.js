@@ -140,9 +140,12 @@ function updateProctoringModeVisibility() {
 
 async function handleSignIn(e) {
   e.preventDefault();
+  console.log('[SIGN IN] Handler called');
   setError('');
   const email = el.authEmailInput?.value?.trim();
   const password = el.authPasswordInput?.value;
+
+  console.log('[SIGN IN] Email:', email ? '***' : 'empty', 'Password:', password ? '***' : 'empty');
 
   if (!email || !password) {
     setError('Please enter email and password.');
@@ -150,7 +153,9 @@ async function handleSignIn(e) {
   }
 
   try {
+    console.log('[SIGN IN] Calling Firebase...');
     await signInWithEmailAndPassword(auth, email, password);
+    console.log('[SIGN IN] Success');
     setError('');
   } catch (error) {
     setError(`Sign in failed: ${error.message}`);
@@ -258,7 +263,12 @@ if (el.authProctoringModeSelect) {
 }
 
 if (el.authSignInBtn) {
-  el.authSignInBtn.addEventListener('click', handleSignIn);
+  el.authSignInBtn.addEventListener('click', (e) => {
+    console.log('[SIGN IN] Button clicked');
+    handleSignIn(e);
+  });
+} else {
+  console.warn('[SIGN IN] Button not found');
 }
 
 if (el.authCreateBtn) {

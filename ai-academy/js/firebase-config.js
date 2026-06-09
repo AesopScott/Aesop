@@ -1,7 +1,7 @@
 // Shared Firebase client config — AESOP AI Academy
 // Firebase web SDK config values are public by design (access controlled by Firestore rules).
 export const FIREBASE_CONFIG = {
-  apiKey:            'AIzaSyC0-J6BVarJ0_lnSBkdtBDCbCHVoABUTrU',
+  apiKey:            'AIzaSyBrmTkiPjvubtNCwLmt77jY8YNIcUUwPe4',
   authDomain:        'playagame-f733d.firebaseapp.com',
   projectId:         'playagame-f733d',
   storageBucket:     'playagame-f733d.appspot.com',

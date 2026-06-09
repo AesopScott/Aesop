@@ -152,9 +152,12 @@ async function handleSignIn(e) {
 }
 
 async function handleCreateAccount() {
+  console.log('[DEBUG] handleCreateAccount called');
   setError('');
   const email = el.authEmailInput?.value?.trim();
   const password = el.authPasswordInput?.value;
+
+  console.log('[DEBUG] Email:', email ? '***' : 'empty', 'Password:', password ? '***' : 'empty');
 
   if (!email || !password) {
     setError('Please enter email and password.');
@@ -162,9 +165,12 @@ async function handleCreateAccount() {
   }
 
   try {
+    console.log('[DEBUG] Creating account with Firebase...');
     await createUserWithEmailAndPassword(auth, email, password);
+    console.log('[DEBUG] Account created successfully');
     setError('');
   } catch (error) {
+    console.error('[DEBUG] Account creation error:', error);
     setError(`Account creation failed: ${error.message}`);
   }
 }
@@ -239,7 +245,13 @@ if (el.authSignInBtn) {
 }
 
 if (el.authCreateBtn) {
-  el.authCreateBtn.addEventListener('click', handleCreateAccount);
+  console.log('[DEBUG] Create Account button found, attaching listener');
+  el.authCreateBtn.addEventListener('click', (e) => {
+    console.log('[DEBUG] Create Account clicked');
+    handleCreateAccount();
+  });
+} else {
+  console.warn('[DEBUG] Create Account button NOT found');
 }
 
 if (el.authProceedBtn) {

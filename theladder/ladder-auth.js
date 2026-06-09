@@ -61,6 +61,9 @@ const el = {
   createAccountError: document.getElementById('createAccountError'),
   closeCreateModal: document.getElementById('closeCreateModal'),
   submitCreateAccount: document.getElementById('submitCreateAccount'),
+  loggedInSection: document.getElementById('loggedInSection'),
+  loggedInEmail: document.getElementById('loggedInEmail'),
+  logoutBtn: document.getElementById('logoutBtn'),
   authIdentityAssuranceSelect: document.getElementById('authIdentityAssuranceSelect'),
   authIdentityAssuranceDescription: document.getElementById('authIdentityAssuranceDescription'),
   authProctoringModeField: document.getElementById('authProctoringModeField'),
@@ -180,6 +183,16 @@ function closeCreateAccountModal() {
   }
 }
 
+async function handleLogout() {
+  try {
+    await signOut(auth);
+    el.authEmailInput.value = '';
+    el.authPasswordInput.value = '';
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+}
+
 async function handleCreateAccount() {
   const email = el.createEmailInput?.value?.trim();
   const password = el.createPasswordInput?.value;
@@ -293,6 +306,10 @@ if (el.createAccountModal) {
   });
 }
 
+if (el.logoutBtn) {
+  el.logoutBtn.addEventListener('click', handleLogout);
+}
+
 if (el.authProceedBtn) {
   el.authProceedBtn.addEventListener('click', handleProceed);
 }
@@ -311,6 +328,14 @@ onAuthStateChanged(auth, (user) => {
   const authForm = document.getElementById('authAccountForm');
   if (authForm) {
     authForm.parentElement.style.display = user ? 'none' : 'block';
+  }
+
+  // Show/hide logout section
+  if (el.loggedInSection) {
+    el.loggedInSection.hidden = !user;
+    if (user && el.loggedInEmail) {
+      el.loggedInEmail.textContent = `Logged in as: ${user.email}`;
+    }
   }
 
   if (el.authEmailInput && user?.email && !el.authEmailInput.value) {

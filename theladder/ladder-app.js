@@ -739,8 +739,8 @@ function renderLanguages() {
 }
 
 function renderLearner() {
-  el.learnerIdLabel.textContent = state.learnerId || 'Not started';
-  el.learnerLookup.value = state.learnerId || '';
+  if (el.learnerIdLabel) el.learnerIdLabel.textContent = state.learnerId || 'Not started';
+  if (el.learnerLookup) el.learnerLookup.value = state.learnerId || '';
 }
 
 function topicSearchResults(query) {
@@ -1431,8 +1431,8 @@ function bindEvents() {
     el.assessmentForm.requestSubmit();
   });
 
-  el.lookupBtn.addEventListener('click', async () => {
-    const id = el.learnerLookup.value.trim().toUpperCase();
+  el.lookupBtn?.addEventListener('click', async () => {
+    const id = el.learnerLookup?.value.trim().toUpperCase() || '';
     if (!id.startsWith('AESOP-')) return;
     state.learnerId = id;
     localStorage.setItem(LS_ID, id);

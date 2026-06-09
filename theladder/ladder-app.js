@@ -344,7 +344,7 @@ function accountGateForCertificationTier(tierId = state.certificationTierId) {
       locked: true,
       tier,
       reason: `${tier.label} requires a Firebase username and password before the learner can use this education tier.`,
-      buttonLabel: 'Sign in required'
+      buttonLabel: 'Authentication required'
     };
   }
   if (!state.adultAttested) {
@@ -359,7 +359,7 @@ function accountGateForCertificationTier(tierId = state.certificationTierId) {
     locked: false,
     tier,
     reason: `${tier.label} is account-bound to ${state.authUser.email || 'this Firebase user'}.`,
-    buttonLabel: 'Start certification'
+    buttonLabel: 'Authenticated'
   };
 }
 

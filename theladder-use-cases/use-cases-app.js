@@ -376,7 +376,7 @@ function renderCourseWorkspace(useCase, chat) {
 
 function renderCourseMessage(message) {
   const role = message.role === 'assistant' ? 'assistant' : 'user';
-  const label = role === 'assistant' ? 'AESOP guide' : 'Learner';
+  const label = role === 'assistant' ? 'Guide' : 'You';
   return `
     <article class="course-message ${role}">
       <span>${label}</span>

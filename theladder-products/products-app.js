@@ -853,7 +853,7 @@ function startProductChat(product, level) {
   state.activeProductChat = { product, level, messages: [] };
   state.messages = [{
     role: 'user',
-    content: `Start my guided conversation for "${product.name}". I'm taking the ${level} course. Help me understand this product through questions, examples, applications, and limitations. When I've demonstrated understanding and we've completed the learning objectives, let me know by including <!--LADDER_CONVERSATION_COMPLETE:{"status":"completed","confidence":0.95,"rationale":"..."}-->`
+    content: `Start my guided conversation for "${product.name}". I'm taking the ${level} course. Help me understand this product through questions, examples, applications, and limitations. When I've demonstrated sufficient understanding of the learning objectives, end with a completion confirmation.`
   }];
   renderProductChat();
   callProductGuide();
@@ -864,9 +864,32 @@ function renderProductChat() {
   const { product } = state.activeProductChat;
   elements.productConversationTitle.textContent = `${product.name} - Guided Conversation`;
   elements.productChatLog.innerHTML = state.messages.map(msg =>
-    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? 'Guide' : 'You'}</strong><p>${escapeHtml(msg.content)}</p></div>`
+    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? 'Guide' : 'You'}</strong>${formatChatMessage(msg.content)}</div>`
   ).join('');
   elements.productChatLog.scrollTop = elements.productChatLog.scrollHeight;
+}
+
+function formatChatMessage(content) {
+  // Convert markdown to HTML for better readability in chat
+  let html = escapeHtml(content);
+
+  // Headers
+  html = html.replace(/^### (.*?)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2>$1</h2>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Bullet lists - convert * to <li> and wrap in <ul>
+  html = html.replace(/^\* (.*?)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*?<\/li>)/s, '<ul>$1</ul>');
+
+  // Line breaks - convert \n to <br> but preserve structure
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
 }
 
 async function submitProductChat(event) {
@@ -887,7 +910,7 @@ async function callProductGuide() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: state.messages,
-        system_prompt: `You are a product training guide for ${state.activeProductChat.product.name}. Help the learner understand the product through guided conversation. When the learner demonstrates sufficient understanding of the ${state.activeProductChat.level} level learning objectives, end the conversation with a completion signal.\n\nPreferred language: ${languageLabel()}. Write your learner-facing responses in this language unless the learner asks otherwise.`,
+        system_prompt: `You are a product training guide for ${state.activeProductChat.product.name}. Help the learner understand this product through guided conversation using questions, examples, applications, and limitations. Engage naturally until the learner demonstrates sufficient understanding. When ready to end, write "COURSE_COMPLETE" on its own line as your final line. Preferred language: ${languageLabel()}. Write your learner-facing responses in this language unless the learner asks otherwise.`,
         max_tokens: 700
       })
     });
@@ -907,15 +930,26 @@ async function callProductGuide() {
 }
 
 function parseProductCompletionResponse(rawText) {
-  const visibleText = String(rawText || '').replace(CONVERSATION_COMPLETE_REGEX, '').trim();
-  const match = String(rawText || '').match(CONVERSATION_COMPLETE_REGEX);
-  if (!match) return { completion: null, visibleText };
-  try {
-    return { completion: JSON.parse(match[1]), visibleText };
-  } catch (error) {
-    console.warn('Could not parse completion:', error);
-    return { completion: null, visibleText };
-  }
+  const text = String(rawText || '');
+
+  // Check for completion marker
+  const isCourseComplete = text.includes('COURSE_COMPLETE');
+
+  // Remove completion marker and any HTML comments from visible text
+  let visibleText = text
+    .replace(/COURSE_COMPLETE\s*$/gm, '')      // Remove COURSE_COMPLETE marker
+    .replace(/<!--[\s\S]*?-->/g, '')            // Remove any HTML comments
+    .trim();
+
+  if (!isCourseComplete) return { completion: null, visibleText };
+
+  const completion = {
+    status: 'completed',
+    confidence: 0.95,
+    rationale: 'learner demonstrated competency'
+  };
+
+  return { completion, visibleText };
 }
 
 function handleProductCompletion(completion) {

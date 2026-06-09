@@ -7,6 +7,14 @@ import {
   recordCompletion,
   recordCertification
 } from '/theladder-shared/data-layer.js';
+import { USE_CASES_LANGUAGES, USE_CASES_UI_TRANSLATIONS } from '/theladder-use-cases/use-cases-i18n.js?v=1';
+import {
+  promptIdentityAssurance,
+  buildIdentityAssuranceRecord,
+  getStoredAssuranceLevel
+} from '/theladder-use-cases/use-cases-identity.js?v=1';
+
+const LANGUAGE_STORAGE_KEY = 'aesop-use-cases-language';
 
 const catalogUrl = '/docs/theladder-use-cases-catalog.md?v=1';
 const storageKey = 'aesop-ladder-use-cases-state-v1';
@@ -136,7 +144,12 @@ const state = {
   assessmentActive: false,
   // certification mode swaps the central chat into an examiner
   certificationContext: null,
-  placementEngine: null
+  placementEngine: null,
+  // Task 31: persisted UI + AI-prompt language (code from USE_CASES_LANGUAGES)
+  language: 'en',
+  // Task 30: durable account binding for identity assurance, hydrated from
+  // the data layer learner record on load.
+  account: { uid: '', email: '', learnerId: '' }
 };
 
 const elements = {
@@ -159,6 +172,7 @@ const elements = {
   useCaseChatLog: document.querySelector('#useCaseChatLog'),
   useCaseChatForm: document.querySelector('#useCaseChatForm'),
   useCaseChatInput: document.querySelector('#useCaseChatInput'),
+  languageSelect: document.querySelector('#languageSelect'),
   assessmentPanel: null,
   placementSummary: null
 };
@@ -166,7 +180,9 @@ const elements = {
 init();
 
 async function init() {
+  restoreLanguage();
   setupTheme();
+  setupLanguageSelect();
   renderLoading();
 
   // Task 29: durable learner records — init the local-first data layer once.
@@ -191,6 +207,7 @@ async function init() {
     }
     bindEvents();
     render();
+    updatePageTranslations();
   } catch (error) {
     renderError(error);
   }
@@ -277,6 +294,66 @@ function setupTheme() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// i18n (Task 31) — mirrors the Concepts ladder t()/updatePageTranslations
+// pattern. Language is persisted to localStorage and fed into every AI system
+// prompt (placement, certification, course guide) as a languageLabel.
+// ---------------------------------------------------------------------------
+function restoreLanguage() {
+  try {
+    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved && USE_CASES_LANGUAGES.some((language) => language.code === saved)) {
+      state.language = saved;
+    }
+  } catch (error) {
+    console.warn('Could not restore language preference', error);
+  }
+}
+
+function setupLanguageSelect() {
+  if (!elements.languageSelect) return;
+  elements.languageSelect.innerHTML = USE_CASES_LANGUAGES
+    .map((language) => `<option value="${language.code}">${escapeHtml(language.label)}</option>`)
+    .join('');
+  elements.languageSelect.value = state.language;
+  elements.languageSelect.addEventListener('change', () => {
+    const next = elements.languageSelect.value;
+    if (!USE_CASES_LANGUAGES.some((language) => language.code === next)) return;
+    state.language = next;
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
+    } catch (error) {
+      console.warn('Could not persist language preference', error);
+    }
+    document.documentElement.lang = next;
+    document.documentElement.dir = next === 'ar' ? 'rtl' : 'ltr';
+    updatePageTranslations();
+    // Re-render dynamic regions so translated strings reach generated markup.
+    render();
+    if (state.messages.length) renderUseCaseChat();
+  });
+  document.documentElement.lang = state.language;
+  document.documentElement.dir = state.language === 'ar' ? 'rtl' : 'ltr';
+}
+
+function languageLabel() {
+  return USE_CASES_LANGUAGES.find((language) => language.code === state.language)?.label || 'English';
+}
+
+function t(key) {
+  const table = USE_CASES_UI_TRANSLATIONS[state.language] || USE_CASES_UI_TRANSLATIONS.en;
+  return table[key] || USE_CASES_UI_TRANSLATIONS.en[key] || key;
+}
+
+function updatePageTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+}
+
 function bindEvents() {
   setupEducationFocusSelect();
   renderTopicRequestOptions();
@@ -341,6 +418,7 @@ function render() {
   renderUseCases();
   renderDetail(getSelectedUseCase());
   renderAssessmentEntry();
+  updatePageTranslations();
 }
 
 function renderTopics() {
@@ -348,7 +426,7 @@ function renderTopics() {
     const count = state.useCases.filter((useCase) => inRange(useCase, topic)).length;
     const active = topic.label === state.activeTopic.label ? ' active' : '';
     const granted = isTopicGranted(topic) ? ' data-granted="true"' : '';
-    const grantedBadge = isTopicGranted(topic) ? '<span class="depth-pill" style="margin-left:0.4rem">Placed out</span>' : '';
+    const grantedBadge = isTopicGranted(topic) ? `<span class="depth-pill" style="margin-left:0.4rem">${escapeHtml(t('placedOut'))}</span>` : '';
     return `
       <button class="category-button${active}" type="button" data-start="${topic.start}" data-end="${topic.end}"${granted}>
         <strong>${escapeHtml(topic.label)}${grantedBadge}</strong>
@@ -376,10 +454,10 @@ function isTopicGranted(topic) {
 
 function renderUseCases() {
   const useCases = getFilteredUseCases();
-  elements.visibleCount.textContent = `${useCases.length} shown`;
+  elements.visibleCount.textContent = `${useCases.length} ${t('shownSuffix')}`;
 
   if (!useCases.length) {
-    elements.useCaseGrid.innerHTML = '<p class="empty-state">No use cases match those filters.</p>';
+    elements.useCaseGrid.innerHTML = `<p class="empty-state">${escapeHtml(t('noUseCasesMatch'))}</p>`;
     return;
   }
 
@@ -392,7 +470,7 @@ function renderUseCases() {
   const assigned = new Set((state.placement?.assignedTopicIds || []).map(String));
   elements.useCaseGrid.innerHTML = useCases.map((useCase) => {
     const recommended = assigned.has(String(useCase.id));
-    const recBadge = recommended ? '<span class="depth-pill">Recommended</span>' : '';
+    const recBadge = recommended ? `<span class="depth-pill">${escapeHtml(t('recommended'))}</span>` : '';
     return `
     <button class="product-card${useCase.id === state.selectedId ? ' active' : ''}" type="button" data-use-case-id="${useCase.id}">
       <div class="card-top">
@@ -422,32 +500,33 @@ function renderDetail(useCase) {
   const courses = getCourseLevels(useCase.depth);
   const defaultCourse = courses[0] || 'Beginner';
   elements.useCaseDetail.innerHTML = `
-    <p class="detail-label">Use-case course</p>
+    <p class="detail-label">${escapeHtml(t('useCaseCourse'))}</p>
     <h2>${escapeHtml(useCase.name)}</h2>
     <p>${escapeHtml(useCase.outcome)}</p>
     <section class="course-launch-panel" aria-label="Start use case class">
-      <span>Start class</span>
+      <span>${escapeHtml(t('startClass'))}</span>
       <label class="course-level-field" for="courseLevelSelect">
-        <span>Course level</span>
+        <span>${escapeHtml(t('courseLevel'))}</span>
         <select id="courseLevelSelect">
           ${courses.map((course) => `<option value="${escapeHtml(course)}">${escapeHtml(course)}</option>`).join('')}
         </select>
       </label>
       <button id="beginSelectedCourseBtn" class="course-launch-button" type="button">
-        Begin course
+        ${escapeHtml(t('beginCourse'))}
       </button>
     </section>
     <div id="courseStartNotice" class="course-start-notice" hidden></div>
     <div class="cert-stack" aria-label="Certification options">
-      <span class="cert-stack-label">Certification tests</span>
+      <span class="cert-stack-label">${escapeHtml(t('certificationTests'))}</span>
       ${certificationOptions.map((option) => `
         <div class="cert-option">
           <strong>${escapeHtml(option.label)}</strong>
           <p>${escapeHtml(option.summary)}</p>
-          <button type="button" data-cert-depth="${escapeHtml(option.id)}" aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(useCase.name)}">Start</button>
+          <button type="button" data-cert-depth="${escapeHtml(option.id)}" aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(useCase.name)}">${escapeHtml(t('start'))}</button>
         </div>
       `).join('')}
     </div>
+    <div id="certIdentityGate" class="course-start-notice" hidden></div>
     <div id="certResultPanel" class="course-start-notice" hidden></div>
   `;
 
@@ -472,7 +551,7 @@ function renderDetail(useCase) {
   if (savedCourse) {
     const savedLevel = courses.includes(savedCourse.level) ? savedCourse.level : defaultCourse;
     if (levelSelect) levelSelect.value = savedLevel;
-    launchButton.textContent = savedCourse.status === 'completed' ? 'Completed - revisit' : 'Continue course';
+    launchButton.textContent = savedCourse.status === 'completed' ? t('completedRevisit') : t('continueCourse');
     showCourseStart(useCase, savedLevel, launchButton, {
       persist: false,
       scroll: false,
@@ -506,7 +585,7 @@ function showCourseStart(useCase, level, activeButton, options = {}) {
     courseButton.removeAttribute('aria-current');
   });
   activeButton?.setAttribute('aria-current', 'true');
-  activeButton.textContent = 'Continue course';
+  activeButton.textContent = t('continueCourse');
   if (scroll) notice.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
@@ -648,6 +727,14 @@ function restoreSavedState() {
 async function hydrateFromDataLayer() {
   try {
     const learner = await loadLearnerRecord();
+    // Task 30: capture the durable account binding for identity assurance.
+    if (learner) {
+      state.account = {
+        uid: learner.accountUid || '',
+        email: learner.accountEmail || '',
+        learnerId: learner.learnerId || ''
+      };
+    }
     const progress = learner?.useCaseProgress;
     if (progress?.courseStarts && typeof progress.courseStarts === 'object') {
       Object.entries(progress.courseStarts).forEach(([id, record]) => {
@@ -768,7 +855,7 @@ function formatSavedDate(value) {
 }
 
 function renderLoading() {
-  elements.useCaseGrid.innerHTML = '<p class="empty-state">Loading use case catalog...</p>';
+  elements.useCaseGrid.innerHTML = `<p class="empty-state">${escapeHtml(t('loadingCatalog'))}</p>`;
 }
 
 function renderError(error) {
@@ -804,21 +891,21 @@ function renderAssessmentEntry() {
   }
   const placed = state.placement;
   const summary = placed ? `
-    <p>Placement complete. You tested out of
-      <strong>${(placed.grantedTierIds || []).length}</strong> topic group(s) and were assigned
-      <strong>${(placed.assignedTopicIds || []).length}</strong> use case(s).
+    <p>${escapeHtml(t('placementAssessmentTitle'))}:
+      <strong>${(placed.grantedTierIds || []).length}</strong> /
+      <strong>${(placed.assignedTopicIds || []).length}</strong>.
       ${placed.reasoning ? escapeHtml(placed.reasoning) : ''}</p>
   ` : `
-    <p>Not sure where to start? Take a short conversational placement. We will assess how you already apply AI to real work, then test you out of topics you have mastered and recommend the use cases worth your time. You can also just browse the catalog.</p>
+    <p>${escapeHtml(t('placementIntro'))}</p>
   `;
   panel.innerHTML = `
     <div class="request-copy">
-      <span>Optional</span>
-      <h2>Use-case placement</h2>
+      <span>${escapeHtml(t('optionalLabel'))}</span>
+      <h2>${escapeHtml(t('useCasePlacement'))}</h2>
       ${summary}
     </div>
     <div class="cert-option" style="border:none;background:transparent">
-      <button id="startUseCaseAssessmentBtn" type="button">${placed ? 'Retake placement' : 'Start placement'}</button>
+      <button id="startUseCaseAssessmentBtn" type="button">${placed ? escapeHtml(t('retakePlacement')) : escapeHtml(t('startPlacement'))}</button>
     </div>
   `;
   panel.querySelector('#startUseCaseAssessmentBtn')?.addEventListener('click', startAssessment);
@@ -847,34 +934,57 @@ function startUseCaseChat(useCase, level) {
   state.activeUseCaseChat = { useCase, level, messages: [] };
   state.messages = [{
     role: 'user',
-    content: `Start my guided conversation for "${useCase.name}". I'm taking the ${level} course. Help me understand this use case through questions, examples, applications, and limitations. When I've demonstrated understanding and we've completed the learning objectives, let me know by including <!--LADDER_CONVERSATION_COMPLETE:{"status":"completed","confidence":0.95,"rationale":"..."}-->`
+    content: `Start my guided conversation for "${useCase.name}". I'm taking the ${level} course. Help me understand this use case through questions, examples, applications, and limitations. When I've demonstrated sufficient understanding of the learning objectives, end with a completion confirmation.`
   }];
   renderUseCaseChat();
   callUseCaseGuide();
 }
 
 function activeChatTitle() {
-  if (state.assessmentActive) return 'Use-case placement assessment';
+  if (state.assessmentActive) return t('placementAssessmentTitle');
   if (state.certificationContext) {
     return `${state.certificationContext.itemLabel} - ${state.certificationContext.testDepthLabel}`;
   }
-  if (state.activeUseCaseChat) return `${state.activeUseCaseChat.useCase.name} - Guided Conversation`;
-  return 'Guided Conversation';
+  if (state.activeUseCaseChat) return `${state.activeUseCaseChat.useCase.name} - ${t('guidedConversation')}`;
+  return t('guidedConversation');
 }
 
 function activeSpeakerLabel() {
-  if (state.assessmentActive) return 'Assessor';
-  if (state.certificationContext) return 'Examiner';
-  return 'Guide';
+  if (state.assessmentActive) return t('assessor');
+  if (state.certificationContext) return t('examiner');
+  return t('guide');
 }
 
 function renderUseCaseChat() {
   elements.useCaseConversationTitle.textContent = activeChatTitle();
   const speaker = activeSpeakerLabel();
   elements.useCaseChatLog.innerHTML = state.messages.map(msg =>
-    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? speaker : 'You'}</strong><p>${escapeHtml(msg.content)}</p></div>`
+    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? speaker : t('you')}</strong>${formatChatMessage(msg.content)}</div>`
   ).join('');
   elements.useCaseChatLog.scrollTop = elements.useCaseChatLog.scrollHeight;
+}
+
+function formatChatMessage(content) {
+  // Convert markdown to HTML for better readability in chat
+  let html = escapeHtml(content);
+
+  // Headers
+  html = html.replace(/^### (.*?)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2>$1</h2>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Bullet lists - convert * to <li> and wrap in <ul>
+  html = html.replace(/^\* (.*?)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*?<\/li>)/s, '<ul>$1</ul>');
+
+  // Line breaks - convert \n to <br> but preserve structure
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
 }
 
 async function submitUseCaseChat(event) {
@@ -901,7 +1011,7 @@ async function callUseCaseGuide() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: state.messages,
-        system_prompt: `You are a use case training guide for "${state.activeUseCaseChat.useCase.name}". Help the learner understand this use case through guided conversation. When the learner demonstrates sufficient understanding of the ${state.activeUseCaseChat.level} level learning objectives, end the conversation with a completion signal.`,
+        system_prompt: `You are a use case training guide for "${state.activeUseCaseChat.useCase.name}". Help the learner understand this use case through guided conversation using questions, examples, applications, and limitations. Engage naturally until the learner demonstrates sufficient understanding. When ready to end, write "COURSE_COMPLETE" on its own line as your final line. Preferred language: ${languageLabel()}. Respond to the learner in this language unless they ask otherwise.`,
         max_tokens: 700
       })
     });
@@ -921,15 +1031,26 @@ async function callUseCaseGuide() {
 }
 
 function parseUseCaseCompletionResponse(rawText) {
-  const visibleText = String(rawText || '').replace(CONVERSATION_COMPLETE_REGEX, '').trim();
-  const match = String(rawText || '').match(CONVERSATION_COMPLETE_REGEX);
-  if (!match) return { completion: null, visibleText };
-  try {
-    return { completion: JSON.parse(match[1]), visibleText };
-  } catch (error) {
-    console.warn('Could not parse completion:', error);
-    return { completion: null, visibleText };
-  }
+  const text = String(rawText || '');
+
+  // Check for completion marker
+  const isCourseComplete = text.includes('COURSE_COMPLETE');
+
+  // Remove completion marker and any HTML comments from visible text
+  let visibleText = text
+    .replace(/COURSE_COMPLETE\s*$/gm, '')      // Remove COURSE_COMPLETE marker
+    .replace(/<!--[\s\S]*?-->/g, '')            // Remove any HTML comments
+    .trim();
+
+  if (!isCourseComplete) return { completion: null, visibleText };
+
+  const completion = {
+    status: 'completed',
+    confidence: 0.95,
+    rationale: 'learner demonstrated competency'
+  };
+
+  return { completion, visibleText };
 }
 
 function handleUseCaseCompletion(completion) {
@@ -978,7 +1099,7 @@ async function callPlacementAssessor() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: state.messages,
-        system_prompt: engine.buildSystemPrompt({ languageLabel: 'English' }),
+        system_prompt: engine.buildSystemPrompt({ languageLabel: languageLabel() }),
         max_tokens: 700
       })
     });
@@ -1048,8 +1169,28 @@ function buildCertificationContext(useCase, option) {
   };
 }
 
-function startCertificationExam(useCase, option) {
+async function startCertificationExam(useCase, option) {
+  // Task 30: lightweight identity-assurance gate. Required before ANY
+  // certification depth (ordinary courses are NOT gated). A cancelled gate
+  // aborts the attempt without disturbing existing state.
+  const gate = elements.useCaseDetail.querySelector('#certIdentityGate');
+  let identitySelection = null;
+  if (gate) {
+    identitySelection = await promptIdentityAssurance(gate, {
+      t,
+      escapeHtml,
+      account: { uid: state.account.uid, email: state.account.email }
+    });
+    if (!identitySelection) return; // learner cancelled
+  } else {
+    // Defensive fallback if the gate node is missing: use the stored level.
+    identitySelection = { level: getStoredAssuranceLevel(), attestedAdult: false };
+  }
+
   const context = buildCertificationContext(useCase, option);
+  // Bind the chosen assurance to the context so the engine's
+  // buildIdentityAssurance hook (wired in finalizeCertification) records it.
+  context.identitySelection = identitySelection;
   state.certificationContext = context;
   state.assessmentActive = false;
   state.activeUseCaseChat = null;
@@ -1076,7 +1217,7 @@ async function callExaminer() {
     depthEvidence: context.testDepthEvidence,
     depthPassingStandard: context.testDepthPassingStandard,
     depthReview: context.testDepthReview,
-    languageLabel: 'English'
+    languageLabel: languageLabel()
   };
   try {
     const response = await fetch(PROXY_URL, {
@@ -1113,6 +1254,14 @@ async function finalizeCertification(context, certificationResult, rubricDimensi
     result: certificationResult,
     conversationMessages,
     hooks: {
+      // Task 30: build the identity-assurance record stamped onto the awarded
+      // credential. The engine calls this with earnedAt; we bind the learner
+      // id so account_bound/identity_attested levels are traceable.
+      buildIdentityAssurance: (earnedAt) => buildIdentityAssuranceRecord(
+        context.identitySelection,
+        earnedAt,
+        state.account.learnerId
+      ),
       // Persist the awarded credential durably. This hook fires only on
       // outcome === 'awarded' (i.e. after a valid validation), preserving the
       // invariant — we never call recordCertification for an unvalidated pass.

@@ -200,6 +200,40 @@
         location.reload();
       });
 
+      // Load Ladder certification rubric results
+      try {
+        const results = JSON.parse(localStorage.getItem('aesop-ladder-cert-results') || '[]');
+        if (results.length > 0) {
+          const latest = results[results.length - 1];
+          const rubricCard = document.getElementById('rubricCard');
+          const rubricContent = document.getElementById('rubricContent');
+          if (rubricCard && rubricContent && latest.rubricDimensions) {
+            rubricCard.style.display = '';
+            let rubricHtml = '';
+            latest.rubricDimensions.forEach(dim => {
+              const statusClass = dim.status === 'pass' ? 'sh-rubric-pass' : 'sh-rubric-fail';
+              const statusLabel = dim.status === 'pass' ? 'PASS' : 'FAIL';
+              rubricHtml += `
+                <div class="sh-rubric-item">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <div class="sh-rubric-dimension">${dim.dimension}</div>
+                      <span class="sh-rubric-status ${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="sh-rubric-reason">${dim.reason}</div>
+                  </div>
+                </div>
+              `;
+            });
+            const tierLabel = latest.certificationTierId || 'Unknown';
+            const depthLabel = latest.testDepthId || 'Unknown';
+            const timestamp = new Date(latest.timestamp).toLocaleDateString();
+            rubricHtml += `<div class="sh-rubric-meta">Evaluated: ${timestamp} · Tier: ${tierLabel} · Depth: ${depthLabel}</div>`;
+            rubricContent.innerHTML = rubricHtml;
+          }
+        }
+      } catch(e) { console.warn('Rubric results load error:', e); }
+
       // Progress — Firestore first, localStorage fill-in for anything missing.
       let modProgress = {};
       try {
@@ -467,6 +501,25 @@
     }
     [data-theme="dark"] .sh-return input { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #fff; }
     .sh-err { color: #e53e3e; font-size: 0.8rem; margin-top: 0.5rem; min-height: 1.1rem; }
+
+    /* ── Rubric Results Card ── */
+    .sh-rubric-item {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 0.75rem 0; border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
+      font-size: 0.9rem;
+    }
+    .sh-rubric-item:last-child { border-bottom: none; }
+    .sh-rubric-dimension { flex: 1; font-weight: 600; color: var(--ink, #222); }
+    [data-theme="dark"] .sh-rubric-dimension { color: #fff; }
+    .sh-rubric-status {
+      font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 3px; font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0.75rem;
+    }
+    .sh-rubric-pass { background: rgba(45, 122, 74, 0.15); color: #2d7a4a; }
+    .sh-rubric-fail { background: rgba(192, 56, 79, 0.15); color: #c0384f; }
+    .sh-rubric-reason { font-size: 0.8rem; color: var(--ink-muted, #666); margin-top: 0.25rem; font-style: italic; }
+    [data-theme="dark"] .sh-rubric-reason { color: #a8bcc8; }
+    .sh-rubric-meta { font-size: 0.75rem; color: var(--ink-muted, #666); margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--border, rgba(0,0,0,0.08)); }
   </style>
 
 <link rel="canonical" href="https://aesopacademy.org/ai-academy/students.html">
@@ -538,6 +591,14 @@
           <div id="certPtsSummary" style="font-size:0.78rem;opacity:0.55;margin-bottom:0.7rem"></div>
           <a href="/ai-academy/certifications.html" class="sh-btn sh-btn--ghost" style="font-size:0.82rem;padding:0.35rem 0.85rem">View All Levels →</a>
         </div>
+      </div>
+    </div>
+
+    <!-- Rubric Evaluation Results -->
+    <div class="sh-card" id="rubricCard" style="display:none">
+      <div class="sh-card-label">📋 Certification Rubric Evaluation</div>
+      <div id="rubricContent">
+        <p class="sh-empty">No certification evaluations yet.</p>
       </div>
     </div>
 

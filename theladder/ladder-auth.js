@@ -54,8 +54,10 @@ const el = {
   authSignInBtn: document.getElementById('authSignInBtn'),
   authCreateBtn: document.getElementById('authCreateBtn'),
   authIdentityAssuranceSelect: document.getElementById('authIdentityAssuranceSelect'),
+  authIdentityAssuranceDescription: document.getElementById('authIdentityAssuranceDescription'),
   authProctoringModeField: document.getElementById('authProctoringModeField'),
   authProctoringModeSelect: document.getElementById('authProctoringModeSelect'),
+  authProctoringModeDescription: document.getElementById('authProctoringModeDescription'),
   authIdentityAttestationCheck: document.getElementById('authIdentityAttestationCheck'),
   authProceedBtn: document.getElementById('authProceedBtn'),
   authError: document.getElementById('authError'),
@@ -81,6 +83,7 @@ function renderIdentityAssuranceSelect() {
     .map(level => `<option value="${level.id}">${level.label}</option>`)
     .join('');
   el.authIdentityAssuranceSelect.value = state.identityAssuranceId;
+  updateIdentityAssuranceDescription();
 }
 
 function renderProctoringModeSelect() {
@@ -88,6 +91,31 @@ function renderProctoringModeSelect() {
     .map(mode => `<option value="${mode.id}">${mode.label}</option>`)
     .join('');
   el.authProctoringModeSelect.value = state.proctoringModeId;
+  updateProctoringModeDescription();
+}
+
+function updateIdentityAssuranceDescription() {
+  const selectedLevel = IDENTITY_ASSURANCE_LEVELS.find(l => l.id === state.identityAssuranceId);
+  if (el.authIdentityAssuranceDescription) {
+    if (selectedLevel && selectedLevel.description) {
+      el.authIdentityAssuranceDescription.textContent = selectedLevel.description;
+      el.authIdentityAssuranceDescription.classList.add('visible');
+    } else {
+      el.authIdentityAssuranceDescription.classList.remove('visible');
+    }
+  }
+}
+
+function updateProctoringModeDescription() {
+  const selectedMode = PROCTORING_MODES.find(m => m.id === state.proctoringModeId);
+  if (el.authProctoringModeDescription) {
+    if (selectedMode && selectedMode.description && state.proctoringModeId) {
+      el.authProctoringModeDescription.textContent = selectedMode.description;
+      el.authProctoringModeDescription.classList.add('visible');
+    } else {
+      el.authProctoringModeDescription.classList.remove('visible');
+    }
+  }
 }
 
 function updateProctoringModeVisibility() {
@@ -135,6 +163,24 @@ async function handleCreateAccount() {
 }
 
 function handleProceed() {
+  // Validate required fields
+  const selectedLevel = IDENTITY_ASSURANCE_LEVELS.find(l => l.id === state.identityAssuranceId);
+
+  if (!state.identityAssuranceId) {
+    setError('Please select an identity assurance level.');
+    return;
+  }
+
+  if (selectedLevel?.proctoringRequired && !state.proctoringModeId) {
+    setError('Please select a proctoring method for the selected assurance level.');
+    return;
+  }
+
+  if (!el.authIdentityAttestationCheck?.checked) {
+    setError('Please confirm that you will take this certification attempt yourself.');
+    return;
+  }
+
   // Save selections to localStorage
   localStorage.setItem(LS_IDENTITY_ASSURANCE, state.identityAssuranceId);
   localStorage.setItem(LS_PROCTORING_MODE, state.proctoringModeId);
@@ -166,7 +212,17 @@ initializeDarkMode();
 if (el.authIdentityAssuranceSelect) {
   el.authIdentityAssuranceSelect.addEventListener('change', (e) => {
     state.identityAssuranceId = e.target.value;
+    updateIdentityAssuranceDescription();
     updateProctoringModeVisibility();
+    setError('');
+  });
+}
+
+if (el.authProctoringModeSelect) {
+  el.authProctoringModeSelect.addEventListener('change', (e) => {
+    state.proctoringModeId = e.target.value;
+    updateProctoringModeDescription();
+    setError('');
   });
 }
 

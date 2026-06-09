@@ -203,11 +203,15 @@ function renderDetail(product) {
     <p class="detail-label">Product course</p>
     <h2>${escapeHtml(product.name)}</h2>
     <p>${escapeHtml(product.reason)}</p>
+    <div id="courseStartNotice" class="course-start-notice" hidden></div>
     <div class="course-stack" aria-label="Course levels">
       ${courses.map((course) => `
         <div class="course-item">
           <strong>${escapeHtml(course)} course</strong>
           <p>${escapeHtml(getCourseSummary(course, product))}</p>
+          <button class="begin-course-button" type="button" data-course-level="${escapeHtml(course)}" data-product-id="${product.id}">
+            Begin ${escapeHtml(course)} course
+          </button>
         </div>
       `).join('')}
     </div>
@@ -221,6 +225,23 @@ function renderDetail(product) {
       `).join('')}
     </div>
   `;
+
+  elements.productDetail.querySelectorAll('.begin-course-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const level = button.dataset.courseLevel || 'Beginner';
+      const notice = elements.productDetail.querySelector('#courseStartNotice');
+      if (!notice) return;
+      notice.hidden = false;
+      notice.innerHTML = `
+        <strong>${escapeHtml(level)} course selected</strong>
+        <span>${escapeHtml(product.name)} is ready for a guided product lesson with a conversation, practice task, and completion evidence.</span>
+      `;
+      elements.productDetail.querySelectorAll('.begin-course-button').forEach((courseButton) => {
+        courseButton.removeAttribute('aria-current');
+      });
+      button.setAttribute('aria-current', 'true');
+    });
+  });
 }
 
 function renderLoading() {

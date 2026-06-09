@@ -220,6 +220,7 @@ const state = {
 };
 
 const el = {
+  educationFocusSelect: document.getElementById('educationFocusSelect'),
   languageSelect: document.getElementById('languageSelect'),
   customLanguageInput: document.getElementById('customLanguageInput'),
   darkToggle: document.getElementById('darkToggle'),
@@ -2954,6 +2955,13 @@ async function confirmAdultAccess() {
 }
 
 function bindEvents() {
+  el.educationFocusSelect?.addEventListener('change', (event) => {
+    const target = event.target.value;
+    if (target && target !== window.location.pathname) {
+      window.location.href = target;
+    }
+  });
+
   el.darkToggle?.addEventListener('click', () => {
     applyTheme(state.theme === 'dark' ? 'light' : 'dark');
     renderThemeToggle();

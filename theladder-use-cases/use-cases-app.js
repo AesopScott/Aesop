@@ -309,7 +309,11 @@ function renderCentralCourseWorkspace(useCase) {
   if (!useCase || !elements.useCaseCourseWorkspace) return;
   const courses = getCourseLevels(useCase.depth);
   const chat = ensureDefaultCourseChat(useCase, courses[0] || 'Beginner');
-  elements.useCaseCourseWorkspace.innerHTML = renderCourseWorkspace(useCase, chat);
+  elements.useCaseCourseWorkspace.innerHTML = `
+    <div class="course-conversation-workspace">
+      ${renderCourseWorkspace(useCase, chat)}
+    </div>
+  `;
   bindCourseWorkspace(useCase);
 }
 

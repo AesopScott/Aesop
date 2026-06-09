@@ -291,7 +291,11 @@ function renderCentralCourseWorkspace(product) {
   if (!product || !elements.productCourseWorkspace) return;
   const courses = getCourseLevels(product.depth);
   const chat = ensureDefaultCourseChat(product, courses[0] || 'Beginner');
-  elements.productCourseWorkspace.innerHTML = renderCourseWorkspace(product, chat);
+  elements.productCourseWorkspace.innerHTML = `
+    <div class="course-conversation-workspace">
+      ${renderCourseWorkspace(product, chat)}
+    </div>
+  `;
   bindCourseWorkspace(product);
 }
 

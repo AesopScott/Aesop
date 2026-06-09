@@ -2341,8 +2341,10 @@ function renderEvaluationPanel() {
 
 function renderControls() {
   el.languageSelect.value = state.language;
-  el.customLanguageInput.value = state.customLanguage || '';
-  el.customLanguageInput.style.display = state.language === 'custom' ? '' : 'none';
+  if (el.customLanguageInput) {
+    el.customLanguageInput.value = state.customLanguage || '';
+    el.customLanguageInput.style.display = state.language === 'custom' ? '' : 'none';
+  }
   renderThemeToggle();
 }
 

@@ -3,6 +3,7 @@ const storageKey = 'aesop-ladder-use-cases-state-v1';
 const requestStorageKey = 'aesop-use-case-training-requests-v1';
 const requestCollection = 'useCaseTrainingRequests';
 const requestEmailUrl = '/aesop-api/use-case-request-email.php';
+const courseProxyUrl = '/aesop-api/proxy.php';
 let requestDbContext = null;
 
 const topicRanges = [
@@ -50,7 +51,8 @@ const state = {
   activeTopic: topicRanges[0],
   query: '',
   depth: 'all',
-  courseStarts: {}
+  courseStarts: {},
+  courseChats: {}
 };
 
 const elements = {
@@ -239,6 +241,7 @@ function renderDetail(useCase) {
   if (!useCase) return;
   const courses = getCourseLevels(useCase.depth);
   const defaultCourse = courses[0] || 'Beginner';
+  const chat = state.courseChats[useCase.id];
   elements.useCaseDetail.innerHTML = `
     <p class="detail-label">Use-case course</p>
     <h2>${escapeHtml(useCase.name)}</h2>
@@ -262,59 +265,213 @@ function renderDetail(useCase) {
         <div class="cert-option">
           <strong>${escapeHtml(option.label)}</strong>
           <p>${escapeHtml(option.summary)}</p>
-          <button type="button" aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(useCase.name)}">Start</button>
+          <button type="button" data-certification-label="${escapeHtml(option.label)}" ${chat?.mode === 'certification' && chat.certificationLabel === option.label ? 'aria-current="true"' : ''} aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(useCase.name)}">Start test</button>
         </div>
       `).join('')}
     </div>
+    <section id="courseWorkspace" class="course-conversation-workspace" aria-label="Course conversation workspace" ${chat ? '' : 'hidden'}>
+      ${renderCourseWorkspace(useCase, chat)}
+    </section>
   `;
 
   const levelSelect = elements.useCaseDetail.querySelector('#courseLevelSelect');
   const launchButton = elements.useCaseDetail.querySelector('#beginSelectedCourseBtn');
   launchButton?.addEventListener('click', () => {
-    showCourseStart(useCase, levelSelect?.value || defaultCourse, launchButton);
+    startCourseConversation(useCase, levelSelect?.value || defaultCourse, launchButton);
   });
+  elements.useCaseDetail.querySelectorAll('[data-certification-label]').forEach((button) => {
+    button.addEventListener('click', () => {
+      startCertificationConversation(useCase, button.dataset.certificationLabel, levelSelect?.value || defaultCourse, button);
+    });
+  });
+  bindCourseWorkspace(useCase);
 
   const savedCourse = state.courseStarts[useCase.id];
   if (savedCourse) {
     const savedLevel = courses.includes(savedCourse.level) ? savedCourse.level : defaultCourse;
     if (levelSelect) levelSelect.value = savedLevel;
     launchButton.textContent = 'Continue course';
-    showCourseStart(useCase, savedLevel, launchButton, {
-      persist: false,
-      scroll: false,
-      savedAt: savedCourse.savedAt
-    });
+    if (chat?.mode === 'course') launchButton.setAttribute('aria-current', 'true');
   }
 }
 
-function showCourseStart(useCase, level, activeButton, options = {}) {
-  const { persist = true, scroll = true, savedAt = new Date().toISOString() } = options;
-  const notice = elements.useCaseDetail.querySelector('#courseStartNotice');
-  if (!notice) return;
-  if (persist) {
-    state.courseStarts[useCase.id] = {
-      level,
-      savedAt,
-      status: 'started'
-    };
-    saveState();
+function renderCourseWorkspace(useCase, chat) {
+  if (!chat) {
+    return `
+      <div class="workspace-empty">
+        <strong>No conversation started</strong>
+        <p>Begin a course or start a certification test to open the guided prompt workspace.</p>
+      </div>
+    `;
   }
-  notice.hidden = false;
-  notice.innerHTML = `
-    <strong>${escapeHtml(level)} class ${persist ? 'started' : 'saved'}</strong>
-    <span>${escapeHtml(useCase.name)} is ready for a guided conversation, a practice task, and completion evidence.</span>
-    <small>Saved ${escapeHtml(formatSavedDate(savedAt))}</small>
-    <div class="course-conversation-workspace">
-      <strong>Guided class conversation</strong>
-      <p>Start with the real work scenario, then complete one lab: debate the right use of AI, practice the workflow skill, or build a usable artifact.</p>
+  const modeLabel = chat.mode === 'certification'
+    ? `${chat.certificationLabel || 'Certification'} test`
+    : `${chat.level || 'Beginner'} course`;
+  const messages = Array.isArray(chat.messages) ? chat.messages : [];
+  return `
+    <div class="workspace-head">
+      <div>
+        <span>${escapeHtml(modeLabel)}</span>
+        <strong>${escapeHtml(useCase.name)}</strong>
+      </div>
+      <small>${escapeHtml(chat.status === 'complete' ? 'Ready for review' : `Saved ${formatSavedDate(chat.updatedAt || chat.savedAt)}`)}</small>
     </div>
+    <div id="courseChatLog" class="course-chat-log" aria-live="polite">
+      ${messages.map(renderCourseMessage).join('')}
+    </div>
+    <form id="courseChatForm" class="course-chat-form">
+      <label for="courseChatInput">Your response</label>
+      <textarea id="courseChatInput" rows="4" required placeholder="${escapeHtml(chat.mode === 'certification' ? 'Answer the certification prompt with evidence.' : 'Ask a question, describe your attempt, or submit your lab work.')}"></textarea>
+      <div class="course-chat-actions">
+        <button type="submit">Send response</button>
+        <button type="button" id="completeCourseBtn" class="secondary-course-button">Mark complete</button>
+      </div>
+    </form>
   `;
-  elements.useCaseDetail.querySelectorAll('.course-launch-button').forEach((courseButton) => {
+}
+
+function renderCourseMessage(message) {
+  const role = message.role === 'assistant' ? 'assistant' : 'user';
+  const label = role === 'assistant' ? 'AESOP guide' : 'Learner';
+  return `
+    <article class="course-message ${role}">
+      <span>${label}</span>
+      <p>${escapeHtml(message.content || '')}</p>
+    </article>
+  `;
+}
+
+function startCourseConversation(useCase, level, activeButton) {
+  const savedAt = new Date().toISOString();
+  state.courseStarts[useCase.id] = {
+    level,
+    savedAt,
+    status: 'started'
+  };
+  state.courseChats[useCase.id] = {
+    mode: 'course',
+    level,
+    savedAt,
+    updatedAt: savedAt,
+    status: 'started',
+    messages: [{
+      role: 'user',
+      content: `Start my ${level} course on this AI use case: ${useCase.name}. Teach the workflow, ask diagnostic questions, and give me one lab that is a debate, a skill practice, or a build.`
+    }]
+  };
+  saveState();
+  renderDetail(useCase);
+  setActiveCourseButton(activeButton);
+  callCourseGuide(useCase);
+}
+
+function startCertificationConversation(useCase, certificationLabel, level, activeButton) {
+  const savedAt = new Date().toISOString();
+  state.courseStarts[useCase.id] = {
+    level,
+    savedAt,
+    status: 'certification_started'
+  };
+  state.courseChats[useCase.id] = {
+    mode: 'certification',
+    certificationLabel,
+    level,
+    savedAt,
+    updatedAt: savedAt,
+    status: 'started',
+    messages: [{
+      role: 'user',
+      content: `Start my ${certificationLabel} test for this AI use case: ${useCase.name}. Ask one question or task at a time. Require evidence, score my responses against the standard, and only mark me complete when the evidence is strong.`
+    }]
+  };
+  saveState();
+  renderDetail(useCase);
+  setActiveCourseButton(activeButton);
+  callCourseGuide(useCase);
+}
+
+function setActiveCourseButton(activeButton) {
+  elements.useCaseDetail.querySelectorAll('.course-launch-button, .cert-option button').forEach((courseButton) => {
     courseButton.removeAttribute('aria-current');
   });
   activeButton?.setAttribute('aria-current', 'true');
-  activeButton.textContent = 'Continue course';
-  if (scroll) notice.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  if (activeButton?.classList.contains('course-launch-button')) activeButton.textContent = 'Continue course';
+}
+
+function bindCourseWorkspace(useCase) {
+  const form = elements.useCaseDetail.querySelector('#courseChatForm');
+  const input = elements.useCaseDetail.querySelector('#courseChatInput');
+  const completeButton = elements.useCaseDetail.querySelector('#completeCourseBtn');
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const content = input.value.trim();
+    if (!content) return;
+    const chat = state.courseChats[useCase.id];
+    if (!chat) return;
+    chat.messages.push({ role: 'user', content });
+    chat.updatedAt = new Date().toISOString();
+    input.value = '';
+    saveState();
+    renderDetail(useCase);
+    await callCourseGuide(useCase);
+  });
+  completeButton?.addEventListener('click', () => {
+    const chat = state.courseChats[useCase.id];
+    if (!chat) return;
+    chat.status = 'complete';
+    chat.updatedAt = new Date().toISOString();
+    state.courseStarts[useCase.id] = {
+      ...(state.courseStarts[useCase.id] || {}),
+      level: chat.level || 'Beginner',
+      savedAt: chat.updatedAt,
+      status: chat.mode === 'certification' ? 'certification_complete' : 'completed'
+    };
+    saveState();
+    renderDetail(useCase);
+  });
+}
+
+async function callCourseGuide(useCase) {
+  const chat = state.courseChats[useCase.id];
+  if (!chat) return;
+  chat.messages.push({ role: 'assistant', content: 'Thinking through the next step...' });
+  renderDetail(useCase);
+  try {
+    const response = await fetch(courseProxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: chat.messages.filter((message) => message.content !== 'Thinking through the next step...'),
+        system_prompt: useCaseSystemPrompt(useCase, chat),
+        max_tokens: 900
+      })
+    });
+    const data = await response.json();
+    const text = data?.content?.[0]?.text || data?.error || fallbackCourseGuide(useCase, chat);
+    chat.messages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
+    chat.messages.push({ role: 'assistant', content: text });
+  } catch (error) {
+    chat.messages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
+    chat.messages.push({ role: 'assistant', content: fallbackCourseGuide(useCase, chat) });
+  }
+  chat.updatedAt = new Date().toISOString();
+  chat.messages = chat.messages.slice(-30);
+  saveState();
+  renderDetail(useCase);
+}
+
+function useCaseSystemPrompt(useCase, chat) {
+  if (chat.mode === 'certification') {
+    return `You are an AESOP AI Academy certification examiner. Certify the learner on this AI use case: ${useCase.name}. Topic: ${useCase.topic}. Certification level: ${chat.certificationLabel}. Ask one focused prompt at a time. Require evidence. Evaluate correctness, safety, limitations, and practical application. Do not pass the learner casually. Keep responses under 180 words.`;
+  }
+  return `You are an AESOP AI Academy use-case course guide. Teach this AI use case: ${useCase.name}. Topic: ${useCase.topic}. Outcome: ${useCase.outcome}. Level: ${chat.level}. Use guided conversation. Each assignment must include one lab type: debate whether AI should be used, practice the workflow skill, or build a usable artifact. Keep responses under 180 words and end with the next concrete learner action.`;
+}
+
+function fallbackCourseGuide(useCase, chat) {
+  if (chat.mode === 'certification') {
+    return `Certification prompt for ${useCase.name}: describe the workflow you would use, the risk or limitation you would manage, the evidence you would collect, and how you would decide whether the result is good enough.`;
+  }
+  return `Course prompt for ${useCase.name}: describe the real task you want to perform. Then choose one lab: debate whether AI belongs in the task, practice a workflow step, or build a small artifact you can inspect.`;
 }
 
 async function handleUseCaseRequestSubmit(event) {
@@ -448,6 +605,21 @@ function restoreSavedState() {
         status: record.status || 'started'
       }]));
   }
+  if (saved.courseChats && typeof saved.courseChats === 'object') {
+    state.courseChats = Object.fromEntries(Object.entries(saved.courseChats)
+      .filter(([useCaseId, record]) => Number.isFinite(Number(useCaseId)) && Array.isArray(record?.messages))
+      .map(([useCaseId, record]) => [useCaseId, {
+        mode: record.mode === 'certification' ? 'certification' : 'course',
+        certificationLabel: record.certificationLabel || '',
+        level: record.level || 'Beginner',
+        savedAt: record.savedAt || new Date().toISOString(),
+        updatedAt: record.updatedAt || record.savedAt || new Date().toISOString(),
+        status: record.status || 'started',
+        messages: record.messages
+          .filter((message) => ['user', 'assistant'].includes(message?.role) && typeof message.content === 'string')
+          .slice(-30)
+      }]));
+  }
 }
 
 function readSavedState() {
@@ -469,7 +641,8 @@ function saveState() {
       },
       query: state.query,
       depth: state.depth,
-      courseStarts: state.courseStarts
+      courseStarts: state.courseStarts,
+      courseChats: state.courseChats
     }));
   } catch (error) {
     console.warn('Could not save Use Cases course state', error);

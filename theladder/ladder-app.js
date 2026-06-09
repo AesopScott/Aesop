@@ -226,6 +226,8 @@ const el = {
   topicSearchResults: document.getElementById('topicSearchResults'),
   certificationTierSelect: document.getElementById('certificationTierSelect'),
   testDepthSelect: document.getElementById('testDepthSelect'),
+  authRequiredLink: document.getElementById('authRequiredLink'),
+  identityAssuranceField: document.getElementById('identityAssuranceField'),
   accountGatePanel: document.getElementById('accountGatePanel'),
   accountStatusText: document.getElementById('accountStatusText'),
   accountGateMessage: document.getElementById('accountGateMessage'),
@@ -2005,6 +2007,12 @@ function renderEvaluationPanel() {
   const lockedText = cooldown.locked
     ? `This ${depth.label} can be tried again in ${formatDuration(cooldown.remainingMs)}. The 24-hour wait applies to this Ladder tier and challenge depth across all education tiers.`
     : `24-hour retry limit: this Ladder tier and challenge depth can be attempted once per day, even if the education tier changes.`;
+  if (el.authRequiredLink) {
+    el.authRequiredLink.hidden = !certificationTierRequiresAccount();
+  }
+  if (el.identityAssuranceField) {
+    el.identityAssuranceField.hidden = true;
+  }
   [el.evaluationCooldownNotice, el.certificationWorkspaceCooldown].forEach((notice) => {
     if (!notice) return;
     notice.hidden = false;

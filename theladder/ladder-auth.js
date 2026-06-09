@@ -1,0 +1,195 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
+
+const IDENTITY_ASSURANCE_LEVELS = [
+  {
+    id: 'self_attested',
+    label: 'Self-attested',
+    requiresAttestation: false,
+    proctoringRequired: false,
+    active: true,
+    description: 'Learner claims the work. No identity check.'
+  },
+  {
+    id: 'account_bound',
+    label: 'Account bound',
+    requiresAttestation: false,
+    proctoringRequired: false,
+    active: true,
+    description: 'Attempt is tied to the AESOP learner ID, browser session, and saved transcript record.'
+  },
+  {
+    id: 'identity_attested',
+    label: 'Identity attested',
+    requiresAttestation: true,
+    proctoringRequired: false,
+    active: true,
+    description: 'Learner signs an identity statement before the certification attempt.'
+  },
+  {
+    id: 'proctored_verified',
+    label: 'Proctored verified',
+    requiresAttestation: true,
+    proctoringRequired: true,
+    active: false,
+    description: 'Adult formal credential path requiring ID/liveness plus automated, live, recorded, or institutional proctoring.'
+  }
+];
+
+const PROCTORING_MODES = [
+  { id: 'automated', label: 'Automated proctoring', description: 'Camera/liveness and session signals flag risk for review.' },
+  { id: 'live', label: 'Live proctor', description: 'Real-time human monitoring during the attempt.' },
+  { id: 'recorded', label: 'Recorded proctoring', description: 'Session recorded and reviewed by a human proctor.' },
+  { id: 'institutional', label: 'Institutional', description: 'Proctored at an accredited testing center.' }
+];
+
+const auth = getAuth(initializeApp(FIREBASE_CONFIG));
+const LS_IDENTITY_ASSURANCE = 'aesop-ladder-identity-assurance';
+const LS_PROCTORING_MODE = 'aesop-ladder-proctoring-mode';
+
+const el = {
+  authEmailInput: document.getElementById('authEmailInput'),
+  authPasswordInput: document.getElementById('authPasswordInput'),
+  authSignInBtn: document.getElementById('authSignInBtn'),
+  authCreateBtn: document.getElementById('authCreateBtn'),
+  authIdentityAssuranceSelect: document.getElementById('authIdentityAssuranceSelect'),
+  authProctoringModeField: document.getElementById('authProctoringModeField'),
+  authProctoringModeSelect: document.getElementById('authProctoringModeSelect'),
+  authIdentityAttestationCheck: document.getElementById('authIdentityAttestationCheck'),
+  authProceedBtn: document.getElementById('authProceedBtn'),
+  authError: document.getElementById('authError'),
+  darkToggle: document.getElementById('darkToggle')
+};
+
+let state = {
+  authUser: null,
+  identityAssuranceId: localStorage.getItem(LS_IDENTITY_ASSURANCE) || 'account_bound',
+  proctoringModeId: localStorage.getItem(LS_PROCTORING_MODE) || ''
+};
+
+function setError(message) {
+  if (el.authError) {
+    el.authError.textContent = message;
+    el.authError.hidden = !message;
+  }
+}
+
+function renderIdentityAssuranceSelect() {
+  el.authIdentityAssuranceSelect.innerHTML = IDENTITY_ASSURANCE_LEVELS
+    .filter(level => level.active)
+    .map(level => `<option value="${level.id}">${level.label}</option>`)
+    .join('');
+  el.authIdentityAssuranceSelect.value = state.identityAssuranceId;
+}
+
+function renderProctoringModeSelect() {
+  el.authProctoringModeSelect.innerHTML = PROCTORING_MODES
+    .map(mode => `<option value="${mode.id}">${mode.label}</option>`)
+    .join('');
+  el.authProctoringModeSelect.value = state.proctoringModeId;
+}
+
+function updateProctoringModeVisibility() {
+  const selectedLevel = IDENTITY_ASSURANCE_LEVELS.find(l => l.id === state.identityAssuranceId);
+  if (el.authProctoringModeField) {
+    el.authProctoringModeField.hidden = !selectedLevel?.proctoringRequired;
+  }
+}
+
+async function handleSignIn(e) {
+  e.preventDefault();
+  setError('');
+  const email = el.authEmailInput?.value?.trim();
+  const password = el.authPasswordInput?.value;
+
+  if (!email || !password) {
+    setError('Please enter email and password.');
+    return;
+  }
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    setError('');
+  } catch (error) {
+    setError(`Sign in failed: ${error.message}`);
+  }
+}
+
+async function handleCreateAccount() {
+  setError('');
+  const email = el.authEmailInput?.value?.trim();
+  const password = el.authPasswordInput?.value;
+
+  if (!email || !password) {
+    setError('Please enter email and password.');
+    return;
+  }
+
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    setError('');
+  } catch (error) {
+    setError(`Account creation failed: ${error.message}`);
+  }
+}
+
+function handleProceed() {
+  // Save selections to localStorage
+  localStorage.setItem(LS_IDENTITY_ASSURANCE, state.identityAssuranceId);
+  localStorage.setItem(LS_PROCTORING_MODE, state.proctoringModeId);
+
+  // Redirect back to the ladder page
+  window.location.href = '/theladder/';
+}
+
+function initializeDarkMode() {
+  const isDark = localStorage.getItem('aesop-theme') === 'dark';
+  if (el.darkToggle) {
+    el.darkToggle.setAttribute('aria-pressed', isDark);
+    el.darkToggle.addEventListener('click', () => {
+      const newTheme = localStorage.getItem('aesop-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('aesop-theme', newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme === 'dark' ? 'dark' : '');
+      el.darkToggle.setAttribute('aria-pressed', newTheme === 'dark');
+    });
+  }
+}
+
+// Initialize
+renderIdentityAssuranceSelect();
+renderProctoringModeSelect();
+updateProctoringModeVisibility();
+initializeDarkMode();
+
+// Event listeners
+if (el.authIdentityAssuranceSelect) {
+  el.authIdentityAssuranceSelect.addEventListener('change', (e) => {
+    state.identityAssuranceId = e.target.value;
+    updateProctoringModeVisibility();
+  });
+}
+
+if (el.authSignInBtn) {
+  el.authSignInBtn.addEventListener('click', handleSignIn);
+}
+
+if (el.authCreateBtn) {
+  el.authCreateBtn.addEventListener('click', handleCreateAccount);
+}
+
+if (el.authProceedBtn) {
+  el.authProceedBtn.addEventListener('click', handleProceed);
+}
+
+// Monitor auth state
+onAuthStateChanged(auth, (user) => {
+  state.authUser = user;
+  if (el.authSignInBtn && el.authCreateBtn) {
+    el.authSignInBtn.hidden = !!user;
+    el.authCreateBtn.hidden = !!user;
+  }
+  if (el.authEmailInput && user?.email && !el.authEmailInput.value) {
+    el.authEmailInput.value = user.email;
+  }
+});

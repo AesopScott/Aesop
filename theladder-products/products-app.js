@@ -2,18 +2,18 @@ const catalogUrl = '/docs/theladder-products-catalog.md?v=1';
 
 const categoryRanges = [
   { label: 'All products', start: 1, end: 250 },
-  { label: 'AI assistants and answer engines', start: 1, end: 20 },
-  { label: 'Workplace productivity and writing', start: 21, end: 35 },
-  { label: 'Coding, app building, and developer tools', start: 36, end: 61 },
-  { label: 'Search, research, knowledge, and RAG', start: 62, end: 82 },
-  { label: 'Databases, vector stores, and RAG infrastructure', start: 83, end: 107 },
-  { label: 'Data analysis, BI, analytics, and ML', start: 108, end: 126 },
-  { label: 'Image, design, and presentations', start: 127, end: 146 },
-  { label: 'Video, audio, voice, and meetings', start: 147, end: 166 },
-  { label: 'GTM, CRM, marketing, and support', start: 167, end: 191 },
-  { label: 'Automation, agents, and workflow builders', start: 192, end: 210 },
-  { label: 'Model APIs, cloud AI, and inference', start: 211, end: 230 },
-  { label: 'Legal, health, finance, and security', start: 231, end: 250 }
+  { label: 'AI assistants', start: 1, end: 20 },
+  { label: 'Workplace + writing', start: 21, end: 35 },
+  { label: 'Coding tools', start: 36, end: 61 },
+  { label: 'Search + RAG', start: 62, end: 82 },
+  { label: 'Vector databases', start: 83, end: 107 },
+  { label: 'Data + analytics', start: 108, end: 126 },
+  { label: 'Design + slides', start: 127, end: 146 },
+  { label: 'Video + audio', start: 147, end: 166 },
+  { label: 'Sales + support', start: 167, end: 191 },
+  { label: 'Agents + automation', start: 192, end: 210 },
+  { label: 'Model APIs + cloud', start: 211, end: 230 },
+  { label: 'Regulated AI', start: 231, end: 250 }
 ];
 
 const certificationOptions = [
@@ -215,26 +215,14 @@ function renderDetail(product) {
         Begin course
       </button>
     </section>
-    <p>${escapeHtml(product.reason)}</p>
     <div id="courseStartNotice" class="course-start-notice" hidden></div>
-    <div class="course-stack" aria-label="Course levels">
-      ${courses.map((course) => `
-        <div class="course-item">
-          <strong>${escapeHtml(course)} course</strong>
-          <p>${escapeHtml(getCourseSummary(course, product))}</p>
-          <button class="begin-course-button" type="button" data-course-level="${escapeHtml(course)}" data-product-id="${product.id}">
-            Begin ${escapeHtml(course)} course
-          </button>
-        </div>
-      `).join('')}
-    </div>
     <div class="cert-stack" aria-label="Certification options">
       <span class="cert-stack-label">Certification tests</span>
       ${certificationOptions.map((option) => `
         <div class="cert-option">
           <strong>${escapeHtml(option.label)}</strong>
           <p>${escapeHtml(option.summary)}</p>
-          <button type="button">Start ${escapeHtml(option.label.toLowerCase())}</button>
+          <button type="button" aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(product.name)}">Start</button>
         </div>
       `).join('')}
     </div>
@@ -244,14 +232,6 @@ function renderDetail(product) {
   const launchButton = elements.productDetail.querySelector('#beginSelectedCourseBtn');
   launchButton?.addEventListener('click', () => {
     showCourseStart(product, levelSelect?.value || defaultCourse, launchButton);
-  });
-
-  elements.productDetail.querySelectorAll('.begin-course-button').forEach((button) => {
-    button.addEventListener('click', () => {
-      const level = button.dataset.courseLevel || 'Beginner';
-      if (levelSelect) levelSelect.value = level;
-      showCourseStart(product, level, button);
-    });
   });
 }
 

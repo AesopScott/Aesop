@@ -11,6 +11,8 @@ import {
   buildProductBlueprint,
   buildProductCertContext,
   buildProductIdentityAssurance,
+  resolveProductIdentityLevel,
+  PRODUCT_IDENTITY_LEVELS,
   CERT_DEPTHS,
   depthForLabel
 } from '/theladder-products/products-ladder.js';
@@ -120,8 +122,36 @@ const state = {
   certMessages: [],
   certContext: null,
   activeCert: null,
-  certOutcome: null
+  certOutcome: null,
+  // Task 30 — identity-assurance gate shown before a certification starts.
+  // pendingCert holds the (product, depthLabel, level) chosen at the gate until
+  // the learner confirms; identityGate holds the resolved assurance record.
+  pendingCert: null,
+  identityGate: null,
+  authUser: null
 };
+
+const IDENTITY_GATE_LS = 'aesop-products-identity-gate-v1';
+
+// Lazily import Firebase auth (same gstatic 10.12.0 modules the page already
+// uses) only when the certification gate is opened — never on catalog load.
+let authContext = null;
+async function getAuthContext() {
+  if (authContext) return authContext;
+  const [{ initializeApp, getApps, getApp }, authModule, configModule] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
+    import('/ai-academy/js/firebase-config.js')
+  ]);
+  const app = getApps().length ? getApp() : initializeApp(configModule.FIREBASE_CONFIG);
+  const auth = authModule.getAuth(app);
+  authContext = { auth, ...authModule };
+  authModule.onAuthStateChanged(auth, (user) => {
+    state.authUser = user ? { uid: user.uid, email: user.email || '' } : null;
+    if (state.pendingCert) renderIdentityGate();
+  });
+  return authContext;
+}
 
 const elements = {
   categoryList: document.querySelector('#categoryList'),
@@ -157,7 +187,12 @@ const elements = {
   certForm: document.querySelector('#certForm'),
   certInput: document.querySelector('#certInput'),
   certOutcomePanel: document.querySelector('#certOutcomePanel'),
-  certClose: document.querySelector('#certClose')
+  certClose: document.querySelector('#certClose'),
+  // Task 30 — identity-assurance gate
+  identityGate: document.querySelector('#identityGate'),
+  identityGateTitle: document.querySelector('#identityGateTitle'),
+  identityGateBody: document.querySelector('#identityGateBody'),
+  identityGateCancel: document.querySelector('#identityGateCancel')
 };
 
 init();
@@ -252,6 +287,9 @@ function bindEvents() {
   // Task 27: certification exam
   elements.certForm?.addEventListener('submit', submitCertChat);
   elements.certClose?.addEventListener('click', closeCertExam);
+
+  // Task 30: identity-assurance gate (shown before a certification starts)
+  elements.identityGateCancel?.addEventListener('click', closeIdentityGate);
 
   window.addEventListener('beforeunload', saveState);
 }
@@ -397,7 +435,9 @@ function renderDetail(product) {
   elements.productDetail.querySelectorAll('[data-cert-depth]').forEach((button) => {
     button.addEventListener('click', () => {
       const level = levelSelect?.value || defaultCourse;
-      startCertificationExam(product, button.dataset.certDepth, level);
+      // Task 30: certification depths pass through the identity-assurance gate
+      // first. Ordinary product courses (Begin course, above) are NOT gated.
+      openIdentityGate(product, button.dataset.certDepth, level);
     });
   });
 
@@ -973,11 +1013,151 @@ function renderPlacementResult() {
 // this in recordCertificationResult; we wire its hooks correctly.
 // =============================================================================
 
-function startCertificationExam(product, depthLabel, level) {
+// ---------------------------------------------------------------------------
+// Task 30 — Identity-assurance gate (only before CERTIFICATION, not courses).
+//
+// The learner picks an active assurance level (self_attested / account_bound /
+// identity_attested) and confirms the 18+ adult attestation before the exam
+// starts. The resolved record is stored on state.identityGate and then onto the
+// certification context (and from there into the credential record + evidence
+// packet). The gate never blocks: with no account it resolves to self_attested
+// (or identity_attested when the learner signs the identity statement).
+// ---------------------------------------------------------------------------
+
+function readSavedGate() {
+  try {
+    return JSON.parse(localStorage.getItem(IDENTITY_GATE_LS) || 'null') || {};
+  } catch { return {}; }
+}
+
+function openIdentityGate(product, depthLabel, level) {
+  const depth = depthForLabel(depthLabel);
+  const saved = readSavedGate();
+  state.pendingCert = { product, depth, depthLabel, level };
+  state.identityGate = {
+    levelId: saved.levelId || 'self_attested',
+    adultAttested: false,
+    identitySigned: false
+  };
+  // Kick off auth detection (populates state.authUser, re-renders the gate).
+  getAuthContext().catch((error) => console.warn('Firebase auth unavailable (gate stays usable)', error));
+  renderIdentityGate();
+  elements.identityGate?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function closeIdentityGate() {
+  state.pendingCert = null;
+  if (elements.identityGate) elements.identityGate.hidden = true;
+}
+
+function renderIdentityGate() {
+  if (!elements.identityGate || !state.pendingCert || !state.identityGateBody) return;
+  const { product, depth, level } = state.pendingCert;
+  const gate = state.identityGate;
+  const account = state.authUser;
+  const resolved = resolveProductIdentityLevel({ ...gate, account });
+
+  if (elements.identityGateTitle) {
+    elements.identityGateTitle.textContent = `Verify before ${depth.label}`;
+  }
+
+  const accountLine = account
+    ? `Signed in as <strong>${escapeHtml(account.email || account.uid)}</strong>. Account-bound is available.`
+    : 'No account signed in. Account-bound will fall back to self-attested unless you sign the identity statement.';
+
+  const levelOptions = PRODUCT_IDENTITY_LEVELS.map((option) => {
+    const disabled = option.id === 'account_bound' && !account;
+    return `
+      <label class="identity-level${gate.levelId === option.id ? ' selected' : ''}${disabled ? ' disabled' : ''}">
+        <input type="radio" name="identityLevel" value="${option.id}" ${gate.levelId === option.id ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
+        <span class="identity-level-label">${escapeHtml(option.label)}</span>
+        <span class="identity-level-desc">${escapeHtml(option.description)}</span>
+        ${disabled ? '<span class="identity-level-note">Sign in to use this level.</span>' : ''}
+      </label>
+    `;
+  }).join('');
+
+  const showSign = resolveProductIdentityLevel({ ...gate, account }).requiresSignature
+    || gate.levelId === 'identity_attested';
+
+  elements.identityGateBody.innerHTML = `
+    <p class="identity-gate-intro">Certification credentials record <em>who</em> took the test, not just the score. Pick how this ${escapeHtml(depth.label.toLowerCase())} attempt for <strong>${escapeHtml(product.name)}</strong> is identified. You can always continue — we just record the honest level.</p>
+    <p class="identity-gate-account">${accountLine}</p>
+    <div class="identity-levels" role="radiogroup" aria-label="Identity assurance level">${levelOptions}</div>
+    <label class="identity-check identity-sign" ${showSign ? '' : 'hidden'}>
+      <input type="checkbox" id="identitySignCheck" ${gate.identitySigned ? 'checked' : ''}>
+      <span>I affirm I am the person named on this credential and that the evidence I submit is my own work.</span>
+    </label>
+    <label class="identity-check identity-adult">
+      <input type="checkbox" id="identityAdultCheck" ${gate.adultAttested ? 'checked' : ''}>
+      <span>I confirm I am 18 years of age or older (adult certification path).</span>
+    </label>
+    <p class="identity-resolved">This attempt will be recorded as <strong>${escapeHtml((PRODUCT_IDENTITY_LEVELS.find((l) => l.id === resolved.level) || {}).label || resolved.level)}</strong>.</p>
+    <div class="identity-gate-actions">
+      <button type="button" id="identityGateStart">Start ${escapeHtml(depth.label.toLowerCase())}</button>
+    </div>
+    <p class="identity-gate-error" id="identityGateError" hidden></p>
+  `;
+
+  elements.identityGate.hidden = false;
+
+  elements.identityGateBody.querySelectorAll('input[name="identityLevel"]').forEach((radio) => {
+    radio.addEventListener('change', (event) => {
+      state.identityGate.levelId = event.target.value;
+      renderIdentityGate();
+    });
+  });
+  const signCheck = elements.identityGateBody.querySelector('#identitySignCheck');
+  signCheck?.addEventListener('change', (event) => {
+    state.identityGate.identitySigned = event.target.checked;
+    renderIdentityGate();
+  });
+  const adultCheck = elements.identityGateBody.querySelector('#identityAdultCheck');
+  adultCheck?.addEventListener('change', (event) => {
+    state.identityGate.adultAttested = event.target.checked;
+  });
+  const startButton = elements.identityGateBody.querySelector('#identityGateStart');
+  startButton?.addEventListener('click', confirmIdentityGate);
+}
+
+function confirmIdentityGate() {
+  if (!state.pendingCert) return;
+  const errorEl = elements.identityGateBody?.querySelector('#identityGateError');
+  const gate = { ...state.identityGate, account: state.authUser };
+  const resolved = resolveProductIdentityLevel(gate);
+
+  // 18+ adult attestation is required for the adult certification path (mirrors
+  // ladder-auth.js). identity_attested additionally requires the signature.
+  if (!gate.adultAttested) {
+    if (errorEl) { errorEl.textContent = 'Please confirm you are 18 or older to start a certification.'; errorEl.hidden = false; }
+    return;
+  }
+  if (resolved.requiresSignature && !resolved.identitySigned) {
+    if (errorEl) { errorEl.textContent = 'Please sign the identity statement to use identity-attested.'; errorEl.hidden = false; }
+    return;
+  }
+
+  // Remember the chosen level for next time (not the attestations).
+  try { localStorage.setItem(IDENTITY_GATE_LS, JSON.stringify({ levelId: resolved.level })); } catch {}
+
+  const { product, depthLabel, level } = state.pendingCert;
+  closeIdentityGate();
+  startCertificationExam(product, depthLabel, level, gate);
+}
+
+function startCertificationExam(product, depthLabel, level, identityGate = {}) {
   const depth = depthForLabel(depthLabel);
   const blueprint = buildProductBlueprint({ product, level, depth });
   state.activeCert = { product, depth, level, blueprint };
   state.certContext = buildProductCertContext({ product, depth });
+  // Task 30: stamp the resolved identity-assurance record onto the context now,
+  // at attempt start. It rides into the credential record (via the
+  // buildIdentityAssurance hook) and the evidence packet (set in onCredential).
+  state.identityGate = identityGate;
+  state.certContext.identityAssurance = buildProductIdentityAssurance(
+    new Date().toISOString(),
+    identityGate
+  );
   state.certOutcome = null;
   state.certMessages = [{
     role: 'user',
@@ -1052,10 +1232,22 @@ async function finalizeCertification(certificationResult, rubricDimensions) {
           }
         });
         evidencePacket.pathway = 'product';
+        // Task 30: carry the resolved identity-assurance level onto the evidence
+        // packet so the data-layer certification row records it (the credential
+        // record already carries it via the buildIdentityAssurance hook below).
+        evidencePacket.identityAssurance = context.identityAssurance
+          || credentialRecord.identityAssurance
+          || null;
         recordCertification(evidencePacket, validation)
           .catch((error) => console.warn('recordCertification failed (local kept)', error));
       },
-      buildIdentityAssurance: (earnedAt) => buildProductIdentityAssurance(earnedAt)
+      // Re-stamp at award time using the gate selection captured at attempt
+      // start, so attestedAt/earnedAt reflect the credential timestamp. Falls
+      // back to the context's pre-stamped record if the gate is unavailable.
+      buildIdentityAssurance: (earnedAt) =>
+        (state.identityGate
+          ? buildProductIdentityAssurance(earnedAt, { ...state.identityGate, account: state.authUser })
+          : (context.identityAssurance || buildProductIdentityAssurance(earnedAt)))
     }
   });
 
@@ -1078,6 +1270,7 @@ function closeCertExam() {
   state.certContext = null;
   state.certMessages = [];
   state.certOutcome = null;
+  state.identityGate = null;
   if (elements.certWorkspace) elements.certWorkspace.hidden = true;
 }
 

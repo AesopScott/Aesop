@@ -190,6 +190,11 @@ const el = {
   progressBar: document.getElementById('progressBar'),
   progressText: document.getElementById('progressText'),
   tierCompletionStatus: document.getElementById('tierCompletionStatus'),
+  heroCoursesComplete: document.getElementById('heroCoursesComplete'),
+  heroTiersComplete: document.getElementById('heroTiersComplete'),
+  heroTiersCertified: document.getElementById('heroTiersCertified'),
+  heroTiersExpert: document.getElementById('heroTiersExpert'),
+  heroTiersMastered: document.getElementById('heroTiersMastered'),
   tierList: document.getElementById('tierList'),
   activeTierLabel: document.getElementById('activeTierLabel'),
   activeTopicTitle: document.getElementById('activeTopicTitle'),
@@ -1137,6 +1142,50 @@ function completedTierCount() {
   )).length;
 }
 
+function credentialTierCounts() {
+  const certified = new Set();
+  const expertise = new Set();
+  const mastered = new Set();
+  const acceptedStatuses = new Set(['certified', 'passed', 'pass', 'verified']);
+
+  const add = (tierId, depthId, status = 'certified') => {
+    if (!tierId || !acceptedStatuses.has(String(status || '').toLowerCase())) return;
+    if (depthId === 'certification' || depthId === 'expert-challenge' || depthId === 'mastery-challenge') {
+      certified.add(tierId);
+    }
+    if (depthId === 'expert-challenge' || depthId === 'mastery-challenge') {
+      expertise.add(tierId);
+    }
+    if (depthId === 'mastery-challenge') {
+      mastered.add(tierId);
+    }
+  };
+
+  (state.progress.ladderCertifications || []).forEach((record) => {
+    add(record.ladderTierId, record.depthId, record.status);
+  });
+  (state.progress.evaluationAttempts || []).forEach((attempt) => {
+    add(attempt.ladderTierId, attempt.testDepthId, attempt.status);
+  });
+
+  return {
+    certified: certified.size,
+    expertise: expertise.size,
+    mastered: mastered.size
+  };
+}
+
+function renderHeroProgress(count, total) {
+  const tierTotal = LADDER_TIERS.length;
+  const tierComplete = completedTierCount();
+  const credentials = credentialTierCounts();
+  if (el.heroCoursesComplete) el.heroCoursesComplete.textContent = `${count} / ${total}`;
+  if (el.heroTiersComplete) el.heroTiersComplete.textContent = `${tierComplete} / ${tierTotal}`;
+  if (el.heroTiersCertified) el.heroTiersCertified.textContent = `${credentials.certified} / ${tierTotal}`;
+  if (el.heroTiersExpert) el.heroTiersExpert.textContent = `${credentials.expertise} / ${tierTotal}`;
+  if (el.heroTiersMastered) el.heroTiersMastered.textContent = `${credentials.mastered} / ${tierTotal}`;
+}
+
 function renderProgress() {
   const count = completedCount();
   const total = allTopics().length;
@@ -1144,6 +1193,7 @@ function renderProgress() {
   el.progressBar.style.width = `${pct}%`;
   el.progressText.textContent = `${count} of ${total} rungs completed`;
   el.tierCompletionStatus.textContent = `${completedTierCount()} / ${LADDER_TIERS.length} tiers complete`;
+  renderHeroProgress(count, total);
 }
 
 function renderTiers() {

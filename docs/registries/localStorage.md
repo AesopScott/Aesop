@@ -174,14 +174,30 @@ Local fallback queue for product training requests from `/theladder-products/` w
 
 ---
 
-## `aesop-ladder-use-cases-state-v1`
+## `aesop-ladder-products-state-v1`
 
-Local state for `/theladder-use-cases/`. Preserves the selected use case, active topic, search query, depth filter, and started use-case courses if the learner closes the browser.
+Local state for `/theladder-products/`. Preserves the selected product, active product category, search query, depth filter, started product courses, and in-page course or certification chat transcripts if the learner closes the browser.
 
-**Value format:** `JSON string` - `{selectedId, activeTopic:{start,end}, query, depth, courseStarts}`
+**Value format:** `JSON string` - `{selectedId, activeCategory:{start,end}, query, depth, courseStarts, courseChats}`
 
 **Producers**
-- `theladder-use-cases/use-cases-app.js` - `setItem` on search, topic selection, depth changes, course starts, and unload
+- `theladder-products/products-app.js` - `setItem` on search, category selection, depth changes, course starts, certification starts, chat responses, completion marks, and unload
+
+**Consumers**
+- `theladder-products/products-app.js` - `getItem` during page initialization
+
+**Status:** ✓ producer and consumer in same route
+
+---
+
+## `aesop-ladder-use-cases-state-v1`
+
+Local state for `/theladder-use-cases/`. Preserves the selected use case, active topic, search query, depth filter, started use-case courses, and in-page course or certification chat transcripts if the learner closes the browser.
+
+**Value format:** `JSON string` - `{selectedId, activeTopic:{start,end}, query, depth, courseStarts, courseChats}`
+
+**Producers**
+- `theladder-use-cases/use-cases-app.js` - `setItem` on search, topic selection, depth changes, course starts, certification starts, chat responses, completion marks, and unload
 
 **Consumers**
 - `theladder-use-cases/use-cases-app.js` - `getItem` during page initialization
@@ -220,6 +236,7 @@ Local fallback queue for use-case training requests from `/theladder-use-cases/`
 | `aesop-cert-mpts` | integer string | cert tracking | students.html | ✓ |
 | `aesop-theme` | `'dark'\|'light'` | theme toggles | theme init scripts | ✓ |
 | `aesop-product-course-requests-v1` | JSON array | products-app.js | products-admin.js | ⚠ local fallback only |
+| `aesop-ladder-products-state-v1` | JSON object | products-app.js | products-app.js | ✓ |
 | `aesop-ladder-use-cases-state-v1` | JSON object | use-cases-app.js | use-cases-app.js | ✓ |
 | `aesop-use-case-training-requests-v1` | JSON array | use-cases-app.js | use-cases-admin.js | ⚠ local fallback only |
 

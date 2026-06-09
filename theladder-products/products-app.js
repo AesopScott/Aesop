@@ -242,6 +242,9 @@ function renderDetail(product) {
       </button>
     </section>
     <div id="courseStartNotice" class="course-start-notice" hidden></div>
+    <section id="courseWorkspace" class="course-conversation-workspace" aria-label="Course conversation workspace" ${chat ? '' : 'hidden'}>
+      ${renderCourseWorkspace(product, chat)}
+    </section>
     <div class="cert-stack" aria-label="Certification options">
       <span class="cert-stack-label">Certification tests</span>
       ${certificationOptions.map((option) => `
@@ -252,9 +255,6 @@ function renderDetail(product) {
         </div>
       `).join('')}
     </div>
-    <section id="courseWorkspace" class="course-conversation-workspace" aria-label="Course conversation workspace" ${chat ? '' : 'hidden'}>
-      ${renderCourseWorkspace(product, chat)}
-    </section>
   `;
 
   const levelSelect = elements.productDetail.querySelector('#courseLevelSelect');
@@ -339,7 +339,7 @@ function startCourseConversation(product, level, activeButton) {
     status: 'started',
     messages: [{
       role: 'user',
-      content: `Start my ${level} course on ${product.name}. Teach the core workflow, ask diagnostic questions, and give me one lab that is a debate, a skill practice, or a build.`
+      content: `I'm ready to start the ${level} course for ${product.name}.`
     }]
   };
   saveState();
@@ -364,7 +364,7 @@ function startCertificationConversation(product, certificationLabel, level, acti
     status: 'started',
     messages: [{
       role: 'user',
-      content: `Start my ${certificationLabel} test for ${product.name}. Ask one question or task at a time. Require evidence, score my responses against the standard, and only mark me complete when the evidence is strong.`
+      content: `I'm ready to start the ${certificationLabel} test for ${product.name}.`
     }]
   };
   saveState();

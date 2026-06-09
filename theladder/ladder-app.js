@@ -1253,7 +1253,7 @@ function renderProgress() {
   const pct = total ? Math.round((count / total) * 100) : 0;
   el.progressBar.style.width = `${pct}%`;
   el.progressText.textContent = `${count} of ${total} rungs completed`;
-  el.tierCompletionStatus.textContent = `${completedTierCount()} / ${LADDER_TIERS.length} tiers complete`;
+  el.tierCompletionStatus.textContent = `${completedTierCount()} / ${LADDER_TIERS.length} tiers completed`;
   renderHeroProgress(count, total);
 }
 

@@ -844,7 +844,7 @@ function certificationTranscriptLines() {
       evidence: TRANSCRIPT_STATUS.VERIFIED,
       earnedAt: latest.earnedAt,
       transcriptLine: `Placed out of ${assessment.length} ${assessment.length === 1 ? 'tier' : 'tiers'}:`,
-      tiersList: assessment.map((record) => record.title)
+      tiersList: assessment.map((record) => record.title).reverse()
     });
   }
   return [...lines, ...exams];

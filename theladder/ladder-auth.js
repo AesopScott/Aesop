@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
 
 const IDENTITY_ASSURANCE_LEVELS = [
@@ -173,38 +173,19 @@ async function handleGoogleSignIn() {
   setError('');
   try {
     const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider);
+    // Page will redirect to Google, then return here after sign-in
+  } catch (error) {
+    setError(`Google sign in failed: ${error.message}`);
+  }
+}
 
-    // COOP workaround: intercept popup's window.close() and use postMessage instead
-    let popupWindow = null;
-    const originalWindowClose = window.close;
-
-    window.close = function() {
-      // If called from within a popup, send a message to parent instead
-      if (window.opener && window !== window.opener) {
-        window.opener.postMessage({ type: 'POPUP_DONE' }, '*');
-      }
-      return originalWindowClose.apply(this, arguments);
-    };
-
-    // Set up message listener to detect when popup is done
-    const closeHandler = (event) => {
-      if (event.data?.type === 'POPUP_DONE' && popupWindow) {
-        try {
-          popupWindow.close();
-        } catch (e) {
-          // Ignore errors from closing popup
-        }
-      }
-    };
-    window.addEventListener('message', closeHandler);
-
-    try {
-      await signInWithPopup(auth, provider);
-      setError('');
-    } finally {
-      // Restore original close function and remove listener
-      window.close = originalWindowClose;
-      window.removeEventListener('message', closeHandler);
+// Handle redirect result when page loads (after returning from Google Sign-In)
+async function handleRedirectResult() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) {
+      setError(''); // Sign-in successful, clear any errors
     }
   } catch (error) {
     setError(`Google sign in failed: ${error.message}`);
@@ -256,6 +237,9 @@ renderIdentityAssuranceSelect();
 renderProctoringModeSelect();
 updateProctoringModeVisibility();
 initializeDarkMode();
+
+// Handle redirect result from Google Sign-In (if returning from redirect)
+handleRedirectResult();
 
 // Event listeners
 if (el.authIdentityAssuranceSelect) {

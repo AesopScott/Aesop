@@ -872,9 +872,32 @@ function renderUseCaseChat() {
   elements.useCaseConversationTitle.textContent = activeChatTitle();
   const speaker = activeSpeakerLabel();
   elements.useCaseChatLog.innerHTML = state.messages.map(msg =>
-    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? speaker : 'You'}</strong><p>${escapeHtml(msg.content)}</p></div>`
+    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? speaker : 'You'}</strong>${formatChatMessage(msg.content)}</div>`
   ).join('');
   elements.useCaseChatLog.scrollTop = elements.useCaseChatLog.scrollHeight;
+}
+
+function formatChatMessage(content) {
+  // Convert markdown to HTML for better readability in chat
+  let html = escapeHtml(content);
+
+  // Headers
+  html = html.replace(/^### (.*?)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2>$1</h2>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Bullet lists - convert * to <li> and wrap in <ul>
+  html = html.replace(/^\* (.*?)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*?<\/li>)/s, '<ul>$1</ul>');
+
+  // Line breaks - convert \n to <br> but preserve structure
+  html = html.replace(/\n/g, '<br>');
+
+  return `<p>${html}</p>`;
 }
 
 async function submitUseCaseChat(event) {

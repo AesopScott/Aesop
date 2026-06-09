@@ -54,6 +54,52 @@ const TEST_DEPTHS = [
   }
 ];
 
+const IDENTITY_ASSURANCE_LEVELS = [
+  {
+    id: 'self_attested',
+    label: 'Self-attested',
+    credentialLabel: 'Self-attested',
+    requiresAttestation: false,
+    proctoringRequired: false,
+    active: true,
+    description: 'Learner claims the work. No identity check.'
+  },
+  {
+    id: 'account_bound',
+    label: 'Account bound',
+    credentialLabel: 'Account-bound',
+    requiresAttestation: false,
+    proctoringRequired: false,
+    active: true,
+    description: 'Attempt is tied to the AESOP learner ID, browser session, and saved transcript record.'
+  },
+  {
+    id: 'identity_attested',
+    label: 'Identity attested',
+    credentialLabel: 'Identity-attested',
+    requiresAttestation: true,
+    proctoringRequired: false,
+    active: true,
+    description: 'Learner signs an identity statement before the certification attempt.'
+  },
+  {
+    id: 'proctored_verified',
+    label: 'Proctored verified',
+    credentialLabel: 'Proctored verified',
+    requiresAttestation: true,
+    proctoringRequired: true,
+    active: false,
+    description: 'Adult formal credential path requiring ID/liveness plus automated, live, recorded, or institutional proctoring.'
+  }
+];
+
+const PROCTORING_MODES = [
+  { id: 'automated', label: 'Automated proctoring', description: 'Camera/liveness and session signals flag risk for review.' },
+  { id: 'live_remote', label: 'Live remote proctor', description: 'A trained proctor checks ID and watches the session.' },
+  { id: 'recorded_review', label: 'Recorded review', description: 'The session is recorded and reviewed when flagged or sampled.' },
+  { id: 'institutional', label: 'Institutional proctor', description: 'A school, employer, library, workforce center, or testing site verifies the session.' }
+];
+
 function normalizeTestDepthId(id) {
   return TEST_DEPTHS.some((item) => item.id === id) ? id : TEST_DEPTHS[0].id;
 }
@@ -142,6 +188,9 @@ const state = {
   searchQuery: '',
   certificationTierId: 'workforce',
   testDepthId: 'certification',
+  identityAssuranceLevel: 'account_bound',
+  identityAttested: false,
+  proctoringMode: 'recorded_review',
   evaluationContext: null,
   trainingMessages: [],
   placementExpanded: false,
@@ -170,6 +219,11 @@ const el = {
   topicSearchResults: document.getElementById('topicSearchResults'),
   certificationTierSelect: document.getElementById('certificationTierSelect'),
   testDepthSelect: document.getElementById('testDepthSelect'),
+  identityAssuranceSelect: document.getElementById('identityAssuranceSelect'),
+  identityAttestationCheck: document.getElementById('identityAttestationCheck'),
+  identityAssuranceNotice: document.getElementById('identityAssuranceNotice'),
+  proctoringModeField: document.getElementById('proctoringModeField'),
+  proctoringModeSelect: document.getElementById('proctoringModeSelect'),
   activeEvaluationTarget: document.getElementById('activeEvaluationTarget'),
   evaluationCooldownNotice: document.getElementById('evaluationCooldownNotice'),
   startEvaluationBtn: document.getElementById('startEvaluationBtn'),
@@ -468,6 +522,9 @@ function saveLocal() {
     activeVocabTerm: state.activeVocabTerm,
     certificationTierId: state.certificationTierId,
     testDepthId: state.testDepthId,
+    identityAssuranceLevel: state.identityAssuranceLevel,
+    identityAttested: state.identityAttested,
+    proctoringMode: state.proctoringMode,
     evaluationContext: state.evaluationContext,
     trainingMessages: state.trainingMessages,
     messages: state.messages,
@@ -500,6 +557,9 @@ async function saveRemote() {
         activeVocabTerm: state.activeVocabTerm,
         certificationTierId: state.certificationTierId,
         testDepthId: state.testDepthId,
+        identityAssuranceLevel: state.identityAssuranceLevel,
+        identityAttested: state.identityAttested,
+        proctoringMode: state.proctoringMode,
         evaluationContext: state.evaluationContext,
         completedTopics: state.progress.completedTopics,
         vocabulary: state.progress.vocabulary,
@@ -548,6 +608,9 @@ async function loadRemote(learnerId) {
     state.activeVocabTerm = ladder.activeVocabTerm || state.activeVocabTerm;
     state.certificationTierId = ladder.certificationTierId || state.certificationTierId;
     state.testDepthId = normalizeTestDepthId(ladder.testDepthId || state.testDepthId);
+    state.identityAssuranceLevel = ladder.identityAssuranceLevel || state.identityAssuranceLevel;
+    state.identityAttested = Boolean(ladder.identityAttested);
+    state.proctoringMode = ladder.proctoringMode || state.proctoringMode;
     state.evaluationContext = ladder.evaluationContext || null;
     state.progress.completedTopics = ladder.completedTopics || {};
     state.progress.vocabulary = ladder.vocabulary || {};
@@ -577,6 +640,9 @@ function loadLocal() {
     state.activeVocabTerm = saved.activeVocabTerm || state.activeVocabTerm;
     state.certificationTierId = saved.certificationTierId || state.certificationTierId;
     state.testDepthId = normalizeTestDepthId(saved.testDepthId || state.testDepthId);
+    state.identityAssuranceLevel = saved.identityAssuranceLevel || state.identityAssuranceLevel;
+    state.identityAttested = Boolean(saved.identityAttested);
+    state.proctoringMode = saved.proctoringMode || state.proctoringMode;
     state.evaluationContext = saved.evaluationContext || null;
     state.trainingMessages = Array.isArray(saved.trainingMessages) ? saved.trainingMessages : [];
     state.messages = Array.isArray(saved.messages) ? saved.messages : [];
@@ -898,6 +964,7 @@ async function recordCertificationResult(result) {
     standards: context.standards,
     blueprintId: context.blueprintId,
     blueprintVersion: context.blueprintVersion,
+    identityAssurance: context.identityAssurance || buildIdentityAssuranceRecord(earnedAt),
     validation,
     validationStatus: 'valid',
     transcriptLine: `${context.ladderTierLabel} - ${context.certificationTierLabel} ${context.testDepthLabel}. Independent validation confirmed learner evidence and examiner process.`
@@ -1626,6 +1693,92 @@ function renderTopic() {
   renderChat();
 }
 
+function identityAssuranceLevel() {
+  return IDENTITY_ASSURANCE_LEVELS.find((item) => item.id === state.identityAssuranceLevel) || IDENTITY_ASSURANCE_LEVELS[1];
+}
+
+function proctoringMode() {
+  return PROCTORING_MODES.find((item) => item.id === state.proctoringMode) || PROCTORING_MODES[2];
+}
+
+function buildIdentityAssuranceRecord(startedAt = new Date().toISOString()) {
+  const level = identityAssuranceLevel();
+  const proctor = proctoringMode();
+  const attested = Boolean(state.identityAttested);
+  return {
+    level: level.id,
+    label: level.credentialLabel,
+    method: level.id,
+    status: level.proctoringRequired
+      ? 'proctoring_not_configured'
+      : level.requiresAttestation
+        ? attested ? 'attested' : 'attestation_missing'
+        : level.id === 'account_bound' ? 'account_bound' : 'self_attested',
+    attested,
+    attestedAt: level.requiresAttestation && attested ? startedAt : null,
+    adultOnly: level.id === 'proctored_verified',
+    proctoringRequired: level.proctoringRequired,
+    proctoringMode: level.proctoringRequired ? proctor.id : 'none',
+    proctoringLabel: level.proctoringRequired ? proctor.label : 'None',
+    identityProvider: '',
+    verificationTransactionId: '',
+    sessionRecordingId: '',
+    proctorDecision: level.proctoringRequired ? 'not_configured' : 'not_required',
+    proctorName: '',
+    proctorOrganization: '',
+    proctorNotes: ''
+  };
+}
+
+function certificationIdentityGate() {
+  const level = identityAssuranceLevel();
+  if (level.proctoringRequired && !level.active) {
+    return {
+      locked: true,
+      reason: 'Proctored verified certification is scaffolded but not connected yet. It will require adult consent, ID/liveness verification, and an automated, live, recorded, or institutional proctor.'
+    };
+  }
+  if (level.requiresAttestation && !state.identityAttested) {
+    return {
+      locked: true,
+      reason: 'Check the identity attestation before starting this certification.'
+    };
+  }
+  return {
+    locked: false,
+    reason: level.description
+  };
+}
+
+function renderIdentityAssurance() {
+  if (!el.identityAssuranceSelect) return certificationIdentityGate();
+  el.identityAssuranceSelect.innerHTML = IDENTITY_ASSURANCE_LEVELS.map((item) => (
+    `<option value="${item.id}">${item.label}${item.active ? '' : ' (scaffold)'}</option>`
+  )).join('');
+  el.identityAssuranceSelect.value = state.identityAssuranceLevel;
+  if (el.proctoringModeSelect) {
+    el.proctoringModeSelect.innerHTML = PROCTORING_MODES.map((item) => (
+      `<option value="${item.id}">${item.label}</option>`
+    )).join('');
+    el.proctoringModeSelect.value = state.proctoringMode;
+  }
+  const level = identityAssuranceLevel();
+  if (el.identityAttestationCheck) {
+    el.identityAttestationCheck.checked = Boolean(state.identityAttested);
+    const attestation = el.identityAttestationCheck.closest('.identity-attestation');
+    if (attestation) attestation.hidden = !level.requiresAttestation;
+  }
+  if (el.proctoringModeField) {
+    el.proctoringModeField.hidden = !level.proctoringRequired;
+  }
+  const gate = certificationIdentityGate();
+  if (el.identityAssuranceNotice) {
+    el.identityAssuranceNotice.hidden = false;
+    el.identityAssuranceNotice.textContent = gate.reason;
+  }
+  return gate;
+}
+
 function renderEvaluationPanel() {
   if (!el.certificationTierSelect || !el.testDepthSelect) return;
   const tier = getActiveTier();
@@ -1644,6 +1797,7 @@ function renderEvaluationPanel() {
   el.activeEvaluationTarget.textContent = targetText;
   if (el.certificationWorkspaceTarget) el.certificationWorkspaceTarget.textContent = targetText;
   const cooldown = certificationCooldownFor(tier.id, depth.id);
+  const identityGate = renderIdentityAssurance();
   const lockedText = cooldown.locked
     ? `This ${depth.label} can be tried again in ${formatDuration(cooldown.remainingMs)}. The 24-hour wait applies to this Ladder tier and challenge depth across all education tiers.`
     : `24-hour retry limit: this Ladder tier and challenge depth can be attempted once per day, even if the education tier changes.`;
@@ -1654,9 +1808,13 @@ function renderEvaluationPanel() {
   });
   [el.startEvaluationBtn, el.startWorkspaceCertificationBtn].forEach((button) => {
     if (!button) return;
-    button.disabled = cooldown.locked;
-    button.textContent = cooldown.locked ? `Available in ${formatDuration(cooldown.remainingMs)}` : 'Start certification';
-    button.title = cooldown.locked ? `Available at ${new Date(cooldown.availableAt).toLocaleString()}` : 'Start certification';
+    button.disabled = cooldown.locked || identityGate.locked;
+    button.textContent = cooldown.locked
+      ? `Available in ${formatDuration(cooldown.remainingMs)}`
+      : identityGate.locked ? 'Identity step required' : 'Start certification';
+    button.title = cooldown.locked
+      ? `Available at ${new Date(cooldown.availableAt).toLocaleString()}`
+      : identityGate.locked ? identityGate.reason : 'Start certification';
   });
   if (state.evaluationContext && el.certificationModeDetail) renderConversationMode();
 }
@@ -1944,13 +2102,15 @@ async function startEvaluation() {
   const cert = CERTIFICATION_TIERS.find((item) => item.id === state.certificationTierId) || CERTIFICATION_TIERS[0];
   const depth = TEST_DEPTHS.find((item) => item.id === state.testDepthId) || TEST_DEPTHS[0];
   const cooldown = certificationCooldownFor(tier.id, depth.id);
-  if (cooldown.locked) {
+  const identityGate = certificationIdentityGate();
+  if (cooldown.locked || identityGate.locked) {
     renderEvaluationPanel();
     document.getElementById('evaluationPanel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
   const attemptId = `eval_${Date.now()}`;
   const startedAt = new Date().toISOString();
+  const identityAssurance = buildIdentityAssuranceRecord(startedAt);
   const cooldownKey = certificationCooldownKey(tier.id, depth.id);
   const cooldownExpiresAt = new Date(Date.parse(startedAt) + CERTIFICATION_COOLDOWN_MS).toISOString();
   if (!state.evaluationContext) {
@@ -1971,6 +2131,7 @@ async function startEvaluation() {
     ladderTierLabel: `${tier.name} - ${tier.title}`,
     blueprintId: `${cert.id}:${tier.id}:${depth.id}`,
     blueprintVersion: 'v0.1',
+    identityAssurance,
     cooldownKey,
     cooldownExpiresAt,
     startedAt
@@ -1982,12 +2143,12 @@ async function startEvaluation() {
   state.progress.evaluationAttempts = state.progress.evaluationAttempts.slice(0, 25);
   state.messages = [{
     role: 'user',
-    content: `Start my ${depth.label} for ${tier.name}: ${tier.title}. Certification tier: ${cert.label}. Standards family: ${cert.standards}. Required evidence: ${depth.evidence}. Passing standard: ${depth.passingStandard}. Deliver the test dynamically, document the rubric, require evidence, and do not require that I take a course first.`
+    content: `Start my ${depth.label} for ${tier.name}: ${tier.title}. Certification tier: ${cert.label}. Identity assurance: ${identityAssurance.label} (${identityAssurance.status}). Standards family: ${cert.standards}. Required evidence: ${depth.evidence}. Passing standard: ${depth.passingStandard}. Deliver the test dynamically, document the rubric, require evidence, and do not require that I take a course first.`
   }];
   addTranscript(
     'test_started',
     `${cert.label} ${tier.name} ${depth.label}`,
-    `Started ${depth.label.toLowerCase()} for ${tier.title}. Blueprint ${state.evaluationContext.blueprintId} ${state.evaluationContext.blueprintVersion}.`,
+    `Started ${depth.label.toLowerCase()} for ${tier.title}. Blueprint ${state.evaluationContext.blueprintId} ${state.evaluationContext.blueprintVersion}. Identity assurance: ${identityAssurance.label}.`,
     { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: 'ai_evaluation_started' }
   );
   renderEvaluationPanel();
@@ -2174,6 +2335,25 @@ function bindEvents() {
 
   el.testDepthSelect?.addEventListener('change', async () => {
     state.testDepthId = el.testDepthSelect.value;
+    await persist();
+    renderEvaluationPanel();
+  });
+
+  el.identityAssuranceSelect?.addEventListener('change', async () => {
+    state.identityAssuranceLevel = el.identityAssuranceSelect.value;
+    state.identityAttested = false;
+    await persist();
+    renderEvaluationPanel();
+  });
+
+  el.identityAttestationCheck?.addEventListener('change', async () => {
+    state.identityAttested = el.identityAttestationCheck.checked;
+    await persist();
+    renderEvaluationPanel();
+  });
+
+  el.proctoringModeSelect?.addEventListener('change', async () => {
+    state.proctoringMode = el.proctoringModeSelect.value;
     await persist();
     renderEvaluationPanel();
   });

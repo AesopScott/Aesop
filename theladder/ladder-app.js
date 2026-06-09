@@ -1952,7 +1952,7 @@ function renderIdentityAssurance() {
 
 function renderAccountGate() {
   const gate = accountGateForCertificationTier();
-  const shouldShow = certificationTierRequiresAccount() || Boolean(state.authUser);
+  const shouldShow = !certificationTierRequiresAccount() && Boolean(state.authUser);
   if (el.accountGatePanel) el.accountGatePanel.hidden = !shouldShow;
   if (el.accountStatusText) {
     el.accountStatusText.textContent = state.authUser
@@ -2013,10 +2013,11 @@ function renderEvaluationPanel() {
   if (el.identityAssuranceField) {
     el.identityAssuranceField.hidden = true;
   }
-  if (certificationTierRequiresAccount()) {
-    if (el.accountGatePanel) el.accountGatePanel.hidden = true;
-    if (el.identityAttestationLabel) el.identityAttestationLabel.hidden = true;
-    if (el.identityAssuranceNotice) el.identityAssuranceNotice.hidden = true;
+  if (el.identityAttestationLabel) {
+    el.identityAttestationLabel.hidden = certificationTierRequiresAccount();
+  }
+  if (el.identityAssuranceNotice) {
+    el.identityAssuranceNotice.hidden = certificationTierRequiresAccount();
   }
   [el.evaluationCooldownNotice, el.certificationWorkspaceCooldown].forEach((notice) => {
     if (!notice) return;

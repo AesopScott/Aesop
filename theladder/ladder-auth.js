@@ -300,11 +300,25 @@ if (el.authProceedBtn) {
 // Monitor auth state
 onAuthStateChanged(auth, (user) => {
   state.authUser = user;
+  console.log('[AUTH STATE] User:', user ? user.email : 'not logged in');
+
   if (el.authSignInBtn && el.authCreateBtn) {
     el.authSignInBtn.hidden = !!user;
     el.authCreateBtn.hidden = !!user;
   }
+
+  // Hide login form when logged in
+  const authForm = document.getElementById('authAccountForm');
+  if (authForm) {
+    authForm.parentElement.style.display = user ? 'none' : 'block';
+  }
+
   if (el.authEmailInput && user?.email && !el.authEmailInput.value) {
     el.authEmailInput.value = user.email;
+  }
+
+  if (user) {
+    console.log('[AUTH STATE] Logged in as:', user.email);
+    setError(''); // Clear any errors
   }
 });

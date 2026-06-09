@@ -58,7 +58,7 @@ Use motion only for state changes, expansion, completion, and selection feedback
 
 Before pushing product UI changes:
 
-1. Run the Impeccable detector on touched UI files or the local URL.
+1. Run `powershell -ExecutionPolicy Bypass -File scripts\impeccable-site-audit.ps1` for site-wide design review, or `scripts\impeccable-ladder-audit.ps1` for a focused Ladder check.
 2. Capture desktop and mobile screenshots in light and dark mode when the page is visual.
 3. Check for banned aqua/teal/cyan colors.
 4. Check for light-on-light and dark-on-dark text.

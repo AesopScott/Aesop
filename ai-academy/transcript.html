@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.1.0 | 2026-06-09 | The Ladder tier certifications transcript -->
+<!-- v1.2.0 | 2026-06-09 | Added Products and Use Cases completions tracking -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -145,10 +145,24 @@
         ladderState = JSON.parse(localStorage.getItem('aesop-ladder-state') || '{}');
       } catch (_) {}
 
+      // Load products state
+      let productsState = {};
+      try {
+        productsState = JSON.parse(localStorage.getItem('aesop-ladder-products-state-v1') || '{}');
+      } catch (_) {}
+
+      // Load use cases state
+      let useCasesState = {};
+      try {
+        useCasesState = JSON.parse(localStorage.getItem('aesop-ladder-use-cases-state-v1') || '{}');
+      } catch (_) {}
+
       const certified = ladderState.heroTiersCertified || 0;
       const expertise = ladderState.heroTiersExpert || 0;
       const mastery = ladderState.heroTiersMastered || 0;
       const totalCerts = certified + expertise + mastery;
+      const productsCompleted = Object.values(productsState.courseStarts || {}).filter(c => c.status === 'completed').length;
+      const useCasesCompleted = Object.values(useCasesState.courseStarts || {}).filter(c => c.status === 'completed').length;
 
       // Build tier cards
       const tiersCertified = [], tiersExpertise = [], tiersMastery = [];
@@ -174,8 +188,10 @@
       document.getElementById('statMastery').textContent   = mastery;
       document.getElementById('statExpertise').textContent = expertise;
       document.getElementById('statCertified').textContent = certified;
+      document.getElementById('statProducts').textContent = productsCompleted;
+      document.getElementById('statUseCases').textContent = useCasesCompleted;
 
-      buildPrintCerts(mastery, expertise, certified);
+      buildPrintCerts(mastery, expertise, certified, productsCompleted, useCasesCompleted);
     }
 
     function renderSection(id, items, type) {
@@ -219,7 +235,7 @@
         </div>`;
     }
 
-    function buildPrintCerts(mastery, expertise, certified) {
+    function buildPrintCerts(mastery, expertise, certified, productsCompleted, useCasesCompleted) {
       const list = document.getElementById('printCertList');
       let html = '';
 
@@ -232,9 +248,15 @@
       if (certified > 0) {
         html += `<div class="print-cert-row"><div class="print-cert-left"><span class="print-cert-icon">✓</span><div><div class="print-cert-title">Certified Tiers</div></div></div><div class="print-cert-right"><span class="print-cert-status certified">${certified} Tier${certified!==1?'s':''}</span></div></div>`;
       }
+      if (productsCompleted > 0) {
+        html += `<div class="print-cert-row"><div class="print-cert-left"><span class="print-cert-icon">🛍️</span><div><div class="print-cert-title">Products Completed</div></div></div><div class="print-cert-right"><span class="print-cert-status">${productsCompleted} Product${productsCompleted!==1?'s':''}</span></div></div>`;
+      }
+      if (useCasesCompleted > 0) {
+        html += `<div class="print-cert-row"><div class="print-cert-left"><span class="print-cert-icon">💡</span><div><div class="print-cert-title">Use Cases Completed</div></div></div><div class="print-cert-right"><span class="print-cert-status">${useCasesCompleted} Use Case${useCasesCompleted!==1?'s':''}</span></div></div>`;
+      }
 
       if (!html) {
-        html = '<p class="print-no-certs">No Ladder tier certifications earned yet. Start at /theladder/ to begin climbing.</p>';
+        html = '<p class="print-no-certs">No completions yet. Start at /theladder/ or explore Products and Use Cases.</p>';
       }
 
       list.innerHTML = html;
@@ -720,6 +742,8 @@
       </div>
       <div class="nav-links">
         <a href="/theladder/" class="nav-btn">The Ladder</a>
+        <a href="/theladder-products/" class="nav-btn">Products</a>
+        <a href="/theladder-use-cases/" class="nav-btn">Use Cases</a>
         <a href="/ai-academy/students.html" class="nav-btn">Student Hub</a>
         <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener" class="nav-btn nav-btn--forums">Forums - Discord</a>
         <button class="dark-mode-toggle" id="themeToggle" aria-label="Toggle dark mode">
@@ -748,6 +772,12 @@
         </div>
         <div class="hero-stat">
           ✓ <span><strong id="statCertified">0</strong> Certified</span>
+        </div>
+        <div class="hero-stat">
+          🛍️ <span><strong id="statProducts">0</strong> Products</span>
+        </div>
+        <div class="hero-stat">
+          💡 <span><strong id="statUseCases">0</strong> Use Cases</span>
         </div>
       </div>
     </div>
@@ -841,6 +871,24 @@
       </div>
     </section>
 
+    <!-- Products Completed -->
+    <section class="tx-section" aria-label="Products completed">
+      <div class="tx-section-inner" id="sectionProducts">
+        <div class="tx-label">🛍️ Products Completed</div>
+        <div class="tx-empty">No products completed yet. Explore the <a href="/theladder-products/">Products pathway →</a></div>
+        <div id="productsList"><p class="tx-empty">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- Use Cases Completed -->
+    <section class="tx-section" aria-label="Use cases completed">
+      <div class="tx-section-inner" id="sectionUseCases">
+        <div class="tx-label">💡 Use Cases Completed</div>
+        <div class="tx-empty">No use cases completed yet. Explore the <a href="/theladder-use-cases/">Use Cases pathway →</a></div>
+        <div id="useCasesList"><p class="tx-empty">Loading…</p></div>
+      </div>
+    </section>
+
   </div>
 
   <!-- ─── PRINT AREA (hidden on screen) ───────────────────────── -->
@@ -874,12 +922,12 @@
       <nav class="footer-nav" aria-label="Footer navigation">
         <a href="https://aesopacademy.org" class="footer-link">Home</a>
         <a href="/theladder/" class="footer-link">The Ladder</a>
+        <a href="/theladder-products/" class="footer-link">Products Pathway</a>
+        <a href="/theladder-use-cases/" class="footer-link">Use Cases Pathway</a>
         <a href="/about/mission.html" class="footer-link">Our Mission</a>
         <a href="/ai-academy/students.html" class="footer-link">Student Hub</a>
         <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener" class="footer-link">Forums - Discord</a>
         <a href="/policies/terms-of-service.html" class="footer-link">Terms</a>
-        <a href="/privacy-v1.0.html" class="footer-link">Privacy</a>
-        <a href="/policies/ada-policy.html" class="footer-link">Accessibility</a>
       </nav>
     </div>
     <div class="footer-bottom">

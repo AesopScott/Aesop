@@ -1,4 +1,5 @@
 const catalogUrl = '/docs/theladder-use-cases-catalog.md?v=1';
+const catalogFallbackUrl = '/docs/theladder-use-cases-catalog.md';
 const storageKey = 'aesop-ladder-use-cases-state-v1';
 const requestStorageKey = 'aesop-use-case-training-requests-v1';
 const requestCollection = 'useCaseTrainingRequests';
@@ -176,14 +177,17 @@ function render() {
 
 async function fetchCatalogMarkdown() {
   let lastError = null;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      const response = await fetch(catalogUrl, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`Use case catalog request failed: ${response.status}`);
-      return response.text();
-    } catch (error) {
-      lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, attempt * 450));
+  for (const url of [catalogUrl, catalogFallbackUrl]) {
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
+        const cacheBust = `${url}${url.includes('?') ? '&' : '?'}r=${Date.now()}-${attempt}`;
+        const response = await fetch(cacheBust, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Use case catalog request failed: ${response.status}`);
+        return response.text();
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      }
     }
   }
   throw lastError || new Error('Use case catalog request failed.');

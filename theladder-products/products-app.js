@@ -1,4 +1,5 @@
 const catalogUrl = '/docs/theladder-products-catalog.md?v=2';
+const catalogFallbackUrl = '/docs/theladder-products-catalog.md';
 const storageKey = 'aesop-ladder-products-state-v1';
 const requestStorageKey = 'aesop-product-course-requests-v1';
 const requestCollection = 'productCourseRequests';
@@ -81,10 +82,7 @@ async function init() {
   renderLoading();
 
   try {
-    const markdown = await fetch(catalogUrl).then((response) => {
-      if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
-      return response.text();
-    });
+    const markdown = await fetchCatalogMarkdown();
     state.products = parseCatalog(markdown);
     restoreSavedState();
     if (!state.products.some((product) => product.id === state.selectedId)) {
@@ -95,6 +93,24 @@ async function init() {
   } catch (error) {
     renderError(error);
   }
+}
+
+async function fetchCatalogMarkdown() {
+  let lastError = null;
+  for (const url of [catalogUrl, catalogFallbackUrl]) {
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
+        const cacheBust = `${url}${url.includes('?') ? '&' : '?'}r=${Date.now()}-${attempt}`;
+        const response = await fetch(cacheBust, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
+        return response.text();
+      } catch (error) {
+        lastError = error;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+      }
+    }
+  }
+  throw lastError || new Error('Catalog request failed.');
 }
 
 function setupTheme() {

@@ -61,6 +61,7 @@ const elements = {
   categoryList: document.querySelector('#categoryList'),
   productGrid: document.querySelector('#productGrid'),
   productDetail: document.querySelector('#productDetail'),
+  productCourseWorkspace: document.querySelector('#productCourseWorkspace'),
   productSearch: document.querySelector('#productSearch'),
   depthFilter: document.querySelector('#depthFilter'),
   visibleCount: document.querySelector('#visibleCount'),
@@ -168,6 +169,7 @@ function render() {
   renderCategories();
   renderProducts();
   renderDetail(getSelectedProduct());
+  renderCentralCourseWorkspace(getSelectedProduct());
 }
 
 function renderCategories() {
@@ -227,6 +229,7 @@ function renderProducts() {
       saveState();
       renderProducts();
       renderDetail(getSelectedProduct());
+      renderCentralCourseWorkspace(getSelectedProduct());
     });
   });
 }
@@ -252,9 +255,6 @@ function renderDetail(product) {
       </button>
     </section>
     <div id="courseStartNotice" class="course-start-notice" hidden></div>
-    <section id="courseWorkspace" class="course-conversation-workspace" aria-label="Course conversation workspace">
-      ${renderCourseWorkspace(product, chat)}
-    </section>
     <div class="cert-stack" aria-label="Certification options">
       <span class="cert-stack-label">Certification tests</span>
       ${certificationOptions.map((option) => `
@@ -277,7 +277,6 @@ function renderDetail(product) {
       startCertificationConversation(product, button.dataset.certificationLabel, levelSelect?.value || defaultCourse, button);
     });
   });
-  bindCourseWorkspace(product);
 
   const savedCourse = state.courseStarts[product.id];
   if (savedCourse) {
@@ -286,6 +285,14 @@ function renderDetail(product) {
     launchButton.textContent = 'Continue course';
     if (chat?.mode === 'course') launchButton.setAttribute('aria-current', 'true');
   }
+}
+
+function renderCentralCourseWorkspace(product) {
+  if (!product || !elements.productCourseWorkspace) return;
+  const courses = getCourseLevels(product.depth);
+  const chat = ensureDefaultCourseChat(product, courses[0] || 'Beginner');
+  elements.productCourseWorkspace.innerHTML = renderCourseWorkspace(product, chat);
+  bindCourseWorkspace(product);
 }
 
 function ensureDefaultCourseChat(product, level) {
@@ -372,6 +379,7 @@ function startCourseConversation(product, level, activeButton) {
   };
   saveState();
   renderDetail(product);
+  renderCentralCourseWorkspace(product);
   setActiveCourseButton(activeButton);
   callCourseGuide(product);
 }
@@ -397,6 +405,7 @@ function startCertificationConversation(product, certificationLabel, level, acti
   };
   saveState();
   renderDetail(product);
+  renderCentralCourseWorkspace(product);
   setActiveCourseButton(activeButton);
   callCourseGuide(product);
 }
@@ -410,9 +419,9 @@ function setActiveCourseButton(activeButton) {
 }
 
 function bindCourseWorkspace(product) {
-  const form = elements.productDetail.querySelector('#courseChatForm');
-  const input = elements.productDetail.querySelector('#courseChatInput');
-  const completeButton = elements.productDetail.querySelector('#completeCourseBtn');
+  const form = elements.productCourseWorkspace?.querySelector('#courseChatForm');
+  const input = elements.productCourseWorkspace?.querySelector('#courseChatInput');
+  const completeButton = elements.productCourseWorkspace?.querySelector('#completeCourseBtn');
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const content = input.value.trim();
@@ -423,7 +432,7 @@ function bindCourseWorkspace(product) {
     chat.updatedAt = new Date().toISOString();
     input.value = '';
     saveState();
-    renderDetail(product);
+    renderCentralCourseWorkspace(product);
     await callCourseGuide(product);
   });
   completeButton?.addEventListener('click', () => {
@@ -439,6 +448,7 @@ function bindCourseWorkspace(product) {
     };
     saveState();
     renderDetail(product);
+    renderCentralCourseWorkspace(product);
   });
 }
 
@@ -446,7 +456,7 @@ async function callCourseGuide(product) {
   const chat = state.courseChats[product.id];
   if (!chat) return;
   chat.messages.push({ role: 'assistant', content: 'Thinking through the next step...' });
-  renderDetail(product);
+  renderCentralCourseWorkspace(product);
   const outboundMessages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
   while (outboundMessages[0]?.role === 'assistant') outboundMessages.shift();
   if (!outboundMessages.length) {

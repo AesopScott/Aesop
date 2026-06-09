@@ -59,6 +59,7 @@ const elements = {
   categoryList: document.querySelector('#categoryList'),
   useCaseGrid: document.querySelector('#useCaseGrid'),
   useCaseDetail: document.querySelector('#useCaseDetail'),
+  useCaseCourseWorkspace: document.querySelector('#useCaseCourseWorkspace'),
   useCaseSearch: document.querySelector('#useCaseSearch'),
   depthFilter: document.querySelector('#depthFilter'),
   visibleCount: document.querySelector('#visibleCount'),
@@ -173,6 +174,7 @@ function render() {
   renderTopics();
   renderUseCases();
   renderDetail(getSelectedUseCase());
+  renderCentralCourseWorkspace(getSelectedUseCase());
 }
 
 function renderTopics() {
@@ -232,6 +234,7 @@ function renderUseCases() {
       saveState();
       renderUseCases();
       renderDetail(getSelectedUseCase());
+      renderCentralCourseWorkspace(getSelectedUseCase());
     });
   });
 }
@@ -258,9 +261,6 @@ function renderDetail(useCase) {
       </button>
     </section>
     <div id="courseStartNotice" class="course-start-notice" hidden></div>
-    <section id="courseWorkspace" class="course-conversation-workspace" aria-label="Course conversation workspace">
-      ${renderCourseWorkspace(useCase, chat)}
-    </section>
     <div class="cert-stack" aria-label="Certification options">
       <span class="cert-stack-label">Certification tests</span>
       ${certificationOptions.map((option) => `
@@ -283,7 +283,6 @@ function renderDetail(useCase) {
       startCertificationConversation(useCase, button.dataset.certificationLabel, levelSelect?.value || defaultCourse, button);
     });
   });
-  bindCourseWorkspace(useCase);
 
   const savedCourse = state.courseStarts[useCase.id];
   if (savedCourse) {
@@ -292,6 +291,14 @@ function renderDetail(useCase) {
     launchButton.textContent = 'Continue course';
     if (chat?.mode === 'course') launchButton.setAttribute('aria-current', 'true');
   }
+}
+
+function renderCentralCourseWorkspace(useCase) {
+  if (!useCase || !elements.useCaseCourseWorkspace) return;
+  const courses = getCourseLevels(useCase.depth);
+  const chat = ensureDefaultCourseChat(useCase, courses[0] || 'Beginner');
+  elements.useCaseCourseWorkspace.innerHTML = renderCourseWorkspace(useCase, chat);
+  bindCourseWorkspace(useCase);
 }
 
 function ensureDefaultCourseChat(useCase, level) {
@@ -378,6 +385,7 @@ function startCourseConversation(useCase, level, activeButton) {
   };
   saveState();
   renderDetail(useCase);
+  renderCentralCourseWorkspace(useCase);
   setActiveCourseButton(activeButton);
   callCourseGuide(useCase);
 }
@@ -403,6 +411,7 @@ function startCertificationConversation(useCase, certificationLabel, level, acti
   };
   saveState();
   renderDetail(useCase);
+  renderCentralCourseWorkspace(useCase);
   setActiveCourseButton(activeButton);
   callCourseGuide(useCase);
 }
@@ -416,9 +425,9 @@ function setActiveCourseButton(activeButton) {
 }
 
 function bindCourseWorkspace(useCase) {
-  const form = elements.useCaseDetail.querySelector('#courseChatForm');
-  const input = elements.useCaseDetail.querySelector('#courseChatInput');
-  const completeButton = elements.useCaseDetail.querySelector('#completeCourseBtn');
+  const form = elements.useCaseCourseWorkspace?.querySelector('#courseChatForm');
+  const input = elements.useCaseCourseWorkspace?.querySelector('#courseChatInput');
+  const completeButton = elements.useCaseCourseWorkspace?.querySelector('#completeCourseBtn');
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const content = input.value.trim();
@@ -429,7 +438,7 @@ function bindCourseWorkspace(useCase) {
     chat.updatedAt = new Date().toISOString();
     input.value = '';
     saveState();
-    renderDetail(useCase);
+    renderCentralCourseWorkspace(useCase);
     await callCourseGuide(useCase);
   });
   completeButton?.addEventListener('click', () => {
@@ -445,6 +454,7 @@ function bindCourseWorkspace(useCase) {
     };
     saveState();
     renderDetail(useCase);
+    renderCentralCourseWorkspace(useCase);
   });
 }
 
@@ -452,7 +462,7 @@ async function callCourseGuide(useCase) {
   const chat = state.courseChats[useCase.id];
   if (!chat) return;
   chat.messages.push({ role: 'assistant', content: 'Thinking through the next step...' });
-  renderDetail(useCase);
+  renderCentralCourseWorkspace(useCase);
   const outboundMessages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
   while (outboundMessages[0]?.role === 'assistant') outboundMessages.shift();
   if (!outboundMessages.length) {

@@ -220,6 +220,7 @@ const state = {
 };
 
 const el = {
+  educationFocusSelect: document.getElementById('educationFocusSelect'),
   languageSelect: document.getElementById('languageSelect'),
   customLanguageInput: document.getElementById('customLanguageInput'),
   darkToggle: document.getElementById('darkToggle'),
@@ -907,12 +908,14 @@ function parsePlacementResponse(rawText) {
 function parseCertificationResponse(rawText) {
   const visibleText = String(rawText || '').replace(CERTIFICATION_RESULT_REGEX, '').trim();
   const match = String(rawText || '').match(CERTIFICATION_RESULT_REGEX);
-  if (!match) return { certificationResult: null, visibleText };
+  if (!match) return { certificationResult: null, rubricDimensions: null, visibleText };
   try {
-    return { certificationResult: JSON.parse(match[1]), visibleText };
+    const certificationResult = JSON.parse(match[1]);
+    const rubricDimensions = parseRubricEvaluation(String(rawText || ''));
+    return { certificationResult, rubricDimensions, visibleText };
   } catch (error) {
     console.warn('Could not parse certification result:', error);
-    return { certificationResult: null, visibleText };
+    return { certificationResult: null, rubricDimensions: null, visibleText };
   }
 }
 
@@ -2494,13 +2497,35 @@ Required evidence level: ${evaluation.testDepthEvidence}.
 Passing standard: ${evaluation.testDepthPassingStandard}.
 Review posture: ${evaluation.testDepthReview}.
 
-Act as a structured AI examiner, not a course tutor. The learner is allowed to test out without taking a course. Before asking the first substantive question, briefly state the rubric dimensions in plain language: conceptual accuracy, vocabulary fluency, applied judgment, evidence quality, reasoning defense, risk awareness, and standards alignment. Then deliver a dynamic test for this Ladder tier with vocabulary, scenario judgment, applied task, risk/limitation question, artifact or evidence statement, and defense of reasoning.
+BEFORE YOU BEGIN - RUBRIC EVALUATION CRITERIA
+You will be evaluated on these seven dimensions:
+1. Conceptual accuracy: Do you understand the key ideas correctly?
+2. Vocabulary fluency: Can you use the relevant technical terms?
+3. Applied judgment: Can you apply this to real scenarios?
+4. Evidence quality: Can you provide or cite strong evidence?
+5. Reasoning defense: Can you explain and defend your thinking?
+6. Risk awareness: Can you identify limitations and risks?
+7. Standards alignment: Does your work meet the standards for this tier?
+
+Act as a structured AI examiner, not a course tutor. The learner is allowed to test out without taking a course. Before asking the first substantive question, briefly state the rubric dimensions in plain language. Then deliver a dynamic test for this Ladder tier with vocabulary, scenario judgment, applied task, risk/limitation question, artifact or evidence statement, and defense of reasoning.
 
 For Certification, test for competent and defensible use of the tier. For Expert challenge, increase ambiguity, require transfer to a new context, and press harder on edge cases. For Mastery challenge, require original synthesis, portfolio-quality evidence, standards mapping, and leadership-level defense.
 
 Do not award a final credential in one short response. Collect evidence first. When you are ready to make a determination, explain pass or non-pass with specific learner evidence, missing evidence, standards implications, selected depth expectations, and a challenge path. If evidence is insufficient, say what would change the decision. If confidence is low, say human review is recommended.
 
-When and only when you make a final determination, append this exact hidden marker on a new line:
+When and only when you make a final determination, provide your rubric evaluation in this exact format:
+
+Rubric Evaluation:
+
+Conceptual accuracy: PASS or FAIL — [one sentence explaining your assessment]
+Vocabulary fluency: PASS or FAIL — [one sentence explaining your assessment]
+Applied judgment: PASS or FAIL — [one sentence explaining your assessment]
+Evidence quality: PASS or FAIL — [one sentence explaining your assessment]
+Reasoning defense: PASS or FAIL — [one sentence explaining your assessment]
+Risk awareness: PASS or FAIL — [one sentence explaining your assessment]
+Standards alignment: PASS or FAIL — [one sentence explaining your assessment]
+
+Then provide your overall determination and append this exact hidden marker on a new line:
 <!--LADDER_CERTIFICATION_RESULT:{"result":"certified","score":NN,"rationale":"one concise evidence-based reason","evidenceSummary":"one concise evidence summary"}-->
 
 If the learner has not met the standard, use "result":"not_certified" and include the missing evidence in rationale. Do not mention the marker or JSON to the learner.
@@ -2569,6 +2594,96 @@ Use this guarded teaching pattern:
 Do not act as a general assistant. If the learner goes off topic, warmly redirect them back to ${topic.title}. Do not simply lecture. Ask questions and require the learner to reason. Keep responses concise enough for an interactive learning session.`;
 }
 
+function parseRubricEvaluation(aiResponse) {
+  // Extract the "Rubric Evaluation:" section from AI response
+  // Format expected:
+  // Conceptual accuracy: PASS — [reason]
+  // Vocabulary fluency: PASS — [reason]
+  // etc.
+  const dimensions = [
+    'Conceptual accuracy',
+    'Vocabulary fluency',
+    'Applied judgment',
+    'Evidence quality',
+    'Reasoning defense',
+    'Risk awareness',
+    'Standards alignment'
+  ];
+
+  const results = [];
+  const rubricSection = aiResponse.split('Rubric Evaluation:')[1];
+
+  if (!rubricSection) {
+    console.warn('No Rubric Evaluation section found in AI response');
+    return dimensions.map(d => ({ dimension: d, status: 'unknown', reason: 'No evaluation provided' }));
+  }
+
+  dimensions.forEach(dimension => {
+    const regex = new RegExp(`${dimension}:\\s*(PASS|FAIL)\\s*—\\s*(.+?)(?=\\n(?:[A-Z]|$))`, 'i');
+    const match = rubricSection.match(regex);
+
+    if (match) {
+      results.push({
+        dimension: dimension,
+        status: match[1].toUpperCase() === 'PASS' ? 'pass' : 'fail',
+        reason: match[2].trim()
+      });
+    } else {
+      results.push({
+        dimension: dimension,
+        status: 'unknown',
+        reason: 'Evaluation not found'
+      });
+    }
+  });
+
+  return results;
+}
+
+function buildCertificationResult(evaluation, rubricDimensions, overallResult) {
+  // Build complete certification result object for storage
+  return {
+    id: `cert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: new Date().toISOString(),
+    certificationTierId: evaluation.certificationTierId,
+    testDepthId: evaluation.testDepthId,
+    overallResult: overallResult.result,
+    overallScore: overallResult.score || 0,
+    overallRationale: overallResult.rationale || '',
+    evidenceSummary: overallResult.evidenceSummary || '',
+    rubricDimensions: rubricDimensions,
+    educationTier: state.educationTierId,
+    learnerId: state.learnerId || 'anonymous'
+  };
+}
+
+function saveCertificationResult(certificationResult) {
+  // Save to localStorage for now (will be upgraded to database later)
+  try {
+    const key = 'aesop-ladder-cert-results';
+    let results = JSON.parse(localStorage.getItem(key) || '[]');
+    results.push(certificationResult);
+    // Keep only last 20 results
+    results = results.slice(-20);
+    localStorage.setItem(key, JSON.stringify(results));
+    console.log('Certification result saved:', certificationResult.id);
+  } catch (e) {
+    console.error('Failed to save certification result:', e);
+  }
+}
+
+function getLatestCertificationResult() {
+  // Retrieve most recent certification result
+  try {
+    const key = 'aesop-ladder-cert-results';
+    const results = JSON.parse(localStorage.getItem(key) || '[]');
+    return results.length > 0 ? results[results.length - 1] : null;
+  } catch (e) {
+    console.error('Failed to retrieve certification result:', e);
+    return null;
+  }
+}
+
 function fallbackGuideText(topic, tier) {
   if (isReadinessCheckTopic(topic)) {
     const cert = CERTIFICATION_TIERS.find((item) => item.id === state.certificationTierId) || CERTIFICATION_TIERS[0];
@@ -2595,12 +2710,17 @@ async function callGuide() {
     const rawText = data?.content?.[0]?.text || data?.error || fallbackGuideText(topic, tier);
     const parsed = state.evaluationContext
       ? { ...parseCertificationResponse(rawText), completion: null }
-      : { certificationResult: null, ...parseConversationCompletionResponse(rawText) };
-    const { certificationResult, completion, visibleText } = parsed;
+      : { certificationResult: null, rubricDimensions: null, ...parseConversationCompletionResponse(rawText) };
+    const { certificationResult, rubricDimensions, completion, visibleText } = parsed;
     state.messages.push({ role: 'assistant', content: visibleText });
     renderChat();
     if (certificationResult) {
       await recordCertificationResult(certificationResult);
+      // Save rubric evaluation if available
+      if (rubricDimensions && rubricDimensions.length > 0) {
+        const certResult = buildCertificationResult(state.evaluationContext, rubricDimensions, certificationResult);
+        saveCertificationResult(certResult);
+      }
       renderTranscript();
       renderProgress();
     }
@@ -2954,6 +3074,13 @@ async function confirmAdultAccess() {
 }
 
 function bindEvents() {
+  el.educationFocusSelect?.addEventListener('change', (event) => {
+    const target = event.target.value;
+    if (target && target !== window.location.pathname) {
+      window.location.href = target;
+    }
+  });
+
   el.darkToggle?.addEventListener('click', () => {
     applyTheme(state.theme === 'dark' ? 'light' : 'dark');
     renderThemeToggle();

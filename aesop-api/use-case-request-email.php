@@ -24,22 +24,22 @@ $now = time();
 $limit = 8;
 $window = 600;
 
+$rate = ['ts' => $now, 'count' => 1];
 $fp = @fopen($rateFile, 'c+');
 if ($fp) {
-    flock($fp, LOCK_EX);
-    $content = stream_get_contents($fp);
-    $rate = json_decode($content, true) ?: ['ts' => $now, 'count' => 0];
-    if ($now - ($rate['ts'] ?? 0) >= $window) {
-        $rate = ['ts' => $now, 'count' => 0];
+    if (@flock($fp, LOCK_EX, $wouldBlock)) {
+        $content = stream_get_contents($fp);
+        $rate = json_decode($content, true) ?: ['ts' => $now, 'count' => 0];
+        if ($now - ($rate['ts'] ?? 0) >= $window) {
+            $rate = ['ts' => $now, 'count' => 0];
+        }
+        $rate['count']++;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($rate));
+        @flock($fp, LOCK_UN);
     }
-    $rate['count']++;
-    ftruncate($fp, 0);
-    rewind($fp);
-    fwrite($fp, json_encode($rate));
-    flock($fp, LOCK_UN);
-    fclose($fp);
-} else {
-    $rate = ['ts' => $now, 'count' => 1];
+    @fclose($fp);
 }
 
 if (($rate['count'] ?? 1) > $limit) {

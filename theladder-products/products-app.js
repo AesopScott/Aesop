@@ -48,6 +48,7 @@ const elements = {
   visibleCount: document.querySelector('#visibleCount'),
   totalProducts: document.querySelector('#totalProducts'),
   advancedCount: document.querySelector('#advancedCount'),
+  educationFocusSelect: document.querySelector('#educationFocusSelect'),
   themeToggle: document.querySelector('#themeToggle')
 };
 
@@ -88,7 +89,19 @@ function setupTheme() {
   });
 }
 
+function setupEducationFocusSelect() {
+  if (!elements.educationFocusSelect) return;
+  elements.educationFocusSelect.addEventListener('change', (event) => {
+    const target = event.target.value;
+    if (target && target !== window.location.pathname) {
+      window.location.href = target;
+    }
+  });
+}
+
 function bindEvents() {
+  setupEducationFocusSelect();
+
   elements.productSearch.addEventListener('input', (event) => {
     state.query = event.target.value.trim().toLowerCase();
     renderProducts();

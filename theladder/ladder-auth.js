@@ -235,8 +235,9 @@ function handleProceed() {
   localStorage.setItem(LS_IDENTITY_ASSURANCE, state.identityAssuranceId);
   localStorage.setItem(LS_PROCTORING_MODE, state.proctoringModeId);
 
-  // Redirect back to the ladder page
-  window.location.href = '/theladder/';
+  // Redirect back to the appropriate ladder pathway
+  const returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/theladder/';
+  window.location.href = returnTo;
 }
 
 function initializeDarkMode() {

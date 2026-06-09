@@ -1,13 +1,14 @@
-const catalogUrl = '/docs/theladder-products-catalog.md?v=2';
-const catalogFallbackUrl = '/docs/theladder-products-catalog.md';
+const catalogUrl = '/docs/theladder-products-catalog.md?v=1';
 const storageKey = 'aesop-ladder-products-state-v1';
 const requestStorageKey = 'aesop-product-course-requests-v1';
 const requestCollection = 'productCourseRequests';
 const requestEmailUrl = '/aesop-api/product-request-email.php';
-const courseProxyUrl = '/aesop-api/proxy.php';
+const PROXY_URL = '/aesop-api/proxy.php';
+const CONVERSATION_COMPLETE_REGEX = /<!--LADDER_CONVERSATION_COMPLETE:([\s\S]*?)-->/;
 let requestDbContext = null;
 
 const categoryRanges = [
+  { label: 'All products', start: 1, end: 250 },
   { label: 'AI assistants', start: 1, end: 20 },
   { label: 'Workplace + writing', start: 21, end: 35 },
   { label: 'Coding tools', start: 36, end: 61 },
@@ -19,19 +20,8 @@ const categoryRanges = [
   { label: 'Sales + support', start: 167, end: 191 },
   { label: 'Agents + automation', start: 192, end: 210 },
   { label: 'Model APIs + cloud', start: 211, end: 230 },
-  { label: 'Regulated AI', start: 231, end: 250 },
-  { label: 'HR + recruiting', start: 251, end: 275 },
-  { label: 'Education + tutoring', start: 276, end: 300 },
-  { label: 'Ecommerce + retail', start: 301, end: 325 },
-  { label: 'Finance + accounting', start: 326, end: 350 },
-  { label: 'AIOps + incidents', start: 351, end: 375 },
-  { label: 'AI governance', start: 376, end: 400 },
-  { label: 'Construction + real estate', start: 401, end: 425 },
-  { label: 'Manufacturing + supply chain', start: 426, end: 450 },
-  { label: 'Science + clinical AI', start: 451, end: 475 },
-  { label: 'Personal productivity', start: 476, end: 500 }
+  { label: 'Regulated AI', start: 231, end: 250 }
 ];
-const defaultCategory = categoryRanges[0];
 
 const certificationOptions = [
   {
@@ -51,18 +41,18 @@ const certificationOptions = [
 const state = {
   products: [],
   selectedId: 1,
-  activeCategory: defaultCategory,
+  activeCategory: categoryRanges[0],
   query: '',
   depth: 'all',
   courseStarts: {},
-  courseChats: {}
+  messages: [],
+  activeProductChat: null
 };
 
 const elements = {
   categoryList: document.querySelector('#categoryList'),
   productGrid: document.querySelector('#productGrid'),
   productDetail: document.querySelector('#productDetail'),
-  productCourseWorkspace: document.querySelector('#productCourseWorkspace'),
   productSearch: document.querySelector('#productSearch'),
   depthFilter: document.querySelector('#depthFilter'),
   visibleCount: document.querySelector('#visibleCount'),
@@ -72,7 +62,12 @@ const elements = {
   themeToggle: document.querySelector('#themeToggle'),
   productRequestForm: document.querySelector('#productRequestForm'),
   productRequestMessage: document.querySelector('#productRequestMessage'),
-  submitProductRequest: document.querySelector('#submitProductRequest')
+  submitProductRequest: document.querySelector('#submitProductRequest'),
+  productCourseWorkspace: document.querySelector('#productCourseWorkspace'),
+  productConversationTitle: document.querySelector('#productConversationTitle'),
+  productChatLog: document.querySelector('#productChatLog'),
+  productChatForm: document.querySelector('#productChatForm'),
+  productChatInput: document.querySelector('#productChatInput')
 };
 
 init();
@@ -82,7 +77,10 @@ async function init() {
   renderLoading();
 
   try {
-    const markdown = await fetchCatalogMarkdown();
+    const markdown = await fetch(catalogUrl).then((response) => {
+      if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
+      return response.text();
+    });
     state.products = parseCatalog(markdown);
     restoreSavedState();
     if (!state.products.some((product) => product.id === state.selectedId)) {
@@ -93,24 +91,6 @@ async function init() {
   } catch (error) {
     renderError(error);
   }
-}
-
-async function fetchCatalogMarkdown() {
-  let lastError = null;
-  for (const url of [catalogUrl, catalogFallbackUrl]) {
-    for (let attempt = 1; attempt <= 4; attempt += 1) {
-      try {
-        const cacheBust = `${url}${url.includes('?') ? '&' : '?'}r=${Date.now()}-${attempt}`;
-        const response = await fetch(cacheBust, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
-        return response.text();
-      } catch (error) {
-        lastError = error;
-        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
-      }
-    }
-  }
-  throw lastError || new Error('Catalog request failed.');
 }
 
 function setupTheme() {
@@ -156,6 +136,7 @@ function bindEvents() {
   });
 
   elements.productRequestForm?.addEventListener('submit', handleProductRequestSubmit);
+  elements.productChatForm?.addEventListener('submit', submitProductChat);
 
   window.addEventListener('beforeunload', saveState);
 }
@@ -185,7 +166,6 @@ function render() {
   renderCategories();
   renderProducts();
   renderDetail(getSelectedProduct());
-  renderCentralCourseWorkspace(getSelectedProduct());
 }
 
 function renderCategories() {
@@ -204,7 +184,7 @@ function renderCategories() {
     button.addEventListener('click', () => {
       const start = Number(button.dataset.start);
       const end = Number(button.dataset.end);
-      state.activeCategory = categoryRanges.find((category) => category.start === start && category.end === end) || defaultCategory;
+      state.activeCategory = categoryRanges.find((category) => category.start === start && category.end === end) || categoryRanges[0];
       saveState();
       renderCategories();
       renderProducts();
@@ -245,7 +225,6 @@ function renderProducts() {
       saveState();
       renderProducts();
       renderDetail(getSelectedProduct());
-      renderCentralCourseWorkspace(getSelectedProduct());
     });
   });
 }
@@ -254,7 +233,6 @@ function renderDetail(product) {
   if (!product) return;
   const courses = getCourseLevels(product.depth);
   const defaultCourse = courses[0] || 'Beginner';
-  const chat = ensureDefaultCourseChat(product, defaultCourse);
   elements.productDetail.innerHTML = `
     <p class="detail-label">Product course</p>
     <h2>${escapeHtml(product.name)}</h2>
@@ -277,7 +255,7 @@ function renderDetail(product) {
         <div class="cert-option">
           <strong>${escapeHtml(option.label)}</strong>
           <p>${escapeHtml(option.summary)}</p>
-          <button type="button" data-certification-label="${escapeHtml(option.label)}" ${chat?.mode === 'certification' && chat.certificationLabel === option.label ? 'aria-current="true"' : ''} aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(product.name)}">Start test</button>
+          <button type="button" aria-label="Start ${escapeHtml(option.label.toLowerCase())} for ${escapeHtml(product.name)}">Start</button>
         </div>
       `).join('')}
     </div>
@@ -286,12 +264,9 @@ function renderDetail(product) {
   const levelSelect = elements.productDetail.querySelector('#courseLevelSelect');
   const launchButton = elements.productDetail.querySelector('#beginSelectedCourseBtn');
   launchButton?.addEventListener('click', () => {
-    startCourseConversation(product, levelSelect?.value || defaultCourse, launchButton);
-  });
-  elements.productDetail.querySelectorAll('[data-certification-label]').forEach((button) => {
-    button.addEventListener('click', () => {
-      startCertificationConversation(product, button.dataset.certificationLabel, levelSelect?.value || defaultCourse, button);
-    });
+    const level = levelSelect?.value || defaultCourse;
+    showCourseStart(product, level, launchButton);
+    startProductChat(product, level);
   });
 
   const savedCourse = state.courseStarts[product.id];
@@ -299,230 +274,41 @@ function renderDetail(product) {
     const savedLevel = courses.includes(savedCourse.level) ? savedCourse.level : defaultCourse;
     if (levelSelect) levelSelect.value = savedLevel;
     launchButton.textContent = 'Continue course';
-    if (chat?.mode === 'course') launchButton.setAttribute('aria-current', 'true');
+    showCourseStart(product, savedLevel, launchButton, {
+      persist: false,
+      scroll: false,
+      savedAt: savedCourse.savedAt
+    });
   }
 }
 
-function renderCentralCourseWorkspace(product) {
-  if (!product || !elements.productCourseWorkspace) return;
-  const courses = getCourseLevels(product.depth);
-  const chat = ensureDefaultCourseChat(product, courses[0] || 'Beginner');
-  elements.productCourseWorkspace.innerHTML = `
-    <div class="course-conversation-workspace">
-      ${renderCourseWorkspace(product, chat)}
-    </div>
-  `;
-  bindCourseWorkspace(product);
-}
-
-function ensureDefaultCourseChat(product, level) {
-  if (state.courseChats[product.id]) return state.courseChats[product.id];
-  const savedAt = new Date().toISOString();
-  state.courseChats[product.id] = {
-    mode: 'course',
-    level,
-    savedAt,
-    updatedAt: savedAt,
-    status: 'ready',
-    messages: [{
-      role: 'assistant',
-      content: `This is the course chat for ${product.name}. Tell me what you want to learn or click Begin course and I will start the guided class.`
-    }]
-  };
-  saveState();
-  return state.courseChats[product.id];
-}
-
-function renderCourseWorkspace(product, chat) {
-  if (!chat) {
-    return `
-      <div class="workspace-empty">
-        <strong>No conversation started</strong>
-        <p>Begin a course or start a certification test to open the guided prompt workspace.</p>
-      </div>
-    `;
+function showCourseStart(product, level, activeButton, options = {}) {
+  const { persist = true, scroll = true, savedAt = new Date().toISOString() } = options;
+  const notice = elements.productDetail.querySelector('#courseStartNotice');
+  if (!notice) return;
+  if (persist) {
+    state.courseStarts[product.id] = {
+      level,
+      savedAt,
+      status: 'started'
+    };
+    saveState();
   }
-  const modeLabel = chat.mode === 'certification'
-    ? `${chat.certificationLabel || 'Certification'} test`
-    : `${chat.level || 'Beginner'} course`;
-  const messages = Array.isArray(chat.messages) ? chat.messages : [];
-  return `
-    <div class="workspace-head">
-      <div>
-        <span>${escapeHtml(modeLabel)}</span>
-        <strong>${escapeHtml(product.name)}</strong>
-      </div>
-      <small>${escapeHtml(chat.status === 'complete' ? 'Ready for review' : `Saved ${formatSavedDate(chat.updatedAt || chat.savedAt)}`)}</small>
-    </div>
-    <div id="courseChatLog" class="course-chat-log" aria-live="polite">
-      ${messages.map(renderCourseMessage).join('')}
-    </div>
-    <form id="courseChatForm" class="course-chat-form">
-      <label for="courseChatInput">Your response</label>
-      <textarea id="courseChatInput" rows="4" required placeholder="${escapeHtml(chat.mode === 'certification' ? 'Answer the certification prompt with evidence.' : 'Ask a question, describe your attempt, or submit your lab work.')}"></textarea>
-      <div class="course-chat-actions">
-        <button type="submit">Send response</button>
-        <button type="button" id="completeCourseBtn" class="secondary-course-button">Mark complete</button>
-      </div>
-    </form>
+  notice.hidden = false;
+  const savedDate = formatSavedDate(savedAt);
+  notice.innerHTML = `
+    <strong>${escapeHtml(level)} class ${persist ? 'started' : 'saved'}</strong>
+    <span>${escapeHtml(product.name)} is ready for a guided class conversation, a practice task, and completion evidence.</span>
+    <small>Saved ${escapeHtml(savedDate)}</small>
   `;
-}
-
-function renderCourseMessage(message) {
-  const role = message.role === 'assistant' ? 'assistant' : 'user';
-  const label = role === 'assistant' ? 'Guide' : 'You';
-  return `
-    <article class="course-message ${role}">
-      <span>${label}</span>
-      <p>${escapeHtml(message.content || '')}</p>
-    </article>
-  `;
-}
-
-function startCourseConversation(product, level, activeButton) {
-  const savedAt = new Date().toISOString();
-  state.courseStarts[product.id] = {
-    level,
-    savedAt,
-    status: 'started'
-  };
-  state.courseChats[product.id] = {
-    mode: 'course',
-    level,
-    savedAt,
-    updatedAt: savedAt,
-    status: 'started',
-    messages: [{
-      role: 'user',
-      content: `I'm ready to start the ${level} course for ${product.name}.`
-    }]
-  };
-  saveState();
-  renderDetail(product);
-  renderCentralCourseWorkspace(product);
-  setActiveCourseButton(activeButton);
-  callCourseGuide(product);
-}
-
-function startCertificationConversation(product, certificationLabel, level, activeButton) {
-  const savedAt = new Date().toISOString();
-  state.courseStarts[product.id] = {
-    level,
-    savedAt,
-    status: 'certification_started'
-  };
-  state.courseChats[product.id] = {
-    mode: 'certification',
-    certificationLabel,
-    level,
-    savedAt,
-    updatedAt: savedAt,
-    status: 'started',
-    messages: [{
-      role: 'user',
-      content: `I'm ready to start the ${certificationLabel} test for ${product.name}.`
-    }]
-  };
-  saveState();
-  renderDetail(product);
-  renderCentralCourseWorkspace(product);
-  setActiveCourseButton(activeButton);
-  callCourseGuide(product);
-}
-
-function setActiveCourseButton(activeButton) {
-  elements.productDetail.querySelectorAll('.course-launch-button, .cert-option button').forEach((courseButton) => {
+  // Show the chat workspace
+  elements.productCourseWorkspace.hidden = false;
+  elements.productDetail.querySelectorAll('.begin-course-button, .course-launch-button').forEach((courseButton) => {
     courseButton.removeAttribute('aria-current');
   });
   activeButton?.setAttribute('aria-current', 'true');
-  if (activeButton?.classList.contains('course-launch-button')) activeButton.textContent = 'Continue course';
-}
-
-function bindCourseWorkspace(product) {
-  const form = elements.productCourseWorkspace?.querySelector('#courseChatForm');
-  const input = elements.productCourseWorkspace?.querySelector('#courseChatInput');
-  const completeButton = elements.productCourseWorkspace?.querySelector('#completeCourseBtn');
-  form?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const content = input.value.trim();
-    if (!content) return;
-    const chat = state.courseChats[product.id];
-    if (!chat) return;
-    chat.messages.push({ role: 'user', content });
-    chat.updatedAt = new Date().toISOString();
-    input.value = '';
-    saveState();
-    renderCentralCourseWorkspace(product);
-    await callCourseGuide(product);
-  });
-  input?.addEventListener('keydown', (event) => {
-    if (event.key !== 'Enter' || event.shiftKey) return;
-    event.preventDefault();
-    form?.requestSubmit();
-  });
-  completeButton?.addEventListener('click', () => {
-    const chat = state.courseChats[product.id];
-    if (!chat) return;
-    chat.status = 'complete';
-    chat.updatedAt = new Date().toISOString();
-    state.courseStarts[product.id] = {
-      ...(state.courseStarts[product.id] || {}),
-      level: chat.level || 'Beginner',
-      savedAt: chat.updatedAt,
-      status: chat.mode === 'certification' ? 'certification_complete' : 'completed'
-    };
-    saveState();
-    renderDetail(product);
-    renderCentralCourseWorkspace(product);
-  });
-}
-
-async function callCourseGuide(product) {
-  const chat = state.courseChats[product.id];
-  if (!chat) return;
-  chat.messages.push({ role: 'assistant', content: 'Thinking through the next step...' });
-  renderCentralCourseWorkspace(product);
-  const outboundMessages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
-  while (outboundMessages[0]?.role === 'assistant') outboundMessages.shift();
-  if (!outboundMessages.length) {
-    outboundMessages.push({ role: 'user', content: `Start the course conversation for ${product.name}.` });
-  }
-  try {
-    const response = await fetch(courseProxyUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: outboundMessages,
-        system_prompt: productSystemPrompt(product, chat),
-        max_tokens: 900
-      })
-    });
-    const data = await response.json();
-    const text = data?.content?.[0]?.text || data?.error || fallbackCourseGuide(product, chat);
-    chat.messages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
-    chat.messages.push({ role: 'assistant', content: text });
-  } catch (error) {
-    chat.messages = chat.messages.filter((message) => message.content !== 'Thinking through the next step...');
-    chat.messages.push({ role: 'assistant', content: fallbackCourseGuide(product, chat) });
-  }
-  chat.updatedAt = new Date().toISOString();
-  chat.messages = chat.messages.slice(-30);
-  saveState();
-  renderDetail(product);
-}
-
-function productSystemPrompt(product, chat) {
-  if (chat.mode === 'certification') {
-    return `You are an AESOP AI Academy certification examiner. Certify the learner on ${product.name}, product type ${product.type}. Certification level: ${chat.certificationLabel}. Ask one focused prompt at a time. Require evidence. Evaluate correctness, safety, limitations, and practical application. Do not pass the learner casually. Keep responses under 180 words.`;
-  }
-  return `You are an AESOP AI Academy product course guide. Teach ${product.name}, product type ${product.type}, at ${chat.level} level. Use guided conversation. Each assignment must include one lab type: debate a product choice, practice a workflow skill, or build a usable artifact. Keep responses under 180 words and end with the next concrete learner action.`;
-}
-
-function fallbackCourseGuide(product, chat) {
-  if (chat.mode === 'certification') {
-    return `Certification prompt for ${product.name}: describe a real task you would perform, the steps you would take, the risks or limits you would watch for, and the evidence that your result worked.`;
-  }
-  return `Course prompt for ${product.name}: describe what you want to accomplish with this product. Then choose one lab: debate whether this is the right product, practice a specific workflow, or build a small artifact you can inspect.`;
+  activeButton.textContent = 'Continue course';
+  if (scroll) notice.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function restoreSavedState() {
@@ -541,7 +327,13 @@ function restoreSavedState() {
     state.depth = saved.depth;
   }
 
-  state.activeCategory = defaultCategory;
+  const savedCategory = categoryRanges.find((category) => (
+    category.start === saved.activeCategory?.start &&
+    category.end === saved.activeCategory?.end
+  ));
+  if (savedCategory) {
+    state.activeCategory = savedCategory;
+  }
 
   if (saved.courseStarts && typeof saved.courseStarts === 'object') {
     state.courseStarts = Object.fromEntries(
@@ -554,27 +346,6 @@ function restoreSavedState() {
           level: record.level,
           savedAt: record.savedAt || new Date().toISOString(),
           status: record.status || 'started'
-        }])
-    );
-  }
-
-  if (saved.courseChats && typeof saved.courseChats === 'object') {
-    state.courseChats = Object.fromEntries(
-      Object.entries(saved.courseChats)
-        .filter(([productId, record]) => {
-          const id = Number(productId);
-          return Number.isFinite(id) && Array.isArray(record?.messages);
-        })
-        .map(([productId, record]) => [productId, {
-          mode: record.mode === 'certification' ? 'certification' : 'course',
-          certificationLabel: record.certificationLabel || '',
-          level: record.level || 'Beginner',
-          savedAt: record.savedAt || new Date().toISOString(),
-          updatedAt: record.updatedAt || record.savedAt || new Date().toISOString(),
-          status: record.status || 'started',
-          messages: record.messages
-            .filter((message) => ['user', 'assistant'].includes(message?.role) && typeof message.content === 'string')
-            .slice(-30)
         }])
     );
   }
@@ -593,10 +364,13 @@ function saveState() {
   try {
     localStorage.setItem(storageKey, JSON.stringify({
       selectedId: state.selectedId,
+      activeCategory: {
+        start: state.activeCategory.start,
+        end: state.activeCategory.end
+      },
       query: state.query,
       depth: state.depth,
-      courseStarts: state.courseStarts,
-      courseChats: state.courseChats
+      courseStarts: state.courseStarts
     }));
   } catch (error) {
     console.warn('Could not save Products course state', error);
@@ -796,4 +570,94 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+// Chat and Course Completion System
+function startProductChat(product, level) {
+  state.activeProductChat = { product, level, messages: [] };
+  state.messages = [{
+    role: 'user',
+    content: `Start my guided conversation for "${product.name}". I'm taking the ${level} course. Help me understand this product through questions, examples, applications, and limitations. When I've demonstrated understanding and we've completed the learning objectives, let me know by including <!--LADDER_CONVERSATION_COMPLETE:{"status":"completed","confidence":0.95,"rationale":"..."}-->`
+  }];
+  renderProductChat();
+  callProductGuide();
+}
+
+function renderProductChat() {
+  if (!state.activeProductChat) return;
+  const { product } = state.activeProductChat;
+  elements.productConversationTitle.textContent = `${product.name} - Guided Conversation`;
+  elements.productChatLog.innerHTML = state.messages.map(msg =>
+    `<div class="message ${msg.role}"><strong>${msg.role === 'assistant' ? 'Guide' : 'You'}</strong><p>${escapeHtml(msg.content)}</p></div>`
+  ).join('');
+  elements.productChatLog.scrollTop = elements.productChatLog.scrollHeight;
+}
+
+async function submitProductChat(event) {
+  event.preventDefault();
+  const content = elements.productChatInput.value.trim();
+  if (!content) return;
+  state.messages.push({ role: 'user', content });
+  elements.productChatInput.value = '';
+  renderProductChat();
+  await callProductGuide();
+}
+
+async function callProductGuide() {
+  if (!state.activeProductChat) return;
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: state.messages,
+        system_prompt: `You are a product training guide for ${state.activeProductChat.product.name}. Help the learner understand the product through guided conversation. When the learner demonstrates sufficient understanding of the ${state.activeProductChat.level} level learning objectives, end the conversation with a completion signal.`,
+        max_tokens: 700
+      })
+    });
+    const data = await response.json();
+    const rawText = data?.content?.[0]?.text || 'I encountered an issue. Please try again.';
+    const parsed = parseProductCompletionResponse(rawText);
+    state.messages.push({ role: 'assistant', content: parsed.visibleText });
+    renderProductChat();
+    if (parsed.completion) {
+      handleProductCompletion(parsed.completion);
+    }
+  } catch (error) {
+    console.error('Chat error:', error);
+    state.messages.push({ role: 'assistant', content: 'I encountered an issue connecting to the guide. Please try again.' });
+    renderProductChat();
+  }
+}
+
+function parseProductCompletionResponse(rawText) {
+  const visibleText = String(rawText || '').replace(CONVERSATION_COMPLETE_REGEX, '').trim();
+  const match = String(rawText || '').match(CONVERSATION_COMPLETE_REGEX);
+  if (!match) return { completion: null, visibleText };
+  try {
+    return { completion: JSON.parse(match[1]), visibleText };
+  } catch (error) {
+    console.warn('Could not parse completion:', error);
+    return { completion: null, visibleText };
+  }
+}
+
+function handleProductCompletion(completion) {
+  if (!state.activeProductChat || !completion || completion.status !== 'completed') return;
+  const { product, level } = state.activeProductChat;
+  const completionKey = `product_${product.id}_${level}_completed`;
+  state.courseStarts[product.id] = {
+    level,
+    status: 'completed',
+    completedAt: new Date().toISOString()
+  };
+  saveState();
+  // Add confirmation message to chat
+  state.messages.push({
+    role: 'assistant',
+    content: '✓ Course complete! You can now move to the next product or return to the catalog.'
+  });
+  renderProductChat();
+  // Update UI and show completion
+  renderDetail(product);
 }

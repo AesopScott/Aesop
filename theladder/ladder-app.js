@@ -272,6 +272,7 @@ const el = {
   heroTiersCertified: document.getElementById('heroTiersCertified'),
   heroTiersExpert: document.getElementById('heroTiersExpert'),
   heroTiersMastered: document.getElementById('heroTiersMastered'),
+  heroRibbonTrack: document.getElementById('heroRibbonTrack'),
   tierList: document.getElementById('tierList'),
   activeTierLabel: document.getElementById('activeTierLabel'),
   activeTopicTitle: document.getElementById('activeTopicTitle'),
@@ -1576,6 +1577,52 @@ function credentialTierCounts() {
   };
 }
 
+function highestCertificationByTier() {
+  const highest = {};
+  const acceptedStatuses = new Set(['certified', 'passed', 'pass', 'verified']);
+  const add = (tierId, depthId, status = 'certified', source = '') => {
+    if (!tierId || source === 'assessment') return;
+    if (!acceptedStatuses.has(String(status || '').toLowerCase())) return;
+    const rank = certificationLevelRank(depthId);
+    if (rank < 1) return;
+    if (!highest[tierId] || rank > highest[tierId].rank) {
+      highest[tierId] = { depthId, rank };
+    }
+  };
+  (state.progress.ladderCertifications || []).forEach((record) => {
+    add(record.ladderTierId, record.depthId, record.status, record.source);
+  });
+  (state.progress.evaluationAttempts || []).forEach((attempt) => {
+    add(attempt.ladderTierId, attempt.testDepthId, attempt.status, 'attempt');
+  });
+  return highest;
+}
+
+function renderHeroRibbons() {
+  if (!el.heroRibbonTrack) return;
+  const highest = highestCertificationByTier();
+  const labels = {
+    certification: { label: 'Certified', short: 'Cert' },
+    'expert-challenge': { label: 'Expert', short: 'Expert' },
+    'mastery-challenge': { label: 'Mastery', short: 'Master' }
+  };
+  el.heroRibbonTrack.innerHTML = LADDER_TIERS.map((tier) => {
+    const credential = highest[tier.id];
+    const depthId = credential?.depthId || '';
+    const label = labels[depthId];
+    const title = label
+      ? `${tier.name}: ${label.label}`
+      : `${tier.name}: no certification yet`;
+    return `
+      <div class="hero-ribbon-slot ${label ? `has-ribbon ribbon-${depthId}` : 'is-empty'}" title="${escapeHtml(title)}">
+        <span class="hero-ribbon-number">${tier.order}</span>
+        <span class="hero-ribbon-medal">${label ? label.short : ''}</span>
+        <span class="hero-ribbon-tier">${escapeHtml(tier.name)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderHeroProgress(count, total) {
   const tierTotal = LADDER_TIERS.length;
   const tierComplete = completedTierCount();
@@ -1585,6 +1632,7 @@ function renderHeroProgress(count, total) {
   if (el.heroTiersCertified) el.heroTiersCertified.textContent = `${credentials.certified} / ${tierTotal}`;
   if (el.heroTiersExpert) el.heroTiersExpert.textContent = `${credentials.expertise} / ${tierTotal}`;
   if (el.heroTiersMastered) el.heroTiersMastered.textContent = `${credentials.mastered} / ${tierTotal}`;
+  renderHeroRibbons();
 }
 
 function renderProgress() {
@@ -1915,8 +1963,7 @@ function renderAccountGate() {
   if (el.adultAttestationCheck) {
     el.adultAttestationCheck.checked = state.adultAttested;
     el.adultAttestationCheck.disabled = Boolean(state.adultAttested && state.authUser);
-    const attestation = el.adultAttestationCheck.closest('.account-attestation');
-    if (attestation) attestation.hidden = !certificationTierRequiresAccount();
+    el.adultAttestationCheck.closest('.account-attestation').hidden = !certificationTierRequiresAccount();
   }
   if (el.accountForm) {
     el.accountForm.hidden = Boolean(state.authUser);
@@ -2427,22 +2474,88 @@ function findVideos() {
   renderTranscript();
 }
 
-let architectureLoaded = false;
+function renderCertificationGuide() {
+  const tier = getActiveTier();
+  const cert = CERTIFICATION_TIERS.find((item) => item.id === state.certificationTierId) || CERTIFICATION_TIERS[0];
+  const depth = TEST_DEPTHS.find((item) => item.id === state.testDepthId) || TEST_DEPTHS[0];
+  const identity = IDENTITY_ASSURANCE_LEVELS.find((item) => item.id === state.identityAssuranceLevel) || IDENTITY_ASSURANCE_LEVELS[0];
+  const target = `${tier.name}: ${tier.title} - ${cert.label}, ${depth.label}`;
+
+  return `
+    <div class="certification-guide">
+      <p class="certification-guide-lead">Ladder certification is how a learner proves what they can do. A learner may study first, but taking a course is not required. The credential is earned by demonstrating capability in the same AI conversation window used for learning.</p>
+
+      <div class="certification-guide-callout">
+        <span>Current target</span>
+        <strong>${escapeHtml(target)}</strong>
+      </div>
+
+      <div class="certification-guide-grid">
+        <section>
+          <h4>What happens</h4>
+          <ol>
+            <li>Choose an education tier, mastery level, and identity assurance level.</li>
+            <li>Start certification for the active rung.</li>
+            <li>The AI examiner asks scenario, vocabulary, judgment, risk, and application questions.</li>
+            <li>The learner produces evidence in the conversation.</li>
+            <li>The AI evaluates the evidence against a documented rubric.</li>
+            <li>If certification is awarded, the result is written to the learner transcript.</li>
+          </ol>
+        </section>
+
+        <section>
+          <h4>Certification levels</h4>
+          <ul>
+            <li><strong>Assessment certified:</strong> placement evidence that the learner likely already knows a tier.</li>
+            <li><strong>Certification:</strong> standard exam-level proof for the rung or tier.</li>
+            <li><strong>Expert Challenge:</strong> a harder applied challenge with stronger reasoning and evidence.</li>
+            <li><strong>Mastery Challenge:</strong> the highest proof level, requiring advanced judgment and defense.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h4>What gets recorded</h4>
+          <ul>
+            <li>learner ID, Ladder tier, rung, education tier, and mastery level</li>
+            <li>identity assurance level: ${escapeHtml(identity.credentialLabel)}</li>
+            <li>score or result, rationale, evidence summary, standards mapping, and date</li>
+            <li>independent second-model validation of both learner evidence and examiner process</li>
+            <li>student transcript entry and public credential page when certified</li>
+          </ul>
+        </section>
+
+        <section>
+          <h4>Second model review</h4>
+          <ul>
+            <li>The first AI examiner can propose a pass or non-pass result.</li>
+            <li>A separate validator model reviews the transcript before a credential is recorded.</li>
+            <li>The validator checks whether the learner gave enough evidence and whether the examiner asked a fair, scoped test.</li>
+            <li>If validation fails, no certification credential is stored.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h4>If the learner does not pass</h4>
+          <ul>
+            <li>The AI must explain why certification was not awarded.</li>
+            <li>The learner can challenge the decision after reading the rationale.</li>
+            <li>The same Ladder tier and mastery level can only be attempted once every 24 hours.</li>
+            <li>The learner can keep learning, review assigned rungs, and try again later.</li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="certification-guide-note">
+        <strong>Why this matters:</strong>
+        <span>The Ladder is not just giving a badge. It creates a defensible record of AI capability that can be explained to a learner, parent, school, employer, workforce program, or board member.</span>
+      </div>
+    </div>
+  `;
+}
 
 async function openArchitectureDialog() {
   if (!el.architectureDialog || !el.architectureDialogContent) return;
-  if (!architectureLoaded) {
-    el.architectureDialogContent.innerHTML = '<p>Loading certification architecture...</p>';
-    try {
-      const response = await fetch('/docs/ladder-certification-architecture.md');
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const markdown = await response.text();
-      el.architectureDialogContent.innerHTML = renderArchitectureMarkdown(markdown);
-      architectureLoaded = true;
-    } catch (error) {
-      el.architectureDialogContent.innerHTML = '<p>Could not load the certification architecture. Try again after the page finishes loading.</p>';
-    }
-  }
+  el.architectureDialogContent.innerHTML = renderCertificationGuide();
   if (typeof el.architectureDialog.showModal === 'function') {
     el.architectureDialog.showModal();
   } else {

@@ -173,8 +173,39 @@ async function handleGoogleSignIn() {
   setError('');
   try {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-    setError('');
+
+    // COOP workaround: intercept popup's window.close() and use postMessage instead
+    let popupWindow = null;
+    const originalWindowClose = window.close;
+
+    window.close = function() {
+      // If called from within a popup, send a message to parent instead
+      if (window.opener && window !== window.opener) {
+        window.opener.postMessage({ type: 'POPUP_DONE' }, '*');
+      }
+      return originalWindowClose.apply(this, arguments);
+    };
+
+    // Set up message listener to detect when popup is done
+    const closeHandler = (event) => {
+      if (event.data?.type === 'POPUP_DONE' && popupWindow) {
+        try {
+          popupWindow.close();
+        } catch (e) {
+          // Ignore errors from closing popup
+        }
+      }
+    };
+    window.addEventListener('message', closeHandler);
+
+    try {
+      await signInWithPopup(auth, provider);
+      setError('');
+    } finally {
+      // Restore original close function and remove listener
+      window.close = originalWindowClose;
+      window.removeEventListener('message', closeHandler);
+    }
   } catch (error) {
     setError(`Google sign in failed: ${error.message}`);
   }

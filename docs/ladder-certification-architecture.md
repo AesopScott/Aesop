@@ -36,6 +36,54 @@ Aesop must be able to defend:
 
 The learner-facing explanation must be plain enough for a parent, employer, school administrator, or learner to understand. The internal record must be detailed enough for audit, appeal, recalibration, or legal review.
 
+## Identity Assurance and Proctoring
+
+Certification validity has two separate questions:
+
+1. Did the learner demonstrate the skill?
+2. Do we know the person taking the test is the person named on the credential?
+
+The Ladder records identity assurance as a credential attribute, not a vague "verified" flag. Initial assurance tracks:
+
+| Track | Meaning | Product Status |
+|-------|---------|----------------|
+| self_attested | Learner claims the work. No account or identity proof beyond the active browser session. | Active |
+| account_bound | Attempt is bound to AESOP learner ID, saved transcript record, and account/session signals. | Active default |
+| identity_attested | Learner signs an identity statement before the certification attempt. | Active |
+| proctored_verified | Adult formal credential path with ID/liveness verification plus automated, live remote, recorded review, or institutional proctoring. | Scaffolded, not yet active |
+
+Proctored verified should not be claimed until the provider/proctor workflow exists. The intended modes are:
+
+- automated proctoring: ID/liveness plus camera/session signals and flagged review
+- live remote proctor: trained proctor checks ID and watches the session
+- recorded review: session recording reviewed when flagged or sampled
+- institutional proctor: school, employer, library, workforce center, or testing site verifies the person and environment
+
+The credential record should store identity assurance separately from AI examiner validation:
+
+```json
+{
+  "identityAssurance": {
+    "level": "account_bound",
+    "label": "Account-bound",
+    "status": "account_bound",
+    "attested": false,
+    "attestedAt": null,
+    "proctoringRequired": false,
+    "proctoringMode": "none",
+    "identityProvider": "",
+    "verificationTransactionId": "",
+    "sessionRecordingId": "",
+    "proctorDecision": "not_required",
+    "proctorName": "",
+    "proctorOrganization": "",
+    "proctorNotes": ""
+  }
+}
+```
+
+For adults, formal certification can later require `proctored_verified`. Normal learning and internal progress should remain lighter-weight.
+
 ## Certification Matrix
 
 Every test exists at the intersection of:

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.10 | 2026-04-27 -->
-<!-- transcript-v2.1.0 | Replaced Print with Save/Import + dark-mode fixes (hero h1, card h2) -->
+<!-- v1.1.0 | 2026-06-09 | The Ladder tier certifications transcript -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,8 +7,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Transcript — AESOP AI Academy</title>
-  <meta name="description" content="View your AESOP AI Academy learning transcript. Track completed modules, earned certifications, and your progress across all courses.">
+  <title>My Ladder Transcript — AESOP AI Academy</title>
+  <meta name="description" content="View your Ladder tier certifications. Track Mastery, Expertise, and Certification progress across all 15 tiers.">
 
   <link rel="stylesheet" href="/academy-theme.css?v=2">
   <link rel="stylesheet" href="/academy-dark-mode.css?v=2">
@@ -33,9 +32,28 @@
     const db  = getFirestore(app);
     const LS_KEY = 'aesop-learner-id';
 
+    // ── Ladder tier list ──────────────────────────────────────
+    const LADDER_TIERS = [
+      { tier:1,  name:'Beginner',           icon:'🌱', color:'#2ba898', rungs:18 },
+      { tier:2,  name:'Novice',             icon:'⚡', color:'#3db8d0', rungs:18 },
+      { tier:3,  name:'Capable Learner',    icon:'🔍', color:'#5b8ef0', rungs:18 },
+      { tier:4,  name:'Developing Skills',  icon:'🎓', color:'#7c6ff7', rungs:18 },
+      { tier:5,  name:'Intermediate',       icon:'🧩', color:'#a855f7', rungs:18 },
+      { tier:6,  name:'Practitioner',       icon:'🛠️', color:'#d4a017', rungs:18 },
+      { tier:7,  name:'Advanced',           icon:'🎯', color:'#e07b0e', rungs:18 },
+      { tier:8,  name:'Expert',             icon:'🔮', color:'#e05050', rungs:18 },
+      { tier:9,  name:'Master',             icon:'🦅', color:'#c0384f', rungs:18 },
+      { tier:10, name:'Architect',          icon:'👑', color:'#ffd700', rungs:18 },
+      { tier:11, name:'Visionary',          icon:'🌟', color:'#f77f00', rungs:18 },
+      { tier:12, name:'Leader',             icon:'💫', color:'#6a4c93', rungs:18 },
+      { tier:13, name:'Innovator',          icon:'🔥', color:'#06a77d', rungs:18 },
+      { tier:14, name:'Pioneer',            icon:'🚀', color:'#d62828', rungs:18 },
+      { tier:15, name:'Sage',               icon:'✨', color:'#f77f00', rungs:18 },
+    ];
+
     // ── Learner ID generation ──────────────────────────────────
     function generateLearnerId() {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 for clarity
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let code = '';
       for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
       return 'AESOP-' + code;
@@ -64,8 +82,6 @@
     window._startNew = async () => {
       const id = generateLearnerId();
       localStorage.setItem(LS_KEY, id);
-
-      // Create learner doc in Firestore
       try {
         await setDoc(doc(db, 'learners', id), {
           learnerId: id,
@@ -75,7 +91,6 @@
       } catch (e) {
         console.warn('Firestore write error:', e);
       }
-
       await loadLearner(id);
     };
 
@@ -114,14 +129,7 @@
       document.getElementById('displayLearnerId').textContent = id;
       document.getElementById('printName').textContent        = id;
 
-      let progressData = null;
-      try {
-        const snap = await getDoc(doc(db, 'learners', id));
-        if (snap.exists()) progressData = snap.data();
-      } catch (e) {
-        console.warn('Progress read error:', e);
-      }
-      renderTranscript(progressData);
+      renderTranscript();
     }
 
     // ── Switch to different learner ────────────────────────────
@@ -130,149 +138,123 @@
       showWelcome();
     };
 
-    // ── Course list ────────────────────────────────────────────
-    const COURSES = [
-      { id:'ai-foundations',    title:'AI Foundations',              sub:'Course 1 — Foundations', icon:'🤖', bar:'gold',   modules:10, url:'/ai-academy/' },
-      { id:'ai-governance',     title:'AI Governance',               sub:'Course 2 — Governance',  icon:'🏛️', bar:'teal',   modules:6,  url:'/ai-academy/ai-governance.html' },
-      { id:'ai-in-society',     title:'AI in Society',               sub:'Course 3 — Society',     icon:'🌐', bar:'purple', modules:8,  url:'/ai-academy/ai-in-society.html' },
-      { id:'ai-and-creativity', title:'AI & Creativity',             sub:'Course 4 — Creativity',  icon:'🎨', bar:'purple', modules:8,  url:'/ai-academy/ai-and-creativity.html' },
-      { id:'ai-ethics',         title:'AI Ethics & Decision-Making', sub:'Course 5 — Ethics',      icon:'⚖️', bar:'navy',   modules:6,  url:'/ai-academy/ai-ethics.html' },
-      { id:'building-with-ai',  title:'Building with AI',            sub:'Course 6 — Building',    icon:'🛠️', bar:'green',  modules:8,  url:'/ai-academy/building-with-ai.html' },
-      { id:'ai-careers',        title:'AI Careers & Research',       sub:'Course 7 — Careers',     icon:'🚀', bar:'amber',  modules:6,  url:'/ai-academy/ai-careers.html' },
-    ];
+    function renderTranscript() {
+      // Load ladder state from localStorage
+      let ladderState = {};
+      try {
+        ladderState = JSON.parse(localStorage.getItem('aesop-ladder-state') || '{}');
+      } catch (_) {}
 
-    function renderTranscript(data) {
-      const progress   = data?.courseProgress || {};
-      const inProgress = [], completed = [], testedOut = [];
+      const certified = ladderState.heroTiersCertified || 0;
+      const expertise = ladderState.heroTiersExpert || 0;
+      const mastery = ladderState.heroTiersMastered || 0;
+      const totalCerts = certified + expertise + mastery;
 
-      COURSES.forEach(course => {
-        const cp       = progress[course.id] || {};
-        const status   = cp.status   || null;
-        const modsDone = cp.modulesCompleted || 0;
-        const certDate = cp.certifiedOn      || null;
-        const score    = cp.testScore        || null;
-        const item     = { ...course, modsDone, certDate, score };
+      // Build tier cards
+      const tiersCertified = [], tiersExpertise = [], tiersMastery = [];
 
-        if      (status === 'complete') completed.push(item);
-        else if (status === 'tested')   testedOut.push(item);
-        else if (status === 'started')  inProgress.push(item);
+      LADDER_TIERS.forEach(tier => {
+        const item = { ...tier };
+        if (mastery > 0 && tier.tier <= mastery) {
+          item.status = 'mastery';
+          tiersMastery.push(item);
+        } else if (expertise > 0 && tier.tier <= expertise) {
+          item.status = 'expertise';
+          tiersExpertise.push(item);
+        } else if (certified > 0 && tier.tier <= certified) {
+          item.status = 'certified';
+          tiersCertified.push(item);
+        }
       });
 
-      // Demo state when no Firestore data yet
-      if (!data || !Object.keys(progress).length) {
-        inProgress.push({ ...COURSES[0], modsDone: 0, certDate: null, score: null });
-      }
+      renderSection('sectionMastery',   tiersMastery,    'mastery');
+      renderSection('sectionExpertise', tiersExpertise,  'expertise');
+      renderSection('sectionCertified', tiersCertified,  'certified');
 
-      renderSection('sectionInProgress', inProgress,  'started');
-      renderSection('sectionCompleted',  completed,   'complete');
-      renderSection('sectionTested',     testedOut,   'tested');
+      document.getElementById('statMastery').textContent   = mastery;
+      document.getElementById('statExpertise').textContent = expertise;
+      document.getElementById('statCertified').textContent = certified;
 
-      document.getElementById('statCourses').textContent  = completed.length + testedOut.length;
-      document.getElementById('statCerts').textContent    = [...completed,...testedOut].filter(c=>c.certDate).length;
-      document.getElementById('statProgress').textContent = inProgress.length;
-
-      buildPrintCerts([...completed, ...testedOut]);
+      buildPrintCerts(mastery, expertise, certified);
     }
 
     function renderSection(id, items, type) {
       const wrap  = document.getElementById(id);
       const grid  = wrap.querySelector('.tx-grid');
       const empty = wrap.querySelector('.tx-empty');
-      if (!items.length) { grid.style.display='none'; empty.style.display='block'; return; }
-      grid.style.display='grid'; empty.style.display='none';
-      grid.innerHTML = items.map(c => cardHTML(c, type)).join('');
+      if (!items.length) {
+        grid.style.display='none';
+        empty.style.display='block';
+        return;
+      }
+      grid.style.display='grid';
+      empty.style.display='none';
+      grid.innerHTML = items.map(t => tierCardHTML(t, type)).join('');
     }
 
-    function cardHTML(c, type) {
-      const badge = {
-        started:  '<span class="tx-badge tx-badge--started">In Progress</span>',
-        complete: '<span class="tx-badge tx-badge--complete">✓ Completed</span>',
-        tested:   '<span class="tx-badge tx-badge--tested">★ Tested Out</span>',
-      }[type];
+    function tierCardHTML(tier, type) {
+      const badgeMap = {
+        mastery:   '<span class="tx-badge tx-badge--mastery">🏆 Mastery</span>',
+        expertise: '<span class="tx-badge tx-badge--expertise">⭐ Expertise</span>',
+        certified: '<span class="tx-badge tx-badge--certified">✓ Certified</span>',
+      };
 
-      const bar = (type === 'started')
-        ? `<div class="tx-progress-wrap"><div class="tx-progress-bar" style="width:${Math.round((c.modsDone/c.modules)*100)}%"></div></div>
-           <div class="tx-progress-label">${c.modsDone} of ${c.modules} modules complete</div>`
-        : '';
-
-      const cert  = c.certDate ? `<div class="tx-cert-line">🎓 Certified ${formatDate(c.certDate)}</div>` : '';
-      const score = c.score    ? `<div class="tx-score-line">Test score: ${c.score}%</div>` : '';
-
-      const cta = (type === 'started')
-        ? `<a href="${c.url}" class="tx-cta tx-cta--gold">Continue →</a>`
-        : `<a href="${c.url}" class="tx-cta tx-cta--ghost">View Course →</a>`;
+      const badge = badgeMap[type] || '';
 
       return `
         <div class="tx-card tx-card--${type}">
-          <div class="tx-card__bar tx-card__bar--${c.bar}"></div>
+          <div class="tx-card__bar" style="background: ${tier.color};"></div>
           <div class="tx-card__body">
             <div class="tx-card__header">
-              <span class="tx-icon">${c.icon}</span>
+              <span class="tx-icon">${tier.icon}</span>
               <div class="tx-badges">${badge}</div>
             </div>
-            <div class="tx-card__sub">${c.sub}</div>
-            <h2>${c.title}</h2>
-            ${bar}${cert}${score}
+            <div class="tx-card__sub">Tier ${tier.tier}</div>
+            <h2>${tier.name}</h2>
+            <div class="tx-tier-info">${tier.rungs} rungs in this tier</div>
           </div>
           <div class="tx-card__footer">
-            <div class="tx-meta"><strong>${c.modules} Modules</strong></div>
-            ${cta}
+            <a href="/theladder/" class="tx-cta tx-cta--gold">Explore Ladder →</a>
           </div>
         </div>`;
     }
 
-    function buildPrintCerts(items) {
+    function buildPrintCerts(mastery, expertise, certified) {
       const list = document.getElementById('printCertList');
-      if (!items.length) {
-        list.innerHTML = '<p class="print-no-certs">No certifications earned yet.</p>';
-        return;
+      let html = '';
+
+      if (mastery > 0) {
+        html += `<div class="print-cert-row"><div class="print-cert-left"><span class="print-cert-icon">🏆</span><div><div class="print-cert-title">Mastery Level Tiers</div></div></div><div class="print-cert-right"><span class="print-cert-status mastery">${mastery} Tier${mastery!==1?'s':''}</span></div></div>`;
       }
-      list.innerHTML = items.map(c => `
-        <div class="print-cert-row">
-          <div class="print-cert-left">
-            <span class="print-cert-icon">${c.icon}</span>
-            <div>
-              <div class="print-cert-title">${c.title}</div>
-              <div class="print-cert-sub">${c.sub}</div>
-            </div>
-          </div>
-          <div class="print-cert-right">
-            ${c.certDate ? `<span class="print-cert-date">Certified ${formatDate(c.certDate)}</span>` : ''}
-            ${c.score    ? `<span class="print-cert-score">Score: ${c.score}%</span>` : ''}
-            <span class="print-cert-status ${c.score ? 'tested' : 'complete'}">
-              ${c.score ? '★ Tested Out' : '✓ Completed'}
-            </span>
-          </div>
-        </div>`).join('');
-    }
+      if (expertise > 0) {
+        html += `<div class="print-cert-row"><div class="print-cert-left"><span class="print-cert-icon">⭐</span><div><div class="print-cert-title">Expertise Level Tiers</div></div></div><div class="print-cert-right"><span class="print-cert-status expertise">${expertise} Tier${expertise!==1?'s':''}</span></div></div>`;
+      }
+      if (certified > 0) {
+        html += `<div class="print-cert-row"><div class="print-cert-left"><span class="print-cert-icon">✓</span><div><div class="print-cert-title">Certified Tiers</div></div></div><div class="print-cert-right"><span class="print-cert-status certified">${certified} Tier${certified!==1?'s':''}</span></div></div>`;
+      }
 
-    function formatDate(ts) {
-      if (!ts) return '';
-      const d = ts.toDate ? ts.toDate() : new Date(ts);
-      return d.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-    }
+      if (!html) {
+        html = '<p class="print-no-certs">No Ladder tier certifications earned yet. Start at /theladder/ to begin climbing.</p>';
+      }
 
-    window._doPrint = () => window.print();
+      list.innerHTML = html;
+    }
 
     // ── Save transcript (download JSON backup) ─────────────────
     window._saveTranscript = async () => {
       const id = localStorage.getItem(LS_KEY);
       if (!id) return;
 
-      let data = {};
+      let ladderState = {};
       try {
-        const snap = await getDoc(doc(db, 'learners', id));
-        if (snap.exists()) data = snap.data();
-      } catch (e) {
-        console.warn('Save read error:', e);
-      }
+        ladderState = JSON.parse(localStorage.getItem('aesop-ladder-state') || '{}');
+      } catch (_) {}
 
       const payload = {
-        _format: 'aesop-transcript-v1',
+        _format: 'aesop-ladder-transcript-v1',
         learnerId: id,
-        createdAt: data.createdAt || null,
         exportedAt: new Date().toISOString(),
-        courseProgress: data.courseProgress || {}
+        ladderState: ladderState
       };
 
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -281,7 +263,7 @@
       const safeId = id.replace(/[^A-Z0-9-]/gi, '');
       const today  = new Date().toISOString().slice(0,10);
       a.href = url;
-      a.download = `aesop-transcript-${safeId}-${today}.json`;
+      a.download = `aesop-ladder-transcript-${safeId}-${today}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -290,25 +272,18 @@
 
     // ── Import transcript (upload JSON backup) ─────────────────
     async function applyImport(payload) {
-      if (!payload || payload._format !== 'aesop-transcript-v1' || !payload.learnerId) {
-        throw new Error('Not a valid AESOP transcript file.');
+      if (!payload || payload._format !== 'aesop-ladder-transcript-v1' || !payload.learnerId) {
+        throw new Error('Not a valid AESOP Ladder transcript file.');
       }
       const id = String(payload.learnerId).trim().toUpperCase();
       if (!id.startsWith('AESOP-') || id.length < 8) {
         throw new Error('Transcript file has an invalid Learner ID.');
       }
 
-      const newDoc = {
-        learnerId:      id,
-        createdAt:      payload.createdAt || new Date().toISOString(),
-        courseProgress: payload.courseProgress || {},
-        importedAt:     new Date().toISOString()
-      };
-
       try {
-        await setDoc(doc(db, 'learners', id), newDoc, { merge: true });
+        localStorage.setItem('aesop-ladder-state', JSON.stringify(payload.ladderState || {}));
       } catch (e) {
-        console.warn('Firestore import write error:', e);
+        console.warn('localStorage write error:', e);
       }
 
       localStorage.setItem(LS_KEY, id);
@@ -342,7 +317,6 @@
         const payload = await readJsonFile(file);
         const id = String(payload.learnerId || '').toUpperCase();
 
-        // If we're already logged in as a different learner, confirm overwrite.
         const current = localStorage.getItem(LS_KEY);
         if (current && id && current !== id) {
           const ok = window.confirm(
@@ -359,6 +333,8 @@
         else window.alert(e.message || 'Could not import that file.');
       }
     };
+
+    window._doPrint = () => window.print();
 
     // Boot
     init();
@@ -467,7 +443,6 @@
     }
     .btn-print:hover { background: var(--gold-light); }
 
-    /* Save + Import (share the gold button styling) */
     .btn-save, .btn-import {
       display: inline-flex; align-items: center; gap: 0.45rem;
       font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
@@ -484,7 +459,7 @@
       background: rgba(255,255,255,0.14); color: #fff; border-color: rgba(255,255,255,0.32);
     }
 
-    /* ── Welcome gate (replaces auth gate) ─────────────────────── */
+    /* ── Welcome gate ──────────────────────────────────────────── */
     .welcome-gate {
       display: none; flex-direction: column; align-items: center; justify-content: center;
       padding: 5rem 2rem; background: var(--cream); text-align: center;
@@ -499,7 +474,6 @@
       max-width: 440px; margin: 0 auto 1.5rem;
     }
 
-    /* Welcome card */
     .welcome-card {
       background: var(--white); border: 1px solid var(--border);
       border-radius: var(--radius-lg); box-shadow: var(--shadow-md);
@@ -579,7 +553,6 @@
     .tx-section:last-of-type { padding-bottom: 5rem; }
     .tx-section-inner { max-width: var(--max-w); margin: 0 auto; }
 
-    /* Label — identical to courses-grid-label */
     .tx-label {
       font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
       color: var(--gold); margin-bottom: 1.75rem;
@@ -593,10 +566,8 @@
     }
     .tx-empty a { color: var(--gold); }
 
-    /* Grid — identical to courses-grid */
     .tx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap: 1.5rem; }
 
-    /* Cards */
     .tx-card {
       background: var(--white); border: 1px solid var(--border);
       border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);
@@ -604,17 +575,11 @@
       transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
     }
     .tx-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
-    .tx-card--started:hover  { border-color: rgba(201,160,90,0.35); }
-    .tx-card--complete:hover { border-color: rgba(61,214,192,0.35); }
-    .tx-card--tested:hover   { border-color: rgba(124,58,237,0.35); }
+    .tx-card--certified:hover { border-color: rgba(61,214,192,0.35); }
+    .tx-card--expertise:hover { border-color: rgba(124,58,237,0.35); }
+    .tx-card--mastery:hover   { border-color: rgba(201,160,90,0.35); }
 
     .tx-card__bar { height: 4px; width: 100%; }
-    .tx-card__bar--gold   { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
-    .tx-card__bar--teal   { background: linear-gradient(90deg, var(--teal-dark), var(--teal)); }
-    .tx-card__bar--purple { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-    .tx-card__bar--navy   { background: linear-gradient(90deg, var(--navy), var(--navy-light)); }
-    .tx-card__bar--green  { background: linear-gradient(90deg, #2d8a5f, var(--green)); }
-    .tx-card__bar--amber  { background: linear-gradient(90deg, var(--amber), #f5c842); }
 
     .tx-card__body {
       padding: 1.75rem 1.75rem 1.25rem; flex: 1; display: flex; flex-direction: column;
@@ -630,9 +595,9 @@
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
       padding: 0.25rem 0.65rem; border-radius: 99px;
     }
-    .tx-badge--started  { background: rgba(201,160,90,0.12); color: #8a6a2e; border: 1px solid rgba(201,160,90,0.3); }
-    .tx-badge--complete { background: rgba(61,214,192,0.12);  color: var(--teal-dark); border: 1px solid rgba(61,214,192,0.3); }
-    .tx-badge--tested   { background: rgba(124,58,237,0.12);  color: #6d28d9; border: 1px solid rgba(124,58,237,0.25); }
+    .tx-badge--certified { background: rgba(61,214,192,0.12);  color: var(--teal-dark); border: 1px solid rgba(61,214,192,0.3); }
+    .tx-badge--expertise { background: rgba(124,58,237,0.12);  color: #6d28d9; border: 1px solid rgba(124,58,237,0.25); }
+    .tx-badge--mastery   { background: rgba(201,160,90,0.12); color: #8a6a2e; border: 1px solid rgba(201,160,90,0.3); }
 
     .tx-card__sub {
       font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
@@ -643,25 +608,15 @@
       color: var(--navy); letter-spacing: -0.01em; margin-bottom: 0.75rem; line-height: 1.2;
     }
 
-    .tx-progress-wrap {
-      height: 5px; background: var(--border-light); border-radius: 99px; overflow: hidden; margin-bottom: 0.35rem;
+    .tx-tier-info {
+      font-size: 0.72rem; color: var(--ink-muted); font-weight: 500; margin-bottom: 0.5rem;
     }
-    .tx-progress-bar {
-      height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light));
-      border-radius: 99px; transition: width 0.6s ease;
-    }
-    .tx-progress-label { font-size: 0.72rem; color: var(--ink-muted); font-weight: 500; }
-
-    .tx-cert-line  { font-size: 0.78rem; font-weight: 600; color: var(--teal-dark); margin-top: 0.5rem; }
-    .tx-score-line { font-size: 0.78rem; font-weight: 600; color: var(--ink-mid);   margin-top: 0.25rem; }
 
     .tx-card__footer {
       padding: 0.9rem 1.75rem 1.25rem;
       display: flex; align-items: center; justify-content: space-between;
       border-top: 1px solid var(--border-light); gap: 0.75rem;
     }
-    .tx-meta { font-size: 0.72rem; color: var(--ink-muted); font-weight: 500; }
-    .tx-meta strong { color: var(--ink-mid); font-weight: 700; font-size: 0.8rem; }
 
     .tx-cta {
       display: inline-flex; align-items: center; gap: 0.4rem;
@@ -671,22 +626,8 @@
     }
     .tx-cta--gold  { background: var(--gold); color: #0d1b2a; }
     .tx-cta--gold:hover  { background: var(--gold-light); }
-    .tx-cta--ghost { background: var(--border-light); color: var(--ink-muted); }
-    .tx-cta--ghost:hover { background: var(--border); color: var(--ink-mid); }
 
-    /* Pulse dot */
-    .live-dot {
-      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-      background: var(--gold); animation: pulse-dot 2s ease-in-out infinite;
-    }
-    .live-dot--teal   { background: var(--teal); }
-    .live-dot--purple { background: #7c3aed; }
-    @keyframes pulse-dot {
-      0%,100% { opacity:1; transform:scale(1); }
-      50%      { opacity:0.5; transform:scale(0.8); }
-    }
-
-    /* ── Dark mode overrides ───────────────────────────────────── */
+    /* Dark mode */
     [data-theme="dark"] .tx-hero    { background: #080f17; }
     [data-theme="dark"] .tx-hero p  { color: rgba(255,255,255,0.6); }
     [data-theme="dark"] .tx-section { background: var(--cream); }
@@ -696,13 +637,12 @@
     [data-theme="dark"] .tx-card__footer { border-top-color: var(--border); }
     [data-theme="dark"] .tx-label   { color: var(--gold-light); }
     [data-theme="dark"] .tx-label::after { background: var(--border); }
-    [data-theme="dark"] .tx-cta--ghost  { background: rgba(255,255,255,0.06); }
     [data-theme="dark"] .welcome-gate  { background: var(--cream); }
     [data-theme="dark"] .print-bar  { background: #050d16; border-bottom-color: rgba(255,255,255,0.05); }
     [data-theme="dark"] .learner-id-bar { background: #050d16; border-bottom-color: rgba(255,255,255,0.05); }
-    [data-theme="dark"] .tx-badge--started  { background: rgba(201,160,90,0.18); }
-    [data-theme="dark"] .tx-badge--complete { background: rgba(61,214,192,0.18); }
-    [data-theme="dark"] .tx-badge--tested   { background: rgba(124,58,237,0.18); }
+    [data-theme="dark"] .tx-badge--certified { background: rgba(61,214,192,0.18); }
+    [data-theme="dark"] .tx-badge--expertise { background: rgba(124,58,237,0.18); }
+    [data-theme="dark"] .tx-badge--mastery   { background: rgba(201,160,90,0.18); }
 
     /* ── PRINT STYLES ──────────────────────────────────────────── */
     @media print {
@@ -742,8 +682,9 @@
         flex-wrap: wrap; justify-content: flex-end;
       }
       .print-cert-status { font-weight: 700; color: #0d1b2a; }
-      .print-cert-status.tested  { color: #6d28d9; }
-      .print-cert-status.complete { color: #166534; }
+      .print-cert-status.certified { color: #2ba898; }
+      .print-cert-status.expertise { color: #6d28d9; }
+      .print-cert-status.mastery   { color: #c9a05a; }
       .print-no-certs { font-style: italic; color: #888; font-size: 0.85rem; }
 
       .print-footer {
@@ -753,21 +694,20 @@
       }
     }
 
-    /* Hidden on screen */
     #printArea { display: none; }
   </style>
 
 <link rel="canonical" href="https://aesopacademy.org/ai-academy/transcript.html">
-<meta property="og:title" content="My Transcript — AESOP AI Academy">
-<meta property="og:description" content="View your AESOP AI Academy learning transcript. Track completed modules, earned certifications, and your progress across all courses.">
+<meta property="og:title" content="My Ladder Transcript — AESOP AI Academy">
+<meta property="og:description" content="View your Ladder tier certifications. Track Mastery, Expertise, and Certification progress across all 15 tiers.">
 <meta property="og:url" content="https://aesopacademy.org/ai-academy/transcript.html">
 <meta property="og:site_name" content="AESOP AI Academy">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://aesopacademy.org/og-image2.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@aesopacademy">
-<meta name="twitter:title" content="My Transcript — AESOP AI Academy">
-<meta name="twitter:description" content="View your AESOP AI Academy learning transcript. Track completed modules, earned certifications, and your progress across all courses.">
+<meta name="twitter:title" content="My Ladder Transcript — AESOP AI Academy">
+<meta name="twitter:description" content="View your Ladder tier certifications. Track Mastery, Expertise, and Certification progress across all 15 tiers.">
 <meta name="twitter:image" content="https://aesopacademy.org/og-image2.jpg">
 </head>
 <body>
@@ -779,8 +719,8 @@
         <a href="https://aesopacademy.org" class="nav-brand-primary">AESOP AI Academy</a>
       </div>
       <div class="nav-links">
-        <a href="/ai-academy/courses.html" class="nav-btn">Courses</a>
-        <a href="/ai-academy/dashboard.html" class="nav-btn">Dashboard</a>
+        <a href="/theladder/" class="nav-btn">The Ladder</a>
+        <a href="/ai-academy/students.html" class="nav-btn">Student Hub</a>
         <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener" class="nav-btn nav-btn--forums">Forums - Discord</a>
         <button class="dark-mode-toggle" id="themeToggle" aria-label="Toggle dark mode">
           <span class="dark-mode-toggle__icon">☀️</span>
@@ -796,20 +736,18 @@
   <!-- ─── HERO ─────────────────────────────────────────────────── -->
   <header class="tx-hero">
     <div class="tx-hero-inner">
-      <h1>My <span>Transcript</span></h1>
-      <p>Your personal learning record — every course started, completed, and tested out of. No account needed — just your Learner ID.</p>
+      <h1>My <span>Ladder Transcript</span></h1>
+      <p>Your Ladder tier progress across all 15 tiers. Earn certifications, climb through expertise, and reach mastery.</p>
 
       <div class="hero-stats" id="heroStats" style="display:none;">
         <div class="hero-stat">
-          <span class="live-dot live-dot--teal"></span>
-          <span><strong id="statCourses">0</strong> Courses Finished</span>
+          🏆 <span><strong id="statMastery">0</strong> Mastery</span>
         </div>
         <div class="hero-stat">
-          🎓 <span><strong id="statCerts">0</strong> Certifications</span>
+          ⭐ <span><strong id="statExpertise">0</strong> Expertise</span>
         </div>
         <div class="hero-stat">
-          <span class="live-dot"></span>
-          <span><strong id="statProgress">0</strong> In Progress</span>
+          ✓ <span><strong id="statCertified">0</strong> Certified</span>
         </div>
       </div>
     </div>
@@ -836,9 +774,9 @@
 
   <!-- ─── WELCOME GATE ─────────────────────────────────────────── -->
   <div class="welcome-gate" id="welcomeGate">
-    <div class="welcome-gate-icon">📋</div>
-    <h2>Your Learning Transcript</h2>
-    <p>Track your progress across all AESOP AI Academy courses. No email or login required — your Learner ID is all you need.</p>
+    <div class="welcome-gate-icon">🪜</div>
+    <h2>Your Ladder Transcript</h2>
+    <p>Track your progress climbing The Ladder. Earn certifications, expertise, and mastery across 15 tiers. No email or login required — your Learner ID is all you need.</p>
 
     <div class="welcome-card">
       <h3>Start Fresh</h3>
@@ -876,29 +814,29 @@
   <!-- ─── TRANSCRIPT BODY ──────────────────────────────────────── -->
   <div id="transcriptBody">
 
-    <!-- In Progress -->
-    <section class="tx-section" aria-label="Courses in progress">
-      <div class="tx-section-inner" id="sectionInProgress">
-        <div class="tx-label"><span class="live-dot"></span> In Progress</div>
-        <div class="tx-empty">No courses in progress yet. <a href="/ai-academy/courses.html">Browse courses →</a></div>
+    <!-- Mastery -->
+    <section class="tx-section" aria-label="Mastery level tiers">
+      <div class="tx-section-inner" id="sectionMastery">
+        <div class="tx-label">🏆 Mastery Level</div>
+        <div class="tx-empty">No mastery tiers yet. Continue climbing on The Ladder!</div>
         <div class="tx-grid"></div>
       </div>
     </section>
 
-    <!-- Completed -->
-    <section class="tx-section" aria-label="Completed courses">
-      <div class="tx-section-inner" id="sectionCompleted">
-        <div class="tx-label"><span class="live-dot live-dot--teal"></span> Completed</div>
-        <div class="tx-empty">No completed courses yet — keep going!</div>
+    <!-- Expertise -->
+    <section class="tx-section" aria-label="Expertise level tiers">
+      <div class="tx-section-inner" id="sectionExpertise">
+        <div class="tx-label">⭐ Expertise Level</div>
+        <div class="tx-empty">No expertise tiers yet. Keep working towards expertise!</div>
         <div class="tx-grid"></div>
       </div>
     </section>
 
-    <!-- Tested Out -->
-    <section class="tx-section" aria-label="Courses tested out of">
-      <div class="tx-section-inner" id="sectionTested">
-        <div class="tx-label">★ Tested Out</div>
-        <div class="tx-empty">No test-out certifications yet.</div>
+    <!-- Certified -->
+    <section class="tx-section" aria-label="Certified tiers">
+      <div class="tx-section-inner" id="sectionCertified">
+        <div class="tx-label">✓ Certified</div>
+        <div class="tx-empty">No certified tiers yet. Start with The Ladder today!</div>
         <div class="tx-grid"></div>
       </div>
     </section>
@@ -909,15 +847,15 @@
   <div id="printArea">
     <div class="print-page">
       <div class="print-header">
-        <div class="print-brand">AESOP <span>AI</span> Academy</div>
+        <div class="print-brand">AESOP <span>Ladder</span> Transcript</div>
         <div class="print-meta">
-          <div>aesopacademy.org</div>
+          <div>aesopacademy.org/theladder</div>
           <div id="printDate"></div>
         </div>
       </div>
-      <div class="print-title">Official Learning Transcript</div>
+      <div class="print-title">Official Ladder Transcript</div>
       <div class="print-subtitle">Learner ID: <strong id="printName"></strong></div>
-      <div class="print-section-head">Certifications Earned</div>
+      <div class="print-section-head">Tier Certifications Earned</div>
       <div id="printCertList"></div>
       <div class="print-footer">
         <span>© 2026 AESOP AI Academy — All rights reserved.</span>
@@ -935,9 +873,9 @@
       </div>
       <nav class="footer-nav" aria-label="Footer navigation">
         <a href="https://aesopacademy.org" class="footer-link">Home</a>
+        <a href="/theladder/" class="footer-link">The Ladder</a>
         <a href="/about/mission.html" class="footer-link">Our Mission</a>
-        <a href="/ai-academy/courses.html" class="footer-link">Courses</a>
-        <a href="/ai-academy/" class="footer-link">AI Foundations</a>
+        <a href="/ai-academy/students.html" class="footer-link">Student Hub</a>
         <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener" class="footer-link">Forums - Discord</a>
         <a href="/policies/terms-of-service.html" class="footer-link">Terms</a>
         <a href="/privacy-v1.0.html" class="footer-link">Privacy</a>
@@ -956,4 +894,14 @@
       var HTML = document.documentElement;
       var BTN  = document.getElementById('themeToggle');
       var KEY  = 'aesop-theme';
-      if (localStorage.getItem(KEY) === 'd
+      if (localStorage.getItem(KEY) === 'dark') HTML.setAttribute('data-theme', 'dark');
+      BTN.addEventListener('click', function () {
+        var dark = HTML.getAttribute('data-theme') === 'dark';
+        HTML.setAttribute('data-theme', dark ? 'light' : 'dark');
+        localStorage.setItem(KEY, dark ? 'light' : 'dark');
+      });
+    })();
+  </script>
+
+</body>
+</html>

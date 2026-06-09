@@ -1,4 +1,5 @@
 const catalogUrl = '/docs/theladder-products-catalog.md?v=1';
+const storageKey = 'aesop-ladder-products-state-v1';
 
 const categoryRanges = [
   { label: 'All products', start: 1, end: 250 },
@@ -36,7 +37,8 @@ const state = {
   selectedId: 1,
   activeCategory: categoryRanges[0],
   query: '',
-  depth: 'all'
+  depth: 'all',
+  courseStarts: {}
 };
 
 const elements = {
@@ -64,7 +66,10 @@ async function init() {
       return response.text();
     });
     state.products = parseCatalog(markdown);
-    state.selectedId = state.products[0]?.id || 1;
+    restoreSavedState();
+    if (!state.products.some((product) => product.id === state.selectedId)) {
+      state.selectedId = state.products[0]?.id || 1;
+    }
     bindEvents();
     render();
   } catch (error) {
@@ -104,13 +109,17 @@ function bindEvents() {
 
   elements.productSearch.addEventListener('input', (event) => {
     state.query = event.target.value.trim().toLowerCase();
+    saveState();
     renderProducts();
   });
 
   elements.depthFilter.addEventListener('change', (event) => {
     state.depth = event.target.value;
+    saveState();
     renderProducts();
   });
+
+  window.addEventListener('beforeunload', saveState);
 }
 
 function parseCatalog(markdown) {
@@ -133,6 +142,8 @@ function parseCatalog(markdown) {
 function render() {
   elements.totalProducts.textContent = state.products.length.toString();
   elements.advancedCount.textContent = state.products.filter((product) => product.depth === 'B/I/A').length.toString();
+  elements.productSearch.value = state.query;
+  elements.depthFilter.value = state.depth;
   renderCategories();
   renderProducts();
   renderDetail(getSelectedProduct());
@@ -155,6 +166,7 @@ function renderCategories() {
       const start = Number(button.dataset.start);
       const end = Number(button.dataset.end);
       state.activeCategory = categoryRanges.find((category) => category.start === start && category.end === end) || categoryRanges[0];
+      saveState();
       renderCategories();
       renderProducts();
     });
@@ -172,6 +184,7 @@ function renderProducts() {
 
   if (!products.some((product) => product.id === state.selectedId)) {
     state.selectedId = products[0].id;
+    saveState();
     renderDetail(products[0]);
   }
 
@@ -190,6 +203,7 @@ function renderProducts() {
   elements.productGrid.querySelectorAll('.product-card').forEach((card) => {
     card.addEventListener('click', () => {
       state.selectedId = Number(card.dataset.productId);
+      saveState();
       renderProducts();
       renderDetail(getSelectedProduct());
     });
@@ -233,15 +247,38 @@ function renderDetail(product) {
   launchButton?.addEventListener('click', () => {
     showCourseStart(product, levelSelect?.value || defaultCourse, launchButton);
   });
+
+  const savedCourse = state.courseStarts[product.id];
+  if (savedCourse) {
+    const savedLevel = courses.includes(savedCourse.level) ? savedCourse.level : defaultCourse;
+    if (levelSelect) levelSelect.value = savedLevel;
+    launchButton.textContent = 'Continue course';
+    showCourseStart(product, savedLevel, launchButton, {
+      persist: false,
+      scroll: false,
+      savedAt: savedCourse.savedAt
+    });
+  }
 }
 
-function showCourseStart(product, level, activeButton) {
+function showCourseStart(product, level, activeButton, options = {}) {
+  const { persist = true, scroll = true, savedAt = new Date().toISOString() } = options;
   const notice = elements.productDetail.querySelector('#courseStartNotice');
   if (!notice) return;
+  if (persist) {
+    state.courseStarts[product.id] = {
+      level,
+      savedAt,
+      status: 'started'
+    };
+    saveState();
+  }
   notice.hidden = false;
+  const savedDate = formatSavedDate(savedAt);
   notice.innerHTML = `
-    <strong>${escapeHtml(level)} class started</strong>
+    <strong>${escapeHtml(level)} class ${persist ? 'started' : 'saved'}</strong>
     <span>${escapeHtml(product.name)} is ready for a guided class conversation, a practice task, and completion evidence.</span>
+    <small>Saved ${escapeHtml(savedDate)}</small>
     <div class="course-conversation-workspace">
       <strong>Guided class conversation</strong>
       <p>Start with how ${escapeHtml(product.name)} is used, then complete one lab: debate a product choice, practice a workflow skill, or build a usable artifact.</p>
@@ -251,7 +288,85 @@ function showCourseStart(product, level, activeButton) {
     courseButton.removeAttribute('aria-current');
   });
   activeButton?.setAttribute('aria-current', 'true');
-  notice.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  activeButton.textContent = 'Continue course';
+  if (scroll) notice.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function restoreSavedState() {
+  const saved = readSavedState();
+  if (!saved) return;
+
+  if (Number.isFinite(saved.selectedId)) {
+    state.selectedId = saved.selectedId;
+  }
+
+  if (typeof saved.query === 'string') {
+    state.query = saved.query;
+  }
+
+  if (['all', 'B', 'B/I', 'B/I/A'].includes(saved.depth)) {
+    state.depth = saved.depth;
+  }
+
+  const savedCategory = categoryRanges.find((category) => (
+    category.start === saved.activeCategory?.start &&
+    category.end === saved.activeCategory?.end
+  ));
+  if (savedCategory) {
+    state.activeCategory = savedCategory;
+  }
+
+  if (saved.courseStarts && typeof saved.courseStarts === 'object') {
+    state.courseStarts = Object.fromEntries(
+      Object.entries(saved.courseStarts)
+        .filter(([productId, record]) => {
+          const id = Number(productId);
+          return Number.isFinite(id) && typeof record?.level === 'string';
+        })
+        .map(([productId, record]) => [productId, {
+          level: record.level,
+          savedAt: record.savedAt || new Date().toISOString(),
+          status: record.status || 'started'
+        }])
+    );
+  }
+}
+
+function readSavedState() {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey) || 'null');
+  } catch (error) {
+    console.warn('Could not restore Products course state', error);
+    return null;
+  }
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({
+      selectedId: state.selectedId,
+      activeCategory: {
+        start: state.activeCategory.start,
+        end: state.activeCategory.end
+      },
+      query: state.query,
+      depth: state.depth,
+      courseStarts: state.courseStarts
+    }));
+  } catch (error) {
+    console.warn('Could not save Products course state', error);
+  }
+}
+
+function formatSavedDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'just now';
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
 }
 
 function renderLoading() {

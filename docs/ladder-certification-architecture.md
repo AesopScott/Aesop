@@ -10,6 +10,8 @@ A learner does not need to take an Aesop course to earn credit for a Ladder tier
 
 Every certification decision must be explainable, documented, reviewable, and readable by a non-technical person.
 
+An AI-awarded certification must also pass independent validation by a second model before it is stored as a credential. The first model may propose a certification result, but the validator must confirm both sides of the conversation: the learner supplied sufficient relevant evidence, and the examiner followed a fair, scoped, evidence-seeking process aligned to the selected blueprint.
+
 The standard is:
 
 ```text

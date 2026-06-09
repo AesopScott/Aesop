@@ -9,6 +9,8 @@ const LS_STATE = 'aesop-ladder-state';
 const LS_THEME = 'aesop-theme';
 const PLACEMENT_REGEX = /<!--LADDER_PLACEMENT_COMPLETE:([\s\S]*?)-->/;
 const CERTIFICATION_RESULT_REGEX = /<!--LADDER_CERTIFICATION_RESULT:([\s\S]*?)-->/;
+const CERTIFICATION_VALIDATION_REGEX = /<!--LADDER_CERTIFICATION_VALIDATION:([\s\S]*?)-->/;
+const CERTIFICATION_VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
 const CERTIFICATION_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const TRANSCRIPT_STATUS = {
   COMPLETED: 'completed',
@@ -150,6 +152,7 @@ const state = {
     selfAssignedTopicIds: [],
     evaluationAttempts: [],
     ladderCertifications: [],
+    certificationValidations: [],
     placement: null,
     assessmentMessages: [],
     transcriptEvents: []
@@ -476,14 +479,17 @@ function saveLocal() {
 async function saveRemote() {
   if (!state.learnerId) return;
   const ladderCertifications = buildCertificationTranscript();
+  const certificationValidations = state.progress.certificationValidations || [];
   try {
     await setDoc(doc(db, 'learners', state.learnerId), {
       learnerId: state.learnerId,
       lastActiveAt: new Date().toISOString(),
       ladderCertifications,
+      certificationValidations,
       studentTranscript: {
         updatedAt: new Date().toISOString(),
-        ladderCertifications
+        ladderCertifications,
+        certificationValidations
       },
       ladderProgress: {
         version: LADDER_VERSION,
@@ -500,6 +506,7 @@ async function saveRemote() {
         selfAssignedTopicIds: state.progress.selfAssignedTopicIds,
         evaluationAttempts: state.progress.evaluationAttempts,
         ladderCertifications,
+        certificationValidations,
         placement: state.progress.placement,
         assessmentMessages: state.progress.assessmentMessages,
         transcriptEvents: state.progress.transcriptEvents
@@ -547,6 +554,7 @@ async function loadRemote(learnerId) {
     state.progress.selfAssignedTopicIds = ladder.selfAssignedTopicIds || [];
     state.progress.evaluationAttempts = ladder.evaluationAttempts || [];
     state.progress.ladderCertifications = ladder.ladderCertifications || data.ladderCertifications || [];
+    state.progress.certificationValidations = ladder.certificationValidations || data.certificationValidations || data.studentTranscript?.certificationValidations || [];
     state.progress.placement = ladder.placement || null;
     state.progress.assessmentMessages = ladder.assessmentMessages || [];
     state.progress.transcriptEvents = ladder.transcriptEvents || [];
@@ -579,6 +587,7 @@ function loadLocal() {
     state.progress.selfAssignedTopicIds ||= [];
     state.progress.evaluationAttempts ||= [];
     state.progress.ladderCertifications ||= [];
+    state.progress.certificationValidations ||= [];
     state.progress.placement ||= null;
     state.progress.assessmentMessages ||= [];
     state.progress.transcriptEvents ||= [];
@@ -713,24 +722,158 @@ function parseCertificationResponse(rawText) {
   }
 }
 
-function recordCertificationResult(result) {
+function parseCertificationValidationResponse(rawText) {
+  const match = String(rawText || '').match(CERTIFICATION_VALIDATION_REGEX);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[1]);
+  } catch (error) {
+    console.warn('Could not parse certification validation:', error);
+    return null;
+  }
+}
+
+function certificationValidationSystemPrompt() {
+  return `You are the independent Ladder certification validator for AESOP AI Academy.
+
+You are not the examiner. You are a second model reviewing whether a certification conversation is valid before any credential is recorded.
+
+Validate BOTH sides:
+1. Learner side: the learner gave enough relevant evidence for the proposed outcome, at the selected education tier, Ladder tier, and certification depth.
+2. Examiner side: the examiner asked fair, scoped, evidence-seeking questions; applied the stated standard; did not certify too quickly; did not ignore contradictions; and did not invent evidence.
+
+Reject validation if the conversation is too short, mostly leading, off-topic, missing evidence, mismatched to the blueprint, or if the proposed result is unsupported.
+
+Return only this hidden marker, on one line:
+<!--LADDER_CERTIFICATION_VALIDATION:{"valid":true,"learner_valid":true,"examiner_valid":true,"confidence":0.0,"rationale":"one concise reason","learner_evidence":"one concise evidence summary","examiner_review":"one concise process review","concerns":[]}-->
+
+Set valid to true only when learner_valid and examiner_valid are both true. If invalid, set valid false and include concrete concerns. Do not include markdown, prose, or any text outside the marker.`;
+}
+
+function certificationValidationMessages(context, result, conversationMessages) {
+  const transcript = conversationMessages.map((message, index) => (
+    `${index + 1}. ${message.role.toUpperCase()}: ${message.content}`
+  )).join('\n\n');
+  return [{
+    role: 'user',
+    content: `Validate this Ladder certification conversation.
+
+Certification context:
+${JSON.stringify(context, null, 2)}
+
+Proposed examiner result:
+${JSON.stringify(result, null, 2)}
+
+Conversation transcript:
+${transcript}`
+  }];
+}
+
+function normalizeCertificationValidation(rawValidation, context, result, responseModel) {
+  const learnerValid = rawValidation?.learner_valid === true;
+  const examinerValid = rawValidation?.examiner_valid === true;
+  const valid = rawValidation?.valid === true && learnerValid && examinerValid;
+  return {
+    id: `validation:${context.attemptId}`,
+    attemptId: context.attemptId,
+    blueprintId: context.blueprintId,
+    blueprintVersion: context.blueprintVersion,
+    ladderTierId: context.ladderTierId,
+    ladderTierLabel: context.ladderTierLabel,
+    depthId: context.testDepthId,
+    depthLabel: context.testDepthLabel,
+    certificationTierId: context.certificationTierId,
+    certificationTierLabel: context.certificationTierLabel,
+    proposedResult: result?.result || result?.status || '',
+    valid,
+    learnerValid,
+    examinerValid,
+    confidence: Number(rawValidation?.confidence ?? 0),
+    rationale: rawValidation?.rationale || 'Validator did not provide a rationale.',
+    learnerEvidence: rawValidation?.learner_evidence || '',
+    examinerReview: rawValidation?.examiner_review || '',
+    concerns: Array.isArray(rawValidation?.concerns) ? rawValidation.concerns : [],
+    reviewerModel: responseModel || CERTIFICATION_VALIDATOR_MODEL,
+    reviewedAt: new Date().toISOString()
+  };
+}
+
+function failedCertificationValidation(context, result, reason) {
+  return normalizeCertificationValidation({
+    valid: false,
+    learner_valid: false,
+    examiner_valid: false,
+    confidence: 0,
+    rationale: reason,
+    concerns: [reason]
+  }, context, result, CERTIFICATION_VALIDATOR_MODEL);
+}
+
+function upsertCertificationValidation(validation) {
+  const existing = state.progress.certificationValidations || [];
+  const filtered = existing.filter((item) => item.id !== validation.id);
+  state.progress.certificationValidations = [validation, ...filtered].slice(0, 100);
+}
+
+async function validateCertificationConversation(context, result) {
+  try {
+    const response = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: CERTIFICATION_VALIDATOR_MODEL,
+        messages: certificationValidationMessages(context, result, state.messages.slice(-36)),
+        system_prompt: certificationValidationSystemPrompt(),
+        max_tokens: 700
+      })
+    });
+    const data = await response.json();
+    const rawText = data?.content?.[0]?.text || '';
+    const parsed = parseCertificationValidationResponse(rawText);
+    if (!response.ok || !parsed) {
+      return failedCertificationValidation(context, result, data?.error || 'Certification validator did not return a valid review.');
+    }
+    return normalizeCertificationValidation(parsed, context, result, data?.model);
+  } catch (error) {
+    return failedCertificationValidation(context, result, 'Certification validator could not be reached.');
+  }
+}
+
+async function recordCertificationResult(result) {
   const context = state.evaluationContext;
   if (!context || !result) return;
   const normalizedResult = String(result.result || result.status || '').toLowerCase().replace(/[\s-]+/g, '_');
   const isCertified = ['certified', 'passed', 'pass'].includes(normalizedResult);
   const attempt = state.progress.evaluationAttempts.find((item) => item.attemptId === context.attemptId);
   if (attempt) {
-    attempt.status = isCertified ? 'certified' : 'not_certified';
+    attempt.status = 'validation_pending';
+    attempt.proposedStatus = isCertified ? 'certified' : 'not_certified';
     attempt.completedAt = new Date().toISOString();
     attempt.score = result.score ?? null;
     attempt.rationale = result.rationale || result.evidenceSummary || '';
+  }
+  const validation = await validateCertificationConversation(context, result);
+  upsertCertificationValidation(validation);
+  if (attempt) {
+    attempt.status = validation.valid ? (isCertified ? 'certified' : 'not_certified') : 'validation_failed';
+    attempt.validationStatus = validation.valid ? 'valid' : 'invalid';
+    attempt.validation = validation;
+  }
+  if (!validation.valid) {
+    addTranscript(
+      'certification_validation_failed',
+      `${context.certificationTierLabel} ${context.testDepthLabel}`,
+      `No credential recorded for ${context.ladderTierLabel}. Independent validation failed: ${validation.rationale}`,
+      { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: 'ai_validation_failed' }
+    );
+    return;
   }
   if (!isCertified) {
     addTranscript(
       'certification_not_awarded',
       `${context.certificationTierLabel} ${context.testDepthLabel}`,
-      `No certification awarded for ${context.ladderTierLabel}. ${result.rationale || result.evidenceSummary || 'The examiner requested more evidence.'}`,
-      { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: 'ai_exam_reviewed' }
+      `No certification awarded for ${context.ladderTierLabel}. Independent validation confirmed the review process. ${result.rationale || result.evidenceSummary || 'The examiner requested more evidence.'}`,
+      { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: 'ai_exam_validated' }
     );
     return;
   }
@@ -755,7 +898,9 @@ function recordCertificationResult(result) {
     standards: context.standards,
     blueprintId: context.blueprintId,
     blueprintVersion: context.blueprintVersion,
-    transcriptLine: `${context.ladderTierLabel} - ${context.certificationTierLabel} ${context.testDepthLabel}`
+    validation,
+    validationStatus: 'valid',
+    transcriptLine: `${context.ladderTierLabel} - ${context.certificationTierLabel} ${context.testDepthLabel}. Independent validation confirmed learner evidence and examiner process.`
   };
   upsertCertificationRecord(record);
   addTranscript(
@@ -1757,7 +1902,12 @@ async function callGuide() {
       ? parseCertificationResponse(rawText)
       : { certificationResult: null, visibleText: rawText };
     state.messages.push({ role: 'assistant', content: visibleText });
-    if (certificationResult) recordCertificationResult(certificationResult);
+    renderChat();
+    if (certificationResult) {
+      await recordCertificationResult(certificationResult);
+      renderTranscript();
+      renderProgress();
+    }
   } catch (error) {
     state.messages.push({
       role: 'assistant',
@@ -1921,7 +2071,8 @@ function exportTranscript() {
     ladderVersion: LADDER_VERSION,
     exportedAt: new Date().toISOString(),
     transcriptLines: certificationTranscriptLines(),
-    ladderCertifications: buildCertificationTranscript()
+    ladderCertifications: buildCertificationTranscript(),
+    certificationValidations: state.progress.certificationValidations || []
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

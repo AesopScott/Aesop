@@ -4,7 +4,7 @@
  * Server path: public_html/aesop-api/proxy.php
  * URL: /aesop-api/proxy.php
  *
- * Receives POST JSON: { messages: [...], system_prompt: "...", max_tokens: 1024 }
+ * Receives POST JSON: { messages: [...], system_prompt: "...", max_tokens: 1024, model?: "..." }
  * Forwards to Anthropic Messages API, returns response directly.
  * No user account needed — key is server-side only.
  */
@@ -16,7 +16,11 @@ if (file_exists($secretsFile)) {
 
 // ── CONFIG ──────────────────────────────────────────────────────────────
 $API_KEY = function_exists('aesop_secret') ? aesop_secret('AESOP_ANTHROPIC_API_KEY', '') : '';
-$MODEL   = 'claude-haiku-4-5-20251001';
+$MODEL_DEFAULT = 'claude-haiku-4-5-20251001';
+$ALLOWED_MODELS = [
+    'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-5-20250929',
+];
 $MAX_TOKENS_CAP = 1024;
 
 // ── HEADERS ─────────────────────────────────────────────────────────────
@@ -53,6 +57,8 @@ if (!$input || !isset($input['messages']) || !is_array($input['messages'])) {
 $messages    = $input['messages'];
 $system      = isset($input['system_prompt']) ? trim($input['system_prompt']) : '';
 $maxTokens   = min((int)($input['max_tokens'] ?? 1024), $MAX_TOKENS_CAP);
+$requestedModel = isset($input['model']) ? trim($input['model']) : '';
+$model = in_array($requestedModel, $ALLOWED_MODELS, true) ? $requestedModel : $MODEL_DEFAULT;
 
 // Validate messages
 foreach ($messages as $msg) {
@@ -70,7 +76,7 @@ if (count($messages) > 40) {
 
 // ── BUILD ANTHROPIC REQUEST ─────────────────────────────────────────────
 $payload = [
-    'model'      => $MODEL,
+    'model'      => $model,
     'max_tokens' => $maxTokens,
     'messages'   => $messages,
 ];

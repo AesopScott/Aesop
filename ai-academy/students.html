@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v1.0.14 | 2026-05-23 -->
+<!-- v1.1.0 | 2026-06-09 | Integrated Ladder tier certifications and progress tracking -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -139,11 +139,37 @@
       document.getElementById('streakCount').textContent = streak;
       document.getElementById('streakLabel').textContent = streak === 1 ? 'day streak' : 'day streak';
 
-      // Daily challenge
-      const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-      const ch = CHALLENGES[dayOfYear % CHALLENGES.length];
-      document.getElementById('challengeQ').textContent = ch.q;
-      document.getElementById('challengeA').textContent = ch.a;
+      // Load Ladder tier data from localStorage
+      let ladderTiersCertified = 0;
+      let ladderTiersExpert = 0;
+      let ladderTiersMastered = 0;
+      try {
+        const ladderState = JSON.parse(localStorage.getItem('aesop-ladder-state') || '{}');
+        if (ladderState) {
+          ladderTiersCertified = ladderState.heroTiersCertified || 0;
+          ladderTiersExpert = ladderState.heroTiersExpert || 0;
+          ladderTiersMastered = ladderState.heroTiersMastered || 0;
+        }
+      } catch (_) {}
+
+      // Populate continue secondary with begun courses
+      const continueSecondaryEl = document.getElementById('continueSecondary');
+      if (continueSecondaryEl && allStarted.size > 0) {
+        const courseItems = [...allStarted].slice(0, 3).map(cId => {
+          const reg = registry[cId];
+          if (!reg) return '';
+          return `<a class="sh-continue-link" href="${reg.url || '/ai-academy/courses.html'}" style="opacity: 0.8;">
+            <span class="sh-continue-icon">${reg.icon || '📚'}</span>
+            <div>
+              <div class="sh-continue-title" style="font-size: 0.95rem;">${reg.title}</div>
+              <div class="sh-continue-cta" style="font-size: 0.7rem;">Continue course →</div>
+            </div>
+          </a>`;
+        }).filter(Boolean).join('');
+        if (courseItems) {
+          continueSecondaryEl.innerHTML = courseItems;
+        }
+      }
 
       // Recommended pathway — localStorage first (no latency), Firestore refresh on success
       try {
@@ -277,14 +303,6 @@
         btn.textContent = '✓ Copied!';
         setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
       });
-    };
-
-    window._toggleAnswer = () => {
-      const el = document.getElementById('challengeA');
-      const btn = document.getElementById('revealBtn');
-      const hidden = el.style.visibility === 'hidden' || !el.style.visibility;
-      el.style.visibility = hidden ? 'visible' : 'hidden';
-      btn.textContent = hidden ? 'Hide' : 'Reveal answer';
     };
 
     document.addEventListener('DOMContentLoaded', init);
@@ -526,13 +544,16 @@
     <!-- Continue Learning -->
     <div class="sh-card">
       <div class="sh-card-label">▶ Continue Learning</div>
-      <a class="sh-continue-link" id="continueLink" href="/ai-academy/courses.html">
-        <span class="sh-continue-icon" id="continueIcon">📚</span>
-        <div>
-          <div class="sh-continue-title" id="continueTitle">Browse Courses</div>
-          <div class="sh-continue-cta">Pick up where you left off →</div>
-        </div>
-      </a>
+      <div id="continueContainer">
+        <a class="sh-continue-link" id="continueLink" href="/theladder/">
+          <span class="sh-continue-icon" id="continueIcon">🪜</span>
+          <div>
+            <div class="sh-continue-title" id="continueTitle">The Ladder</div>
+            <div class="sh-continue-cta">Pick up where you left off →</div>
+          </div>
+        </a>
+        <div id="continueSecondary" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border, rgba(0,0,0,0.08));"></div>
+      </div>
     </div>
 
     <!-- Streak -->
@@ -545,21 +566,10 @@
       </div>
       <p style="font-size:0.8rem;color:var(--ink-muted,#666);margin-top:0.6rem">Visit every day to keep your streak alive.</p>
       <div class="sh-links" style="margin-top:0.75rem">
-        <a class="sh-link" href="/ai-academy/courses.html"><span>📚</span>Courses</a>
-        <a class="sh-link" href="/ai-academy/how-we-teach.html"><span>🧠</span>How Youth Learns Today</a>
-        <a class="sh-link" href="/ai-news/"><span>📰</span>AI News</a>
-        <a class="sh-link" href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener"><span>💬</span>Forums</a>
-        <a class="sh-link" href="/ai-academy/employment-standards.html"><span>💼</span>Value for employees and employers</a>
-        <a class="sh-link" href="/student-transcript.html"><span>🎓</span>Aesop AI Academy Model Student</a>
+        <a class="sh-link" href="/theladder/"><span>🪜</span>The Ladder</a>
+        <a class="sh-link" href="/theladder/authenticate.html"><span>🔐</span>Authentication</a>
+        <a class="sh-link" href="/ladder-credential.html"><span>📜</span>Credential Pages</a>
       </div>
-    </div>
-
-    <!-- Daily Challenge -->
-    <div class="sh-card sh-progress-card">
-      <div class="sh-card-label">⚡ Daily Challenge</div>
-      <div class="sh-challenge-q" id="challengeQ">Loading…</div>
-      <div class="sh-challenge-a" id="challengeA"></div>
-      <button class="sh-reveal-btn" id="revealBtn" onclick="_toggleAnswer()">Reveal answer</button>
     </div>
 
     <!-- Recommended Pathway -->
@@ -588,24 +598,25 @@
 <div style="border-top: 1px solid var(--border, rgba(0,0,0,0.1)); background: var(--surface, #fff); padding: 2rem 1.5rem; margin-top: 3rem;">
   <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
     <div>
-      <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted, #666); margin-bottom: 1rem;">Explore</div>
+      <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted, #666); margin-bottom: 1rem;">The Ladder</div>
       <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-        <a href="/ai-academy/courses.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">📚 Courses</a>
-        <a href="/ai-academy/how-we-teach.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">🧠 How Youth Learns Today</a>
-        <a href="/ai-news/" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">📰 AI News</a>
+        <a href="/theladder/" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">🪜 The Ladder</a>
+        <a href="/theladder/authenticate.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">🔐 Authentication</a>
       </div>
     </div>
     <div>
-      <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted, #666); margin-bottom: 1rem;">Community & Value</div>
+      <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted, #666); margin-bottom: 1rem;">Credentials</div>
       <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-        <a href="https://discord.gg/pKDa5ryX" target="_blank" rel="noopener" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">💬 Forums</a>
-        <a href="/ai-academy/employment-standards.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">💼 Value for Employers</a>
+        <a href="/ladder-credential.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">📜 Ladder Credential</a>
+        <a href="/ladder-credential-mastery.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">🏆 Mastery Challenge</a>
+        <a href="/ladder-credential-expert.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">⭐ Expert Challenge</a>
       </div>
     </div>
     <div>
-      <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted, #666); margin-bottom: 1rem;">Demo & Examples</div>
+      <div style="font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted, #666); margin-bottom: 1rem;">Account</div>
       <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-        <a href="/student-transcript.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">🎓 Model Student Transcript</a>
+        <a href="/ai-academy/transcript.html" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem;">📋 My Transcript</a>
+        <a href="javascript:void(0)" onclick="_signOut()" style="color: var(--ink, #222); text-decoration: none; font-size: 0.95rem; cursor: pointer;">🚪 Sign Out</a>
       </div>
     </div>
   </div>
@@ -613,7 +624,7 @@
 
 <script src="/assets/top-banner-v2.js?v=2" onerror=""></script>
 <script>
-// ── Certification card — populate from localStorage ────────────
+// ── Certification card — populate from localStorage (Course + Ladder) ────────────
 (function(){
   var CERT_NAMES   = ['','Spark','Seeker','Scholar','Analyst','Navigator','Specialist','Strategist','Visionary','Master','Architect'];
   var CERT_RESUME  = ['',
@@ -635,30 +646,75 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     try {
+      // Load course certifications
       var fdn  = parseInt(localStorage.getItem('aesop-cert-fdn')  || '0');
       var pts  = parseInt(localStorage.getItem('aesop-cert-mpts') || '0');
       var level = 0;
       for(var i=1;i<=10;i++){
         if(fdn>=CERT_FDN[i]&&pts>=CERT_PTS[i]) level=i; else break;
       }
-      if(level < 1) return;
+
+      // Load Ladder certifications
+      var ladderState = JSON.parse(localStorage.getItem('aesop-ladder-state') || '{}');
+      var ladderCerts = (ladderState.heroTiersCertified || 0) + (ladderState.heroTiersExpert || 0) + (ladderState.heroTiersMastered || 0);
+
+      // Show card if either type of certification exists
+      if(level < 1 && ladderCerts < 1) return;
       var card = document.getElementById('certCard');
       if(!card) return;
       card.style.display = '';
+
+      // Determine what to display
+      var displayLevel = level;
+      var displayContent = '';
+
+      if (ladderCerts > 0) {
+        displayContent += '<div style="font-size: 0.88rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.1);">';
+        displayContent += '<div style="font-weight: 700; color: #735f9e; margin-bottom: 0.25rem;">The Ladder Certifications</div>';
+        displayContent += '<div style="font-size: 0.78rem; color: var(--ink-muted, #666);">';
+        displayContent += '🏆 ' + (ladderState.heroTiersMastered || 0) + ' Mastery, ';
+        displayContent += '⭐ ' + (ladderState.heroTiersExpert || 0) + ' Expertise, ';
+        displayContent += '✓ ' + (ladderState.heroTiersCertified || 0) + ' Certified';
+        displayContent += '</div></div>';
+      }
+
+      if (level > 0) {
+        displayContent += '<div><div style="font-size: 0.88rem; margin-bottom: 0.25rem; font-weight: 700;">AESOP AI Academy</div>';
+        displayContent += '<div style="font-size: 0.78rem; color: var(--ink-muted, #666);">Level ' + level + ' · ' + CERT_NAMES[level] + '</div></div>';
+      }
+
       // Badge (simple emoji version for the student page)
       var badge = document.getElementById('certBadgeSmall');
       if(badge){
+        var badgeEmoji = ladderCerts > 0 ? '🪜' : CERT_EMOJIS[displayLevel];
+        var badgeColor = ladderCerts > 0 ? '#735f9e' : CERT_COLORS[displayLevel];
         badge.innerHTML =
           '<div style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
-          'font-size:28px;background:rgba(255,255,255,0.06);border:2px solid ' + CERT_COLORS[level] + ';' +
-          'box-shadow:0 0 12px ' + CERT_COLORS[level] + '55">' + CERT_EMOJIS[level] + '</div>';
+          'font-size:28px;background:rgba(255,255,255,0.06);border:2px solid ' + badgeColor + ';' +
+          'box-shadow:0 0 12px ' + badgeColor + '55">' + badgeEmoji + '</div>';
       }
       var nm = document.getElementById('certLevelName');
-      if(nm){ nm.textContent = 'Level ' + level + ' · ' + CERT_NAMES[level]; nm.style.color = CERT_COLORS[level]; }
+      if(nm){
+        if (ladderCerts > 0) {
+          nm.textContent = ladderCerts + ' Ladder Certification' + (ladderCerts === 1 ? '' : 's');
+          nm.style.color = '#735f9e';
+        } else {
+          nm.textContent = 'Level ' + displayLevel + ' · ' + CERT_NAMES[displayLevel];
+          nm.style.color = CERT_COLORS[displayLevel];
+        }
+      }
       var rt = document.getElementById('certResumeTitle');
-      if(rt) rt.textContent = CERT_RESUME[level];
+      if(rt) {
+        if (level > 0) {
+          rt.textContent = CERT_RESUME[level];
+        } else {
+          rt.textContent = 'Earned through The Ladder';
+        }
+      }
       var ps = document.getElementById('certPtsSummary');
-      if(ps) ps.textContent = pts + ' Module Point' + (pts===1?'':'s') + ' earned';
+      if(ps) {
+        ps.innerHTML = displayContent;
+      }
     } catch(_){}
   });
 })();

@@ -457,6 +457,11 @@ function bindCourseWorkspace(useCase) {
     renderCentralCourseWorkspace(useCase);
     await callCourseGuide(useCase);
   });
+  input?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+    event.preventDefault();
+    form?.requestSubmit();
+  });
   completeButton?.addEventListener('click', () => {
     const chat = state.courseChats[useCase.id];
     if (!chat) return;

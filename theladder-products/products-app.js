@@ -439,6 +439,11 @@ function bindCourseWorkspace(product) {
     renderCentralCourseWorkspace(product);
     await callCourseGuide(product);
   });
+  input?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+    event.preventDefault();
+    form?.requestSubmit();
+  });
   completeButton?.addEventListener('click', () => {
     const chat = state.courseChats[product.id];
     if (!chat) return;

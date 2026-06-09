@@ -268,6 +268,22 @@ function languageLabel() {
   return LANGUAGES.find((item) => item.code === state.language)?.label || 'English';
 }
 
+function languageConfirmationText() {
+  const confirmations = {
+    en: 'Language set to English. I will continue in English.',
+    es: 'Idioma cambiado a español. Continuaré en español.',
+    fr: 'Langue changée en français. Je continuerai en français.',
+    de: 'Sprache auf Deutsch eingestellt. Ich fahre auf Deutsch fort.',
+    ar: 'تم تغيير اللغة إلى العربية. سأتابع باللغة العربية.',
+    hi: 'भाषा हिंदी पर सेट कर दी गई है। मैं हिंदी में जारी रखूंगा।',
+    ja: '言語を日本語に設定しました。日本語で続けます。',
+    ko: '언어가 한국어로 설정되었습니다. 한국어로 계속하겠습니다.',
+    pt: 'Idioma alterado para português. Continuarei em português.',
+    zh: '语言已切换为中文。我会继续使用中文。'
+  };
+  return confirmations[state.language] || `Language set to ${languageLabel()}. I will continue in ${languageLabel()}.`;
+}
+
 function interestText(placement) {
   if (!placement || !placement.interestTags?.length) return 'general AI fluency';
   return placement.interestTags.join(', ');
@@ -1834,15 +1850,43 @@ function bindEvents() {
     renderThemeToggle();
   });
 
-  el.languageSelect.addEventListener('change', async () => {
+  async function continueChatAfterLanguageChange(previousLabel) {
+    const nextLabel = languageLabel();
+    if (!state.messages.length || !nextLabel || nextLabel === previousLabel) return;
+    state.messages.push({
+      role: 'assistant',
+      content: languageConfirmationText()
+    });
+    renderChat();
+    await persist();
+  }
+
+  el.languageSelect?.addEventListener('change', async () => {
+    const previousLabel = languageLabel();
     state.language = el.languageSelect.value;
     await persist();
     renderControls();
+    if (state.language === 'custom' && !state.customLanguage) {
+      el.customLanguageInput?.focus();
+      return;
+    }
+    await continueChatAfterLanguageChange(previousLabel);
   });
 
-  el.customLanguageInput.addEventListener('change', async () => {
+  async function applyCustomLanguage() {
+    const previousLabel = languageLabel();
     state.customLanguage = el.customLanguageInput.value.trim();
+    if (state.customLanguage) state.language = 'custom';
     await persist();
+    renderControls();
+    await continueChatAfterLanguageChange(previousLabel);
+  }
+
+  el.customLanguageInput?.addEventListener('change', applyCustomLanguage);
+  el.customLanguageInput?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    applyCustomLanguage();
   });
 
   el.topicSearchInput?.addEventListener('input', () => {

@@ -2013,6 +2013,11 @@ function renderEvaluationPanel() {
   if (el.identityAssuranceField) {
     el.identityAssuranceField.hidden = true;
   }
+  if (certificationTierRequiresAccount()) {
+    if (el.accountGatePanel) el.accountGatePanel.hidden = true;
+    if (el.identityAttestationLabel) el.identityAttestationLabel.hidden = true;
+    if (el.identityAssuranceNotice) el.identityAssuranceNotice.hidden = true;
+  }
   [el.evaluationCooldownNotice, el.certificationWorkspaceCooldown].forEach((notice) => {
     if (!notice) return;
     notice.hidden = false;

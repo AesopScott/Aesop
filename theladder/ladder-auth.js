@@ -233,12 +233,15 @@ function handleProceed() {
   }
 
   // Save selections to localStorage
+  console.log('[ATTESTATION] About to save to localStorage');
   localStorage.setItem(LS_IDENTITY_ASSURANCE, state.identityAssuranceId);
   localStorage.setItem(LS_PROCTORING_MODE, state.proctoringModeId);
   localStorage.setItem(LS_ADULT_ATTESTED, 'true');
+  console.log('[ATTESTATION] Saved. Value in localStorage:', localStorage.getItem(LS_ADULT_ATTESTED));
 
   // Redirect back to the appropriate ladder pathway
   const returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/theladder/';
+  console.log('[ATTESTATION] Redirecting to:', returnTo);
   window.location.href = returnTo;
 }
 

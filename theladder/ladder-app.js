@@ -2,7 +2,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
-import { DEFAULT_RESOURCES, LADDER_TIERS, LADDER_VERSION, LANGUAGES } from './ladder-data.js?v=2';
+import { DEFAULT_RESOURCES, LADDER_TIERS, LADDER_VERSION, LANGUAGES, LADDER_UI_TRANSLATIONS } from './ladder-data.js?v=2';
 
 const PROXY_URL = '/aesop-api/proxy.php';
 const LS_ID = 'aesop-learner-id';
@@ -193,6 +193,7 @@ const state = {
   activeTopicId: LADDER_TIERS[0].topics[0].id,
   activeVocabTerm: LADDER_TIERS[0].vocabulary[0],
   searchQuery: '',
+  educationTierId: 'college',
   certificationTierId: 'workforce',
   testDepthId: 'certification',
   identityAssuranceLevel: 'account_bound',
@@ -224,6 +225,7 @@ const el = {
   lookupBtn: document.getElementById('lookupBtn'),
   topicSearchInput: document.getElementById('topicSearchInput'),
   topicSearchResults: document.getElementById('topicSearchResults'),
+  educationTierSelect: document.getElementById('educationTierSelect'),
   certificationTierSelect: document.getElementById('certificationTierSelect'),
   testDepthSelect: document.getElementById('testDepthSelect'),
   authRequiredLink: document.getElementById('authRequiredLink'),
@@ -425,9 +427,25 @@ function languageConfirmationText() {
     ja: '言語を日本語に設定しました。日本語で続けます。',
     ko: '언어가 한국어로 설정되었습니다. 한국어로 계속하겠습니다.',
     pt: 'Idioma alterado para português. Continuarei em português.',
-    zh: '语言已切换为中文。我会继续使用中文。'
+    'zh-TW': '語言已切換為繁體中文。我將繼續使用繁體中文。'
   };
   return confirmations[state.language] || `Language set to ${languageLabel()}. I will continue in ${languageLabel()}.`;
+}
+
+function t(key) {
+  const translations = LADDER_UI_TRANSLATIONS[state.language] || LADDER_UI_TRANSLATIONS['en'];
+  return translations[key] || LADDER_UI_TRANSLATIONS['en'][key] || key;
+}
+
+function updatePageTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
 }
 
 function interestText(placement) {
@@ -645,6 +663,7 @@ async function saveRemote() {
         activeTierId: state.activeTierId,
         activeTopicId: state.activeTopicId,
         activeVocabTerm: state.activeVocabTerm,
+        educationTierId: state.educationTierId,
         certificationTierId: state.certificationTierId,
         testDepthId: state.testDepthId,
         accountUid: state.authUser?.uid || '',
@@ -699,6 +718,7 @@ async function loadRemote(learnerId) {
     state.activeTierId = ladder.activeTierId || state.activeTierId;
     state.activeTopicId = ladder.activeTopicId || state.activeTopicId;
     state.activeVocabTerm = ladder.activeVocabTerm || state.activeVocabTerm;
+    state.educationTierId = ladder.educationTierId || state.educationTierId;
     state.certificationTierId = ladder.certificationTierId || state.certificationTierId;
     state.testDepthId = normalizeTestDepthId(ladder.testDepthId || state.testDepthId);
     state.adultAttested = Boolean(ladder.adultAttested || data.adultAttested || state.adultAttested);
@@ -1619,7 +1639,7 @@ function renderHeroRibbons() {
       <div class="hero-ribbon-slot ${label ? `has-ribbon ribbon-${depthId}` : 'is-empty'}" title="${escapeHtml(title)}">
         <span class="hero-ribbon-number">${tier.order}</span>
         <span class="hero-ribbon-medal">${label ? label.short : ''}</span>
-        <span class="hero-ribbon-tier">${escapeHtml(tier.name)}</span>
+        <span class="hero-ribbon-tier">${label ? label.short : 'no cert'}</span>
       </div>
     `;
   }).join('');
@@ -1952,7 +1972,11 @@ function renderIdentityAssurance() {
 
 function renderAccountGate() {
   const gate = accountGateForCertificationTier();
-  const shouldShow = !certificationTierRequiresAccount() && Boolean(state.authUser);
+  if (certificationTierRequiresAccount()) {
+    if (el.accountGatePanel) el.accountGatePanel.hidden = true;
+    return gate;
+  }
+  const shouldShow = Boolean(state.authUser);
   if (el.accountGatePanel) el.accountGatePanel.hidden = !shouldShow;
   if (el.accountStatusText) {
     el.accountStatusText.textContent = state.authUser
@@ -1993,8 +2017,12 @@ function renderEvaluationPanel() {
   el.testDepthSelect.innerHTML = TEST_DEPTHS.map((item) => (
     `<option value="${item.id}">${item.label}</option>`
   )).join('');
+  el.educationTierSelect.innerHTML = CERTIFICATION_TIERS.map((item) => (
+    `<option value="${item.id}">${item.label}</option>`
+  )).join('');
   el.certificationTierSelect.value = state.certificationTierId;
   el.testDepthSelect.value = state.testDepthId;
+  el.educationTierSelect.value = state.educationTierId;
   const cert = CERTIFICATION_TIERS.find((item) => item.id === state.certificationTierId) || CERTIFICATION_TIERS[0];
   const depth = TEST_DEPTHS.find((item) => item.id === state.testDepthId) || TEST_DEPTHS[0];
   el.testDepthSelect.value = depth.id;
@@ -2026,7 +2054,7 @@ function renderEvaluationPanel() {
   });
   [el.startEvaluationBtn, el.startWorkspaceCertificationBtn].forEach((button) => {
     if (!button) return;
-    button.disabled = cooldown.locked || accountGate.locked || identityGate.locked;
+    button.disabled = cooldown.locked || (accountGate.locked && !certificationTierRequiresAccount()) || identityGate.locked;
     button.textContent = cooldown.locked
       ? `Available in ${formatDuration(cooldown.remainingMs)}`
       : accountGate.locked ? accountGate.buttonLabel
@@ -2074,6 +2102,7 @@ function render() {
   renderTiers();
   renderTopic();
   renderTranscript();
+  updatePageTranslations();
 }
 
 function escapeHtml(value) {
@@ -2182,6 +2211,7 @@ function systemPromptFor(topic, tier) {
   const selfAssigned = state.progress.selfAssignedTopicIds?.includes(topic.id) ? 'yes' : 'no';
   const placedOut = state.progress.completedTopics[topicKey(topic.id)]?.status === TRANSCRIPT_STATUS.PLACED_OUT ? 'yes' : 'no';
   const evaluation = state.evaluationContext;
+  const selectedEducationTier = CERTIFICATION_TIERS.find((item) => item.id === state.educationTierId) || CERTIFICATION_TIERS[0];
   const selectedCertificationTier = CERTIFICATION_TIERS.find((item) => item.id === state.certificationTierId) || CERTIFICATION_TIERS[0];
   const selectedDepth = TEST_DEPTHS.find((item) => item.id === state.testDepthId) || TEST_DEPTHS[0];
   const readinessCheck = isReadinessCheckTopic(topic);
@@ -2235,7 +2265,18 @@ Was this rung assigned by assessment? ${assigned}.
 Was this rung self-assigned by the learner? ${selfAssigned}.
 Was this rung placed out by assessment? ${placedOut}.
 Tier: ${tier.name} - ${tier.title}.
+Education tier (teaching level): ${selectedEducationTier.label}.
 Preferred language: ${languageLabel()}. Translate your learner-facing responses into this language unless the learner asks otherwise.
+
+TEACHING LEVEL GUIDANCE:
+You are teaching a ${selectedEducationTier.label}-level learner. Adjust your language, examples, and depth of analysis to match this level:
+- Elementary: Simple, concrete language. Everyday examples. Short sentences. Build foundational understanding.
+- Middle School: Clear explanations. Introduce technical terms. Encourage thinking and questions.
+- High School: Academic language. Abstract concepts. Connect to real-world applications. Develop critical thinking.
+- Young Adult: Professional context. Career relevance. Independent problem-solving.
+- College: Rigorous, theory-grounded. Advanced concepts. Research literacy and evidence.
+- Workforce: Practical, job-relevant skills. Business scenarios. Applied problem-solving.
+- Leadership: Strategic perspective. Organizational and policy implications. Systems thinking.
 
 Every rung is a guided AI learning conversation. The goal is discovery, critical thinking, vocabulary fluency, and applied understanding. Do not frame the experience as schoolwork.
 ${evaluationBlock}
@@ -2331,6 +2372,10 @@ async function startEvaluation() {
   const accountGate = accountGateForCertificationTier(cert.id);
   const identityGate = certificationIdentityGate();
   if (cooldown.locked || accountGate.locked || identityGate.locked) {
+    if (accountGate.locked && certificationTierRequiresAccount()) {
+      window.location.href = '/theladder/authenticate.html';
+      return;
+    }
     renderEvaluationPanel();
     document.getElementById(accountGate.locked ? 'accountGatePanel' : 'evaluationPanel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
@@ -2648,6 +2693,7 @@ function bindEvents() {
     state.language = el.languageSelect.value;
     await persist();
     renderControls();
+    updatePageTranslations();
     if (state.language === 'custom' && !state.customLanguage) {
       el.customLanguageInput?.focus();
       return;
@@ -2661,6 +2707,7 @@ function bindEvents() {
     if (state.customLanguage) state.language = 'custom';
     await persist();
     renderControls();
+    updatePageTranslations();
     await continueChatAfterLanguageChange(previousLabel);
   }
 
@@ -2686,6 +2733,11 @@ function bindEvents() {
     state.testDepthId = el.testDepthSelect.value;
     await persist();
     renderEvaluationPanel();
+  });
+
+  el.educationTierSelect?.addEventListener('change', async () => {
+    state.educationTierId = el.educationTierSelect.value;
+    await persist();
   });
 
   el.accountForm?.addEventListener('submit', submitAccount);

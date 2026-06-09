@@ -54,6 +54,12 @@ const el = {
   authSignInBtn: document.getElementById('authSignInBtn'),
   authCreateBtn: document.getElementById('authCreateBtn'),
   authGoogleBtn: document.getElementById('authGoogleBtn'),
+  createAccountModal: document.getElementById('createAccountModal'),
+  createEmailInput: document.getElementById('createEmailInput'),
+  createPasswordInput: document.getElementById('createPasswordInput'),
+  createAccountError: document.getElementById('createAccountError'),
+  closeCreateModal: document.getElementById('closeCreateModal'),
+  submitCreateAccount: document.getElementById('submitCreateAccount'),
   authIdentityAssuranceSelect: document.getElementById('authIdentityAssuranceSelect'),
   authIdentityAssuranceDescription: document.getElementById('authIdentityAssuranceDescription'),
   authProctoringModeField: document.getElementById('authProctoringModeField'),
@@ -151,27 +157,38 @@ async function handleSignIn(e) {
   }
 }
 
-async function handleCreateAccount() {
-  console.log('[DEBUG] handleCreateAccount called');
-  setError('');
-  const email = el.authEmailInput?.value?.trim();
-  const password = el.authPasswordInput?.value;
+function openCreateAccountModal() {
+  if (el.createAccountModal) {
+    el.createAccountModal.style.display = 'flex';
+    el.createEmailInput?.focus();
+    el.createAccountError.textContent = '';
+  }
+}
 
-  console.log('[DEBUG] Email:', email ? '***' : 'empty', 'Password:', password ? '***' : 'empty');
+function closeCreateAccountModal() {
+  if (el.createAccountModal) {
+    el.createAccountModal.style.display = 'none';
+    el.createEmailInput.value = '';
+    el.createPasswordInput.value = '';
+    el.createAccountError.textContent = '';
+  }
+}
+
+async function handleCreateAccount() {
+  const email = el.createEmailInput?.value?.trim();
+  const password = el.createPasswordInput?.value;
 
   if (!email || !password) {
-    setError('Please enter email and password.');
+    el.createAccountError.textContent = 'Please enter email and password.';
     return;
   }
 
   try {
-    console.log('[DEBUG] Creating account with Firebase...');
+    el.createAccountError.textContent = '';
     await createUserWithEmailAndPassword(auth, email, password);
-    console.log('[DEBUG] Account created successfully');
-    setError('');
+    closeCreateAccountModal();
   } catch (error) {
-    console.error('[DEBUG] Account creation error:', error);
-    setError(`Account creation failed: ${error.message}`);
+    el.createAccountError.textContent = error.message;
   }
 }
 
@@ -245,13 +262,24 @@ if (el.authSignInBtn) {
 }
 
 if (el.authCreateBtn) {
-  console.log('[DEBUG] Create Account button found, attaching listener');
-  el.authCreateBtn.addEventListener('click', (e) => {
-    console.log('[DEBUG] Create Account clicked');
-    handleCreateAccount();
+  el.authCreateBtn.addEventListener('click', openCreateAccountModal);
+}
+
+if (el.closeCreateModal) {
+  el.closeCreateModal.addEventListener('click', closeCreateAccountModal);
+}
+
+if (el.submitCreateAccount) {
+  el.submitCreateAccount.addEventListener('click', handleCreateAccount);
+}
+
+// Close modal when clicking outside of it
+if (el.createAccountModal) {
+  el.createAccountModal.addEventListener('click', (e) => {
+    if (e.target === el.createAccountModal) {
+      closeCreateAccountModal();
+    }
   });
-} else {
-  console.warn('[DEBUG] Create Account button NOT found');
 }
 
 if (el.authProceedBtn) {

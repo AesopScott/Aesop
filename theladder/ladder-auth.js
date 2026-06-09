@@ -79,18 +79,24 @@ function setError(message) {
 }
 
 function renderIdentityAssuranceSelect() {
-  el.authIdentityAssuranceSelect.innerHTML = IDENTITY_ASSURANCE_LEVELS
-    .filter(level => level.active)
-    .map(level => `<option value="${level.id}">${level.label}</option>`)
-    .join('');
+  const options = [
+    '<option value="">Choose verification level...</option>',
+    ...IDENTITY_ASSURANCE_LEVELS
+      .filter(level => level.active)
+      .map(level => `<option value="${level.id}">${level.label}</option>`)
+  ];
+  el.authIdentityAssuranceSelect.innerHTML = options.join('');
   el.authIdentityAssuranceSelect.value = state.identityAssuranceId;
   updateIdentityAssuranceDescription();
 }
 
 function renderProctoringModeSelect() {
-  el.authProctoringModeSelect.innerHTML = PROCTORING_MODES
-    .map(mode => `<option value="${mode.id}">${mode.label}</option>`)
-    .join('');
+  const options = [
+    '<option value="">Choose proctoring method...</option>',
+    ...PROCTORING_MODES
+      .map(mode => `<option value="${mode.id}">${mode.label}</option>`)
+  ];
+  el.authProctoringModeSelect.innerHTML = options.join('');
   el.authProctoringModeSelect.value = state.proctoringModeId;
   updateProctoringModeDescription();
 }

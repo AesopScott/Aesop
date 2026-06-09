@@ -684,7 +684,7 @@ async function callProductGuide() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: state.messages,
-        system_prompt: `You are a product training guide for ${state.activeProductChat.product.name}. Help the learner understand the product through guided conversation. When the learner demonstrates sufficient understanding of the ${state.activeProductChat.level} level learning objectives, end the conversation with a completion signal.`,
+        system_prompt: `You are a product training guide for ${state.activeProductChat.product.name}. Help the learner understand the product through guided conversation using questions, examples, applications, and limitations. When the learner demonstrates sufficient understanding of the ${state.activeProductChat.level} level learning objectives, end your final message with this completion marker on a new line: <!--LADDER_CONVERSATION_COMPLETE:{"status":"completed","confidence":0.95,"rationale":"learner demonstrated competency"}-->`,
         max_tokens: 700
       })
     });

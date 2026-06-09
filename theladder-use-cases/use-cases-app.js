@@ -847,7 +847,7 @@ function startUseCaseChat(useCase, level) {
   state.activeUseCaseChat = { useCase, level, messages: [] };
   state.messages = [{
     role: 'user',
-    content: `Start my guided conversation for "${useCase.name}". I'm taking the ${level} course. Help me understand this use case through questions, examples, applications, and limitations. When I've demonstrated understanding and we've completed the learning objectives, let me know by including <!--LADDER_CONVERSATION_COMPLETE:{"status":"completed","confidence":0.95,"rationale":"..."}-->`
+    content: `Start my guided conversation for "${useCase.name}". I'm taking the ${level} course. Help me understand this use case through questions, examples, applications, and limitations. When I've demonstrated sufficient understanding of the learning objectives, end with a completion confirmation.`
   }];
   renderUseCaseChat();
   callUseCaseGuide();
@@ -901,7 +901,7 @@ async function callUseCaseGuide() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: state.messages,
-        system_prompt: `You are a use case training guide for "${state.activeUseCaseChat.useCase.name}". Help the learner understand this use case through guided conversation. When the learner demonstrates sufficient understanding of the ${state.activeUseCaseChat.level} level learning objectives, end the conversation with a completion signal.`,
+        system_prompt: `You are a use case training guide for "${state.activeUseCaseChat.useCase.name}". Help the learner understand this use case through guided conversation using questions, examples, applications, and limitations. When the learner demonstrates sufficient understanding of the ${state.activeUseCaseChat.level} level learning objectives, end your final message with this completion marker on a new line: <!--LADDER_CONVERSATION_COMPLETE:{"status":"completed","confidence":0.95,"rationale":"learner demonstrated competency"}-->`,
         max_tokens: 700
       })
     });

@@ -641,6 +641,8 @@ The Ladder page needs:
 - certification path selector
 - certification depth selector with Certification, Expert Challenge, and Mastery Challenge
 - "Start certification" action for active Ladder tier and selected depth
+- certification exams delivered inside the same Guided Conversation window, with a visible exam-mode state
+- return-to-training control that restores the learner's guided conversation context
 - pass/fail result panel
 - AI rationale panel
 - challenge form after non-pass

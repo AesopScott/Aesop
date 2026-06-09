@@ -8,6 +8,7 @@ const LS_ID = 'aesop-learner-id';
 const LS_STATE = 'aesop-ladder-state';
 const LS_THEME = 'aesop-theme';
 const PLACEMENT_REGEX = /<!--LADDER_PLACEMENT_COMPLETE:([\s\S]*?)-->/;
+const CERTIFICATION_RESULT_REGEX = /<!--LADDER_CERTIFICATION_RESULT:([\s\S]*?)-->/;
 const TRANSCRIPT_STATUS = {
   COMPLETED: 'completed',
   PLACED_OUT: 'placed_out',
@@ -139,6 +140,7 @@ const state = {
   certificationTierId: 'workforce',
   testDepthId: 'certification',
   evaluationContext: null,
+  trainingMessages: [],
   placementExpanded: false,
   messages: [],
   progress: {
@@ -146,6 +148,7 @@ const state = {
     vocabulary: {},
     selfAssignedTopicIds: [],
     evaluationAttempts: [],
+    ladderCertifications: [],
     placement: null,
     assessmentMessages: [],
     transcriptEvents: []
@@ -199,12 +202,23 @@ const el = {
   vocabPromptInput: document.getElementById('vocabPromptInput'),
   resourceList: document.getElementById('resourceList'),
   researchBtn: document.getElementById('researchBtn'),
+  conversationTitle: document.getElementById('conversationTitle'),
+  conversationSummary: document.getElementById('conversationSummary'),
+  certificationModeBar: document.getElementById('certificationModeBar'),
+  certificationModeTitle: document.getElementById('certificationModeTitle'),
+  certificationModeDetail: document.getElementById('certificationModeDetail'),
   startConversationBtn: document.getElementById('startConversationBtn'),
+  endCertificationBtn: document.getElementById('endCertificationBtn'),
   chatLog: document.getElementById('chatLog'),
   chatForm: document.getElementById('chatForm'),
   chatInput: document.getElementById('chatInput'),
   transcriptList: document.getElementById('transcriptList'),
-  exportTranscriptBtn: document.getElementById('exportTranscriptBtn')
+  exportTranscriptBtn: document.getElementById('exportTranscriptBtn'),
+  transcriptPageLink: document.getElementById('transcriptPageLink'),
+  ladderCertificationsLink: document.getElementById('ladderCertificationsLink'),
+  studentTranscriptLink: document.getElementById('studentTranscriptLink'),
+  architectureDialog: document.getElementById('architectureDialog'),
+  architectureDialogContent: document.getElementById('architectureDialogContent')
 };
 
 function generateLearnerId() {
@@ -212,6 +226,11 @@ function generateLearnerId() {
   let code = '';
   for (let i = 0; i < 4; i += 1) code += chars[Math.floor(Math.random() * chars.length)];
   return `AESOP-${code}`;
+}
+
+function normalizeLearnerId(value) {
+  const id = String(value || '').trim().toUpperCase();
+  return id.startsWith('AESOP-') ? id : '';
 }
 
 function topicKey(topicId) {
@@ -372,6 +391,8 @@ function saveLocal() {
     certificationTierId: state.certificationTierId,
     testDepthId: state.testDepthId,
     evaluationContext: state.evaluationContext,
+    trainingMessages: state.trainingMessages,
+    messages: state.messages,
     placementExpanded: state.placementExpanded,
     progress: state.progress
   }));
@@ -379,10 +400,16 @@ function saveLocal() {
 
 async function saveRemote() {
   if (!state.learnerId) return;
+  const ladderCertifications = buildCertificationTranscript();
   try {
     await setDoc(doc(db, 'learners', state.learnerId), {
       learnerId: state.learnerId,
       lastActiveAt: new Date().toISOString(),
+      ladderCertifications,
+      studentTranscript: {
+        updatedAt: new Date().toISOString(),
+        ladderCertifications
+      },
       ladderProgress: {
         version: LADDER_VERSION,
         language: state.language,
@@ -397,6 +424,7 @@ async function saveRemote() {
         vocabulary: state.progress.vocabulary,
         selfAssignedTopicIds: state.progress.selfAssignedTopicIds,
         evaluationAttempts: state.progress.evaluationAttempts,
+        ladderCertifications,
         placement: state.progress.placement,
         assessmentMessages: state.progress.assessmentMessages,
         transcriptEvents: state.progress.transcriptEvents
@@ -443,9 +471,11 @@ async function loadRemote(learnerId) {
     state.progress.vocabulary = ladder.vocabulary || {};
     state.progress.selfAssignedTopicIds = ladder.selfAssignedTopicIds || [];
     state.progress.evaluationAttempts = ladder.evaluationAttempts || [];
+    state.progress.ladderCertifications = ladder.ladderCertifications || data.ladderCertifications || [];
     state.progress.placement = ladder.placement || null;
     state.progress.assessmentMessages = ladder.assessmentMessages || [];
     state.progress.transcriptEvents = ladder.transcriptEvents || [];
+    syncAssessmentCertificationRecords();
     state.placementExpanded = !state.progress.placement;
   } catch (error) {
     console.warn('Could not load ladder progress:', error);
@@ -465,15 +495,19 @@ function loadLocal() {
     state.certificationTierId = saved.certificationTierId || state.certificationTierId;
     state.testDepthId = normalizeTestDepthId(saved.testDepthId || state.testDepthId);
     state.evaluationContext = saved.evaluationContext || null;
+    state.trainingMessages = Array.isArray(saved.trainingMessages) ? saved.trainingMessages : [];
+    state.messages = Array.isArray(saved.messages) ? saved.messages : [];
     state.placementExpanded = saved.placementExpanded ?? state.placementExpanded;
     state.progress = saved.progress || state.progress;
     state.progress.completedTopics ||= {};
     state.progress.vocabulary ||= {};
     state.progress.selfAssignedTopicIds ||= [];
     state.progress.evaluationAttempts ||= [];
+    state.progress.ladderCertifications ||= [];
     state.progress.placement ||= null;
     state.progress.assessmentMessages ||= [];
     state.progress.transcriptEvents ||= [];
+    syncAssessmentCertificationRecords();
     if (state.progress.placement && saved.placementExpanded === undefined) state.placementExpanded = false;
   } catch (error) {
     console.warn('Could not load local ladder state:', error);
@@ -495,6 +529,91 @@ function addTranscript(eventType, title, detail, options = {}) {
   state.progress.transcriptEvents = state.progress.transcriptEvents.slice(0, 80);
 }
 
+function certificationLevelRank(depthId) {
+  return {
+    'assessment-certified': 0,
+    certification: 1,
+    'expert-challenge': 2,
+    'mastery-challenge': 3
+  }[depthId] ?? 0;
+}
+
+function certificationDepthLabel(depthId) {
+  if (depthId === 'assessment-certified') return 'Assessment certified';
+  return TEST_DEPTHS.find((item) => item.id === depthId)?.label || 'Certification';
+}
+
+function sortCertificationRecords(records) {
+  return [...records].sort((a, b) => (
+    certificationLevelRank(b.depthId) - certificationLevelRank(a.depthId)
+    || Number(b.tierOrder || 0) - Number(a.tierOrder || 0)
+    || String(b.earnedAt || '').localeCompare(String(a.earnedAt || ''))
+  ));
+}
+
+function upsertCertificationRecord(record) {
+  const existing = state.progress.ladderCertifications || [];
+  const filtered = existing.filter((item) => item.id !== record.id);
+  state.progress.ladderCertifications = sortCertificationRecords([record, ...filtered]).slice(0, 300);
+}
+
+function buildCertificationTranscript() {
+  return sortCertificationRecords(state.progress.ladderCertifications || []);
+}
+
+function certificationTranscriptLines() {
+  const records = buildCertificationTranscript();
+  const assessment = records.filter((record) => record.source === 'assessment');
+  const exams = records.filter((record) => record.source !== 'assessment');
+  const lines = [];
+  if (assessment.length) {
+    const latest = assessment.reduce((max, record) => (
+      String(record.earnedAt || '') > String(max.earnedAt || '') ? record : max
+    ), assessment[0]);
+    lines.push({
+      id: 'assessment-certifications',
+      title: 'Assessment certifications',
+      depthLabel: 'Assessment certified',
+      evidence: TRANSCRIPT_STATUS.VERIFIED,
+      earnedAt: latest.earnedAt,
+      transcriptLine: `Placed out of ${assessment.length} ${assessment.length === 1 ? 'tier' : 'tiers'}: ${assessment.map((record) => record.title).join(', ')}.`
+    });
+  }
+  return [...lines, ...exams];
+}
+
+function syncAssessmentCertificationRecords() {
+  const placement = state.progress.placement;
+  if (!placement?.grantedTierIds?.length) return;
+  const earnedAt = placement.certifiedAt || placement.completedAt || new Date().toISOString();
+  const granted = new Set(placement.grantedTierIds);
+  LADDER_TIERS.forEach((tier) => {
+    if (!granted.has(tier.id)) return;
+    upsertCertificationRecord({
+      id: `assessment:${LADDER_VERSION}:${tier.id}`,
+      source: 'assessment',
+      status: 'certified',
+      evidence: TRANSCRIPT_STATUS.VERIFIED,
+      depthId: 'assessment-certified',
+      depthLabel: 'Assessment certified',
+      certificationTierId: 'assessment',
+      certificationTierLabel: 'Assessment',
+      ladderTierId: tier.id,
+      ladderTierLabel: `${tier.name} - ${tier.title}`,
+      tierOrder: tier.order,
+      title: `${tier.name}: ${tier.title}`,
+      earnedAt,
+      rationale: placement.reasoning || 'Granted by Ladder placement assessment.',
+      score: {
+        capability: placement.capabilityScore,
+        technical: placement.technicalScore,
+        governance: placement.governanceScore
+      },
+      transcriptLine: `${tier.name}: ${tier.title} - Assessment certified`
+    });
+  });
+}
+
 function parsePlacementResponse(rawText) {
   const visibleText = String(rawText || '').replace(PLACEMENT_REGEX, '').trim();
   const match = String(rawText || '').match(PLACEMENT_REGEX);
@@ -505,6 +624,71 @@ function parsePlacementResponse(rawText) {
     console.warn('Could not parse placement signal:', error);
     return { placement: null, visibleText };
   }
+}
+
+function parseCertificationResponse(rawText) {
+  const visibleText = String(rawText || '').replace(CERTIFICATION_RESULT_REGEX, '').trim();
+  const match = String(rawText || '').match(CERTIFICATION_RESULT_REGEX);
+  if (!match) return { certificationResult: null, visibleText };
+  try {
+    return { certificationResult: JSON.parse(match[1]), visibleText };
+  } catch (error) {
+    console.warn('Could not parse certification result:', error);
+    return { certificationResult: null, visibleText };
+  }
+}
+
+function recordCertificationResult(result) {
+  const context = state.evaluationContext;
+  if (!context || !result) return;
+  const normalizedResult = String(result.result || result.status || '').toLowerCase().replace(/[\s-]+/g, '_');
+  const isCertified = ['certified', 'passed', 'pass'].includes(normalizedResult);
+  const attempt = state.progress.evaluationAttempts.find((item) => item.attemptId === context.attemptId);
+  if (attempt) {
+    attempt.status = isCertified ? 'certified' : 'not_certified';
+    attempt.completedAt = new Date().toISOString();
+    attempt.score = result.score ?? null;
+    attempt.rationale = result.rationale || result.evidenceSummary || '';
+  }
+  if (!isCertified) {
+    addTranscript(
+      'certification_not_awarded',
+      `${context.certificationTierLabel} ${context.testDepthLabel}`,
+      `No certification awarded for ${context.ladderTierLabel}. ${result.rationale || result.evidenceSummary || 'The examiner requested more evidence.'}`,
+      { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: 'ai_exam_reviewed' }
+    );
+    return;
+  }
+  const tier = LADDER_TIERS.find((item) => item.id === context.ladderTierId) || getActiveTier();
+  const earnedAt = new Date().toISOString();
+  const record = {
+    id: `${context.blueprintId}:${context.attemptId}`,
+    source: 'ai_exam',
+    status: 'certified',
+    evidence: TRANSCRIPT_STATUS.VERIFIED,
+    depthId: context.testDepthId,
+    depthLabel: context.testDepthLabel,
+    certificationTierId: context.certificationTierId,
+    certificationTierLabel: context.certificationTierLabel,
+    ladderTierId: context.ladderTierId,
+    ladderTierLabel: context.ladderTierLabel,
+    tierOrder: tier.order,
+    title: `${context.ladderTierLabel} - ${context.testDepthLabel}`,
+    earnedAt,
+    score: result.score ?? null,
+    rationale: result.rationale || result.evidenceSummary || 'Certified by AI examiner.',
+    standards: context.standards,
+    blueprintId: context.blueprintId,
+    blueprintVersion: context.blueprintVersion,
+    transcriptLine: `${context.ladderTierLabel} - ${context.certificationTierLabel} ${context.testDepthLabel}`
+  };
+  upsertCertificationRecord(record);
+  addTranscript(
+    'certification_awarded',
+    record.title,
+    record.transcriptLine,
+    { status: TRANSCRIPT_STATUS.VERIFIED, evidence: 'ai_exam_certified' }
+  );
 }
 
 function placementSystemPrompt() {
@@ -622,14 +806,16 @@ function scrollAssessment(position) {
 }
 
 function applyPlacement(placement) {
+  const now = new Date().toISOString();
   state.progress.placement = {
     ...placement,
+    certifiedAt: now,
     profileAppliedAt: null,
     profileDeclinedAt: null
   };
   state.placementExpanded = false;
-  const now = new Date().toISOString();
   const granted = new Set(placement.grantedTierIds);
+  state.progress.ladderCertifications = (state.progress.ladderCertifications || []).filter((record) => record.source !== 'assessment');
   Object.keys(state.progress.completedTopics).forEach((key) => {
     if (state.progress.completedTopics[key]?.status === TRANSCRIPT_STATUS.PLACED_OUT) {
       delete state.progress.completedTopics[key];
@@ -637,6 +823,28 @@ function applyPlacement(placement) {
   });
   LADDER_TIERS.forEach((tier) => {
     if (!granted.has(tier.id)) return;
+    upsertCertificationRecord({
+      id: `assessment:${LADDER_VERSION}:${tier.id}`,
+      source: 'assessment',
+      status: 'certified',
+      evidence: TRANSCRIPT_STATUS.VERIFIED,
+      depthId: 'assessment-certified',
+      depthLabel: 'Assessment certified',
+      certificationTierId: 'assessment',
+      certificationTierLabel: 'Assessment',
+      ladderTierId: tier.id,
+      ladderTierLabel: `${tier.name} - ${tier.title}`,
+      tierOrder: tier.order,
+      title: `${tier.name}: ${tier.title}`,
+      earnedAt: now,
+      rationale: placement.reasoning || 'Granted by Ladder placement assessment.',
+      score: {
+        capability: placement.capabilityScore,
+        technical: placement.technicalScore,
+        governance: placement.governanceScore
+      },
+      transcriptLine: `${tier.name}: ${tier.title} - Assessment certified`
+    });
     tier.topics.forEach((topic) => {
       state.progress.completedTopics[topicKey(topic.id)] = {
         status: TRANSCRIPT_STATUS.PLACED_OUT,
@@ -668,6 +876,7 @@ async function resetPlacementAssessment() {
       delete state.progress.completedTopics[key];
     }
   });
+  state.progress.ladderCertifications = (state.progress.ladderCertifications || []).filter((record) => record.source !== 'assessment');
   addTranscript('placement_assessment_reset', 'Ladder placement reset', 'Cleared assessment-based tier grants and assigned rungs.');
   await persist();
   render();
@@ -741,6 +950,15 @@ function renderLanguages() {
 function renderLearner() {
   if (el.learnerIdLabel) el.learnerIdLabel.textContent = state.learnerId || 'Not started';
   if (el.learnerLookup) el.learnerLookup.value = state.learnerId || '';
+  renderLearnerLinks(state.learnerId);
+}
+
+function renderLearnerLinks(learnerId) {
+  const id = normalizeLearnerId(learnerId);
+  const idParam = id ? `?id=${encodeURIComponent(id)}` : '';
+  if (el.transcriptPageLink) el.transcriptPageLink.href = `/student-transcript-live.html${idParam}`;
+  if (el.studentTranscriptLink) el.studentTranscriptLink.href = `/student-transcript-live.html${idParam}`;
+  if (el.ladderCertificationsLink) el.ladderCertificationsLink.href = `/ladder-certifications.html${idParam}`;
 }
 
 function topicSearchResults(query) {
@@ -965,6 +1183,8 @@ function renderTiers() {
       const tier = LADDER_TIERS.find((item) => item.id === button.dataset.tierId);
       state.activeTierId = tier.id;
       state.activeTopicId = tier.topics[0].id;
+      state.evaluationContext = null;
+      state.trainingMessages = [];
       state.messages = [];
       persist();
       render();
@@ -991,6 +1211,8 @@ function renderTopicPicker(tier) {
   strip.querySelectorAll('[data-topic-id]').forEach((button) => {
     button.addEventListener('click', () => {
       state.activeTopicId = button.dataset.topicId;
+      state.evaluationContext = null;
+      state.trainingMessages = [];
       state.messages = [];
       persist();
       render();
@@ -1065,25 +1287,59 @@ function renderResources(topic) {
   )).join('');
 }
 
+function renderConversationMode() {
+  const context = state.evaluationContext;
+  const isCertification = Boolean(context);
+  if (el.conversationTitle) {
+    el.conversationTitle.textContent = isCertification ? `${context.testDepthLabel} Exam` : 'Guided Conversation';
+  }
+  if (el.conversationSummary) {
+    el.conversationSummary.textContent = isCertification
+      ? 'The same AI window is now collecting certification evidence, applying the rubric, and preparing a reviewable result.'
+      : 'The AI asks, challenges, applies, and checks readiness for this rung.';
+  }
+  if (el.certificationModeBar) {
+    el.certificationModeBar.hidden = !isCertification;
+  }
+  if (el.certificationModeTitle && context) {
+    el.certificationModeTitle.textContent = `${context.certificationTierLabel} ${context.testDepthLabel}`;
+  }
+  if (el.certificationModeDetail && context) {
+    el.certificationModeDetail.textContent = `${context.ladderTierLabel}. Required evidence: ${context.testDepthEvidence}. Review: ${context.testDepthReview}.`;
+  }
+  if (el.startConversationBtn) {
+    el.startConversationBtn.hidden = isCertification;
+  }
+  if (el.chatInput) {
+    el.chatInput.placeholder = isCertification
+      ? 'Answer the exam question or provide evidence'
+      : 'Answer the guide or ask for the next challenge';
+  }
+}
+
 function renderChat() {
+  renderConversationMode();
   if (!state.messages.length) {
-    el.chatLog.innerHTML = '<div class="message assistant"><strong>Guide</strong>Select Start to begin a guided conversation for this rung.</div>';
+    el.chatLog.innerHTML = state.evaluationContext
+      ? '<div class="message assistant"><strong>Examiner</strong>The certification exam will begin here when you start certification for this rung.</div>'
+      : '<div class="message assistant"><strong>Guide</strong>Select Start to begin a guided conversation for this rung.</div>';
     return;
   }
   el.chatLog.innerHTML = state.messages.map((message) => (
-    `<div class="message ${message.role === 'user' ? 'user' : 'assistant'}"><strong>${message.role === 'user' ? 'You' : 'Guide'}</strong>${escapeHtml(message.content)}</div>`
+    `<div class="message ${message.role === 'user' ? 'user' : 'assistant'}"><strong>${message.role === 'user' ? 'You' : state.evaluationContext ? 'Examiner' : 'Guide'}</strong>${escapeHtml(message.content)}</div>`
   )).join('');
   el.chatLog.scrollTop = el.chatLog.scrollHeight;
 }
 
 function renderTranscript() {
-  if (!state.progress.transcriptEvents.length) {
-    el.transcriptList.innerHTML = '<div class="transcript-event"><strong>No events yet</strong><small>Complete conversations, vocabulary, certifications, or rungs to build a transcript.</small></div>';
+  const certificationLines = certificationTranscriptLines();
+  if (!certificationLines.length) {
+    el.transcriptList.innerHTML = '<div class="transcript-event"><strong>No certifications yet</strong><small>Assessment certifications and exam-awarded certifications will appear here.</small></div>';
     return;
   }
 
-  el.transcriptList.innerHTML = state.progress.transcriptEvents.map((event) => (
-    `<div class="transcript-event"><strong>${event.title}</strong><small>${statusLabel(event.status)} - ${statusLabel(event.evidence)} evidence - ${new Date(event.timestamp).toLocaleString()}</small><p>${event.detail}</p></div>`
+  el.transcriptList.innerHTML = certificationLines.map((record) => (
+    `<div class="transcript-event"><strong>${escapeHtml(record.title)}</strong><small>${escapeHtml(record.depthLabel)} - ${escapeHtml(record.evidence)} evidence - ${new Date(record.earnedAt).toLocaleString()}</small><p>${escapeHtml(record.transcriptLine || record.rationale || '')}</p></div>`
   )).join('');
 }
 
@@ -1120,6 +1376,7 @@ function renderEvaluationPanel() {
   const targetText = `${tier.name}: ${tier.title} - ${cert.label}, ${depth.label}`;
   el.activeEvaluationTarget.textContent = targetText;
   if (el.certificationWorkspaceTarget) el.certificationWorkspaceTarget.textContent = targetText;
+  if (state.evaluationContext && el.certificationModeDetail) renderConversationMode();
 }
 
 function renderControls() {
@@ -1169,6 +1426,96 @@ function escapeHtml(value) {
     .replace(/\n/g, '<br>');
 }
 
+function renderMarkdownTable(lines) {
+  const rows = lines
+    .filter((line) => !/^\s*\|?\s*-+/.test(line.replace(/\|/g, '')))
+    .map((line) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim()));
+  if (!rows.length) return '';
+  const [head, ...body] = rows;
+  return `<table><thead><tr>${head.map((cell) => `<th>${escapeHtml(cell)}</th>`).join('')}</tr></thead><tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+function renderArchitectureMarkdown(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const html = [];
+  let paragraph = [];
+  let list = [];
+  let table = [];
+  let code = [];
+  let inCode = false;
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    html.push(`<p>${escapeHtml(paragraph.join(' '))}</p>`);
+    paragraph = [];
+  };
+  const flushList = () => {
+    if (!list.length) return;
+    html.push(`<ul>${list.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`);
+    list = [];
+  };
+  const flushTable = () => {
+    if (!table.length) return;
+    html.push(renderMarkdownTable(table));
+    table = [];
+  };
+
+  lines.forEach((line) => {
+    if (line.startsWith('```')) {
+      if (inCode) {
+        html.push(`<pre><code>${escapeHtml(code.join('\n'))}</code></pre>`);
+        code = [];
+        inCode = false;
+      } else {
+        flushParagraph();
+        flushList();
+        flushTable();
+        inCode = true;
+      }
+      return;
+    }
+    if (inCode) {
+      code.push(line);
+      return;
+    }
+    if (!line.trim()) {
+      flushParagraph();
+      flushList();
+      flushTable();
+      return;
+    }
+    const heading = line.match(/^(#{1,4})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      flushTable();
+      const level = Math.min(heading[1].length + 1, 4);
+      html.push(`<h${level}>${escapeHtml(heading[2])}</h${level}>`);
+      return;
+    }
+    if (/^\s*[-*]\s+/.test(line)) {
+      flushParagraph();
+      flushTable();
+      list.push(line.replace(/^\s*[-*]\s+/, ''));
+      return;
+    }
+    if (line.includes('|') && /^\s*\|?[^|]+\|/.test(line)) {
+      flushParagraph();
+      flushList();
+      table.push(line);
+      return;
+    }
+    flushList();
+    flushTable();
+    paragraph.push(line.trim());
+  });
+  flushParagraph();
+  flushList();
+  flushTable();
+  if (inCode && code.length) html.push(`<pre><code>${escapeHtml(code.join('\n'))}</code></pre>`);
+  return html.join('');
+}
+
 function systemPromptFor(topic, tier) {
   const placement = state.progress.placement;
   const assigned = placement?.assignedTopicIds?.includes(topic.id) ? 'yes' : 'no';
@@ -1190,6 +1537,11 @@ Act as a structured AI examiner, not a course tutor. The learner is allowed to t
 For Certification, test for competent and defensible use of the tier. For Expert challenge, increase ambiguity, require transfer to a new context, and press harder on edge cases. For Mastery challenge, require original synthesis, portfolio-quality evidence, standards mapping, and leadership-level defense.
 
 Do not award a final credential in one short response. Collect evidence first. When you are ready to make a determination, explain pass or non-pass with specific learner evidence, missing evidence, standards implications, selected depth expectations, and a challenge path. If evidence is insufficient, say what would change the decision. If confidence is low, say human review is recommended.
+
+When and only when you make a final determination, append this exact hidden marker on a new line:
+<!--LADDER_CERTIFICATION_RESULT:{"result":"certified","score":NN,"rationale":"one concise evidence-based reason","evidenceSummary":"one concise evidence summary"}-->
+
+If the learner has not met the standard, use "result":"not_certified" and include the missing evidence in rationale. Do not mention the marker or JSON to the learner.
 ` : '';
   return `You are The Ladder guide inside AESOP AI Academy. You are strictly scoped to the selected topic: ${topic.title}.
 
@@ -1231,8 +1583,12 @@ async function callGuide() {
       })
     });
     const data = await response.json();
-    const text = data?.content?.[0]?.text || data?.error || 'The guide could not respond. Use practice mode: explain the topic, name one risk, and ask yourself what evidence would change your mind.';
-    state.messages.push({ role: 'assistant', content: text });
+    const rawText = data?.content?.[0]?.text || data?.error || 'The guide could not respond. Use practice mode: explain the topic, name one risk, and ask yourself what evidence would change your mind.';
+    const { certificationResult, visibleText } = state.evaluationContext
+      ? parseCertificationResponse(rawText)
+      : { certificationResult: null, visibleText: rawText };
+    state.messages.push({ role: 'assistant', content: visibleText });
+    if (certificationResult) recordCertificationResult(certificationResult);
   } catch (error) {
     state.messages.push({
       role: 'assistant',
@@ -1245,6 +1601,8 @@ async function callGuide() {
 
 async function startConversation() {
   const topic = getActiveTopic();
+  state.evaluationContext = null;
+  state.trainingMessages = [];
   state.messages = [{
     role: 'user',
     content: `Start my guided conversation for "${topic.title}". Diagnose my current understanding first, then help me discover the topic through questions, vocabulary, examples, application, and one risk or limitation.`
@@ -1261,6 +1619,9 @@ async function startEvaluation() {
   const cert = CERTIFICATION_TIERS.find((item) => item.id === state.certificationTierId) || CERTIFICATION_TIERS[0];
   const depth = TEST_DEPTHS.find((item) => item.id === state.testDepthId) || TEST_DEPTHS[0];
   const attemptId = `eval_${Date.now()}`;
+  if (!state.evaluationContext) {
+    state.trainingMessages = [...state.messages];
+  }
   state.evaluationContext = {
     attemptId,
     certificationTierId: cert.id,
@@ -1306,6 +1667,8 @@ async function startVocabularyConversation(event) {
   const term = state.activeVocabTerm || tier.vocabulary[0];
   const definition = definitionForTerm(term, tier);
   const userQuestion = el.vocabPromptInput.value.trim();
+  state.evaluationContext = null;
+  state.trainingMessages = [];
   state.messages = [{
     role: 'user',
     content: `Start a guided vocabulary conversation about "${term}" in the context of "${tier.title}". Begin with this definition: ${definition} Ask me whether I have any additional questions about this vocabulary word, then help me understand it through examples, misconceptions, and one application question.${userQuestion ? ` My specific question is: ${userQuestion}` : ''}`
@@ -1316,6 +1679,24 @@ async function startVocabularyConversation(event) {
   addTranscript('vocabulary_conversation_started', term, `Started a guided vocabulary conversation for ${term}.`);
   await persist();
   renderTranscript();
+  document.querySelector('.conversation-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function endCertification() {
+  const context = state.evaluationContext;
+  state.evaluationContext = null;
+  state.messages = state.trainingMessages.length ? [...state.trainingMessages] : [];
+  state.trainingMessages = [];
+  if (context) {
+    addTranscript(
+      'certification_returned_to_training',
+      `${context.certificationTierLabel} ${context.testDepthLabel}`,
+      `Returned from ${context.testDepthLabel.toLowerCase()} to guided training for ${context.ladderTierLabel}.`,
+      { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: 'certification_paused' }
+    );
+  }
+  await persist();
+  render();
   document.querySelector('.conversation-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1348,15 +1729,12 @@ async function markTopicComplete() {
 
 function exportTranscript() {
   const payload = {
+    _format: 'aesop-ladder-certification-transcript-v1',
     learnerId: state.learnerId,
     ladderVersion: LADDER_VERSION,
     exportedAt: new Date().toISOString(),
-    placement: state.progress.placement,
-    evaluationContext: state.evaluationContext,
-    evaluationAttempts: state.progress.evaluationAttempts,
-    selfAssignedTopicIds: state.progress.selfAssignedTopicIds,
-    completedTopics: state.progress.completedTopics,
-    transcriptEvents: state.progress.transcriptEvents
+    transcriptLines: certificationTranscriptLines(),
+    ladderCertifications: buildCertificationTranscript()
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1374,6 +1752,30 @@ function findVideos() {
   persist();
   window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank', 'noopener');
   renderTranscript();
+}
+
+let architectureLoaded = false;
+
+async function openArchitectureDialog() {
+  if (!el.architectureDialog || !el.architectureDialogContent) return;
+  if (!architectureLoaded) {
+    el.architectureDialogContent.innerHTML = '<p>Loading certification architecture...</p>';
+    try {
+      const response = await fetch('/docs/ladder-certification-architecture.md');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const markdown = await response.text();
+      el.architectureDialogContent.innerHTML = renderArchitectureMarkdown(markdown);
+      architectureLoaded = true;
+    } catch (error) {
+      el.architectureDialogContent.innerHTML = '<p>Could not load the certification architecture. Try again after the page finishes loading.</p>';
+    }
+  }
+  if (typeof el.architectureDialog.showModal === 'function') {
+    el.architectureDialog.showModal();
+  } else {
+    el.architectureDialog.setAttribute('open', '');
+  }
+  el.architectureDialogContent.focus();
 }
 
 function bindEvents() {
@@ -1412,6 +1814,7 @@ function bindEvents() {
 
   el.startEvaluationBtn?.addEventListener('click', startEvaluation);
   el.startWorkspaceCertificationBtn?.addEventListener('click', startEvaluation);
+  el.endCertificationBtn?.addEventListener('click', endCertification);
 
   el.startPlacementBtn.addEventListener('click', startPlacementAssessment);
   el.togglePlacementBtn.addEventListener('click', async () => {
@@ -1432,13 +1835,16 @@ function bindEvents() {
   });
 
   el.lookupBtn?.addEventListener('click', async () => {
-    const id = el.learnerLookup?.value.trim().toUpperCase() || '';
-    if (!id.startsWith('AESOP-')) return;
+    const id = normalizeLearnerId(el.learnerLookup?.value);
+    if (!id) return;
     state.learnerId = id;
     localStorage.setItem(LS_ID, id);
     await loadRemote(id);
     await persist();
     render();
+  });
+  el.learnerLookup?.addEventListener('input', () => {
+    renderLearnerLinks(el.learnerLookup?.value);
   });
 
   el.startConversationBtn.addEventListener('click', startConversation);
@@ -1447,11 +1853,19 @@ function bindEvents() {
   el.completeTopicBtn.addEventListener('click', markTopicComplete);
   el.exportTranscriptBtn.addEventListener('click', exportTranscript);
   el.researchBtn.addEventListener('click', findVideos);
+  document.querySelectorAll('[data-open-architecture]').forEach((button) => {
+    button.addEventListener('click', openArchitectureDialog);
+  });
 }
 
 async function init() {
   applyTheme(state.theme);
   loadLocal();
+  const queryLearnerId = normalizeLearnerId(new URLSearchParams(location.search).get('id'));
+  if (queryLearnerId) {
+    state.learnerId = queryLearnerId;
+    localStorage.setItem(LS_ID, queryLearnerId);
+  }
   renderLanguages();
   bindEvents();
   render();

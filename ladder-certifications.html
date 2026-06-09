@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ladder Certifications - AESOP AI Academy</title>
+<meta name="description" content="View AESOP Ladder certifications for a learner, including assessment-certified tiers and Certification, Expert Challenge, and Mastery Challenge records.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+<link rel="apple-touch-icon" sizes="512x512" href="/favicon_512.png">
+<link rel="stylesheet" href="/academy-theme.css">
+<link rel="stylesheet" href="/academy-dark-mode.css">
+<style>
+body { padding-top: 92px; }
+.lc-hero { background: var(--navy); color: var(--white); padding: 3rem 1rem; }
+.lc-inner { max-width: 1180px; margin: 0 auto; }
+.lc-eyebrow { color: var(--gold); font-size: 0.75rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+.lc-hero h1 { color: #fff; font-family: var(--font-display); font-size: clamp(2.2rem, 6vw, 4rem); margin: 0.5rem 0; }
+.lc-copy { color: rgba(255,255,255,0.72); max-width: 760px; line-height: 1.6; }
+.lc-tools { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.4rem; }
+.lc-tools input { min-width: 220px; padding: 0.7rem 0.8rem; }
+.lc-main { max-width: 1180px; margin: 0 auto; padding: 2.5rem 1rem 5rem; }
+.lc-summary { display: grid; gap: 1rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 1.5rem; }
+.lc-stat, .lc-section { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; }
+.lc-stat strong { color: var(--gold); display: block; font-family: var(--font-display); font-size: 2rem; }
+.lc-stat span { color: var(--ink-muted); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.lc-section { margin-bottom: 1.5rem; }
+.lc-section h2 { color: var(--ink); font-family: var(--font-display); margin-bottom: 0.4rem; }
+.lc-section p { color: var(--ink-muted); line-height: 1.55; }
+.lc-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top: 1rem; }
+.lc-card { border: 1px solid var(--border); border-left: 4px solid var(--gold); border-radius: var(--radius-md); padding: 1rem; }
+.lc-card strong { display: block; font-family: var(--font-display); font-size: 1.15rem; line-height: 1.15; }
+.lc-card small { color: var(--ink-muted); display: block; line-height: 1.45; margin-top: 0.35rem; }
+.lc-card p { margin-top: 0.7rem; }
+.lc-empty { color: var(--ink-muted); padding: 1rem; text-align: center; }
+@media (max-width: 760px) { .lc-summary { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<section class="lc-hero">
+  <div class="lc-inner">
+    <div class="lc-eyebrow">The Ladder</div>
+    <h1>Ladder Certifications</h1>
+    <p class="lc-copy">Certification records for a learner, including the bottom rung of assessment-certified placement evidence and the exam-awarded Certification, Expert Challenge, and Mastery Challenge levels.</p>
+    <div class="lc-tools">
+      <input id="learnerIdInput" type="text" placeholder="AESOP-7K3X" autocomplete="off">
+      <button id="loadBtn" type="button">Load certifications</button>
+      <button id="exportBtn" class="secondary" type="button">Export</button>
+      <a id="fullTranscriptLink" href="/student-transcript-live.html" class="button secondary">Full transcript</a>
+    </div>
+  </div>
+</section>
+
+<main class="lc-main">
+  <section class="lc-summary">
+    <div class="lc-stat"><strong id="totalCount">0</strong><span>Total</span></div>
+    <div class="lc-stat"><strong id="assessmentCount">0</strong><span>Assessment</span></div>
+    <div class="lc-stat"><strong id="certCount">0</strong><span>Certification</span></div>
+    <div class="lc-stat"><strong id="advancedCount">0</strong><span>Expert/Mastery</span></div>
+  </section>
+
+  <section class="lc-section">
+    <h2>Assessment Certified</h2>
+    <p>These are the bottom rung of certification evidence. They come from the Ladder placement assessment and show tiers the learner placed out of.</p>
+    <div id="assessmentGrid" class="lc-grid"></div>
+  </section>
+
+  <section class="lc-section">
+    <h2>Certification Level</h2>
+    <p>These records come from AI-delivered certification exams in the Ladder conversation window.</p>
+    <div id="certificationGrid" class="lc-grid"></div>
+  </section>
+
+  <section class="lc-section">
+    <h2>Expert and Mastery Challenges</h2>
+    <p>These are higher-depth credentials requiring stronger evidence, transfer, portfolio-quality work, or human review for external claims.</p>
+    <div id="advancedGrid" class="lc-grid"></div>
+  </section>
+</main>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
+
+const LS_ID = 'aesop-learner-id';
+const app = initializeApp(FIREBASE_CONFIG);
+const db = getFirestore(app);
+let activeDoc = null;
+let activeId = '';
+
+const initialId = (new URLSearchParams(location.search).get('id') || localStorage.getItem(LS_ID) || '').toUpperCase();
+if (initialId) document.getElementById('learnerIdInput').value = initialId;
+updateLinkedPages(initialId);
+
+function updateLinkedPages(id) {
+  const learnerId = String(id || '').trim().toUpperCase();
+  const idParam = learnerId ? `?id=${encodeURIComponent(learnerId)}` : '';
+  document.getElementById('fullTranscriptLink').href = `/student-transcript-live.html${idParam}`;
+}
+
+function certsFrom(data) {
+  return data?.ladderCertifications || data?.studentTranscript?.ladderCertifications || data?.ladderProgress?.ladderCertifications || [];
+}
+
+function fmtDate(value) {
+  if (!value) return 'Date not recorded';
+  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function card(cert) {
+  return `<article class="lc-card">
+    <strong>${cert.title || cert.ladderTierLabel || 'Ladder certification'}</strong>
+    <small>${cert.depthLabel || 'Certification'} · ${cert.certificationTierLabel || 'AESOP'} · ${fmtDate(cert.earnedAt)}</small>
+    <p>${cert.transcriptLine || cert.rationale || 'Certification evidence recorded.'}</p>
+  </article>`;
+}
+
+function fillGrid(id, items) {
+  document.getElementById(id).innerHTML = items.length ? items.map(card).join('') : '<div class="lc-empty">No records yet.</div>';
+}
+
+function render(data) {
+  const certs = certsFrom(data);
+  const assessment = certs.filter((cert) => cert.source === 'assessment');
+  const certification = certs.filter((cert) => cert.depthId === 'certification');
+  const advanced = certs.filter((cert) => ['expert-challenge', 'mastery-challenge'].includes(cert.depthId));
+  document.getElementById('totalCount').textContent = certs.length;
+  document.getElementById('assessmentCount').textContent = assessment.length;
+  document.getElementById('certCount').textContent = certification.length;
+  document.getElementById('advancedCount').textContent = advanced.length;
+  fillGrid('assessmentGrid', assessment);
+  fillGrid('certificationGrid', certification);
+  fillGrid('advancedGrid', advanced);
+}
+
+async function loadCertifications(id) {
+  const learnerId = String(id || '').trim().toUpperCase();
+  if (!learnerId.startsWith('AESOP-')) return;
+  try {
+    const snap = await getDoc(doc(db, 'learners', learnerId));
+    activeDoc = snap.exists() ? snap.data() : null;
+  } catch (error) {
+    console.warn('Could not load Ladder certifications:', error);
+    activeDoc = null;
+  }
+  activeId = learnerId;
+  localStorage.setItem(LS_ID, learnerId);
+  updateLinkedPages(learnerId);
+  render(activeDoc || {});
+}
+
+document.getElementById('loadBtn').addEventListener('click', () => loadCertifications(document.getElementById('learnerIdInput').value));
+document.getElementById('exportBtn').addEventListener('click', () => {
+  if (!activeId) return;
+  const payload = {
+    _format: 'aesop-ladder-certifications-v1',
+    learnerId: activeId,
+    exportedAt: new Date().toISOString(),
+    ladderCertifications: certsFrom(activeDoc)
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `aesop-ladder-certifications-${activeId}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+if (initialId) loadCertifications(initialId);
+</script>
+</body>
+</html>

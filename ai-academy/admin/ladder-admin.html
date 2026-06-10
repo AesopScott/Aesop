@@ -184,20 +184,35 @@ const CERTIFICATION_VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
 const CERTIFICATION_RESULT_REGEX = /<!--LADDER_CERTIFICATION_RESULT:([\s\S]*?)-->/;
 const CERTIFICATION_VALIDATION_REGEX = /<!--LADDER_CERTIFICATION_VALIDATION:([\s\S]*?)-->/;
 
-const CERTIFICATION_TIERS = [
+// Mirror the live theladder model. Education tiers + professional roles share
+// a single dropdown (matches renderEvaluationPanel in ladder-app.js).
+const EDUCATION_TIERS = [
   { id: 'elementary', label: 'Elementary', standards: 'AI4K12, ISTE, UNESCO' },
   { id: 'middle-school', label: 'Middle School', standards: 'AI4K12, ISTE, CSTA, UNESCO' },
-  { id: 'high-school', label: 'High School', standards: 'AI4K12, ISTE, CSTA, UNESCO' },
-  { id: 'young-adult', label: 'Young Adult', standards: 'ISTE, CSTA, UNESCO, WEF' },
-  { id: 'college', label: 'College / Technical', standards: 'CSTA, O*NET, WEF, NIST AI RMF' },
-  { id: 'workforce', label: 'Workforce', standards: 'O*NET, WEF, NIST AI RMF, EU AI Act' },
-  { id: 'leadership', label: 'Leadership', standards: 'O*NET, WEF, NIST AI RMF, EU AI Act' }
+  { id: 'high-school', label: 'High School', standards: 'AI4K12, ISTE, CSTA, UNESCO' }
+];
+const PROFESSIONAL_ROLES = [
+  { id: 'ai-developer', label: 'AI Developer', source: 'O*NET 15-1255+', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'machine-learning-engineer', label: 'Machine Learning Engineer', source: 'O*NET 15-1255+', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'data-scientist', label: 'Data Scientist', source: 'O*NET 15-2051.00', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'ai-operations-engineer', label: 'AI Operations Engineer', source: 'WEF Future of Jobs 2025', standards: 'WEF, NIST AI RMF, ISO/IEC 42001' },
+  { id: 'ai-product-manager', label: 'AI Product Manager', source: 'WEF Future of Jobs 2025', standards: 'WEF, O*NET Product Management' },
+  { id: 'ai-educator', label: 'AI Educator', source: 'O*NET 25-1021.00', standards: 'O*NET, UNESCO, ISTE' },
+  { id: 'ai-security-specialist', label: 'AI Security Specialist', source: 'O*NET 15-3121.00', standards: 'O*NET, NIST AI RMF, OWASP' },
+  { id: 'ai-governance-officer', label: 'AI Governance Officer', source: 'WEF Future of Jobs 2025', standards: 'WEF, NIST AI RMF, EU AI Act' },
+  { id: 'ai-consultant', label: 'AI Consultant', source: 'O*NET 13-1111.00', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'executive-leadership', label: 'Executive Leadership', source: 'WEF, NIST AI RMF', standards: 'WEF, NIST AI RMF, EU AI Act' }
 ];
 const TEST_DEPTHS = [
-  { id: 'certification', label: 'Certification', evidence: 'clear competency evidence for the selected Ladder tier and certification tier' },
-  { id: 'expert-challenge', label: 'Expert challenge', evidence: 'strong transfer, edge-case reasoning, and defensible tradeoff analysis' },
-  { id: 'mastery-challenge', label: 'Mastery challenge', evidence: 'original synthesis, portfolio-grade artifact, standards mapping, and leadership-level defense' }
+  { id: 'core', label: 'CORE', evidence: 'clear foundational competency in the selected function' },
+  { id: 'certification', label: 'Certification', evidence: 'clear competency evidence for professional role and function' },
+  { id: 'expert-certification', label: 'Expert Certification', evidence: 'strong transfer, edge-case reasoning, and defensible tradeoff analysis' },
+  { id: 'master-certification', label: 'Master Certification', evidence: 'original synthesis, portfolio-grade artifact, standards mapping, and leadership-level defense' }
 ];
+const CERTIFICATION_TIER_LOOKUP = new Map([
+  ...EDUCATION_TIERS.map((t) => [t.id, { ...t, kind: 'education' }]),
+  ...PROFESSIONAL_ROLES.map((r) => [r.id, { ...r, kind: 'role' }])
+]);
 const app = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -580,7 +595,8 @@ function render() {
 
 function awardCredentialView() {
   const tierOptions = LADDER_TIERS.map((tier) => `<option value="${esc(tier.id)}">${esc(tier.name)} - ${esc(tier.title)}</option>`).join('');
-  const certOptions = CERTIFICATION_TIERS.map((cert) => `<option value="${esc(cert.id)}">${esc(cert.label)} - ${esc(cert.standards)}</option>`).join('');
+  const educationOptions = EDUCATION_TIERS.map((t) => `<option value="${esc(t.id)}">${esc(t.label)} - ${esc(t.standards)}</option>`).join('');
+  const roleOptions = PROFESSIONAL_ROLES.map((r) => `<option value="${esc(r.id)}">${esc(r.label)} [${esc(r.source)}]</option>`).join('');
   const depthOptions = TEST_DEPTHS.map((depth) => `<option value="${esc(depth.id)}">${esc(depth.label)}</option>`).join('');
   return `<form id="awardForm" style="padding: 1.25rem; display: grid; gap: 0.85rem;">
     <label for="awardLearner">Learner ID</label>
@@ -591,8 +607,11 @@ function awardCredentialView() {
         <select id="awardLadderTier" required>${tierOptions}</select>
       </div>
       <div>
-        <label for="awardCertTier">Certification tier</label>
-        <select id="awardCertTier" required>${certOptions}</select>
+        <label for="awardCertTier">Education tier or Professional role</label>
+        <select id="awardCertTier" required>
+          <optgroup label="Education tiers">${educationOptions}</optgroup>
+          <optgroup label="Professional roles">${roleOptions}</optgroup>
+        </select>
       </div>
     </div>
     <div class="modal-row">
@@ -651,7 +670,7 @@ function buildLadderTierMeta(ladderTierId) {
 }
 
 function buildCertTierMeta(certTierId) {
-  return CERTIFICATION_TIERS.find((c) => c.id === certTierId) || CERTIFICATION_TIERS[0];
+  return CERTIFICATION_TIER_LOOKUP.get(certTierId) || { ...EDUCATION_TIERS[0], kind: 'education' };
 }
 
 function buildDepthMeta(depthId) {

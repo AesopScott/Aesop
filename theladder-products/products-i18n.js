@@ -24,6 +24,11 @@ export const PRODUCTS_UI_TRANSLATIONS = {
     navTheLadder: 'The Ladder',
     navProducts: 'Products',
     navUseCases: 'Use Cases',
+    // Phase 2 redesign strings (English fallback for other languages pending
+    // the i18n pass — BUILD-PATHWAYS-REDESIGN §6).
+    navTranscripts: 'Transcripts',
+    statusStarted: 'Started',
+    statusCompleted: 'Completed',
     studentHub: 'Student Hub',
     transcript: 'Transcript',
     educationFocus: 'Education Focus',

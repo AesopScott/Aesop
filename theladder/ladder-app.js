@@ -707,6 +707,7 @@ async function loadRemote(learnerId) {
   try {
     const snap = await getDoc(doc(db, 'learners', learnerId));
     if (!snap.exists()) {
+      console.log('[loadRemote] Document does not exist, creating:', learnerId);
       await setDoc(doc(db, 'learners', learnerId), {
         learnerId,
         createdAt: new Date().toISOString(),
@@ -720,6 +721,10 @@ async function loadRemote(learnerId) {
     }
 
     const data = snap.data();
+    console.log('[loadRemote] Loaded document for', learnerId);
+    console.log('[loadRemote] Has ladderProgress?', !!data.ladderProgress);
+    console.log('[loadRemote] Certs count:', data.ladderProgress?.ladderCertifications?.length || 0);
+
     if (!data.ladderProgress) return;
     const ladder = data.ladderProgress;
     state.language = ladder.language || state.language;

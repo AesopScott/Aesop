@@ -830,11 +830,11 @@ function renderLadderL() {
   svg.innerHTML =
     '<rect x="6" y="0" width="9" height="84"/>' +       // left rail
     '<rect x="26" y="0" width="9" height="84"/>' +      // right rail
-    '<rect x="13" y="11" width="15" height="7"/>' +     // rungs
-    '<rect x="13" y="32" width="15" height="7"/>' +
-    '<rect x="13" y="53" width="15" height="7"/>' +
-    '<rect x="13" y="74" width="15" height="7"/>' +
-    '<rect x="6" y="84" width="56" height="16"/>';      // foot of the L
+    '<rect x="13" y="11" width="15" height="7"/>' +     // rungs (evenly spaced, clear of the foot)
+    '<rect x="13" y="28" width="15" height="7"/>' +
+    '<rect x="13" y="45" width="15" height="7"/>' +
+    '<rect x="13" y="62" width="15" height="7"/>' +
+    '<rect x="6" y="79" width="56" height="21"/>';      // foot of the L (matches the E's bar thickness)
   const frag = document.createDocumentFragment();
   frag.append(document.createTextNode(txt.slice(0, idx)), svg, document.createTextNode(txt.slice(idx + 1)));
   h1.replaceChild(frag, node);

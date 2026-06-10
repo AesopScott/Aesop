@@ -285,6 +285,17 @@ function setupNavActions() {
       document.getElementById('training')?.scrollIntoView({ behavior: 'smooth' });
     }));
   }
+
+  // Release sticky :hover after a nav word is clicked. Clicking an in-page anchor
+  // smooth-scrolls the section under a stationary mouse, so no mouseleave fires and
+  // the gold underline stays stuck under that word (notably Profile). Dropping the
+  // element as a pointer target clears :hover; the next mousemove restores it.
+  document.querySelectorAll('.l2-navlink').forEach((a) => {
+    a.addEventListener('click', () => {
+      a.style.pointerEvents = 'none';
+      window.addEventListener('mousemove', () => { a.style.pointerEvents = ''; }, { once: true });
+    });
+  });
 }
 
 // =============================================================================

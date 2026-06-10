@@ -371,12 +371,16 @@ const state = {
     evaluationAttempts: [],
     ladderCertifications: [],
     certificationValidations: [],
+    certificationConversations: {},
     standardsReviews: [],
     placement: null,
     assessmentMessages: [],
     transcriptEvents: []
   }
 };
+
+const CERTIFICATION_CONVERSATION_CAP = 10;
+const CERTIFICATION_MESSAGE_MAX_BYTES = 8000;
 
 const el = {
   educationFocusSelect: document.getElementById('educationFocusSelect'),
@@ -460,6 +464,7 @@ const el = {
   certificationModeDetail: document.getElementById('certificationModeDetail'),
   startConversationBtn: document.getElementById('startConversationBtn'),
   endCertificationBtn: document.getElementById('endCertificationBtn'),
+  finalizeCertificationBtn: document.getElementById('finalizeCertificationBtn'),
   chatLog: document.getElementById('chatLog'),
   chatForm: document.getElementById('chatForm'),
   chatInput: document.getElementById('chatInput'),
@@ -863,6 +868,7 @@ async function saveRemote() {
         evaluationAttempts: state.progress.evaluationAttempts,
         ladderCertifications,
         certificationValidations,
+        certificationConversations: state.progress.certificationConversations || {},
         standardsReviews: state.progress.standardsReviews || [],
         placement: state.progress.placement,
         assessmentMessages: state.progress.assessmentMessages,
@@ -962,6 +968,7 @@ async function loadRemote(learnerId) {
     state.progress.evaluationAttempts = ladder.evaluationAttempts || [];
     state.progress.ladderCertifications = ladder.ladderCertifications || data.ladderCertifications || [];
     state.progress.certificationValidations = ladder.certificationValidations || data.certificationValidations || data.studentTranscript?.certificationValidations || [];
+    state.progress.certificationConversations = ladder.certificationConversations || data.certificationConversations || {};
     state.progress.standardsReviews = ladder.standardsReviews || data.standardsReviews || data.studentTranscript?.standardsReviews || [];
     state.progress.placement = ladder.placement || null;
     state.progress.assessmentMessages = ladder.assessmentMessages || [];
@@ -1002,6 +1009,7 @@ function loadLocal() {
     state.progress.evaluationAttempts ||= [];
     state.progress.ladderCertifications ||= [];
     state.progress.certificationValidations ||= [];
+    state.progress.certificationConversations ||= {};
     state.progress.standardsReviews ||= [];
     state.progress.placement ||= null;
     state.progress.assessmentMessages ||= [];
@@ -1398,6 +1406,35 @@ Return only this hidden marker, on one line:
 <!--LADDER_CERTIFICATION_VALIDATION:{"valid":true,"learner_valid":true,"examiner_valid":true,"confidence":0.0,"rationale":"one concise reason","learner_evidence":"one concise evidence summary","examiner_review":"one concise process review","concerns":[]}-->
 
 Set valid to true only when learner_valid and examiner_valid are both true. If invalid, set valid false and include concrete concerns. Do not include markdown, prose, or any text outside the marker.`;
+}
+
+function snapshotCertificationConversation() {
+  const context = state.evaluationContext;
+  if (!context?.attemptId) return;
+  state.progress.certificationConversations ||= {};
+  const trimmed = state.messages.map((message) => {
+    const content = String(message?.content ?? '');
+    return {
+      role: message?.role || 'assistant',
+      content: content.length > CERTIFICATION_MESSAGE_MAX_BYTES
+        ? content.slice(0, CERTIFICATION_MESSAGE_MAX_BYTES) + '\n[truncated]'
+        : content
+    };
+  });
+  state.progress.certificationConversations[context.attemptId] = {
+    attemptId: context.attemptId,
+    learnerTierLabel: context.ladderTierLabel,
+    certificationTierLabel: context.certificationTierLabel,
+    testDepthLabel: context.testDepthLabel,
+    blueprintId: context.blueprintId,
+    blueprintVersion: context.blueprintVersion,
+    updatedAt: new Date().toISOString(),
+    messages: trimmed
+  };
+  const entries = Object.entries(state.progress.certificationConversations)
+    .sort((a, b) => String(b[1]?.updatedAt || '').localeCompare(String(a[1]?.updatedAt || '')))
+    .slice(0, CERTIFICATION_CONVERSATION_CAP);
+  state.progress.certificationConversations = Object.fromEntries(entries);
 }
 
 function certificationValidationMessages(context, result, conversationMessages) {
@@ -2475,6 +2512,10 @@ function renderConversationMode() {
   if (el.certificationModeBar) {
     el.certificationModeBar.hidden = !isCertification;
   }
+  if (el.finalizeCertificationBtn) {
+    const userTurns = state.messages.filter((message) => message?.role === 'user').length;
+    el.finalizeCertificationBtn.hidden = !isCertification || userTurns < 2;
+  }
   if (el.certificationModeTitle && context) {
     el.certificationModeTitle.textContent = `${context.certificationTierLabel} ${context.testDepthLabel}`;
   }
@@ -3197,6 +3238,7 @@ async function callGuide() {
       : { certificationResult: null, rubricDimensions: null, ...parseConversationCompletionResponse(rawText) };
     const { certificationResult, rubricDimensions, completion, visibleText } = parsed;
     state.messages.push({ role: 'assistant', content: visibleText });
+    if (state.evaluationContext) snapshotCertificationConversation();
     renderChat();
     if (certificationResult) {
       await recordCertificationResult(certificationResult);
@@ -3337,6 +3379,22 @@ async function startVocabularyConversation(event) {
   document.querySelector('.conversation-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+async function finalizeCertification() {
+  if (!state.evaluationContext) return;
+  if (el.finalizeCertificationBtn) el.finalizeCertificationBtn.disabled = true;
+  state.messages.push({
+    role: 'user',
+    content: 'I have given enough evidence. Please make your final determination now: deliver the seven-dimension Rubric Evaluation block, then immediately on the next line emit the exact LADDER_CERTIFICATION_RESULT hidden marker with the proper JSON, and only after that write any closing prose.'
+  });
+  snapshotCertificationConversation();
+  renderChat();
+  try {
+    await callGuide();
+  } finally {
+    if (el.finalizeCertificationBtn) el.finalizeCertificationBtn.disabled = false;
+  }
+}
+
 async function endCertification() {
   const context = state.evaluationContext;
   state.evaluationContext = null;
@@ -3368,6 +3426,7 @@ async function submitChat(event) {
     }
   }
   state.messages.push({ role: 'user', content: value });
+  if (state.evaluationContext) snapshotCertificationConversation();
   el.chatInput.value = '';
   renderChat();
   await callGuide();
@@ -3675,6 +3734,7 @@ function bindEvents() {
   el.startEvaluationBtn?.addEventListener('click', startEvaluation);
   el.startWorkspaceCertificationBtn?.addEventListener('click', startEvaluation);
   el.endCertificationBtn?.addEventListener('click', endCertification);
+  el.finalizeCertificationBtn?.addEventListener('click', finalizeCertification);
 
   el.startPlacementBtn.addEventListener('click', startPlacementAssessment);
   el.togglePlacementBtn.addEventListener('click', async () => {

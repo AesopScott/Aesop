@@ -27,6 +27,11 @@ export const USE_CASES_UI_TRANSLATIONS = {
     theLadder: 'The Ladder',
     products: 'Products',
     useCases: 'Use Cases',
+    // Phase 2 redesign strings (English fallback for other languages pending
+    // the i18n pass — BUILD-PATHWAYS-REDESIGN §6).
+    navTranscripts: 'Transcripts',
+    statusStarted: 'Started',
+    statusCompleted: 'Completed',
     darkMode: 'Dark mode',
     lightMode: 'Light mode',
     studentHub: 'Student Hub',

@@ -20,7 +20,7 @@ import {
   PRODUCTS_LANGUAGES,
   PRODUCTS_UI_TRANSLATIONS,
   productsLanguageLabel
-} from '/theladder-products/products-i18n.js?v=1';
+} from '/theladder-products/products-i18n.js?v=2';
 
 const catalogUrl = '/docs/theladder-products-catalog.md?v=2';
 const storageKey = 'aesop-ladder-products-state-v1';
@@ -192,7 +192,6 @@ const elements = {
   advancedCount: document.querySelector('#advancedCount'),
   educationFocusSelect: document.querySelector('#educationFocusSelect'),
   languageSelect: document.querySelector('#languageSelect'),
-  themeToggle: document.querySelector('#themeToggle'),
   productRequestForm: document.querySelector('#productRequestForm'),
   productRequestMessage: document.querySelector('#productRequestMessage'),
   submitProductRequest: document.querySelector('#submitProductRequest'),
@@ -227,7 +226,6 @@ init();
 
 async function init() {
   restoreLanguage();
-  setupTheme();
   setupLanguageSelect();
   updatePageTranslations();
   renderLoading();
@@ -256,22 +254,8 @@ async function init() {
   }
 }
 
-function setupTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  elements.themeToggle.textContent = isDark ? 'Light mode' : 'Dark mode';
-  elements.themeToggle.addEventListener('click', () => {
-    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    if (nextTheme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('aesop-theme', 'dark');
-      elements.themeToggle.textContent = 'Light mode';
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('aesop-theme', 'light');
-      elements.themeToggle.textContent = 'Dark mode';
-    }
-  });
-}
+// Theme is owned by /theladder/theme.js (Phase 1 switcher) — the old
+// #themeToggle button and its handler were retired in the Phase 2 re-skin.
 
 function setupEducationFocusSelect() {
   if (!elements.educationFocusSelect) return;
@@ -402,17 +386,24 @@ function renderProducts() {
     renderDetail(products[0]);
   }
 
-  elements.productGrid.innerHTML = products.map((product) => `
+  elements.productGrid.innerHTML = products.map((product) => {
+    const started = state.courseStarts[product.id];
+    const statusPill = started
+      ? `<span class="pill ${started.status === 'completed' ? 'pill-certified' : 'pill-progress'}">${escapeHtml(started.status === 'completed' ? t('statusCompleted') : t('statusStarted'))}</span>`
+      : '';
+    return `
     <button class="product-card${product.id === state.selectedId ? ' active' : ''}" type="button" data-product-id="${product.id}">
       <div class="card-top">
         <span class="product-number">#${product.id}</span>
         <span class="depth-pill">${escapeHtml(product.depth)}</span>
+        ${statusPill}
       </div>
       <h3>${escapeHtml(product.name)}</h3>
       <p class="product-type">${escapeHtml(product.type)}</p>
       <p class="product-reason">${escapeHtml(product.reason)}</p>
     </button>
-  `).join('');
+  `;
+  }).join('');
 
   elements.productGrid.querySelectorAll('.product-card').forEach((card) => {
     card.addEventListener('click', () => {
@@ -1178,7 +1169,7 @@ function closeIdentityGate() {
 }
 
 function renderIdentityGate() {
-  if (!elements.identityGate || !state.pendingCert || !state.identityGateBody) return;
+  if (!elements.identityGate || !state.pendingCert || !elements.identityGateBody) return;
   const { product, depth, level } = state.pendingCert;
   const gate = state.identityGate;
   const account = state.authUser;

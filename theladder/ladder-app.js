@@ -722,8 +722,11 @@ async function loadRemote(learnerId) {
 
     const data = snap.data();
     console.log('[loadRemote] Loaded document for', learnerId);
+    console.log('[loadRemote] Full data:', data);
     console.log('[loadRemote] Has ladderProgress?', !!data.ladderProgress);
-    console.log('[loadRemote] Certs count:', data.ladderProgress?.ladderCertifications?.length || 0);
+    console.log('[loadRemote] ladderProgress:', data.ladderProgress);
+    console.log('[loadRemote] Certs from ladder:', data.ladderProgress?.ladderCertifications?.length || 0);
+    console.log('[loadRemote] Certs from data:', data.ladderCertifications?.length || 0);
 
     if (!data.ladderProgress) return;
     const ladder = data.ladderProgress;

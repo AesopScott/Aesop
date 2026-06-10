@@ -75,6 +75,28 @@ td small { color: var(--muted); display: block; margin-top: 0.18rem; }
   .stats { grid-template-columns: 1fr 1fr; }
   .toolbar input, .toolbar select { flex: 1 1 100%; }
 }
+.row-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.row-actions button { font-size: 0.78rem; min-height: 30px; padding: 0.32rem 0.55rem; }
+.row-actions button.bad { background: rgba(239, 68, 68, 0.12); color: #fecaca; border: 1px solid rgba(239, 68, 68, 0.4); }
+.row-actions button.info { background: rgba(56, 189, 248, 0.12); color: var(--blue); border: 1px solid rgba(56, 189, 248, 0.4); }
+.modal-overlay { align-items: center; background: rgba(8, 12, 22, 0.78); display: none; inset: 0; justify-content: center; padding: 1rem; position: fixed; z-index: 30; overflow: auto; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; max-width: 720px; padding: 1.25rem 1.5rem; width: 100%; max-height: calc(100vh - 2rem); overflow: auto; }
+.modal h2 { font-size: 1.15rem; margin: 0 0 0.5rem; }
+.modal .modal-sub { color: var(--muted); font-size: 0.85rem; margin: 0 0 1rem; }
+.modal label { color: var(--muted); display: block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; margin: 0.85rem 0 0.3rem; text-transform: uppercase; }
+.modal input, .modal select, .modal textarea { background: #0b1220; border: 1px solid var(--line); border-radius: 7px; color: var(--text); font: inherit; padding: 0.55rem 0.7rem; width: 100%; }
+.modal textarea { min-height: 90px; resize: vertical; }
+.modal .modal-row { display: grid; gap: 0.75rem; grid-template-columns: 1fr 1fr; }
+.modal .modal-row.three { grid-template-columns: repeat(3, 1fr); }
+.modal-banner { border-radius: 8px; margin: 1rem 0; padding: 0.75rem 0.9rem; font-size: 0.9rem; }
+.modal-banner.good { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.4); color: #bbf7d0; }
+.modal-banner.bad { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); color: #fecaca; }
+.modal-banner.warn { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fde68a; }
+.modal-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.modal pre.transcript { background: #0b1220; border: 1px solid var(--line); border-radius: 7px; color: var(--text); font-size: 0.82rem; line-height: 1.5; margin: 0; max-height: 320px; overflow: auto; padding: 0.85rem; white-space: pre-wrap; }
+.modal pre.json { background: #0b1220; border: 1px solid var(--line); border-radius: 7px; color: #e2e8f0; font-size: 0.78rem; line-height: 1.45; margin: 0.4rem 0 0; max-height: 200px; overflow: auto; padding: 0.75rem; white-space: pre; }
+.muted-note { color: var(--muted); font-size: 0.82rem; margin: 0.4rem 0 0; }
 </style>
 </head>
 <body>
@@ -120,6 +142,7 @@ td small { color: var(--muted); display: block; margin-top: 0.18rem; }
     <button class="tab" type="button" data-view="courses">Completed courses</button>
     <button class="tab" type="button" data-view="certifications">Certification attempts</button>
     <button class="tab" type="button" data-view="cert-stats">Certification stats</button>
+    <button class="tab" type="button" data-view="award">Award credential</button>
   </div>
 
   <main>
@@ -141,15 +164,55 @@ td small { color: var(--muted); display: block; margin-top: 0.18rem; }
       </div>
     </section>
   </main>
+
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
+    <div class="modal" id="modalBody"></div>
+  </div>
 </div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, getDocs, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
+import { LADDER_TIERS } from '/theladder/ladder-data.js?v=2';
 
 const ADMIN_EMAILS = ['scott@aesopacademy.org'];
+
+const PROXY_URL = '/aesop-api/proxy.php';
+const CERTIFICATION_VALIDATOR_MODEL = 'claude-sonnet-4-5-20250929';
+const CERTIFICATION_RESULT_REGEX = /<!--LADDER_CERTIFICATION_RESULT:([\s\S]*?)-->/;
+const CERTIFICATION_VALIDATION_REGEX = /<!--LADDER_CERTIFICATION_VALIDATION:([\s\S]*?)-->/;
+
+// Mirror the live theladder model. Education tiers + professional roles share
+// a single dropdown (matches renderEvaluationPanel in ladder-app.js).
+const EDUCATION_TIERS = [
+  { id: 'elementary', label: 'Elementary', standards: 'AI4K12, ISTE, UNESCO' },
+  { id: 'middle-school', label: 'Middle School', standards: 'AI4K12, ISTE, CSTA, UNESCO' },
+  { id: 'high-school', label: 'High School', standards: 'AI4K12, ISTE, CSTA, UNESCO' }
+];
+const PROFESSIONAL_ROLES = [
+  { id: 'ai-developer', label: 'AI Developer', source: 'O*NET 15-1255+', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'machine-learning-engineer', label: 'Machine Learning Engineer', source: 'O*NET 15-1255+', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'data-scientist', label: 'Data Scientist', source: 'O*NET 15-2051.00', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'ai-operations-engineer', label: 'AI Operations Engineer', source: 'WEF Future of Jobs 2025', standards: 'WEF, NIST AI RMF, ISO/IEC 42001' },
+  { id: 'ai-product-manager', label: 'AI Product Manager', source: 'WEF Future of Jobs 2025', standards: 'WEF, O*NET Product Management' },
+  { id: 'ai-educator', label: 'AI Educator', source: 'O*NET 25-1021.00', standards: 'O*NET, UNESCO, ISTE' },
+  { id: 'ai-security-specialist', label: 'AI Security Specialist', source: 'O*NET 15-3121.00', standards: 'O*NET, NIST AI RMF, OWASP' },
+  { id: 'ai-governance-officer', label: 'AI Governance Officer', source: 'WEF Future of Jobs 2025', standards: 'WEF, NIST AI RMF, EU AI Act' },
+  { id: 'ai-consultant', label: 'AI Consultant', source: 'O*NET 13-1111.00', standards: 'O*NET, WEF, NIST AI RMF' },
+  { id: 'executive-leadership', label: 'Executive Leadership', source: 'WEF, NIST AI RMF', standards: 'WEF, NIST AI RMF, EU AI Act' }
+];
+const TEST_DEPTHS = [
+  { id: 'core', label: 'CORE', evidence: 'clear foundational competency in the selected function' },
+  { id: 'certification', label: 'Certification', evidence: 'clear competency evidence for professional role and function' },
+  { id: 'expert-certification', label: 'Expert Certification', evidence: 'strong transfer, edge-case reasoning, and defensible tradeoff analysis' },
+  { id: 'master-certification', label: 'Master Certification', evidence: 'original synthesis, portfolio-grade artifact, standards mapping, and leadership-level defense' }
+];
+const CERTIFICATION_TIER_LOOKUP = new Map([
+  ...EDUCATION_TIERS.map((t) => [t.id, { ...t, kind: 'education' }]),
+  ...PROFESSIONAL_ROLES.map((r) => [r.id, { ...r, kind: 'role' }])
+]);
 const app = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -273,9 +336,11 @@ function certificationRowsFor(learner) {
   const attempts = Array.isArray(ladder.evaluationAttempts) ? ladder.evaluationAttempts : [];
   const credentials = data.ladderCertifications || data.studentTranscript?.ladderCertifications || ladder.ladderCertifications || [];
   const credentialByAttempt = new Map(credentials.map((cert) => [String(cert.id || '').split(':').pop(), cert]));
+  const conversations = ladder.certificationConversations || data.certificationConversations || {};
   return attempts.map((attempt) => {
     const credential = credentialByAttempt.get(attempt.attemptId) || null;
     const validation = attempt.validation || credential?.validation || null;
+    const transcript = conversations?.[attempt.attemptId];
     return {
       learnerId: learner.id,
       attemptId: attempt.attemptId || '',
@@ -291,6 +356,7 @@ function certificationRowsFor(learner) {
       validator: validation?.reviewerModel || '',
       rationale: validation?.rationale || attempt.rationale || '',
       credentialed: Boolean(credential),
+      hasStoredTranscript: Array.isArray(transcript?.messages) && transcript.messages.length > 0,
       transcriptUrl: `/student-transcript-live.html?id=${encodeURIComponent(learner.id)}`
     };
   });
@@ -365,7 +431,7 @@ function courseTable(items) {
 }
 
 function certificationTable(items) {
-  return `<table><thead><tr><th>Learner</th><th>Status</th><th>Target</th><th>Depth</th><th>Started</th><th>Completed</th><th>Score</th><th>Validation</th><th>Rationale</th></tr></thead><tbody>
+  return `<table><thead><tr><th>Learner</th><th>Status</th><th>Target</th><th>Depth</th><th>Started</th><th>Completed</th><th>Score</th><th>Validation</th><th>Rationale</th><th>Actions</th></tr></thead><tbody>
     ${items.map((row) => `<tr>
       <td><a href="${esc(row.transcriptUrl)}">${esc(row.learnerId)}</a><small>${esc(row.attemptId)}</small></td>
       <td>${statusPill(row.status)}${row.credentialed ? '<small>Credential recorded</small>' : ''}</td>
@@ -376,8 +442,21 @@ function certificationTable(items) {
       <td>${esc(row.score || '-')}</td>
       <td>${row.validationStatus ? statusPill(row.validationStatus) : '-'}<small>${esc(row.validator || '')}</small></td>
       <td class="details">${esc(row.rationale || '-')}</td>
+      <td>${certificationRowActions(row)}</td>
     </tr>`).join('')}
   </tbody></table>`;
+}
+
+function certificationRowActions(row) {
+  const credentialed = Boolean(row.credentialed);
+  const statusLower = String(row.status || '').toLowerCase();
+  const isOpen = ['started', 'validation_pending'].includes(statusLower);
+  const canRevalidate = !credentialed && row.hasStoredTranscript;
+  return `<div class="row-actions">
+    ${!credentialed ? `<button class="info" type="button" data-action="revalidate" data-learner="${esc(row.learnerId)}" data-attempt="${esc(row.attemptId)}" ${canRevalidate ? '' : 'disabled title="No stored transcript for this attempt"'}>Re-validate</button>` : ''}
+    ${!credentialed ? `<button type="button" data-action="award" data-learner="${esc(row.learnerId)}" data-attempt="${esc(row.attemptId)}">Award</button>` : ''}
+    ${isOpen ? `<button class="bad" type="button" data-action="cancel" data-learner="${esc(row.learnerId)}" data-attempt="${esc(row.attemptId)}">Cancel</button>` : ''}
+  </div>`;
 }
 
 function computeCertificationStats() {
@@ -483,13 +562,20 @@ function render() {
     assessments: 'Assessment Activity',
     courses: 'Completed Course Records',
     certifications: 'Certification Attempts',
-    'cert-stats': 'Certification Statistics'
+    'cert-stats': 'Certification Statistics',
+    award: 'Award Credential'
   };
   el.viewTitle.textContent = titles[activeView];
 
   if (activeView === 'cert-stats') {
     el.viewMeta.textContent = '';
     el.tableWrap.innerHTML = certificationStatsTable();
+    return;
+  }
+  if (activeView === 'award') {
+    el.viewMeta.textContent = 'Records an admin_override credential. Use per-row Re-validate or Award on the Certification attempts tab for rescuing a specific attempt.';
+    el.tableWrap.innerHTML = awardCredentialView();
+    bindAwardForm();
     return;
   }
 
@@ -504,6 +590,517 @@ function render() {
     : activeView === 'courses'
       ? courseTable(items)
       : certificationTable(items);
+  if (activeView === 'certifications') bindCertificationRowActions();
+}
+
+function awardCredentialView() {
+  const tierOptions = LADDER_TIERS.map((tier) => `<option value="${esc(tier.id)}">${esc(tier.name)} - ${esc(tier.title)}</option>`).join('');
+  const educationOptions = EDUCATION_TIERS.map((t) => `<option value="${esc(t.id)}">${esc(t.label)} - ${esc(t.standards)}</option>`).join('');
+  const roleOptions = PROFESSIONAL_ROLES.map((r) => `<option value="${esc(r.id)}">${esc(r.label)} [${esc(r.source)}]</option>`).join('');
+  const depthOptions = TEST_DEPTHS.map((depth) => `<option value="${esc(depth.id)}">${esc(depth.label)}</option>`).join('');
+  return `<form id="awardForm" style="padding: 1.25rem; display: grid; gap: 0.85rem;">
+    <label for="awardLearner">Learner ID</label>
+    <input id="awardLearner" type="text" placeholder="AESOP-XXXX or learner UUID" required>
+    <div class="modal-row">
+      <div>
+        <label for="awardLadderTier">Ladder tier</label>
+        <select id="awardLadderTier" required>${tierOptions}</select>
+      </div>
+      <div>
+        <label for="awardCertTier">Education tier or Professional role</label>
+        <select id="awardCertTier" required>
+          <optgroup label="Education tiers">${educationOptions}</optgroup>
+          <optgroup label="Professional roles">${roleOptions}</optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div>
+        <label for="awardDepth">Depth / mastery</label>
+        <select id="awardDepth" required>${depthOptions}</select>
+      </div>
+      <div>
+        <label for="awardScore">Score (optional)</label>
+        <input id="awardScore" type="number" min="0" max="100" placeholder="0-100">
+      </div>
+    </div>
+    <label for="awardRationale">Rationale (required — appears in transcript and audit trail)</label>
+    <textarea id="awardRationale" required placeholder="Why is this admin override being recorded? Reference attempt ID if rescuing a stuck attempt."></textarea>
+    <div class="modal-actions">
+      <button type="submit">Award credential</button>
+    </div>
+    <div id="awardResult"></div>
+  </form>`;
+}
+
+// -- Admin write helpers ---------------------------------------------------
+
+function findLearnerById(learnerId) {
+  const lookup = String(learnerId || '').trim();
+  if (!lookup) return null;
+  const upper = lookup.toUpperCase();
+  return learners.find((l) => l.id === upper) || learners.find((l) => String(l.data.learnerId || '').toUpperCase() === upper) || null;
+}
+
+function findAttempt(learner, attemptId) {
+  const attempts = learner?.data?.ladderProgress?.evaluationAttempts || [];
+  return attempts.find((a) => a.attemptId === attemptId) || null;
+}
+
+function findStoredConversation(learner, attemptId) {
+  const conversations = learner?.data?.ladderProgress?.certificationConversations || learner?.data?.certificationConversations || {};
+  return conversations[attemptId] || null;
+}
+
+function adminEmail() {
+  return auth.currentUser?.email || 'admin';
+}
+
+async function writeLearner(learnerId, patch) {
+  const upper = String(learnerId || '').trim();
+  if (!upper) throw new Error('learnerId required');
+  await setDoc(doc(db, 'learners', upper), patch, { merge: true });
+}
+
+function buildLadderTierMeta(ladderTierId) {
+  const idx = LADDER_TIERS.findIndex((t) => t.id === ladderTierId);
+  if (idx === -1) return { id: ladderTierId, label: ladderTierId, order: 0 };
+  const tier = LADDER_TIERS[idx];
+  return { id: tier.id, label: `${tier.name} - ${tier.title}`, order: idx + 1 };
+}
+
+function buildCertTierMeta(certTierId) {
+  return CERTIFICATION_TIER_LOOKUP.get(certTierId) || { ...EDUCATION_TIERS[0], kind: 'education' };
+}
+
+function buildDepthMeta(depthId) {
+  return TEST_DEPTHS.find((d) => d.id === depthId) || TEST_DEPTHS[0];
+}
+
+function buildAdminCredential({ learnerId, ladderTierId, certTierId, depthId, rationale, score, attemptId, source, validation }) {
+  const tierMeta = buildLadderTierMeta(ladderTierId);
+  const certMeta = buildCertTierMeta(certTierId);
+  const depthMeta = buildDepthMeta(depthId);
+  const earnedAt = new Date().toISOString();
+  const credentialAttemptId = attemptId || `admin_${Date.now()}`;
+  const blueprintId = `${certMeta.id}:${tierMeta.id}:${depthMeta.id}`;
+  return {
+    id: `${blueprintId}:${credentialAttemptId}`,
+    source: source || 'admin_override',
+    status: 'certified',
+    evidence: source === 'ai_exam_revalidated' ? 'verified' : 'admin_override',
+    depthId: depthMeta.id,
+    depthLabel: depthMeta.label,
+    certificationTierId: certMeta.id,
+    certificationTierLabel: certMeta.label,
+    ladderTierId: tierMeta.id,
+    ladderTierLabel: tierMeta.label,
+    tierOrder: tierMeta.order,
+    title: `${tierMeta.label} - ${depthMeta.label}`,
+    earnedAt,
+    score: score === undefined || score === '' ? null : Number(score),
+    rationale: rationale || 'Admin-recorded credential.',
+    standards: certMeta.standards,
+    blueprintId,
+    blueprintVersion: 'v0.1',
+    identityAssurance: null,
+    validation: validation || {
+      id: `validation:${credentialAttemptId}`,
+      attemptId: credentialAttemptId,
+      valid: true,
+      reviewerType: 'admin',
+      reviewerModel: 'admin_override',
+      reviewedAt: earnedAt,
+      rationale: rationale || 'Admin override',
+      adminEmail: adminEmail()
+    },
+    validationStatus: 'valid',
+    adminAttribution: { email: adminEmail(), at: earnedAt, action: source || 'admin_override' },
+    transcriptLine: source === 'ai_exam_revalidated'
+      ? `${tierMeta.label} - ${certMeta.label} ${depthMeta.label}. Independent validation confirmed learner evidence and examiner process (post-hoc revalidation by ${adminEmail()}).`
+      : `${tierMeta.label} - ${certMeta.label} ${depthMeta.label}. Recorded by admin override (${adminEmail()}): ${rationale || ''}`
+  };
+}
+
+async function applyAdminCredential(learner, credential, attemptUpdates) {
+  const data = learner.data || {};
+  const ladder = data.ladderProgress || {};
+  const existingCerts = data.ladderCertifications || ladder.ladderCertifications || [];
+  const filtered = existingCerts.filter((c) => c.id !== credential.id);
+  const ladderCertifications = [credential, ...filtered];
+
+  const attempts = (ladder.evaluationAttempts || []).map((a) => attemptUpdates && a.attemptId === attemptUpdates.attemptId ? { ...a, ...attemptUpdates.patch } : a);
+
+  const transcriptEvent = {
+    eventType: credential.source === 'ai_exam_revalidated' ? 'certification_awarded' : 'certification_admin_override',
+    status: credential.source === 'ai_exam_revalidated' ? 'verified' : 'self_reported',
+    title: credential.title,
+    detail: credential.transcriptLine,
+    tierTitle: credential.ladderTierLabel,
+    timestamp: credential.earnedAt,
+    evidence: credential.evidence,
+    adminEmail: adminEmail()
+  };
+  const transcriptEvents = [transcriptEvent, ...(ladder.transcriptEvents || [])];
+
+  const patch = {
+    ladderCertifications,
+    studentTranscript: {
+      updatedAt: credential.earnedAt,
+      ladderCertifications,
+      standardsReviews: ladder.standardsReviews || [],
+      certificationValidations: ladder.certificationValidations || []
+    },
+    ladderProgress: {
+      ladderCertifications,
+      evaluationAttempts: attempts,
+      transcriptEvents
+    }
+  };
+  await writeLearner(learner.id, patch);
+}
+
+async function applyAttemptStatusChange(learner, attemptId, patch, transcriptEvent) {
+  const ladder = learner.data?.ladderProgress || {};
+  const attempts = (ladder.evaluationAttempts || []).map((a) => a.attemptId === attemptId ? { ...a, ...patch } : a);
+  const transcriptEvents = transcriptEvent ? [transcriptEvent, ...(ladder.transcriptEvents || [])] : (ladder.transcriptEvents || []);
+  await writeLearner(learner.id, {
+    ladderProgress: { evaluationAttempts: attempts, transcriptEvents }
+  });
+}
+
+// -- Modal infrastructure --------------------------------------------------
+
+function openModal(html) {
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.getElementById('modalBody').innerHTML = '';
+}
+
+function attemptSummary(attempt) {
+  return `<dl style="display:grid; gap:0.35rem 1rem; grid-template-columns: auto 1fr; margin:0;">
+    <dt class="muted">Attempt</dt><dd>${esc(attempt.attemptId)}</dd>
+    <dt class="muted">Target</dt><dd>${esc(attempt.ladderTierLabel || '-')}</dd>
+    <dt class="muted">Tier / Depth</dt><dd>${esc(attempt.certificationTierLabel || '-')} - ${esc(attempt.testDepthLabel || '-')}</dd>
+    <dt class="muted">Status</dt><dd>${esc(attempt.status || '-')}</dd>
+    <dt class="muted">Started</dt><dd>${esc(fmtDate(attempt.startedAt))}</dd>
+  </dl>`;
+}
+
+// -- B + per-row Award action ----------------------------------------------
+
+function openAwardForAttempt(learner, attempt) {
+  openModal(`<h2>Award credential for this attempt</h2>
+    <p class="modal-sub">Records an admin_override credential against attempt ${esc(attempt.attemptId)}. The original status will be flipped to certified.</p>
+    ${attemptSummary(attempt)}
+    <label for="awardForAttemptRationale">Rationale (required)</label>
+    <textarea id="awardForAttemptRationale" placeholder="Why is this attempt being awarded despite missing the normal validation flow?"></textarea>
+    <label for="awardForAttemptScore">Score override (optional)</label>
+    <input id="awardForAttemptScore" type="number" min="0" max="100" placeholder="0-100">
+    <div id="awardForAttemptResult"></div>
+    <div class="modal-actions">
+      <button class="secondary" type="button" data-modal="close">Cancel</button>
+      <button type="button" id="awardForAttemptSubmit">Award</button>
+    </div>`);
+  document.getElementById('awardForAttemptSubmit').addEventListener('click', async () => {
+    const rationale = document.getElementById('awardForAttemptRationale').value.trim();
+    const score = document.getElementById('awardForAttemptScore').value;
+    if (!rationale) {
+      document.getElementById('awardForAttemptResult').innerHTML = '<div class="modal-banner bad">Rationale is required.</div>';
+      return;
+    }
+    document.getElementById('awardForAttemptSubmit').disabled = true;
+    document.getElementById('awardForAttemptResult').innerHTML = '<div class="modal-banner warn">Writing...</div>';
+    try {
+      const credential = buildAdminCredential({
+        learnerId: learner.id,
+        ladderTierId: attempt.ladderTierId,
+        certTierId: attempt.certificationTierId,
+        depthId: attempt.testDepthId,
+        rationale,
+        score,
+        attemptId: attempt.attemptId,
+        source: 'admin_override'
+      });
+      await applyAdminCredential(learner, credential, {
+        attemptId: attempt.attemptId,
+        patch: { status: 'certified', completedAt: new Date().toISOString(), adminOverrideEmail: adminEmail(), adminOverrideRationale: rationale }
+      });
+      document.getElementById('awardForAttemptResult').innerHTML = '<div class="modal-banner good">Credential recorded. Closing...</div>';
+      setTimeout(async () => { closeModal(); await loadLearners(); }, 800);
+    } catch (error) {
+      document.getElementById('awardForAttemptResult').innerHTML = `<div class="modal-banner bad">${esc(error.message || 'Write failed')}</div>`;
+      document.getElementById('awardForAttemptSubmit').disabled = false;
+    }
+  });
+}
+
+function bindAwardForm() {
+  const form = document.getElementById('awardForm');
+  if (!form) return;
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const learnerId = document.getElementById('awardLearner').value.trim();
+    const ladderTierId = document.getElementById('awardLadderTier').value;
+    const certTierId = document.getElementById('awardCertTier').value;
+    const depthId = document.getElementById('awardDepth').value;
+    const score = document.getElementById('awardScore').value;
+    const rationale = document.getElementById('awardRationale').value.trim();
+    const result = document.getElementById('awardResult');
+    if (!rationale) {
+      result.innerHTML = '<div class="modal-banner bad">Rationale is required.</div>';
+      return;
+    }
+    const learner = findLearnerById(learnerId);
+    if (!learner) {
+      result.innerHTML = `<div class="modal-banner bad">No learner record found for "${esc(learnerId)}". Confirm the ID and try again.</div>`;
+      return;
+    }
+    result.innerHTML = '<div class="modal-banner warn">Writing...</div>';
+    try {
+      const credential = buildAdminCredential({ learnerId: learner.id, ladderTierId, certTierId, depthId, rationale, score, source: 'admin_override' });
+      await applyAdminCredential(learner, credential, null);
+      result.innerHTML = `<div class="modal-banner good">Credential recorded for ${esc(learner.id)} - ${esc(credential.title)}.</div>`;
+      await loadLearners();
+    } catch (error) {
+      result.innerHTML = `<div class="modal-banner bad">${esc(error.message || 'Write failed')}</div>`;
+    }
+  });
+}
+
+// -- C: Re-validate from transcript ----------------------------------------
+
+function buildValidatorSystemPrompt() {
+  return `You are the independent Ladder certification validator for AESOP AI Academy. You are not the examiner. You are a second model reviewing whether a certification conversation is valid before any credential is recorded. Validate BOTH sides: learner gave enough relevant evidence; examiner asked fair, scoped, evidence-seeking questions and did not invent evidence. Reject if too short, leading, off-topic, missing evidence, or unsupported. Return only this hidden marker on one line: <!--LADDER_CERTIFICATION_VALIDATION:{"valid":true,"learner_valid":true,"examiner_valid":true,"confidence":0.0,"rationale":"one concise reason","learner_evidence":"one concise evidence summary","examiner_review":"one concise process review","concerns":[]}-->. Set valid true only if both sides are true. Do not include markdown, prose, or any text outside the marker.`;
+}
+
+function buildValidatorUserMessage(context, syntheticResult, messages) {
+  const transcript = messages.map((m, i) => `${i + 1}. ${String(m.role).toUpperCase()}: ${m.content}`).join('\n\n');
+  return `Validate this Ladder certification conversation.\n\nCertification context:\n${JSON.stringify(context, null, 2)}\n\nProposed examiner result:\n${JSON.stringify(syntheticResult, null, 2)}\n\nConversation transcript:\n${transcript}`;
+}
+
+async function runValidatorCall(context, syntheticResult, messages) {
+  const response = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: CERTIFICATION_VALIDATOR_MODEL,
+      messages: [{ role: 'user', content: buildValidatorUserMessage(context, syntheticResult, messages) }],
+      system_prompt: buildValidatorSystemPrompt(),
+      max_tokens: 700
+    })
+  });
+  const data = await response.json();
+  const raw = data?.content?.[0]?.text || '';
+  const match = raw.match(CERTIFICATION_VALIDATION_REGEX);
+  if (!response.ok || !match) {
+    return { valid: false, learner_valid: false, examiner_valid: false, rationale: data?.error || 'Validator did not return a marker.', concerns: ['Validator unreachable or marker missing'] };
+  }
+  try {
+    return JSON.parse(match[1]);
+  } catch (error) {
+    return { valid: false, learner_valid: false, examiner_valid: false, rationale: 'Validator returned unparseable JSON.', concerns: [String(error?.message || 'parse error')] };
+  }
+}
+
+function parseExaminerDetermination(messages) {
+  const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+  if (!lastAssistant) return null;
+  const text = lastAssistant.content || '';
+  const markerMatch = text.match(CERTIFICATION_RESULT_REGEX);
+  if (markerMatch) {
+    try { return JSON.parse(markerMatch[1]); } catch (_) {}
+  }
+  // Look for rubric block
+  const rubricIdx = text.indexOf('Rubric Evaluation');
+  if (rubricIdx === -1) return null;
+  const tail = text.slice(rubricIdx);
+  const passCount = (tail.match(/:\s*PASS\b/gi) || []).length;
+  const failCount = (tail.match(/:\s*FAIL\b/gi) || []).length;
+  const looksCertified = passCount >= 5 && failCount <= 2;
+  return {
+    result: looksCertified ? 'certified' : 'not_certified',
+    score: looksCertified ? Math.min(95, 70 + passCount * 3) : Math.max(40, 70 - failCount * 8),
+    rationale: `Auto-parsed from examiner's last message: ${passCount} PASS, ${failCount} FAIL across rubric dimensions.`,
+    evidenceSummary: 'Parsed from rubric block in examiner transcript.'
+  };
+}
+
+function openRevalidateForAttempt(learner, attempt) {
+  const conversation = findStoredConversation(learner, attempt.attemptId);
+  if (!conversation || !Array.isArray(conversation.messages) || !conversation.messages.length) {
+    openModal(`<h2>Re-validate not possible</h2>
+      <p class="modal-sub">No stored transcript on this learner record for attempt ${esc(attempt.attemptId)}. Re-validation requires the conversation transcript to have been persisted.</p>
+      <div class="modal-actions"><button type="button" data-modal="close">OK</button></div>`);
+    return;
+  }
+  const parsed = parseExaminerDetermination(conversation.messages) || { result: 'certified', score: 80, rationale: '', evidenceSummary: '' };
+  const transcriptText = conversation.messages.map((m) => `${String(m.role).toUpperCase()}: ${m.content}`).join('\n\n');
+  openModal(`<h2>Re-validate from stored transcript</h2>
+    <p class="modal-sub">Calls the independent second-model validator (${esc(CERTIFICATION_VALIDATOR_MODEL)}) against the saved conversation. On a clean pass this records a real ai_exam_revalidated credential.</p>
+    ${attemptSummary(attempt)}
+    <label>Stored transcript (${conversation.messages.length} messages, last updated ${esc(fmtDate(conversation.updatedAt))})</label>
+    <pre class="transcript">${esc(transcriptText)}</pre>
+    <label for="revalResult">Proposed result</label>
+    <select id="revalResult">
+      <option value="certified" ${parsed.result === 'certified' ? 'selected' : ''}>certified</option>
+      <option value="not_certified" ${parsed.result !== 'certified' ? 'selected' : ''}>not_certified</option>
+    </select>
+    <label for="revalScore">Score</label>
+    <input id="revalScore" type="number" min="0" max="100" value="${esc(parsed.score)}">
+    <label for="revalRationale">Rationale (sent to validator)</label>
+    <textarea id="revalRationale">${esc(parsed.rationale || '')}</textarea>
+    <label for="revalEvidence">Evidence summary (sent to validator)</label>
+    <textarea id="revalEvidence">${esc(parsed.evidenceSummary || '')}</textarea>
+    <div id="revalOutcome"></div>
+    <div class="modal-actions">
+      <button class="secondary" type="button" data-modal="close">Cancel</button>
+      <button type="button" id="revalRun">Run independent validator</button>
+    </div>`);
+  document.getElementById('revalRun').addEventListener('click', async () => {
+    const outcome = document.getElementById('revalOutcome');
+    const btn = document.getElementById('revalRun');
+    btn.disabled = true;
+    outcome.innerHTML = '<div class="modal-banner warn">Calling validator...</div>';
+    const syntheticResult = {
+      result: document.getElementById('revalResult').value,
+      score: Number(document.getElementById('revalScore').value) || 0,
+      rationale: document.getElementById('revalRationale').value.trim(),
+      evidenceSummary: document.getElementById('revalEvidence').value.trim()
+    };
+    const context = {
+      attemptId: attempt.attemptId,
+      blueprintId: attempt.blueprintId,
+      blueprintVersion: attempt.blueprintVersion,
+      ladderTierId: attempt.ladderTierId,
+      ladderTierLabel: attempt.ladderTierLabel,
+      certificationTierId: attempt.certificationTierId,
+      certificationTierLabel: attempt.certificationTierLabel,
+      testDepthId: attempt.testDepthId,
+      testDepthLabel: attempt.testDepthLabel,
+      standards: attempt.standards
+    };
+    const validation = await runValidatorCall(context, syntheticResult, conversation.messages);
+    const valid = validation.valid === true && validation.learner_valid === true && validation.examiner_valid === true;
+    const isCert = syntheticResult.result === 'certified';
+    const banner = valid && isCert ? 'good' : (valid && !isCert ? 'warn' : 'bad');
+    const concernsHtml = Array.isArray(validation.concerns) && validation.concerns.length
+      ? `<ul>${validation.concerns.map((c) => `<li>${esc(typeof c === 'string' ? c : JSON.stringify(c))}</li>`).join('')}</ul>` : '';
+    outcome.innerHTML = `<div class="modal-banner ${banner}">
+      <strong>${valid ? 'Validation passed' : 'Validation failed'}</strong>
+      <div>${esc(validation.rationale || '')}</div>
+      ${concernsHtml}
+    </div>
+    <pre class="json">${esc(JSON.stringify(validation, null, 2))}</pre>
+    <div class="modal-actions">
+      ${valid && isCert ? '<button type="button" id="revalRecord">Record ai_exam_revalidated credential</button>' : ''}
+      ${valid && !isCert ? '<button type="button" id="revalRecordNotAwarded">Record not-certified outcome</button>' : ''}
+      ${!valid ? '<button type="button" id="revalForceOverride">Force-award as admin override anyway</button>' : ''}
+      <button class="secondary" type="button" data-modal="close">Close</button>
+    </div>`;
+    btn.disabled = false;
+    document.getElementById('revalRecord')?.addEventListener('click', async () => {
+      const credential = buildAdminCredential({
+        learnerId: learner.id,
+        ladderTierId: attempt.ladderTierId,
+        certTierId: attempt.certificationTierId,
+        depthId: attempt.testDepthId,
+        rationale: syntheticResult.rationale || 'Re-validated by admin against stored transcript.',
+        score: syntheticResult.score,
+        attemptId: attempt.attemptId,
+        source: 'ai_exam_revalidated',
+        validation: {
+          ...validation,
+          id: `validation:${attempt.attemptId}`,
+          attemptId: attempt.attemptId,
+          reviewerType: 'second_model',
+          reviewerModel: CERTIFICATION_VALIDATOR_MODEL,
+          reviewedAt: new Date().toISOString(),
+          revalidated: true,
+          revalidatedBy: adminEmail()
+        }
+      });
+      await applyAdminCredential(learner, credential, { attemptId: attempt.attemptId, patch: { status: 'certified', validationStatus: 'valid', completedAt: new Date().toISOString() } });
+      closeModal(); await loadLearners();
+    });
+    document.getElementById('revalRecordNotAwarded')?.addEventListener('click', async () => {
+      await applyAttemptStatusChange(learner, attempt.attemptId, { status: 'not_certified', validationStatus: 'valid', completedAt: new Date().toISOString(), rationale: syntheticResult.rationale }, {
+        eventType: 'certification_not_awarded',
+        status: 'self_reported',
+        title: `${attempt.certificationTierLabel} ${attempt.testDepthLabel}`,
+        detail: `Re-validated by admin. ${syntheticResult.rationale || ''}`,
+        timestamp: new Date().toISOString(),
+        evidence: 'ai_exam_validated',
+        adminEmail: adminEmail()
+      });
+      closeModal(); await loadLearners();
+    });
+    document.getElementById('revalForceOverride')?.addEventListener('click', () => {
+      closeModal();
+      openAwardForAttempt(learner, attempt);
+    });
+  });
+}
+
+// -- D: Cancel stale attempt ----------------------------------------------
+
+function openCancelForAttempt(learner, attempt) {
+  openModal(`<h2>Cancel this attempt</h2>
+    <p class="modal-sub">Flips the attempt's status to cancelled with an admin note. The original record is preserved.</p>
+    ${attemptSummary(attempt)}
+    <label for="cancelReason">Reason (visible in transcript)</label>
+    <textarea id="cancelReason" placeholder="Why is this attempt being cancelled?"></textarea>
+    <div id="cancelResult"></div>
+    <div class="modal-actions">
+      <button class="secondary" type="button" data-modal="close">Keep</button>
+      <button class="bad" type="button" id="cancelConfirm">Cancel attempt</button>
+    </div>`);
+  document.getElementById('cancelConfirm').addEventListener('click', async () => {
+    const reason = document.getElementById('cancelReason').value.trim() || 'No reason provided.';
+    document.getElementById('cancelConfirm').disabled = true;
+    document.getElementById('cancelResult').innerHTML = '<div class="modal-banner warn">Writing...</div>';
+    try {
+      await applyAttemptStatusChange(learner, attempt.attemptId, {
+        status: 'cancelled',
+        adminCancelledBy: adminEmail(),
+        adminCancelledAt: new Date().toISOString(),
+        adminCancelReason: reason
+      }, {
+        eventType: 'certification_cancelled',
+        status: 'self_reported',
+        title: `${attempt.certificationTierLabel} ${attempt.testDepthLabel}`,
+        detail: `Cancelled by ${adminEmail()}: ${reason}`,
+        timestamp: new Date().toISOString(),
+        evidence: 'admin_cancel',
+        adminEmail: adminEmail()
+      });
+      document.getElementById('cancelResult').innerHTML = '<div class="modal-banner good">Cancelled. Closing...</div>';
+      setTimeout(async () => { closeModal(); await loadLearners(); }, 600);
+    } catch (error) {
+      document.getElementById('cancelResult').innerHTML = `<div class="modal-banner bad">${esc(error.message || 'Write failed')}</div>`;
+      document.getElementById('cancelConfirm').disabled = false;
+    }
+  });
+}
+
+function bindCertificationRowActions() {
+  el.tableWrap.querySelectorAll('button[data-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.action;
+      const learnerId = button.dataset.learner;
+      const attemptId = button.dataset.attempt;
+      const learner = findLearnerById(learnerId);
+      if (!learner) return;
+      const attempt = findAttempt(learner, attemptId);
+      if (!attempt) return;
+      if (action === 'award') openAwardForAttempt(learner, attempt);
+      if (action === 'revalidate') openRevalidateForAttempt(learner, attempt);
+      if (action === 'cancel') openCancelForAttempt(learner, attempt);
+    });
+  });
 }
 
 async function loadLearners() {
@@ -589,6 +1186,13 @@ document.querySelectorAll('.tab').forEach((button) => {
     activeView = button.dataset.view;
     render();
   });
+});
+document.getElementById('modalOverlay').addEventListener('click', (event) => {
+  if (event.target.id === 'modalOverlay') closeModal();
+  if (event.target.dataset?.modal === 'close') closeModal();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.getElementById('modalOverlay').classList.contains('open')) closeModal();
 });
 </script>
 </body>

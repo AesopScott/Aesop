@@ -2912,6 +2912,7 @@ function buildCertificationResult(evaluation, rubricDimensions, overallResult) {
     overallScore: overallResult.score || 0,
     overallRationale: overallResult.rationale || '',
     evidenceSummary: overallResult.evidenceSummary || '',
+    evidenceStatus: 'ai_verified',
     rubricDimensions: rubricDimensions,
     educationTier: state.educationTierId,
     learnerId: state.learnerId || 'anonymous'

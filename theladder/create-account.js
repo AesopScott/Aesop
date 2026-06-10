@@ -7,7 +7,6 @@ import {
   EmailAuthProvider, linkWithCredential, updatePassword
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
-import { initDataLayer, loadLearnerRecord } from '/theladder-shared/data-layer.js';
 
 const auth = getAuth(initializeApp(FIREBASE_CONFIG));
 const LS_EMAIL = 'aesop-ladder2-emailForSignIn';
@@ -46,10 +45,8 @@ async function completeSignIn(email) {
   try {
     await signInWithEmailLink(auth, email, window.location.href);
     localStorage.removeItem(LS_EMAIL);
-    const uid = auth.currentUser.uid;
-    localStorage.setItem('aesop-learner-id', uid);
-    initDataLayer({ learnerId: uid }).catch(() => {});
-    loadLearnerRecord(uid).catch(() => {});
+    // Bind the learner id; the home page initialises the data layer + record on return.
+    localStorage.setItem('aesop-learner-id', auth.currentUser.uid);
     el('caEmailEcho').textContent = auth.currentUser.email || email;
     hide('caVerifying');
     hide('caNeedEmail');

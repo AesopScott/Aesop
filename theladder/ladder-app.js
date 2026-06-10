@@ -1344,6 +1344,9 @@ async function recordCertificationResult(result) {
   renderTranscript();
   renderProgress();
   showCertificationSuccess(record);
+
+  // Persist to Firestore
+  await persist();
 }
 
 function showRecentCertification() {

@@ -1169,7 +1169,7 @@ function closeIdentityGate() {
 }
 
 function renderIdentityGate() {
-  if (!elements.identityGate || !state.pendingCert || !state.identityGateBody) return;
+  if (!elements.identityGate || !state.pendingCert || !elements.identityGateBody) return;
   const { product, depth, level } = state.pendingCert;
   const gate = state.identityGate;
   const account = state.authUser;

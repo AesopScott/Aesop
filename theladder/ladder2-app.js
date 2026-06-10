@@ -170,6 +170,7 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+const setText = (id, v) => { const e = $(id); if (e) e.textContent = v; };
 const focus = () => FOCUSES[state.focusId];
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -689,15 +690,17 @@ function totalCompleted() { return Object.keys(state.completed).length; }
 function certCount() { return (state._record?.ladderCertifications || []).length; }
 
 function renderMarketing() {
+  // Marketing hero stats/ribbons were removed; these setters are no-ops if the
+  // elements are absent. Kept guarded so the live progress shows if re-added.
   const total = state.groups.reduce((n, g) => n + g.items.length, 0);
-  $('l2StatCourses').textContent = `${Object.keys(state.completed).filter((k) => k.startsWith(`${focus().pathway}:`)).length} / ${total}`;
-  $('l2StatTiers').textContent = String(state.placement?.grantedTierIds?.length || 0);
+  setText('l2StatCourses', `${Object.keys(state.completed).filter((k) => k.startsWith(`${focus().pathway}:`)).length} / ${total}`);
+  setText('l2StatTiers', String(state.placement?.grantedTierIds?.length || 0));
   const certs = state._record?.ladderCertifications || [];
   const byDepth = (d) => certs.filter((c) => (c.testDepth || c.certificationTier || '').toLowerCase().includes(d)).length;
-  $('l2StatCertified').textContent = String(byDepth('cert'));
-  $('l2StatExpert').textContent = String(byDepth('expert'));
-  $('l2StatMastery').textContent = String(byDepth('master'));
-  $('l2HeroCertCount').textContent = String(certs.length);
+  setText('l2StatCertified', String(byDepth('cert')));
+  setText('l2StatExpert', String(byDepth('expert')));
+  setText('l2StatMastery', String(byDepth('master')));
+  setText('l2HeroCertCount', String(certs.length));
 }
 
 function setupProfile() {
@@ -721,11 +724,11 @@ function setupProfile() {
 }
 
 function renderProfile() {
-  $('l2ProfileCertCount').textContent = String(certCount());
+  setText('l2ProfileCertCount', String(certCount()));
   const it = activeItem();
   if (it) {
-    $('l2ActiveCourseTitle').textContent = it.label;
-    $('l2ActiveCourseMeta').textContent = `${focus().label} · ${activeGroup()?.label || ''}`;
+    setText('l2ActiveCourseTitle', it.label);
+    setText('l2ActiveCourseMeta', `${focus().label} · ${activeGroup()?.label || ''}`);
   }
 }
 

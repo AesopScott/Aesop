@@ -3109,8 +3109,8 @@ async function startEvaluation() {
   renderChat();
   renderTranscript();
   await persist();
-  await callGuide();
   document.querySelector('.conversation-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await callGuide();
 }
 
 async function startVocabularyConversation(event) {

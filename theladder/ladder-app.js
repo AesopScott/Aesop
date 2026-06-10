@@ -1346,6 +1346,17 @@ async function recordCertificationResult(result) {
   showCertificationSuccess(record);
 }
 
+function showRecentCertification() {
+  // Find the most recent certification
+  const certs = state.progress.ladderCertifications || [];
+  if (certs.length === 0) {
+    alert('No certifications found.');
+    return;
+  }
+  const recent = certs[certs.length - 1];
+  showCertificationSuccess(recent);
+}
+
 function showCertificationSuccess(record) {
   // Create and show celebration modal
   const modal = document.createElement('div');
@@ -2005,7 +2016,46 @@ function renderHeroProgress(count, total) {
   renderHeroRibbons();
 }
 
+function renderCertificationActions() {
+  const certs = state.progress.ladderCertifications || [];
+  if (certs.length === 0) return;
+
+  const recentCert = certs[certs.length - 1];
+  if (!recentCert.celebrationShown) {
+    const actionDiv = document.createElement('div');
+    actionDiv.style.cssText = `
+      padding: 1rem;
+      background: #f0f8f5;
+      border: 2px solid #4caf82;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      text-align: center;
+    `;
+    actionDiv.innerHTML = `
+      <p style="margin: 0 0 0.75rem; color: #102235; font-weight: 600;">
+        🎓 ${recentCert.title}
+      </p>
+      <button onclick="showRecentCertification()" style="
+        padding: 0.75rem 1.5rem;
+        background: #4caf82;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.95rem;
+      ">Show Celebration & Share</button>
+    `;
+
+    const transcript = document.getElementById('transcript');
+    if (transcript) {
+      transcript.insertAdjacentElement('beforebegin', actionDiv);
+    }
+  }
+}
+
 function renderProgress() {
+  renderCertificationActions();
   const count = completedCount();
   const total = allTopics().length;
   const pct = total ? Math.round((count / total) * 100) : 0;

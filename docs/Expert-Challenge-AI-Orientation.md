@@ -33,8 +33,6 @@ Show your thinking. Don't worry about perfection—I'm listening for whether you
 
 ## Phase 1: Clarification Challenge
 
-You said: "It uses rule based logic via tokens to predict the next word in a sequence."
-
 Here's the tension:
 
 **Rule-based system** typically means:
@@ -71,8 +69,6 @@ Here's the tension:
 
 ## Phase 2: Follow-Up Challenge
 
-You said: "The rule-based credit system uses learned statistical patterns (logistic regression weights learned from data), but it applies those patterns through explicit, deterministic thresholds that a human can read and audit."
-
 **My questions:**
 
 1. Is it **more like traditional AI** (learned patterns) or **more like a database lookup** (deterministic, auditable)?
@@ -85,13 +81,11 @@ You said: "The rule-based credit system uses learned statistical patterns (logis
 
 ## Phase 2: Deeper Probe
 
-You said: "AI is not a mathematical calculation of likelihood but more proximity to next word in a sequence."
-
 **My questions:**
 
 1. Predicting the "next word in a sequence" is a mathematical calculation of likelihood. An LLM computes: P(word_n | word_1, word_2, ... word_n-1). That's a probability distribution over the vocabulary. "Proximity" and "likelihood" are the same thing mathematically. **So what's the real difference you're trying to name?**
 
-2. On the EU AI Act point: You said it cares about "trustworthy, repeatable, traceable." But here's the edge case: An LLM can be repeatable (set temperature=0) and traceable (log the prompt + tokens). **Does that make it compliant with the EU AI Act's definition of "AI system"?**
+2. On the EU AI Act point: Here's the edge case: An LLM can be repeatable (set temperature=0) and traceable (log the prompt + tokens). **Does that make it compliant with the EU AI Act's definition of "AI system"?**
 
 3. Or does the Act care about something else—like **high-risk use cases** (hiring, lending, criminal justice) regardless of whether the system is an LLM or logistic regression? **What's your reading?**
 
@@ -108,8 +102,6 @@ And:
 ---
 
 ## Phase 3: Constraint
-
-You said you could give a list of 20 misconceptions. **Don't give me 20—that tells me you're thinking broadly, which is good. But for this certification, I need you to choose the one that matters most given what we've discussed.**
 
 **Here's your constraint: Pick the misconception that, if a leader believed it, would most directly lead them to make a bad decision about whether and how to deploy AI in their organization.**
 
@@ -152,8 +144,6 @@ A team shows 40% output gain in the first week of AI tool use.
 
 ## Phase 3: Standards & Evidence Challenge
 
-You said: "My source is AI. I don't need to go find a study."
-
 **My questions:**
 
 1. Are you willing to go find **one peer-reviewed study** on psychological/cultural impact of AI in the workforce, read it, and tell me what it actually says (not what AI summarized)?
@@ -165,8 +155,6 @@ Or should we proceed with what we have and I'll give you an honest pass/fail bas
 ---
 
 ## Final Assessment Question
-
-You said: "Everything must be from an audit perspective... you have to demonstrate that you have measured before and after implementation."
 
 **Here's the edge case:**
 

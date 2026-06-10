@@ -2985,7 +2985,9 @@ For Certification, test for competent and defensible use of the tier. For Expert
 
 Do not award a final credential in one short response. Collect evidence first. When you are ready to make a determination, explain pass or non-pass with specific learner evidence, missing evidence, standards implications, selected depth expectations, and a challenge path. If evidence is insufficient, say what would change the decision. If confidence is low, say human review is recommended.
 
-When and only when you make a final determination, provide your rubric evaluation in this exact format:
+When and only when you make a final determination, output in this exact order:
+
+1. First, your rubric evaluation in this exact format:
 
 Rubric Evaluation:
 
@@ -2997,10 +2999,14 @@ Reasoning defense: PASS or FAIL — [one sentence explaining your assessment]
 Risk awareness: PASS or FAIL — [one sentence explaining your assessment]
 Standards alignment: PASS or FAIL — [one sentence explaining your assessment]
 
-Then provide your overall determination and append this exact hidden marker on a new line:
+2. Immediately after the rubric, on its own line, this exact hidden marker. No prose, summary, or determination text may precede it:
 <!--LADDER_CERTIFICATION_RESULT:{"result":"certified","score":NN,"rationale":"one concise evidence-based reason","evidenceSummary":"one concise evidence summary"}-->
 
+3. Then, and only then, write your overall determination and any closing prose.
+
 If the learner has not met the standard, use "result":"not_certified" and include the missing evidence in rationale. Do not mention the marker or JSON to the learner.
+
+You are PROPOSING a result; you are not the system of record. Never tell the learner the result is "certified", "transcripted", "recorded", "saved", or "added to their account" as a completed fact. The AESOP system runs an independent second-model validator after your proposal and will record the credential and notify the learner only if validation passes. Phrase your determination as a proposal under review (for example: "based on the evidence I would recommend certification, pending independent validation").
 ` : '';
   const readinessBlock = readinessCheck && !evaluation ? `
 Active readiness check: YES.
@@ -3181,7 +3187,7 @@ async function callGuide() {
       body: JSON.stringify({
         messages: state.messages,
         system_prompt: systemPromptFor(topic, tier),
-        max_tokens: 700
+        max_tokens: state.evaluationContext ? 2000 : 700
       })
     });
     const data = await response.json();

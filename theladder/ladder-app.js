@@ -1480,6 +1480,8 @@ function scrollAssessment(position) {
 
 function applyPlacement(placement) {
   const now = new Date().toISOString();
+  const attemptId = `assessment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
   state.progress.placement = {
     ...placement,
     certifiedAt: now,
@@ -1489,6 +1491,23 @@ function applyPlacement(placement) {
   state.placementExpanded = false;
   const granted = new Set(placement.grantedTierIds);
   state.progress.ladderCertifications = (state.progress.ladderCertifications || []).filter((record) => record.source !== 'assessment');
+
+  // Track assessment attempt
+  state.progress.evaluationAttempts ||= [];
+  state.progress.evaluationAttempts.unshift({
+    attemptId,
+    certificationTierLabel: 'Assessment',
+    testDepthLabel: 'Placement',
+    ladderTierLabel: 'Placement assessment',
+    status: 'completed',
+    score: Math.round((placement.capabilityScore + placement.technicalScore + placement.governanceScore) / 3) || 0,
+    startedAt: now,
+    completedAt: now,
+    rationale: `Assessment completed: ${placement.reasoning || 'No rationale provided.'}`
+  });
+  // Keep only last 25 attempts
+  state.progress.evaluationAttempts = state.progress.evaluationAttempts.slice(0, 25);
+
   Object.keys(state.progress.completedTopics).forEach((key) => {
     if (state.progress.completedTopics[key]?.status === TRANSCRIPT_STATUS.PLACED_OUT) {
       delete state.progress.completedTopics[key];

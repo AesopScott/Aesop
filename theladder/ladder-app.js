@@ -177,10 +177,77 @@ const PROFESSIONAL_ROLES = [
 - Ability to build and lead high-performing AI teams and partnerships
 - Understanding of societal implications, ethics, and responsible AI at scale
 - Visionary thinking about AI's future and emerging technologies`
+  },
+  {
+    id: 'data-analyst',
+    label: 'Data Analyst',
+    source: 'O*NET 15-2051.01',
+    standards: 'O*NET, WEF, NIST AI RMF',
+    description: 'Analyze business data, produce reports, identify trends and insights',
+    roleSpec: `You are evaluating a Data Analyst candidate. This role requires:
+- Proficiency in SQL, data query languages, and database systems
+- Ability to extract, clean, and analyze business and financial data
+- Knowledge of data visualization tools (Tableau, Power BI, Looker)
+- Understanding of statistical analysis and trend identification
+- Ability to generate periodic reports and dashboards
+- Skills in translating business questions into analytical queries
+- Experience with business intelligence tools and platforms
+- Ability to identify operational problems and recommend data-driven solutions`
+  },
+  {
+    id: 'ai-solutions-architect',
+    label: 'AI Solutions Architect',
+    source: 'O*NET 15-1299.08',
+    standards: 'O*NET, WEF, NIST AI RMF',
+    description: 'Design and architect enterprise AI system solutions',
+    roleSpec: `You are evaluating an AI Solutions Architect candidate. This role requires:
+- Deep understanding of AI/ML system design and architecture patterns
+- Ability to translate business requirements into AI technical designs
+- Knowledge of scalability, security, and reliability in AI systems
+- Experience designing cloud-based AI architectures
+- Understanding of data pipelines, model deployment, and infrastructure
+- Ability to lead architectural design sessions and proof-of-concept development
+- Skills in system integration and technology selection
+- Knowledge of cost optimization and resource efficiency
+- Ability to balance technical feasibility with business requirements`
+  },
+  {
+    id: 'prompt-engineer',
+    label: 'Prompt Engineer',
+    source: 'WEF 2025 (Emerging)',
+    standards: 'WEF Future of Jobs 2025',
+    description: 'Design and optimize prompts for AI models and applications',
+    roleSpec: `You are evaluating a Prompt Engineer candidate. This role requires:
+- Deep understanding of LLM capabilities, limitations, and behavior
+- Expertise in prompt engineering techniques (chain-of-thought, few-shot, etc.)
+- Ability to design effective prompts for various tasks and domains
+- Understanding of prompt injection risks and security implications
+- Skills in testing and iterating prompts for optimal performance
+- Knowledge of different model families and their characteristics
+- Ability to document and version prompt templates and strategies
+- Understanding of fine-tuning vs. prompt optimization tradeoffs
+- Ability to measure prompt effectiveness and ROI`
+  },
+  {
+    id: 'business-analyst-ai',
+    label: 'Business Analyst (AI)',
+    source: 'O*NET 13-1161.00',
+    standards: 'O*NET, WEF, NIST AI RMF',
+    description: 'Identify AI use cases, assess business impact, drive adoption',
+    roleSpec: `You are evaluating a Business Analyst (AI) candidate. This role requires:
+- Understanding of business processes and organizational operations
+- Ability to identify and scope potential AI use cases
+- Knowledge of AI capabilities and limitations in business contexts
+- Skills in requirements gathering and stakeholder management
+- Ability to assess AI project feasibility and ROI
+- Understanding of change management for AI initiatives
+- Knowledge of relevant business metrics and KPIs for AI systems
+- Ability to translate between technical and business stakeholders
+- Experience with workflow mapping and process optimization`
   }
 ];
 
-const ACCOUNT_REQUIRED_ROLES = new Set(['ai-developer', 'machine-learning-engineer', 'data-scientist', 'ai-operations-engineer', 'ai-product-manager', 'ai-educator', 'ai-security-specialist', 'ai-governance-officer', 'ai-consultant', 'executive-leadership']);
+const ACCOUNT_REQUIRED_ROLES = new Set(['ai-developer', 'machine-learning-engineer', 'data-scientist', 'ai-operations-engineer', 'ai-product-manager', 'ai-educator', 'ai-security-specialist', 'ai-governance-officer', 'ai-consultant', 'executive-leadership', 'data-analyst', 'ai-solutions-architect', 'prompt-engineer', 'business-analyst-ai']);
 const CERTIFICATION_TIERS = EDUCATION_TIERS; // Keep for backwards compatibility
 const TEST_DEPTHS = [
   {

@@ -18,6 +18,12 @@ import {
   initDataLayer, loadLearnerRecord, saveLearnerProgress,
   recordCompletion, recordCertification
 } from '/theladder-shared/data-layer.js';
+import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getAuth, onAuthStateChanged, sendSignInLinkToEmail,
+  signInWithEmailAndPassword, signOut as fbSignOut
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
 
 import { LADDER_TIERS } from './ladder-data.js?v=2';
 import * as Concepts from './concepts-ladder.js';
@@ -28,6 +34,11 @@ const PROXY_URL = '/aesop-api/proxy.php';
 const LS_FOCUS = 'aesop-ladder2-focus';
 const LS_FEEDBACK = 'aesop-ladder2-feedback';
 const LS_AUTH = 'aesop-ladder2-auth';
+const LS_EMAIL = 'aesop-ladder2-emailForSignIn';
+
+// Real Firebase auth (email-link sign-up + password sign-in). Set in
+// initFirebaseAuth() after the data layer has created the default app.
+let auth = null;
 
 // Education tiers / roles offered as the certification "level".
 const EDUCATION_TIERS = [
@@ -165,7 +176,7 @@ const state = {
   certMessages: [],
   activeCert: null,            // { item, level, depth, context, blueprint }
   identityGate: { levelId: null, adultAttested: false, identitySigned: false, proctoringId: 'self' },
-  authUser: JSON.parse(localStorage.getItem(LS_AUTH) || 'null'),
+  authUser: null,              // source of truth is Firebase onAuthStateChanged
   completed: {}                // itemId -> true (per focus, keyed focusId:itemId)
 };
 
@@ -207,15 +218,18 @@ async function init() {
   setupTraining();
   setupCertification();
   setupProfile();
+  setupAuth();
 
   initDataLayer().catch((e) => console.warn('data-layer init failed (local-only)', e));
   try {
     const rec = await loadLearnerRecord();
     if (rec) hydrate(rec);
   } catch (e) { console.warn('learner record load failed', e); }
+  initFirebaseAuth();
 
   await activateFocus(state.focusId);
   renderAuthGates();
+  renderHeroSignup();
   renderMarketing();
   renderProfile();
 }
@@ -566,22 +580,99 @@ function renderAuthGates() {
   $('l2AdultAttestLabel').hidden = !adultTier;
 }
 
-function signIn(creating) {
-  const email = $('l2AccountEmail').value.trim();
-  const err = $('l2AccountError');
-  if (!email) { err.hidden = false; err.textContent = 'Enter an email to continue.'; return; }
-  err.hidden = true;
-  state.authUser = { email, uid: `local_${btoa(email).replace(/=/g, '')}`, created: creating };
-  localStorage.setItem(LS_AUTH, JSON.stringify(state.authUser));
-  localStorage.setItem('aesop-learner-id', state.authUser.uid);
-  initDataLayer({ learnerId: state.authUser.uid }).catch(() => {});
+// --- real Firebase auth: email-link sign-up + password sign-in --------------
+function initFirebaseAuth() {
+  try {
+    // Reuse the app the data layer created; never double-init (it would clash).
+    const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG);
+    auth = getAuth(app);
+    onAuthStateChanged(auth, onAuthChange);
+  } catch (e) {
+    console.warn('[ladder2] Firebase auth unavailable', e);
+  }
+}
+
+function onAuthChange(user) {
+  if (user) {
+    state.authUser = { email: user.email, uid: user.uid, emailVerified: user.emailVerified };
+    localStorage.setItem('aesop-learner-id', user.uid);
+    initDataLayer({ learnerId: user.uid }).catch(() => {});
+  } else {
+    state.authUser = null;
+  }
+  localStorage.removeItem(LS_AUTH);   // retire the old local-prototype token
   renderAuthGates();
+  renderHeroSignup();
+}
+
+function setStatus(id, message, kind) {
+  const n = $(id);
+  if (!n) return;
+  n.hidden = !message;
+  n.dataset.state = kind || '';
+  if (kind === 'ok') n.innerHTML = message; else n.textContent = message;
+}
+
+// Send the passwordless verification link; it lands on create-account.html,
+// which finishes sign-in (email verified) and collects a password.
+async function sendVerification(email, statusId) {
+  const clean = String(email || '').trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) {
+    setStatus(statusId, 'Enter a valid email address.', 'error');
+    return;
+  }
+  if (!auth) {
+    setStatus(statusId, 'Sign-up is unavailable right now. Please try again shortly.', 'error');
+    return;
+  }
+  try {
+    const actionCodeSettings = { url: `${location.origin}/theladder/create-account.html`, handleCodeInApp: true };
+    await sendSignInLinkToEmail(auth, clean, actionCodeSettings);
+    localStorage.setItem(LS_EMAIL, clean);
+    setStatus(statusId, `Check <b>${escapeHtml(clean)}</b> for a link to verify your email and finish creating your account.`, 'ok');
+  } catch (e) {
+    setStatus(statusId, `Could not send the link (${e.code || 'error'}). Please try again.`, 'error');
+  }
+}
+
+async function passwordSignIn(email, password, statusId) {
+  if (!auth) return;
+  try {
+    await signInWithEmailAndPassword(auth, String(email).trim(), password);
+    setStatus(statusId, '', '');
+  } catch (e) {
+    setStatus(statusId, 'Sign in failed — check your email and password.', 'error');
+  }
+}
+
+// Certification-gate buttons reuse the same auth: Create -> email link, Sign in -> password.
+function signIn(creating) {
+  if (creating) { sendVerification($('l2AccountEmail')?.value, 'l2AccountError'); return; }
+  passwordSignIn($('l2AccountEmail')?.value, $('l2AccountPassword')?.value, 'l2AccountError');
 }
 
 function signOut() {
-  state.authUser = null;
-  localStorage.removeItem(LS_AUTH);
-  renderAuthGates();
+  if (auth) fbSignOut(auth).catch(() => {});
+}
+
+// Hero sign-up / sign-in form (bottom of the marketing section).
+function setupAuth() {
+  $('l2SignupForm')?.addEventListener('submit', (e) => { e.preventDefault(); sendVerification($('l2SignupEmail')?.value, 'l2SignupMsg'); });
+  $('l2SigninToggle')?.addEventListener('click', (e) => { e.preventDefault(); const f = $('l2SigninForm'); if (f) f.hidden = !f.hidden; });
+  $('l2SigninForm')?.addEventListener('submit', (e) => { e.preventDefault(); passwordSignIn($('l2SigninEmail')?.value, $('l2SigninPw')?.value, 'l2SignupMsg'); });
+  $('l2HeroSignOut')?.addEventListener('click', signOut);
+}
+
+function renderHeroSignup() {
+  const signedIn = Boolean(state.authUser);
+  const form = $('l2SignupForm');
+  if (form) form.hidden = signedIn;
+  const toggle = $('l2SigninToggle');
+  if (toggle) toggle.hidden = signedIn;
+  if (signedIn) { const sf = $('l2SigninForm'); if (sf) sf.hidden = true; }
+  const signedBox = $('l2SignedIn');
+  if (signedBox) signedBox.hidden = !signedIn;
+  if (signedIn) setText('l2SignedInEmail', state.authUser.email || '');
 }
 
 async function startCertification() {

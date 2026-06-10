@@ -7,7 +7,7 @@ import {
   recordCompletion,
   recordCertification
 } from '/theladder-shared/data-layer.js';
-import { USE_CASES_LANGUAGES, USE_CASES_UI_TRANSLATIONS } from '/theladder-use-cases/use-cases-i18n.js?v=1';
+import { USE_CASES_LANGUAGES, USE_CASES_UI_TRANSLATIONS } from '/theladder-use-cases/use-cases-i18n.js?v=2';
 import {
   promptIdentityAssurance,
   buildIdentityAssuranceRecord,
@@ -162,7 +162,6 @@ const elements = {
   totalUseCases: document.querySelector('#totalUseCases'),
   advancedCount: document.querySelector('#advancedCount'),
   educationFocusSelect: document.querySelector('#educationFocusSelect'),
-  themeToggle: document.querySelector('#themeToggle'),
   useCaseRequestForm: document.querySelector('#useCaseRequestForm'),
   useCaseRequestMessage: document.querySelector('#useCaseRequestMessage'),
   submitUseCaseRequest: document.querySelector('#submitUseCaseRequest'),
@@ -181,7 +180,6 @@ init();
 
 async function init() {
   restoreLanguage();
-  setupTheme();
   setupLanguageSelect();
   renderLoading();
 
@@ -277,22 +275,8 @@ function buildPlacementEngine() {
   });
 }
 
-function setupTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  elements.themeToggle.textContent = isDark ? 'Light mode' : 'Dark mode';
-  elements.themeToggle.addEventListener('click', () => {
-    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    if (nextTheme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('aesop-theme', 'dark');
-      elements.themeToggle.textContent = 'Light mode';
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('aesop-theme', 'light');
-      elements.themeToggle.textContent = 'Dark mode';
-    }
-  });
-}
+// Theme is owned by /theladder/theme.js (Phase 1 switcher) — the old
+// #themeToggle button and its handler were retired in the Phase 2 re-skin.
 
 // ---------------------------------------------------------------------------
 // i18n (Task 31) — mirrors the Concepts ladder t()/updatePageTranslations
@@ -426,7 +410,7 @@ function renderTopics() {
     const count = state.useCases.filter((useCase) => inRange(useCase, topic)).length;
     const active = topic.label === state.activeTopic.label ? ' active' : '';
     const granted = isTopicGranted(topic) ? ' data-granted="true"' : '';
-    const grantedBadge = isTopicGranted(topic) ? `<span class="depth-pill" style="margin-left:0.4rem">${escapeHtml(t('placedOut'))}</span>` : '';
+    const grantedBadge = isTopicGranted(topic) ? `<span class="depth-pill">${escapeHtml(t('placedOut'))}</span>` : '';
     return `
       <button class="category-button${active}" type="button" data-start="${topic.start}" data-end="${topic.end}"${granted}>
         <strong>${escapeHtml(topic.label)}${grantedBadge}</strong>
@@ -471,12 +455,17 @@ function renderUseCases() {
   elements.useCaseGrid.innerHTML = useCases.map((useCase) => {
     const recommended = assigned.has(String(useCase.id));
     const recBadge = recommended ? `<span class="depth-pill">${escapeHtml(t('recommended'))}</span>` : '';
+    const started = state.courseStarts[useCase.id];
+    const statusPill = started
+      ? `<span class="pill ${started.status === 'completed' ? 'pill-certified' : 'pill-progress'}">${escapeHtml(started.status === 'completed' ? t('statusCompleted') : t('statusStarted'))}</span>`
+      : '';
     return `
     <button class="product-card${useCase.id === state.selectedId ? ' active' : ''}" type="button" data-use-case-id="${useCase.id}">
       <div class="card-top">
         <span class="product-number">#${useCase.id}</span>
         <span class="depth-pill">${escapeHtml(useCase.depth)}</span>
         ${recBadge}
+        ${statusPill}
       </div>
       <h3>${escapeHtml(useCase.name)}</h3>
       <p class="product-type">${escapeHtml(useCase.topic)}</p>
@@ -904,7 +893,7 @@ function renderAssessmentEntry() {
       <h2>${escapeHtml(t('useCasePlacement'))}</h2>
       ${summary}
     </div>
-    <div class="cert-option" style="border:none;background:transparent">
+    <div class="request-actions">
       <button id="startUseCaseAssessmentBtn" type="button">${placed ? escapeHtml(t('retakePlacement')) : escapeHtml(t('startPlacement'))}</button>
     </div>
   `;
@@ -1325,7 +1314,7 @@ function renderCertificationOutcome(context, outcome, validation, result, rubric
     panel.innerHTML = `
       <strong>${headline}</strong>
       <span>${body}</span>
-      ${rubricHtml ? `<ul style="margin:0.5rem 0 0;padding-left:1.1rem;font-size:0.85rem">${rubricHtml}</ul>` : ''}
+      ${rubricHtml ? `<ul class="cert-outcome-list">${rubricHtml}</ul>` : ''}
       <small>Challenge path: reply in the chat with additional evidence, or retake at any time.</small>
     `;
     panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

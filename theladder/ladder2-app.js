@@ -219,6 +219,7 @@ async function init() {
   setupCertification();
   setupProfile();
   setupAuth();
+  renderHeroSignup();   // set the signed-out display state before first paint
 
   initDataLayer().catch((e) => console.warn('data-layer init failed (local-only)', e));
   try {
@@ -658,20 +659,20 @@ function signOut() {
 // Hero sign-up / sign-in form (bottom of the marketing section).
 function setupAuth() {
   $('l2SignupForm')?.addEventListener('submit', (e) => { e.preventDefault(); sendVerification($('l2SignupEmail')?.value, 'l2SignupMsg'); });
-  $('l2SigninToggle')?.addEventListener('click', (e) => { e.preventDefault(); const f = $('l2SigninForm'); if (f) f.hidden = !f.hidden; });
+  $('l2SigninToggle')?.addEventListener('click', (e) => { e.preventDefault(); const f = $('l2SigninForm'); if (f) f.style.display = (f.style.display === 'flex') ? 'none' : 'flex'; });
   $('l2SigninForm')?.addEventListener('submit', (e) => { e.preventDefault(); passwordSignIn($('l2SigninEmail')?.value, $('l2SigninPw')?.value, 'l2SignupMsg'); });
   $('l2HeroSignOut')?.addEventListener('click', signOut);
 }
 
 function renderHeroSignup() {
   const signedIn = Boolean(state.authUser);
-  const form = $('l2SignupForm');
-  if (form) form.hidden = signedIn;
-  const toggle = $('l2SigninToggle');
-  if (toggle) toggle.hidden = signedIn;
-  if (signedIn) { const sf = $('l2SigninForm'); if (sf) sf.hidden = true; }
-  const signedBox = $('l2SignedIn');
-  if (signedBox) signedBox.hidden = !signedIn;
+  // The forms / signed-in box use display:flex (and the link inline-block) in CSS,
+  // which overrides the [hidden] attribute — so toggle inline display directly.
+  const setDisp = (id, shown, mode) => { const n = $(id); if (n) n.style.display = shown ? mode : 'none'; };
+  setDisp('l2SignupForm', !signedIn, 'flex');
+  setDisp('l2SigninToggle', !signedIn, 'inline-block');
+  setDisp('l2SigninForm', false, 'flex');       // collapsed by default; the toggle opens it
+  setDisp('l2SignedIn', signedIn, 'flex');       // sign-out only when actually signed in
   if (signedIn) setText('l2SignedInEmail', state.authUser.email || '');
 }
 

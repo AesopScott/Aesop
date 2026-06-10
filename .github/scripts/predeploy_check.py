@@ -37,12 +37,19 @@ MAX_HISTORY_LOOK = 30     # how many commits back to search for intact version
 
 STRUCTURAL_MARKERS = (
     "</html>", "</body>", "</head>",
-    "</script>", "</style>",
+    "</script>",
     # "</svg>" intentionally omitted: SVG elements are commonly embedded
     # in CSS background-image data URIs and are not a reliable top-level
     # HTML structural indicator. Removing it prevents false-positive
     # truncation alerts when a page is intentionally redesigned to drop
     # inline SVG (e.g. homepage v2.0.0, 2026-05-28).
+    # "</style>" intentionally omitted for the same reason: a redesign
+    # that moves inline <style> blocks into an external stylesheet drops
+    # the marker while the document still ends cleanly with </html>.
+    # The guard mistook the Ladder marketing homepage rebuild
+    # (theladder-v0.2.0, 2026-06-10) for truncation and reverted it
+    # (commit 21613d78). A real truncation that cuts inside a <style>
+    # block is still caught by </body>/</html> loss or ends_abruptly().
 )
 
 INCLUDE_EXTS = {".html", ".htm", ".css", ".js", ".json", ".xml", ".svg"}

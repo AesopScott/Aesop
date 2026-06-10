@@ -1339,6 +1339,108 @@ async function recordCertificationResult(result) {
     record.transcriptLine,
     { status: TRANSCRIPT_STATUS.VERIFIED, evidence: 'ai_exam_certified' }
   );
+
+  // Show certification success UI
+  renderTranscript();
+  renderProgress();
+  showCertificationSuccess(record);
+}
+
+function showCertificationSuccess(record) {
+  // Create and show celebration modal
+  const modal = document.createElement('div');
+  modal.id = 'certificationSuccessModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+
+  const message = `🎓 I just earned my ${record.ladderTierLabel} - ${record.certificationTierLabel} ${record.depthLabel} certification on @AesopAIAcademy! Independent validation confirmed. #AIEducation #LearningJourney`;
+
+  modal.innerHTML = `
+    <div style="
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 500px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    ">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🎉</div>
+      <h2 style="color: #102235; margin: 0 0 0.5rem; font-size: 1.8rem;">Certification Awarded!</h2>
+      <p style="color: #555; margin: 0 0 1.5rem; font-size: 0.95rem;">
+        ${record.title}<br>
+        <small style="color: #888;">Independent validation confirmed</small>
+      </p>
+
+      <div style="
+        background: #f8f4e6;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        text-align: left;
+        border: 1px solid #c9a05a;
+      ">
+        <p style="margin: 0 0 0.5rem; font-size: 0.85rem; color: #666; font-weight: 600;">Share your achievement:</p>
+        <textarea id="certificationMessage" readonly style="
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          font-family: monospace;
+          min-height: 80px;
+          resize: none;
+        ">${message}</textarea>
+        <button onclick="
+          const msg = document.getElementById('certificationMessage');
+          msg.select();
+          document.execCommand('copy');
+          this.textContent = 'Copied!';
+          setTimeout(() => this.textContent = 'Copy to clipboard', 2000);
+        " style="
+          width: 100%;
+          margin-top: 0.5rem;
+          padding: 0.6rem;
+          background: #c9a05a;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+        ">Copy to clipboard</button>
+      </div>
+
+      <button onclick="document.getElementById('certificationSuccessModal').remove()" style="
+        padding: 0.8rem 1.5rem;
+        background: #102235;
+        color: #ffe7a8;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.95rem;
+      ">View your certification</button>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Scroll to transcript
+  setTimeout(() => {
+    const transcript = document.getElementById('transcript');
+    if (transcript) {
+      transcript.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 500);
 }
 
 function placementSystemPrompt() {

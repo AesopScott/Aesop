@@ -3285,6 +3285,26 @@ function bindEvents() {
   el.startConversationBtn.addEventListener('click', startConversation);
   el.vocabPromptForm.addEventListener('submit', startVocabularyConversation);
   el.chatForm.addEventListener('submit', submitChat);
+
+  // Shift+Enter for line break, Enter to submit
+  el.chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        // Shift+Enter: insert newline
+        e.preventDefault();
+        const start = el.chatInput.selectionStart;
+        const end = el.chatInput.selectionEnd;
+        const value = el.chatInput.value;
+        el.chatInput.value = value.substring(0, start) + '\n' + value.substring(end);
+        el.chatInput.selectionStart = el.chatInput.selectionEnd = start + 1;
+      } else {
+        // Enter: submit
+        e.preventDefault();
+        el.chatForm.dispatchEvent(new Event('submit'));
+      }
+    }
+  });
+
   el.chatLog.addEventListener('click', handleStandardsReviewClick);
   el.completeTopicBtn.addEventListener('click', markTopicComplete);
   el.exportTranscriptBtn.addEventListener('click', exportTranscript);

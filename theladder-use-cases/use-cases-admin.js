@@ -29,7 +29,6 @@ const state = {
 };
 
 const elements = {
-  themeToggle: document.querySelector('#themeToggle'),
   authPanel: document.querySelector('#authPanel'),
   adminQueue: document.querySelector('#adminQueue'),
   adminEmail: document.querySelector('#adminEmail'),
@@ -42,7 +41,6 @@ const elements = {
   pendingRequestCount: document.querySelector('#pendingRequestCount')
 };
 
-setupTheme();
 bindEvents();
 
 onAuthStateChanged(auth, (user) => {
@@ -69,22 +67,8 @@ onAuthStateChanged(auth, (user) => {
   }
 });
 
-function setupTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  elements.themeToggle.textContent = isDark ? 'Light mode' : 'Dark mode';
-  elements.themeToggle.addEventListener('click', () => {
-    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    if (nextTheme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('aesop-theme', 'dark');
-      elements.themeToggle.textContent = 'Light mode';
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('aesop-theme', 'light');
-      elements.themeToggle.textContent = 'Dark mode';
-    }
-  });
-}
+// Theme is owned by /theladder/theme.js (Phase 1 switcher) — the old
+// #themeToggle button and its handler were retired in the Phase 2 re-skin.
 
 function bindEvents() {
   elements.adminSignIn.addEventListener('click', signInAdmin);

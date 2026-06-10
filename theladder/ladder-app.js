@@ -730,12 +730,17 @@ async function loadRemote(learnerId) {
 
     // Fallback 2: if still no certifications, fetch directly from Firestore REST API to bypass SDK cache
     if (!data.ladderCertifications) {
+      console.log('[loadRemote] No certs from SDK, trying REST API fallback...');
       try {
         const restUrl = `https://firestore.googleapis.com/v1/projects/playagame-f733d/databases/(default)/documents/learners/${learnerId}`;
+        console.log('[loadRemote] REST URL:', restUrl);
         const response = await fetch(restUrl);
+        console.log('[loadRemote] REST response status:', response.status);
         if (response.ok) {
           const firestoreDoc = await response.json();
+          console.log('[loadRemote] REST response has ladderCertifications?', !!firestoreDoc.fields?.ladderCertifications);
           const certArray = firestoreDoc.fields?.ladderCertifications?.arrayValue?.values;
+          console.log('[loadRemote] Cert array length:', certArray?.length || 0);
           if (certArray) {
             // Convert REST API format to JavaScript array
             data.ladderCertifications = certArray.map(cert => {
@@ -749,7 +754,7 @@ async function loadRemote(learnerId) {
               });
               return result;
             });
-            console.log('[loadRemote] Loaded certifications from REST API fallback');
+            console.log('[loadRemote] Loaded certifications from REST API fallback:', data.ladderCertifications.length);
           }
         }
       } catch (e) {

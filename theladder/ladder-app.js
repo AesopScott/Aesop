@@ -182,22 +182,6 @@ const app = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Clear IndexedDB cache on app start to force fresh Firestore reads
-async function clearFirebaseCache() {
-  try {
-    if (!window.indexedDB) return;
-    const dbs = await window.indexedDB.databases?.() || [];
-    dbs.forEach(dbInfo => {
-      if (dbInfo.name.includes('firestore')) {
-        window.indexedDB.deleteDatabase(dbInfo.name);
-      }
-    });
-  } catch (e) {
-    console.log('Could not clear IndexedDB:', e.message);
-  }
-}
-clearFirebaseCache();
-
 const state = {
   learnerId: localStorage.getItem(LS_ID) || '',
   authReady: false,
@@ -739,9 +723,38 @@ async function loadRemote(learnerId) {
     let data = snap.data();
     console.log('[loadRemote] Loaded document for', learnerId);
 
-    // Fallback: if SDK doesn't have certifications at top level, check nested location
+    // Fallback 1: if SDK doesn't have certifications at top level, check nested location
     if (!data.ladderCertifications && data.ladderProgress?.ladderCertifications) {
       data.ladderCertifications = data.ladderProgress.ladderCertifications;
+    }
+
+    // Fallback 2: if still no certifications, fetch directly from Firestore REST API to bypass SDK cache
+    if (!data.ladderCertifications) {
+      try {
+        const restUrl = `https://firestore.googleapis.com/v1/projects/playagame-f733d/databases/(default)/documents/learners/${learnerId}`;
+        const response = await fetch(restUrl);
+        if (response.ok) {
+          const firestoreDoc = await response.json();
+          const certArray = firestoreDoc.fields?.ladderCertifications?.arrayValue?.values;
+          if (certArray) {
+            // Convert REST API format to JavaScript array
+            data.ladderCertifications = certArray.map(cert => {
+              const fields = cert.mapValue?.fields || {};
+              const result = {};
+              Object.entries(fields).forEach(([key, value]) => {
+                if (value.stringValue) result[key] = value.stringValue;
+                else if (value.integerValue) result[key] = parseInt(value.integerValue);
+                else if (value.timestampValue) result[key] = value.timestampValue;
+                else if (value.booleanValue) result[key] = value.booleanValue;
+              });
+              return result;
+            });
+            console.log('[loadRemote] Loaded certifications from REST API fallback');
+          }
+        }
+      } catch (e) {
+        console.warn('[loadRemote] REST API fallback failed:', e.message);
+      }
     }
 
     console.log('[loadRemote] Certifications:', data.ladderCertifications?.length || 0);

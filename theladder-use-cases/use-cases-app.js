@@ -620,7 +620,7 @@ async function handleUseCaseRequestSubmit(event) {
       status: 'requested',
       at: submittedAtIso,
       actor: requesterEmail || 'requester',
-      note: 'Submitted from The Ladder Use Cases page.'
+      note: 'Submitted from The Ladder AI Use Cases page.'
     }]
   };
 

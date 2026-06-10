@@ -24,7 +24,7 @@ export const USE_CASES_LANGUAGES = [
 export const USE_CASES_UI_TRANSLATIONS = {
   en: {
     // Nav + hero
-    theLadder: 'The Ladder',
+    theLadder: 'The Ladder AI',
     products: 'Products',
     useCases: 'Use Cases',
     darkMode: 'Dark mode',
@@ -34,7 +34,7 @@ export const USE_CASES_UI_TRANSLATIONS = {
     educationFocus: 'Education Focus',
     language: 'Language',
     heroKicker: 'AESOP use-case pathway',
-    heroTitle: 'The Ladder Use Cases',
+    heroTitle: 'The Ladder AI Use Cases',
     heroText: 'A practical course map for the AI work people actually need to perform: write, research, build, analyze, support customers, govern risk, and improve real workflows.',
     useCasesStat: 'use cases',
     certificationOptionsStat: 'certification options each',

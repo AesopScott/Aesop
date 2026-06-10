@@ -1,6 +1,6 @@
 // =============================================================================
 // theladder-shared/standards-evidence.js
-// Advisory standards-evidence engine for The Ladder.
+// Advisory standards-evidence engine for The Ladder AI.
 //
 // MODULE STYLE: ES module, no Firebase imports (pure analysis). Persistence is
 // the caller's job via theladder-shared/data-layer.js `recordStandardsEvidence`.

@@ -1,4 +1,4 @@
-// Multi-language translation module for The Ladder Products page (Task 31).
+// Multi-language translation module for The Ladder AI Products page (Task 31).
 // Mirrors theladder/ladder-data.js: a fixed language list plus a per-language
 // dictionary of UI strings. Strings shared with the Concepts ladder reuse the
 // same wording; product-specific keys (tracks, catalog, request form) are added
@@ -21,7 +21,7 @@ export const PRODUCTS_LANGUAGES = [
 export const PRODUCTS_UI_TRANSLATIONS = {
   en: {
     // Nav / header
-    navTheLadder: 'The Ladder',
+    navTheLadder: 'The Ladder AI',
     navProducts: 'Products',
     navUseCases: 'Use Cases',
     studentHub: 'Student Hub',
@@ -31,7 +31,7 @@ export const PRODUCTS_UI_TRANSLATIONS = {
     optionProducts: 'Products',
     optionUseCases: 'Use Cases',
     heroKicker: 'AESOP product pathway',
-    heroTitle: 'The Ladder Products',
+    heroTitle: 'The Ladder AI Products',
     heroText: 'A course map for the AI products people actually touch: assistants, office suites, coding agents, RAG databases, creative tools, cloud platforms, regulated industry AI, and specialized work tools.',
     statProducts: 'products',
     statCertificationOptions: 'certification options each',

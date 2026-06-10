@@ -1775,7 +1775,7 @@ function showCertificationSuccess(record) {
 }
 
 function placementSystemPrompt() {
-  return `You are The Ladder placement assessor inside AESOP AI Academy.
+  return `You are The Ladder AI placement assessor inside AESOP AI Academy.
 
 Your job is to assess BOTH interest and capability, then decide what the learner can test out of and what they should be assigned.
 
@@ -1808,7 +1808,7 @@ Rules:
 }
 
 function placementOpener() {
-  return 'Let us place you on The Ladder. I will assess both what you already know and what you actually care about learning. First: describe your current relationship with AI. What tools have you used, what have you built or tried, and what feels most interesting or useful to you?';
+  return 'Let us place you on The Ladder AI. I will assess both what you already know and what you actually care about learning. First: describe your current relationship with AI. What tools have you used, what have you built or tried, and what feels most interesting or useful to you?';
 }
 
 async function ensureLearnerId() {
@@ -3132,7 +3132,7 @@ When you have enough evidence to decide whether the learning conversation is com
 
 Use "verified" only when the learner gave strong evidence in the conversation. Use "completed" for solid learning completion. Use "self_reported" when the learner has enough engagement for a record but evidence is mostly learner-claimed. Use "not_ready" when the learner needs more work. Do not mention the completion marker format to the learner.
 ` : '';
-  return `You are The Ladder guide inside AESOP AI Academy. You are strictly scoped to the selected topic: ${topic.title}.
+  return `You are The Ladder AI guide inside AESOP AI Academy. You are strictly scoped to the selected topic: ${topic.title}.
 
 Placement interests: ${interestText(placement)}.
 Assessment capability score: ${placement?.capabilityScore ?? 'not placed'}.
@@ -3501,7 +3501,7 @@ async function markTopicComplete() {
   addTranscript(
     'topic_self_reported',
     topic.title,
-    `Marked ${topic.id} as self-reported on The Ladder.`,
+    `Marked ${topic.id} as self-reported on The Ladder AI.`,
     { status: TRANSCRIPT_STATUS.SELF_REPORTED, evidence: TRANSCRIPT_STATUS.SELF_REPORTED }
   );
   await persist();
@@ -3610,7 +3610,7 @@ function renderCertificationGuide() {
 
       <div class="certification-guide-note">
         <strong>Why this matters:</strong>
-        <span>The Ladder is not just giving a badge. It creates a defensible record of AI capability that can be explained to a learner, parent, school, employer, workforce program, or board member.</span>
+        <span>The Ladder AI is not just giving a badge. It creates a defensible record of AI capability that can be explained to a learner, parent, school, employer, workforce program, or board member.</span>
       </div>
     </div>
   `;

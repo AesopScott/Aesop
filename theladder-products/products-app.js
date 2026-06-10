@@ -633,7 +633,7 @@ async function handleProductRequestSubmit(event) {
       status: 'requested',
       at: submittedAtIso,
       actor: requesterEmail || 'requester',
-      note: 'Submitted from The Ladder Products page.'
+      note: 'Submitted from The Ladder AI Products page.'
     }]
   };
 

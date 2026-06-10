@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, disablePersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
 import { DEFAULT_RESOURCES, LADDER_TIERS, LADDER_VERSION, LANGUAGES, LADDER_UI_TRANSLATIONS } from './ladder-data.js?v=2';
 
@@ -181,6 +181,7 @@ const VOCAB_DEFINITIONS = {
 const app = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db = getFirestore(app);
+disablePersistence(db).catch(err => console.warn('Could not disable persistence:', err));
 
 const state = {
   learnerId: localStorage.getItem(LS_ID) || '',

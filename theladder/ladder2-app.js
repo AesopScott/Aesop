@@ -232,6 +232,7 @@ async function init() {
   renderAuthGates();
   renderHeroSignup();
   renderMarketing();
+  renderLadderL();
   renderProfile();
 }
 
@@ -808,6 +809,36 @@ function renderMarketing() {
   setText('l2StatExpert', String(byDepth('expert')));
   setText('l2StatMastery', String(byDepth('master')));
   setText('l2HeroCertCount', String(certs.length));
+}
+
+// Replace the "L" in the LADDER wordmark with an actual ladder (two rails +
+// rungs forming the stem, plus the L's foot). Pure DOM + inline SVG so no CSS
+// file is touched; scales with the headline via em units, inherits the navy.
+function renderLadderL() {
+  const h1 = document.querySelector('#marketing h1');
+  if (!h1 || h1.dataset.ladderL) return;
+  const node = [...h1.childNodes].find((n) => n.nodeType === 3 && n.textContent.includes('L'));
+  if (!node) return;
+  const txt = node.textContent;
+  const idx = txt.indexOf('L');
+  if (idx < 0) return;
+  h1.setAttribute('aria-label', h1.textContent.trim());   // keep "The Ladder AI" for screen readers
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 62 100');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.cssText = 'height:0.72em;width:auto;vertical-align:baseline;fill:currentColor;margin:0 0.04em;';
+  svg.innerHTML =
+    '<rect x="6" y="0" width="9" height="84"/>' +       // left rail
+    '<rect x="26" y="0" width="9" height="84"/>' +      // right rail
+    '<rect x="13" y="11" width="15" height="7"/>' +     // rungs
+    '<rect x="13" y="32" width="15" height="7"/>' +
+    '<rect x="13" y="53" width="15" height="7"/>' +
+    '<rect x="13" y="74" width="15" height="7"/>' +
+    '<rect x="6" y="84" width="56" height="16"/>';      // foot of the L
+  const frag = document.createDocumentFragment();
+  frag.append(document.createTextNode(txt.slice(0, idx)), svg, document.createTextNode(txt.slice(idx + 1)));
+  h1.replaceChild(frag, node);
+  h1.dataset.ladderL = '1';
 }
 
 function setupProfile() {

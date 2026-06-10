@@ -287,16 +287,25 @@ function setupNavActions() {
     }));
   }
 
-  // Release sticky :hover after a nav word is clicked. Clicking an in-page anchor
-  // smooth-scrolls the section under a stationary mouse, so no mouseleave fires and
-  // the gold underline stays stuck under that word (notably Profile). Dropping the
-  // element as a pointer target clears :hover; the next mousemove restores it.
-  document.querySelectorAll('.l2-navlink').forEach((a) => {
-    a.addEventListener('click', () => {
-      a.style.pointerEvents = 'none';
-      window.addEventListener('mousemove', () => { a.style.pointerEvents = ''; }, { once: true });
-    });
-  });
+  // Release a stuck nav :hover. The gold underline can light up with no intent two ways:
+  //  - clicking an in-page anchor smooth-scrolls the section under a stationary mouse
+  //    (no mouseleave fires), and
+  //  - scrolling (incl. scroll-snap back to the top) lands a nav word under a resting
+  //    cursor — so :hover engages without any mouse movement (notably under Profile).
+  // On click or scroll, drop the words as pointer targets (clears :hover); the next
+  // real mouse move restores them so genuine hover still works.
+  let navHoverArmed = false;
+  const releaseNavHover = () => {
+    document.querySelectorAll('.l2-navlink').forEach((a) => { a.style.pointerEvents = 'none'; });
+    if (navHoverArmed) return;
+    navHoverArmed = true;
+    window.addEventListener('mousemove', () => {
+      navHoverArmed = false;
+      document.querySelectorAll('.l2-navlink').forEach((a) => { a.style.pointerEvents = ''; });
+    }, { once: true });
+  };
+  document.querySelectorAll('.l2-navlink').forEach((a) => a.addEventListener('click', releaseNavHover));
+  window.addEventListener('scroll', releaseNavHover, { passive: true });
 }
 
 // =============================================================================

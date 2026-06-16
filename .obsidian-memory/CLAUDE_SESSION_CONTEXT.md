@@ -1,7 +1,7 @@
 # Claude Session Context
 
 Source: ranked Obsidian knowledge graph
-Generated: 2026-06-15T13:37:16.226382+00:00
+Generated: 2026-06-16T00:32:17.072154+00:00
 Project: Aesop
 Task: general project session
 
@@ -11,109 +11,112 @@ This packet contains the ranked portions of the Obsidian graph that relate to th
 
 ## Ranked Memories
 
-1. GRAPH_REPORT [0.6082]
+1. om-dump [0.4425]
+   - Source: obsidian-mind-clean/.claude/commands/om-dump.md
+   - Why it may matter: Process the following freeform dump. For each distinct piece of information: 1. **Classify** it: decision, incident, 1-on-1 content, win/achievement, architecture, project update, person context, or general work note. 2. **Search first**: Use `qmd vsearch` (or
+   - Signals: relevance=0.7071, centrality=0.0045, freshness=0.9918, bridge=0.35, evidence=0.75
+
+2. kilo-rules [0.4417]
+   - Source: graphify/tools/skillgen/fragments/extra/kilo-rules.md
+   - Why it may matter: ## Kilo-specific rules - Use the native `Task` tool for semantic extraction fan-out. - Launch all chunk tasks in the same response so they run in parallel. - Always use `subagent_type="general"` for extraction chunks. - After modifying code files during the se
+   - Signals: relevance=0.7071, freshness=0.9918, bridge=0.35, evidence=0.75
+
+3. 6-Obsidian [0.4031]
+   - Source: 6-Obsidian.md
+   - Why it may matter: # 6-Obsidian.md — Meridian ## Vault Config - **Build folder:** G:\My Drive\Aesop Academy\Obsidian\Meridian_Build - **Sessions folder:** G:\My Drive\Aesop Academy\Obsidian\Meridian_Sessions
+   - Signals: relevance=0.7071, freshness=0.9562, evidence=0.75
+
+4. GRAPH_REPORT [0.3604]
    - Source: Graphify/GRAPH_REPORT.md
    - Tags: 2
    - Why it may matter: REPORT GENERATION -------------------------- cd "C:\Users\scott\code\meridian" $env:PATH = "C:\Users\scott\.local\bin;$env:PATH" $dest = "G:\My Drive\Obsidian\Meridian_Build\Graphify" New-Item -ItemType Directory -Force -Path $dest | Out-Null graphify export o
-   - Signals: relevance=0.7071, centrality=1.0, freshness=0.9945, bridge=0.15, evidence=0.75
+   - Signals: centrality=1.0, freshness=0.9918, bridge=0.15, evidence=0.75
 
-2. Meridian Roadmap [0.4646]
+5. Memories [0.3443]
+   - Source: obsidian-mind-clean/brain/Memories.md
+   - Why it may matter: # Memories Persistent context and knowledge retained across sessions. Each topic lives in its own note — follow the links. - [[Key Decisions]] — architectural and workflow decisions worth recalling - [[Patterns]] — recurring patterns and conventions discovered
+   - Signals: centrality=0.045, authority=0.8, freshness=0.9918, bridge=0.65, evidence=0.75
+
+6. Skills [0.3252]
+   - Source: obsidian-mind-clean/brain/Skills.md
+   - Why it may matter: # Skills Custom slash commands, subagents, and reusable workflows. Defined in `.claude/commands/` and `.claude/agents/`. ## Slash Commands ### Daily Workflow | Command | Purpose | |---------|---------| | `/om-standup` | Morning kickoff — load context, review y
+   - Signals: centrality=0.0225, authority=0.8, freshness=0.9918, bridge=0.5, evidence=0.75
+
+7. GRAPH_REPORT [0.3168]
+   - Source: graphify/worked/rsl-siege-manager/GRAPH_REPORT.md
+   - Tags: 1, 12, 17, 22, 295, 381, 6
+   - Why it may matter: # Graph Report - . (2026-05-13) ## Corpus Check - cluster-only mode — file stats not available ## Summary - 1886 nodes · 3876 edges · 141 communities (89 shown, 52 thin omitted) - Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 393 edges (a
+   - Signals: centrality=0.5495, freshness=0.9918, bridge=0.15, evidence=0.75
+
+8. People & Context [0.3034]
+   - Source: obsidian-mind-clean/org/People & Context.md
+   - Why it may matter: # People & Context Key context about teams, stakeholders, or collaborators. See also [[Memories]] for session context and [[Skills]] for workflows. ## Role & Org - ## Teams Team notes in `org/teams/`: - ## Performance Reviews - ## Manager Timeline - ## People 
+   - Signals: centrality=0.018, authority=0.4, freshness=0.9918, bridge=0.85, evidence=0.75
+
+9. Index [0.2676]
+   - Source: obsidian-mind-clean/work/Index.md
+   - Why it may matter: # Work Notes Central map of content. All work notes and decisions link back here. For quick navigation, use [[Home]] or open `bases/Work Dashboard.base`. **Folder structure**: `active/` = current projects, `archive/` = completed (by year), `incidents/` = incid
+   - Signals: centrality=0.0135, authority=0.4, freshness=0.9918, bridge=0.5, evidence=0.75
+
+10. Brag Doc [0.2518]
+   - Source: obsidian-mind-clean/perf/Brag Doc.md
+   - Why it may matter: # Brag Doc A running log of impact, wins, and growth. Each quarter is its own note — open the one you need. ## Current Year | Quarter | Highlights | Review | |---------|-----------|--------| | | | | ## How This Works - Each quarter note has: Competency Evidenc
+   - Signals: centrality=0.009, authority=0.4, freshness=0.9918, bridge=0.35, evidence=0.75
+
+11. vault-migrator [0.2474]
+   - Source: obsidian-mind-clean/.claude/agents/vault-migrator.md
+   - Tags: 1on1, adr, architecture, book, colleague, course, decision, diary
+   - Why it may matter: You are the vault migrator for an obsidian-mind vault. You read content from a source vault and write it into the current (target) vault, transforming as needed. You NEVER modify the source vault. ## Modes You operate in one of two modes, specified by the pare
+   - Signals: centrality=0.018, freshness=0.9918, bridge=0.35, evidence=0.75
+
+12. llm-optimization-phase2-handoff [0.2447]
+   - Source: ai-shared-responsibility/llm-optimization-phase2-handoff.md
+   - Tags: AI-PaaS, AI-SaaS, Agent-PaaS, IaaS, L1, L2, L3, L4
+   - Why it may matter: # LLM Optimization Phase 2 — Handoff for Sonnet **Project:** aisharedresponsibility.com **Workspace:** `/Users/billstout/Documents/Claude/Projects/AISharedResponsibility.com/` **Branch:** `develop` → push to `develop`, then `develop:main` **Date:** 2026-06-13 
+   - Signals: freshness=0.9973, bridge=0.35, evidence=0.75
+
+13. Home [0.2429]
+   - Source: obsidian-mind-clean/Home.md
+   - Why it may matter: # Home ## Current Focus ![[North Star#Current Focus]] ## Active Work ![[Work Dashboard.base#Active Work]] ## Incidents ![[Incidents.base#All Incidents]] ## Quick Links - [[Index|Work Notes]] | [[People & Context]] | [[Brag Doc]] - [[Memories]] | [[North Star]]
+   - Signals: centrality=0.0315, authority=0.2, freshness=0.9918, bridge=0.5, evidence=0.75
+
+14. Key Decisions [0.2388]
+   - Source: obsidian-mind-clean/brain/Key Decisions.md
+   - Why it may matter: # Key Decisions Architectural or workflow decisions worth recalling. Link to the full [[Decision Record]] when one exists. -
+   - Signals: centrality=0.009, authority=0.2, freshness=0.9918, bridge=0.5, evidence=0.75
+
+15. PROPERTIES [0.22]
+   - Source: obsidian-mind-clean/.claude/skills/obsidian-markdown/references/PROPERTIES.md
+   - Tags: nested/tag, tag, tag-with-dashes, tag_with_underscores
+   - Why it may matter: # Properties (Frontmatter) Reference Properties use YAML frontmatter at the start of a note: ## Property Types | Type | Example | |------|---------| | Text | `title: My Title` | | Number | `rating: 4.5` | | Checkbox | `completed: true` | | Date | `date: 2024-0
+   - Signals: centrality=0.0045, freshness=0.9918, bridge=0.35, evidence=0.75
+
+16. SKILL [0.2178]
+   - Source: obsidian-mind-clean/.claude/skills/obsidian-markdown/SKILL.md
+   - Tags: Heading, nested/tag, tag
+   - Why it may matter: # Obsidian Flavored Markdown Skill Create and edit valid Obsidian Flavored Markdown. Obsidian extends CommonMark and GFM with wikilinks, embeds, callouts, properties, comments, and other syntax. This skill covers only Obsidian-specific extensions -- standard M
+   - Signals: centrality=0.027, freshness=0.9918, bridge=0.35, evidence=0.75
+
+17. Meridian Roadmap [0.2168]
    - Source: Meridian Roadmap.md
    - Why it may matter: # Meridian Roadmap **Status:** Active roadmap source of truth **Last updated:** 2026-06-12 **Replaces active roadmap authority in:** `2026-05-31 Build 4 V3 Parking Lot.md` and `2026-06-11 V2.5 Harness Hardening Build List.md` ## Version Rule Meridian 3.0 is no
-   - Signals: relevance=0.7071, centrality=0.009, authority=0.4, freshness=0.9945, evidence=0.75
+   - Signals: centrality=0.009, authority=0.4, freshness=0.9918, evidence=0.75
 
-3. om-dump [0.4428]
-   - Source: obsidian-mind-clean/.claude/commands/om-dump.md
-   - Why it may matter: Process the following freeform dump. For each distinct piece of information: 1. **Classify** it: decision, incident, 1-on-1 content, win/achievement, architecture, project update, person context, or general work note. 2. **Search first**: Use `qmd vsearch` (or
-   - Signals: relevance=0.7071, centrality=0.0045, freshness=0.9945, bridge=0.35, evidence=0.75
+18. North Star [0.2168]
+   - Source: obsidian-mind-clean/brain/North Star.md
+   - Why it may matter: # North Star A living document of goals, aspirations, and current focus areas. Both you and Claude write to this. Claude reads it at the start of meaningful work sessions and references it when making suggestions. ## Current Focus _What am I working toward rig
+   - Signals: centrality=0.009, authority=0.4, freshness=0.9918, evidence=0.75
 
-4. kilo-rules [0.4419]
-   - Source: graphify/tools/skillgen/fragments/extra/kilo-rules.md
-   - Why it may matter: ## Kilo-specific rules - Use the native `Task` tool for semantic extraction fan-out. - Launch all chunk tasks in the same response so they run in parallel. - Always use `subagent_type="general"` for extraction chunks. - After modifying code files during the se
-   - Signals: relevance=0.7071, freshness=0.9945, bridge=0.35, evidence=0.75
+19. Decision Record [0.2168]
+   - Source: obsidian-mind-clean/templates/Decision Record.md
+   - Why it may matter: # Decision: {{title}} ## Context What is the situation that requires a decision? ## Options Considered 1. 2. ## Decision What was decided and why. ## Consequences What follows from this decision. ## Related -
+   - Signals: centrality=0.009, authority=0.4, freshness=0.9918, evidence=0.75
 
-5. 2026-05-31 Restarted Build 1 Build 2 Codex Review Queues [0.4387]
-   - Source: 2026-05-31 Restarted Build 1 Build 2 Codex Review Queues.md
-   - Why it may matter: # 2026-05-31 Restarted Build 1 Build 2 Codex Review Queues Meridian build restarted with only Build 1 and Build 2 active, both running Haiku. Queue updates: - Build 1 assigned V2 Relay prompt payload meter domain helper. - Build 2 assigned V2 Prime next-action
-   - Signals: relevance=0.7071, freshness=0.9616, bridge=0.35, evidence=0.75
-
-6. 2026-05-31 Codex Reviews A Read Check 14-15 [0.4387]
-   - Source: 2026-05-31 Codex Reviews A Read Check 14-15.md
-   - Why it may matter: # Codex Reviews A — Read Check 2026-05-31 14:15 -06:00 Status: **idle** ## Queue Read Result - Origin/main current after pull (Meridian: no new commits; GAIN: already up to date with 1 ahead unpushed) - No executable Active Task in `docs/live-codex-reviews.md`
-   - Signals: relevance=0.7071, freshness=0.9616, bridge=0.35, evidence=0.75
-
-7. Meridian UI index handoff [0.4387]
-   - Source: UI Checkpoints/Meridian UI index handoff.md
-   - Why it may matter: ﻿# Meridian UI index handoff Saved: 2026-05-31 23:39:25 -06:00 Scott confirmed the Meridian UI should be modified from the repo root file going forward: - Working file: C:\Users\scott\Code\Meridian\index.html - Previous live preview source: C:\Users\scott\Code
-   - Signals: relevance=0.7071, freshness=0.9616, bridge=0.35, evidence=0.75
-
-8. 2026-05-30 Coordinator Memory - Queue Routing and Review Source of Truth [0.4384]
-   - Source: 2026-05-30 Coordinator Memory - Queue Routing and Review Source of Truth.md
-   - Why it may matter: # Coordinator Memory - Queue Routing and Review Source of Truth Timestamp: 2026-05-30 14:05 -06:00 ## Why This Note Exists Scott asked that coordination logic and process changes be tracked in Obsidian every few heartbeats so Meridian does not lose critical op
-   - Signals: relevance=0.7071, freshness=0.9589, bridge=0.35, evidence=0.75
-
-9. 2026-06-11 V2.5 Harness Hardening Build List [0.4203]
-   - Source: 2026-06-11 V2.5 Harness Hardening Build List.md
-   - Tags: 2, 3
-   - Why it may matter: # 2026-06-11 V2.5 Harness Hardening Build List > Superseded for active roadmap planning by [[Meridian Roadmap]]. > The V2.5 hardening content remains valid, but the active 2.5/3.0/4.0/5.0 sequence now lives in one roadmap file. > Keep this note as historical b
-   - Signals: relevance=0.7071, centrality=0.0045, freshness=0.9945, evidence=0.75
-
-10. README [0.4135]
-   - Source: obsidianify/README.md
-   - Tags: meridian
-   - Why it may matter: # Obsidianify Obsidianify is Graphify-style graph intelligence for Obsidian, with agent memory injection. It turns an entire Obsidian vault into ranked session memory for coding agents. It is a public, local-first tool for people who use Obsidian as their know
-   - Signals: relevance=0.7071, freshness=0.9973, evidence=0.75
-
-11. 8-Logs [0.4126]
-   - Source: 8-Logs.md
-   - Tags: 2
-   - Why it may matter: # 8-Logs.md — Meridian [Logs and diagnostics will be appended here] --- ## 2026-06-03 — V2 Policy-Aware Relay Executor Wrapper **Build slice:** V2 policy-aware Relay executor wrapper **Commit:** b99ce1d (policy implementation), 23ba90a (queue update) **Push st
-   - Signals: relevance=0.7071, freshness=0.989, evidence=0.75
-
-12. 2026-05-31 Build 4 V3 Parking Lot [0.4078]
-   - Source: 2026-05-31 Build 4 V3 Parking Lot.md
-   - Why it may matter: # 2026-05-31 Build 4 V3 Parking Lot > Superseded for active roadmap planning by [[Meridian Roadmap]]. > Previous V3 feature items are now 4.0. Previous V4+ horizon items are now 5.0. > Keep this note as historical build evidence only. **Build session:** Build 
-   - Signals: relevance=0.7071, centrality=0.0045, freshness=0.9945, evidence=0.75
-
-13. FileMap [0.4064]
-   - Source: FileMap.md
-   - Why it may matter: # Meridian File Map This is the living knowledge tracker for important Meridian files. Use it to quickly understand what each file owns, which harness or architecture area it belongs to, and where to look before editing. This file should eventually feed Echo/A
-   - Signals: relevance=0.7071, freshness=0.989, evidence=0.75
-
-14. 2-Architecture [0.4056]
-   - Source: 2-Architecture.md
-   - Why it may matter: # 2-Architecture.md — Meridian ## Tech Stack - [List technologies] ## System Overview [Describe the system] ## Prime Directives ### 1. Logic, Not Rules Meridian should be governed by logic, not brittle rule piles. ### 2. Dynamic Risk-Tiered Dual-Structured Gat
-   - Signals: relevance=0.7071, freshness=0.9808, evidence=0.75
-
-15. 3-Build-Plan [0.4037]
-   - Source: 3-Build-Plan.md
-   - Why it may matter: # 3-Build-Plan.md — Meridian ## Current Phase [Describe current focus] ## Roadmap | Priority | Item | Status | Notes | |----------|------|--------|-------| | | | | | ## Session Update (2026-05-30) No active branches, PRs, or backlog tasks exist currently for M
-   - Signals: relevance=0.7071, freshness=0.9616, evidence=0.75
-
-16. 2026-05-31 DeepSeek Primary Provider Decision [0.4037]
-   - Source: 2026-05-31 DeepSeek Primary Provider Decision.md
-   - Why it may matter: # DeepSeek Primary Provider Decision **Date:** 2026-05-31 **Decision:** Meridian will treat DeepSeek as a primary Model Harness provider beside Claude and OpenAI. ## Requirement DeepSeek is not a one-off fallback. It must be represented in Meridian's Model Har
-   - Signals: relevance=0.7071, freshness=0.9616, evidence=0.75
-
-17. 2026-05-31 Polaris Balance Button For Meridian [0.4037]
-   - Source: 2026-05-31 Polaris Balance Button For Meridian.md
-   - Why it may matter: # Polaris Balance Button For Meridian **Date:** 2026-05-31 **Decision:** Meridian needs the Polaris Balance button pattern. ## Correction The intended requirement is **Balance button**, not balanced navigation. ## Requirement Bifrost should expose a Balance su
-   - Signals: relevance=0.7071, freshness=0.9616, evidence=0.75
-
-18. 2026-05-31 Visible Prompt Payload Meter [0.4037]
-   - Source: 2026-05-31 Visible Prompt Payload Meter.md
-   - Why it may matter: # Visible Prompt Payload Meter Date: 2026-05-31 ## Decision Meridian must carry forward Polaris's per-prompt payload-size indicator as a V2 Relay/Bifrost requirement. In Polaris, the visible `(under 1k)` / `(12.4k)` style prompt-size line exposed that DeepSeek
-   - Signals: relevance=0.7071, freshness=0.9616, evidence=0.75
-
-19. 2026-05-31 Polaris Feature Inventory for Meridian [0.4037]
-   - Source: 2026-05-31 Polaris Feature Inventory for Meridian.md
-   - Why it may matter: # Polaris Feature Inventory for Meridian Date: 2026-05-31 The decision checklist has been created in the Polaris repo: `C:\Users\scott\Code\Polaris\docs\polaris-feature-inventory-for-meridian.md` It inventories Polaris features from git history, current UI/nav
-   - Signals: relevance=0.7071, freshness=0.9616, evidence=0.75
-
-20. 2026-05-31 Queue Authority and Build 5 Runway [0.4037]
-   - Source: 2026-05-31 Queue Authority and Build 5 Runway.md
-   - Why it may matter: # Queue Authority and Build 5 Runway Coordinator update for Meridian V2. ## What Changed - Build 2 now has an explicit queue authority note: only the first `Coordinator Override - Active Now` block is executable. - Build 4 now has the same queue authority note
-   - Signals: relevance=0.7071, freshness=0.9616, evidence=0.75
+20. CoSAI Shared Responsibility Framework v1.0 [0.2097]
+   - Source: ai-shared-responsibility/CoSAI Shared Responsibility Framework v1.0.md
+   - Tags: 1-executive-summary, 2-current-state-and-challenges, 21-current-state-pain-points, 22-use-case-example, 3-the-cosai-ai-shared-responsibility-framework, 31-personas, 32-cloud-operating-models, 33-conclusion
+   - Why it may matter: # AI Shared Responsibility Framework, V1.0 OASIS Open Project : [Coalition for Secure AI (CoSAI)](https://github.com/cosai-oasis) [Workstream 2: AI Shared Responsibility Framework](https://github.com/cosai-oasis/ws2-defenders/tree/main/shared-responsibility-fr
+   - Signals: freshness=0.9973, evidence=0.75
 
 ## Agent Instruction
 

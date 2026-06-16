@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-06-15 14:08 UTC
+**Generated:** 2026-06-16 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 27
+**Errors:** 1 · **Warnings:** 29
 
 ---
 
@@ -43,11 +43,13 @@
 
 ## Electives Hub (electives-hub.html)
 
-ℹ️ `electives-hub.html` is **registry-only** (no hardcoded BASE_COURSES). Checks H-1 and H-2 are not applicable — the hub reads `course-registry.json` at runtime, so any registry course is automatically present and any registry inconsistency surfaces via the registry checks above.
+ℹ️ `electives-hub.html` is **registry-only** (no hardcoded BASE_COURSES). Checks H-1, H-2, X-2, and X-3 are not applicable — the hub reads `course-registry.json` at runtime via `loadCourseRegistry()`, so any registry course with `status: "live"` is automatically present and any registry inconsistency surfaces via the registry checks above.
 
 ## Cross-References
 
-### Warnings (3)
+### Warnings (5)
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
@@ -57,10 +59,10 @@
 ## Summary
 
 **1 error(s) require attention:**
-1. **MISSING_DIR** — Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
+1. MISSING_DIR: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
 
 ### Stats
-- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 163
-- Electives hub BASE_COURSES: N/A (registry-driven)
-- Module files verified: 875
+- Registry courses: 131 (128 live, 3 coming soon)
+- courses.html internal links checked: 20
+- Electives hub BASE_COURSES: 0 (dynamic — sourced from registry at runtime)
+- Module files verified: 780

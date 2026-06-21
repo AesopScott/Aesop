@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-06-20 14:05 UTC
+**Generated:** 2026-06-21 14:05 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 26
+**Errors:** 1 · **Warnings:** 29
 
 ---
 
@@ -11,7 +11,8 @@
 ### Errors (1)
 - 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-### Warnings (23)
+### Warnings (24)
+- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -46,7 +47,9 @@
 
 ## Cross-References
 
-### Warnings (3)
+### Warnings (5)
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
@@ -56,10 +59,10 @@
 ## Summary
 
 **1 error(s) require attention:**
-1. MISSING_DIR: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
-- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
+- Registry courses: 131 (128 live, 3 coming soon)
 - courses.html internal links checked: 21
-- Electives hub BASE_COURSES: 0 (dynamic — sourced from registry at runtime)
-- Module files verified: 764
+- Electives hub BASE_COURSES: 0 (registry-only)
+- Module files verified: 780

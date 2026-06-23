@@ -1,15 +1,15 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-06-22 14:06 UTC
+**Generated:** 2026-06-23 14:06 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 29
+**Errors:** 1 · **Warnings:** 27
 
 ---
 
 ## Course Registry (course-registry.json)
 
 ### Errors (1)
-- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` but directory does not exist
 
 ### Warnings (24)
 - 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
@@ -43,13 +43,11 @@
 
 ## Electives Hub (electives-hub.html)
 
-ℹ️ `electives-hub.html` is **registry-only** (no hardcoded BASE_COURSES). Checks H-1, H-2, X-2, and X-3 are not applicable — the hub reads `course-registry.json` at runtime via `loadCourseRegistry()`, so any registry course with `status: "live"` is automatically present and any registry inconsistency surfaces via the registry checks above.
+✅ No issues found.
 
 ## Cross-References
 
-### Warnings (5)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
+### Warnings (3)
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
@@ -59,10 +57,13 @@
 ## Summary
 
 **1 error(s) require attention:**
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. MISSING_DIR: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` but directory does not exist
+
+> ℹ️ `electives-hub.html` no longer uses a static `BASE_COURSES` list — courses are loaded dynamically from `course-registry.json`. Hub-vs-registry checks (H-1, H-2, X-2, X-3) are effectively satisfied by construction and skipped.
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
 - courses.html internal links checked: 21
-- Electives hub BASE_COURSES: 0 (registry-only)
+- courses.html `?course=` ids: 123
+- Electives hub BASE_COURSES: 0 (dynamic — none defined statically)
 - Module files verified: 780

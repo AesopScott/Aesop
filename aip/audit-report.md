@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-06-25 14:06 UTC
+**Generated:** 2026-06-26 14:06 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 27
+**Errors:** 1 · **Warnings:** 29
 
 ---
 
@@ -49,7 +49,9 @@
 
 ## Cross-References
 
-### Warnings (3)
+### Warnings (5)
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `society` (slug `society`) has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-11` (slug `ar-11`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` (slug `ar-8`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` (slug `ap-7`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` (slug `eval-benchmark`) has no link from courses.html
@@ -63,7 +65,7 @@
 
 ### Stats
 - Registry courses: 131 (128 live, 3 coming soon)
-- courses.html internal links checked: 20
+- courses.html internal links checked: 21
 - Course slugs linked from courses.html (`?course=`): 123
 - Electives hub: registry-only (no hardcoded BASE_COURSES)
 - Module files verified: 780

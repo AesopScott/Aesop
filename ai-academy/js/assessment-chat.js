@@ -68,8 +68,19 @@ export async function assessmentSend() {
     addAssessmentMessage(learnerId, 'assistant', reply).catch(() => {});
     exchangeCount++;
     updateProgress();
-    sendBtn.disabled = false;
-    input.focus();
+
+    // Auto-complete assessment after threshold reached (avoid infinite fallback loop)
+    if (exchangeCount >= COMPLETION_THRESHOLD) {
+      await handleAssessmentComplete({
+        aptitudeScore: 50,
+        aptitudeBand: 'intermediate',
+        completionFlag: true,
+        reasoning: 'Assessment completed in offline mode after sufficient exchanges.'
+      });
+    } else {
+      sendBtn.disabled = false;
+      input.focus();
+    }
     return;
   }
 
@@ -128,11 +139,23 @@ export async function assessmentSend() {
       addAssessmentMessage(learnerId, 'assistant', reply).catch(() => {});
       exchangeCount++;
       updateProgress();
+
+      // Auto-complete assessment after threshold reached (avoid infinite fallback loop)
+      if (exchangeCount >= COMPLETION_THRESHOLD) {
+        await handleAssessmentComplete({
+          aptitudeScore: 50,
+          aptitudeBand: 'intermediate',
+          completionFlag: true,
+          reasoning: 'Assessment completed in offline mode after sufficient exchanges.'
+        });
+      }
     }
   }
 
-  sendBtn.disabled = false;
-  input.focus();
+  if (!assessmentComplete) {
+    sendBtn.disabled = false;
+    input.focus();
+  }
 }
 
 /**

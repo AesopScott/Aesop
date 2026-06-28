@@ -1,14 +1,14 @@
 # Products Ladder Daily Update Report
 
-Generated: 2026-06-27T11:47:42Z
+Generated: 2026-06-28T11:59:00Z
 
 ## Summary
 
 - Products checked: 500 / 500
 - Review now: 1
-- Monitor: 72
-- Low-confidence new signals: 83
-- Fetch or parse errors: 0
+- Monitor: 38
+- Low-confidence new signals: 52
+- Fetch or parse errors: 223
 
 ## Review Queue
 
@@ -17,209 +17,111 @@ Generated: 2026-06-27T11:47:42Z
 - Type: AI governance, model risk, privacy, and compliance
 - Top score: 80
 - New signals: 1
-- [ValidMind Launches Atryum, a New Open Source Control Layer for AI Agents, and Opens Early Access to ValidMind Agent Authority](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb932fc644c90b2e88fca6b2a8175&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f15%2f10399583.htm&c=8246450303575987861&mkt=en-us)
+- [ValidMind Launches Atryum, a New Open Source Control Layer for AI Agents, and Opens Early Access to ValidMind Agent Authority](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d7948034b48b1cf65a3b8751f21&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f15%2f10399583.htm&c=8246450303575987861&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-15
-
-### #1 ChatGPT (monitor)
-
-- Type: General AI assistant
-- Top score: 68
-- New signals: 5
-- [OpenAI ChatGPT 5.6 new AI model: Check expected release date, features, Sol, Terra, Luna, & more | Here's GPT-5.6 vs GPT-5.5](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85e938d448abce6a6c94a36a543&url=https%3a%2f%2fwww.msn.com%2fen-in%2ftechnology%2fartificial-intelligence%2fopenai-chatgpt-5-6-new-ai-model-check-expected-release-date-features-sol-terra-luna-more-here-s-gpt-5-6-vs-gpt-5-5%2far-AA26DH4s&c=15271744608700727603&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-26
-- [ChatGPT Enterprise Gains Slack Write Access: AI Agent Can Now Join Channels, Upload Files](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85e938d448abce6a6c94a36a543&url=https%3a%2f%2fwww.techtimes.com%2farticles%2f318982%2f20260624%2fchatgpt-enterprise-gains-slack-write-access-ai-agent-can-now-join-channels-upload-files.htm&c=11297633164659535964&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
-- [How To Use ChatGPT To Launch A Teen Side Hustle This Summer](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85e938d448abce6a6c94a36a543&url=https%3a%2f%2fwww.forbes.com%2fsites%2fsarahhernholm%2f2026%2f06%2f25%2fhow-to-use-chatgpt-to-launch-a-teen-side-hustle-this-summer%2f&c=9909130921711591211&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-25
-
-### #2 Claude (monitor)
-
-- Type: General AI assistant
-- Top score: 72
-- New signals: 5
-- [Anthropic Launches Claude Tag, Bringing AI Agents Into Slack](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85f2c4e48bf99d6ed6199302746&url=https%3a%2f%2fwww.techrepublic.com%2farticle%2fnews-anthropic-claude-tag-ai-agent-slack%2f&c=17472586530348994595&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
-- [Anthropic Releases First Public Version Of Claude Mythos—With Major Safeguards](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85f2c4e48bf99d6ed6199302746&url=https%3a%2f%2fwww.forbes.com%2fsites%2fzacharyfolk%2f2026%2f06%2f09%2fanthropic-releases-first-public-version-of-claude-mythos-with-major-safeguards%2f&c=8661041702732069132&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-09
-- [Claude can now join your Slack channels and work alongside your team](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85f2c4e48bf99d6ed6199302746&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fclaude-can-now-join-your-slack-channels-and-work-alongside-your-team%2far-AA26CCjO&c=14964446933610534733&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-26
-
-### #4 Microsoft Copilot (monitor)
-
-- Type: General AI assistant
-- Top score: 64
-- New signals: 5
-- [Microsoft changes Copilot pricing model](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb860a3eb4c8fb5bdb043fc71390b&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fother%2fmicrosoft-changes-copilot-pricing-model%2far-AA25YNRO&c=1404108987474207081&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-18
-- [Save 10 Hours per Week by Mastering Microsoft Copilot](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb860a3eb4c8fb5bdb043fc71390b&url=https%3a%2f%2fwww.geeky-gadgets.com%2fmicrosoft-copilot-productivity-guide%2f&c=5145056028603163492&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-17
-- [Microsoft Copilot Pages Will Change Your Entire Research Workflow](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb860a3eb4c8fb5bdb043fc71390b&url=https%3a%2f%2fwww.geeky-gadgets.com%2fadvanced-microsoft-copilot-guide%2f&c=9721899776258167343&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
-
-### #5 Perplexity (monitor)
-
-- Type: Answer engine
-- Top score: 56
-- New signals: 5
-- [Perplexity AI Launches Computer for Counsel, Powered by Legal Tech Integrations](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8602e7742318dde7259d675ab6a&url=https%3a%2f%2fwww.law.com%2flegaltechnews%2f2026%2f06%2f24%2fperplexity-ai-launches-computer-for-counsel-powered-by-legal-tech-integrations%2f&c=4885742368496624576&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
-- [Perplexity's AI Agent Now Has a Brain That Learns From Its Own Mistakes](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8602e7742318dde7259d675ab6a&url=https%3a%2f%2fdecrypt.co%2f371584%2fperplexity-ai-agent-brain&c=7468072710208224499&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-18
-- [I tested ChatGPT and Perplexity AI as my CarPlay voice assistants - both made Siri look bad](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8602e7742318dde7259d675ab6a&url=https%3a%2f%2fwww.zdnet.com%2farticle%2fchatgpt-perplexity-ai-carplay-voice-assistant%2f&c=15897724013782986875&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-03
-
-### #6 Meta AI (monitor)
-
-- Type: General AI assistant
-- Top score: 60
-- New signals: 5
-- [Meta's AI app has seen growth soar since launch of Vibes, but trails OpenAI's Sora](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb861d96347e1aceb00c10ac738ba&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f10%2f28%2fmeta-ai-vibes-on-wall-street-radar-in-q3-earnings-trails-openai-sora.html&c=3098444947415475509&mkt=en-us)
-  - Source/date: www.bing.com / 2025-10-28
-- [Meta Adventurer Smart Glasses Unboxing and Hands-on First Look](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb861d96347e1aceb00c10ac738ba&url=https%3a%2f%2fwww.geeky-gadgets.com%2fmeta-adventurer-hands-on-review%2f&c=7577088943496513495&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-26
-- [Meta plans to release standalone Meta AI app in effort to compete with OpenAI's ChatGPT](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb861d96347e1aceb00c10ac738ba&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f02%2f27%2fmeta-plans-to-release-a-standalone-meta-ai-app.html&c=16094981729224353647&mkt=en-us)
-  - Source/date: www.bing.com / 2025-02-27
 
 ### #7 Grok (monitor)
 
 - Type: General AI assistant
-- Top score: 60
+- Top score: 64
 - New signals: 5
-- [Elon Musk's Grok AI Chatbot Now Free For All Users, But Has Limits](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb862d24a44d29b7c8dd9a0cb00f3&url=https%3a%2f%2fwww.ndtv.com%2fworld-news%2felon-musks-x-launches-free-tier-for-grok-ai-chatbot-7199369&c=17305654003650340077&mkt=en-us)
+- [Elon Musk’s Grok 4 Is Breaking Benchmarks – and Accelerating the AI Boom](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8863954c86a3490c455d21b34f&url=https%3a%2f%2finvestorplace.com%2fhypergrowthinvesting%2f2025%2f07%2felon-musks-grok-4-is-breaking-benchmarks-and-accelerating-the-ai-boom%2f&c=3569472916011461507&mkt=en-us)
+  - Source/date: www.bing.com / 2025-07-17
+- [Elon Musk's Grok AI Chatbot Now Free For All Users, But Has Limits](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8863954c86a3490c455d21b34f&url=https%3a%2f%2fwww.ndtv.com%2fworld-news%2felon-musks-x-launches-free-tier-for-grok-ai-chatbot-7199369&c=17305654003650340077&mkt=en-us)
   - Source/date: www.bing.com / 2024-12-08
-- [Grok 3 AI to arrive soon with "scary smart" capabilities, Musk says](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb862d24a44d29b7c8dd9a0cb00f3&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fgrok-3-ai-to-arrive-soon-with-scary-smart-capabilities-musk-says%2far-AA1z0oVg&c=3940811115102165541&mkt=en-us)
-  - Source/date: www.bing.com / 2025-02-13
-- [Grok Adult Content Tops 10 Billion Images Monthly: xAI Engineers Admit CSAM Has No Fix](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb862d24a44d29b7c8dd9a0cb00f3&url=https%3a%2f%2fwww.techtimes.com%2farticles%2f319142%2f20260626%2fgrok-adult-content-tops-10-billion-images-monthly-xai-engineers-admit-csam-has-no-fix.htm&c=359161244874713858&mkt=en-us)
+- [Grok Adult Content Tops 10 Billion Images Monthly: xAI Engineers Admit CSAM Has No Fix](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8863954c86a3490c455d21b34f&url=https%3a%2f%2fwww.techtimes.com%2farticles%2f319142%2f20260626%2fgrok-adult-content-tops-10-billion-images-monthly-xai-engineers-admit-csam-has-no-fix.htm&c=359161244874713858&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-26
-
-### #8 DeepSeek (monitor)
-
-- Type: General AI assistant
-- Top score: 68
-- New signals: 5
-- [DeepSeek v3.2: What's new and how does it compare to ChatGPT?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb862465f4af4a5a275a45011f150&url=https%3a%2f%2fmashable.com%2farticle%2fdeepseek-v3-2-models-released&c=2467795930695208722&mkt=en-us)
-  - Source/date: www.bing.com / 2025-12-02
-- [Here’s How DeepSeek Censorship Actually Works—and How to Get Around It](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb862465f4af4a5a275a45011f150&url=https%3a%2f%2fwww.wired.com%2fstory%2fdeepseek-censorship%2f&c=5094308174299322515&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-31
-- [Why did DeepSeek tell me it’s made by Microsoft?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb862465f4af4a5a275a45011f150&url=https%3a%2f%2fwww.fastcompany.com%2f91267647%2fdeepseek-told-me-made-by-microsoft-r1-openai-claude-anthropic-ai-model-copilot&c=10536826387546205535&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-27
 
 ### #11 Pi (monitor)
 
 - Type: Personal AI assistant
 - Top score: 60
 - New signals: 5
-- [He Hacked Teslas For Elon Musk. Now He’s Launching A $100 Million AI Cyber Agent.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86405194d6f8623042a843416d6&url=https%3a%2f%2fwww.forbes.com%2fsites%2fthomasbrewster%2f2026%2f06%2f10%2felon-musk-favorite-hacker-launches-100-million-ai-cyber-startup%2f&c=5589052994334394687&mkt=en-us)
+- [He Hacked Teslas For Elon Musk. Now He’s Launching A $100 Million AI Cyber Agent.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8bf93f4ae8857e92c0c419e0d9&url=https%3a%2f%2fwww.forbes.com%2fsites%2fthomasbrewster%2f2026%2f06%2f10%2felon-musk-favorite-hacker-launches-100-million-ai-cyber-startup%2f&c=5589052994334394687&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-10
-- [Inflection AI Introduces Pi, Your Personal AI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86405194d6f8623042a843416d6&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20230502006113%2fen%2fInflection-AI-Introduces-Pi-Your-Personal-AI&c=13288148588757239937&mkt=en-us)
-  - Source/date: www.bing.com / 2023-05-02
-- [DEEPX and Sixfab Launch 'DEEPX AI HAT' to Drive Edge Physical AI on Raspberry Pi](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86405194d6f8623042a843416d6&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f26%2f10406503.htm&c=5943922999556497902&mkt=en-us)
+- [I added an AI kit to my Raspberry Pi security camera, and it's better than any professional solution](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8bf93f4ae8857e92c0c419e0d9&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fhardware-and-devices%2fi-added-an-ai-kit-to-my-raspberry-pi-security-camera-and-it-s-better-than-any-professional-solution%2far-AA26HBPF&c=4581326221861798310&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-27
+- [DEEPX and Sixfab Launch 'DEEPX AI HAT' to Drive Edge Physical AI on Raspberry Pi](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8bf93f4ae8857e92c0c419e0d9&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f26%2f10406503.htm&c=5943922999556497902&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-26
 
 ### #14 Kimi (monitor)
 
 - Type: General AI assistant
 - Top score: 64
-- New signals: 5
-- [How Moonshot's Kimi K2.5 helps AI builders spin up agent swarms easier than ever](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb865d00949118b3d38e5bab7dfda&url=https%3a%2f%2fventurebeat.com%2forchestration%2fmoonshot-ai-debuts-kimi-k2-5-most-powerful-open-source-llm-beating-opus-4-5&c=5778964761559720930&mkt=en-us)
-  - Source/date: www.bing.com / 2026-01-26
-- [Alibaba-backed Moonshot releases new Kimi AI model that beats ChatGPT, Claude in coding — and it costs less](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb865d00949118b3d38e5bab7dfda&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f07%2f14%2falibaba-backed-moonshot-releases-kimi-k2-ai-rivaling-chatgpt-claude.html&c=640956532595639510&mkt=en-us)
+- New signals: 4
+- [Alibaba-backed Moonshot releases new Kimi AI model that beats ChatGPT, Claude in coding — and it costs less](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8c172d4695a656355ab14222c6&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f07%2f14%2falibaba-backed-moonshot-releases-kimi-k2-ai-rivaling-chatgpt-claude.html&c=640956532595639510&mkt=en-us)
   - Source/date: www.bing.com / 2025-07-14
-- [Cursor has confirmed that its latest coding AI, 'Composer 2,' is based on Kimi, a product of China's Moonshot AI.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb865d00949118b3d38e5bab7dfda&url=https%3a%2f%2fgigazine.net%2fgsc_news%2fen%2f20260323-cursor-admits-composer-2-kimi%2f&c=5027814518684991535&mkt=en-us)
+- [How Moonshot's Kimi K2.5 helps AI builders spin up agent swarms easier than ever](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8c172d4695a656355ab14222c6&url=https%3a%2f%2fventurebeat.com%2forchestration%2fmoonshot-ai-debuts-kimi-k2-5-most-powerful-open-source-llm-beating-opus-4-5&c=5778964761559720930&mkt=en-us)
+  - Source/date: www.bing.com / 2026-01-26
+- [Cursor has confirmed that its latest coding AI, 'Composer 2,' is based on Kimi, a product of China's Moonshot AI.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8c172d4695a656355ab14222c6&url=https%3a%2f%2fgigazine.net%2fgsc_news%2fen%2f20260323-cursor-admits-composer-2-kimi%2f&c=5027814518684991535&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-23
-
-### #15 Doubao (monitor)
-
-- Type: General AI assistant
-- Top score: 72
-- New signals: 5
-- [China’s ByteDance releases Doubao 2.0 AI model for 'agent era'](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb866c8b649f8a20efc51f2245b5a&url=https%3a%2f%2fwww.reuters.com%2fworld%2fasia-pacific%2fchinas-bytedance-releases-doubao-20-ai-chatbot-2026-02-14%2f&c=7328248735846911883&mkt=en-us)
-  - Source/date: www.bing.com / 2026-02-13
-- [How ByteDance Made China’s Most Popular AI Chatbot](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb866c8b649f8a20efc51f2245b5a&url=https%3a%2f%2fwww.wired.com%2fstory%2fbytedance-doubao-chatbot-popularity%2f&c=8553429605299031706&mkt=en-us)
-  - Source/date: www.bing.com / 2025-10-16
-- [Doubao Cuts, Tencent Pivots: China’s AI Enters A Self-Correction Cycle](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb866c8b649f8a20efc51f2245b5a&url=https%3a%2f%2fwww.forbes.com%2fsites%2fviviantoh%2f2026%2f05%2f18%2fdoubao-cuts-tencent-pivots-chinas-ai-enters-a-self-correction-cycle%2f&c=4698339912158460497&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-18
 
 ### #20 Genspark (monitor)
 
 - Type: Agentic search assistant
 - Top score: 64
 - New signals: 5
-- [Genspark launches Claw AI assistant as secure alternative to open agent platforms such as OpenClaw](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86826384a9d9dd77b9410850463&url=https%3a%2f%2fsiliconangle.com%2f2026%2f03%2f12%2fgenspark-launches-claw-ai-assistant-secure-alternative-open-agent-platforms-openclaw%2f&c=12919897964866923585&mkt=en-us)
+- [Genspark launches Claw AI assistant as secure alternative to open agent platforms such as OpenClaw](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c90c889495e9c685488e0f46d2b&url=https%3a%2f%2fsiliconangle.com%2f2026%2f03%2f12%2fgenspark-launches-claw-ai-assistant-secure-alternative-open-agent-platforms-openclaw%2f&c=12919897964866923585&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-12
-- [Genspark Launches Genspark Claw for Desktop and Microsoft Office Integration with AI Workspace 4.0, Bringing AI to Local Files and Everyday Work Apps](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86826384a9d9dd77b9410850463&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260408545044%2fen%2fGenspark-Launches-Genspark-Claw-for-Desktop-and-Microsoft-Office-Integration-with-AI-Workspace-4.0-Bringing-AI-to-Local-Files-and-Everyday-Work-Apps&c=11527194973359369895&mkt=en-us)
+- [Genspark Launches Genspark Claw for Desktop and Microsoft Office Integration with AI Workspace 4.0, Bringing AI to Local Files and Everyday Work Apps](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c90c889495e9c685488e0f46d2b&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260408545044%2fen%2fGenspark-Launches-Genspark-Claw-for-Desktop-and-Microsoft-Office-Integration-with-AI-Workspace-4.0-Bringing-AI-to-Local-Files-and-Everyday-Work-Apps&c=11527194973359369895&mkt=en-us)
   - Source/date: www.bing.com / 2026-04-07
-- [Genspark is the latest attempt at an AI-powered search engine](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86826384a9d9dd77b9410850463&url=https%3a%2f%2ftechcrunch.com%2f2024%2f06%2f18%2fgenspark-is-the-latest-attempt-at-an-ai-powered-search-engine%2f&c=13273032957240924390&mkt=en-us)
+- [Genspark is the latest attempt at an AI-powered search engine](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c90c889495e9c685488e0f46d2b&url=https%3a%2f%2ftechcrunch.com%2f2024%2f06%2f18%2fgenspark-is-the-latest-attempt-at-an-ai-powered-search-engine%2f&c=13273032957240924390&mkt=en-us)
   - Source/date: www.bing.com / 2024-06-18
 
 ### #21 Microsoft 365 Copilot (monitor)
 
 - Type: Office productivity suite
-- Top score: 68
+- Top score: 60
 - New signals: 5
-- [Microsoft 365 Copilot adds Sora 2 for AI video creation, plus more new features0 0](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb869cb1d4937a6b5e42d67d950cf&url=https%3a%2f%2fwww.neowin.net%2fnews%2fmicrosoft-365-copilot-adds-sora-2-for-ai-video-creation-plus-more-new-features%2f&c=1395206788253594679&mkt=en-us)
-  - Source/date: www.bing.com / 2025-11-18
-- [Microsoft 365 Copilot Commercially Released](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb869cb1d4937a6b5e42d67d950cf&url=https%3a%2f%2fredmondmag.com%2farticles%2f2023%2f11%2f01%2fmicrosoft-365-copilot-ga.aspx&c=17123733637993251695&mkt=en-us)
-  - Source/date: www.bing.com / 2023-10-31
-- [Microsoft 365 Copilot security flaw can put your confidential data at risk, govt issues warning](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb869cb1d4937a6b5e42d67d950cf&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fnews%2fmicrosoft-365-copilot-security-flaw-can-put-your-confidential-data-at-risk-govt-issues-warning%2far-AA26qlxX&c=16525713224042752109&mkt=en-us)
+- [Microsoft 365 Copilot security flaw can put your confidential data at risk, govt issues warning](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c91c6234ec6b7caa12f7cb3310b&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fnews%2fmicrosoft-365-copilot-security-flaw-can-put-your-confidential-data-at-risk-govt-issues-warning%2far-AA26qlxX&c=16525713224042752109&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-24
+- [Why the Microsoft 365 Copilot bug matters for data security](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c91c6234ec6b7caa12f7cb3310b&url=https%3a%2f%2fwww.foxnews.com%2ftech%2fwhy-microsoft-365-copilot-bug-matters-data-security&c=13789146328896202563&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-02
+- [Microsoft is working on yet another OpenClaw-like agent](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c91c6234ec6b7caa12f7cb3310b&url=https%3a%2f%2ftechcrunch.com%2f2026%2f04%2f13%2fmicrosoft-is-working-on-yet-another-openclaw-like-agent%2f&c=9758088159808636751&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-13
+
+### #30 Writer (monitor)
+
+- Type: Enterprise writing platform
+- Top score: 60
+- New signals: 2
+- [WRITER Sets a New Standard for Enterprise AI with the First Agent Skills and Playbooks for Business Teams](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9693a148e8a154a19fe283a67f&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260325148965%2fen%2fWRITER-Sets-a-New-Standard-for-Enterprise-AI-with-the-First-Agent-Skills-and-Playbooks-for-Business-Teams&c=4423394301038877816&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-25
+- [Generative AI startup Writer raises $200M at a $1.9B valuation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9693a148e8a154a19fe283a67f&url=https%3a%2f%2ftechcrunch.com%2f2024%2f11%2f12%2fgenerative-ai-startup-writer-raises-200m-at-a-1-9b-valuation%2f&c=14654796245862048863&mkt=en-us)
+  - Source/date: www.bing.com / 2024-11-12
 
 ### #36 GitHub Copilot (monitor)
 
 - Type: Coding assistant
 - Top score: 72
 - New signals: 5
-- [GitHub Copilot users get a rude awakening as new AI pricing goes into effect](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8717ad3434b9712b05d51b835ad&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fsoftware%2fgithub-copilot-users-get-a-rude-awakening-as-new-ai-pricing-goes-into-effect%2far-AA24IubC&c=326341807516764269&mkt=en-us)
+- [GitHub Copilot users get a rude awakening as new AI pricing goes into effect](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9a38d045fe92288d2922f86958&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fsoftware%2fgithub-copilot-users-get-a-rude-awakening-as-new-ai-pricing-goes-into-effect%2far-AA24IubC&c=326341807516764269&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-03
-- [AI costs how much? GitHub Copilot users react to new usage-based pricing system.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8717ad3434b9712b05d51b835ad&url=https%3a%2f%2farstechnica.com%2fai%2f2026%2f06%2fai-costs-how-much-github-copilot-users-react-to-new-usage-based-pricing-system%2f&c=227954528399205109&mkt=en-us)
+- [AI costs how much? GitHub Copilot users react to new usage-based pricing system.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9a38d045fe92288d2922f86958&url=https%3a%2f%2farstechnica.com%2fai%2f2026%2f06%2fai-costs-how-much-github-copilot-users-react-to-new-usage-based-pricing-system%2f&c=227954528399205109&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-01
-- [GitHub Copilot Desktop App Targets Parallel Agentic Workflows](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8717ad3434b9712b05d51b835ad&url=https%3a%2f%2fwww.infoq.com%2fnews%2f2026%2f06%2fgithub-copilot-app%2f&c=468241727728537654&mkt=en-us)
+- [GitHub Copilot Desktop App Targets Parallel Agentic Workflows](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9a38d045fe92288d2922f86958&url=https%3a%2f%2fwww.infoq.com%2fnews%2f2026%2f06%2fgithub-copilot-app%2f&c=468241727728537654&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-17
-
-### #37 Cursor (monitor)
-
-- Type: AI code editor
-- Top score: 72
-- New signals: 5
-- [Cursor’s GitHub Rival Origin and New SpaceX Model Raise Code Custody Stakes](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb872896a4f2dbc129ea8b2eb0518&url=https%3a%2f%2fwww.techtimes.com%2farticles%2f319031%2f20260624%2fcursors-github-rival-origin-new-spacex-model-raise-code-custody-stakes.htm&c=11414317723107690127&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-25
-- [Cursor Trains First Frontier Model From Scratch on Colossus: 1.5 Trillion Parameters](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb872896a4f2dbc129ea8b2eb0518&url=https%3a%2f%2fwww.techtimes.com%2farticles%2f318974%2f20260624%2fcursor-trains-first-frontier-model-scratch-colossus-15-trillion-parameters.htm&c=8753003313541783789&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
-- [SpaceX buys AI coding startup for $60B in race for an edge over Anthropic and OpenAI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb872896a4f2dbc129ea8b2eb0518&url=https%3a%2f%2fwww.latimes.com%2fbusiness%2fstory%2f2026-06-16%2fspacex-buys-ai-coding-startup-cursor-for-60-billion-in-race-for-edge-over-anthropic-openai&c=15202726935847134933&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-16
 
 ### #39 Claude Code (monitor)
 
 - Type: Agentic coding tool
 - Top score: 60
 - New signals: 5
-- [Microsoft Ends Claude Code Licenses As It Shifts Developers To Copilot](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb873dc974b639b86237128dfecf9&url=https%3a%2f%2fwww.forbes.com%2fsites%2fjonmarkman%2f2026%2f06%2f01%2fmicrosoft-ends-claude-code-licenses-as-it-pushes-copilot-cli%2f&c=12188673883399845615&mkt=en-us)
+- [Microsoft Ends Claude Code Licenses As It Shifts Developers To Copilot](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9cce9f435bb4d7f989872d25fb&url=https%3a%2f%2fwww.forbes.com%2fsites%2fjonmarkman%2f2026%2f06%2f01%2fmicrosoft-ends-claude-code-licenses-as-it-pushes-copilot-cli%2f&c=12188673883399845615&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-01
-- [Anthropic's engineering leader says Claude Code is making programmers lonelier](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb873dc974b639b86237128dfecf9&url=https%3a%2f%2fwww.businessinsider.com%2fanthropic-claude-code-ai-engineering-loneliness-fiona-fung&c=868378221042936091&mkt=en-us)
+- [Anthropic's engineering leader says Claude Code is making programmers lonelier](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9cce9f435bb4d7f989872d25fb&url=https%3a%2f%2fwww.businessinsider.com%2fanthropic-claude-code-ai-engineering-loneliness-fiona-fung&c=868378221042936091&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-22
-- [Xiaomi's new open source, agentic AI coding harness MiMo Code beats Claude Code at ultra-long, 200+ step tasks](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb873dc974b639b86237128dfecf9&url=https%3a%2f%2fventurebeat.com%2ftechnology%2fxiaomis-new-open-source-agentic-ai-coding-harness-mimo-code-beats-claude-code-at-ultra-long-200-step-tasks&c=15786226924131257549&mkt=en-us)
+- [Xiaomi's new open source, agentic AI coding harness MiMo Code beats Claude Code at ultra-long, 200+ step tasks](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9cce9f435bb4d7f989872d25fb&url=https%3a%2f%2fventurebeat.com%2ftechnology%2fxiaomis-new-open-source-agentic-ai-coding-harness-mimo-code-beats-claude-code-at-ultra-long-200-step-tasks&c=15786226924131257549&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-11
-
-### #40 OpenAI Codex (monitor)
-
-- Type: Coding agent
-- Top score: 64
-- New signals: 5
-- [Claude Code vs. OpenAI Codex: I built 3 real apps to find the better agent—here’s the verdict](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb873f622436491a9b15e05617d51&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fpersonalfinance%2fclaude-code-vs-openai-codex-i-built-3-real-apps-to-find-the-better-agent-here-s-the-verdict%2far-AA23nVdu&c=1496264981530497791&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-17
-- [OpenAI Codex Mobile App: AI Coding Agent Now Available on iOS and Android via ChatGPT](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb873f622436491a9b15e05617d51&url=https%3a%2f%2fmemeburn.com%2fopenai-codex-mobile-app-now-available-on-ios-and-android%2f&c=11281010838525155528&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-19
-- [OpenAI Codex Automation Gains Record and Replay: Show It Once, Skip the Script](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb873f622436491a9b15e05617d51&url=https%3a%2f%2fwww.techtimes.com%2farticles%2f318759%2f20260620%2fopenai-codex-automation-gains-record-replay-show-it-once-skip-script.htm&c=2599326395180080429&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-20
 
 ### #45 Devin (monitor)
 
 - Type: Autonomous software engineering agent
 - Top score: 68
 - New signals: 2
-- [Devin, the viral coding AI agent, gets a new pay-as-you-go plan](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8760ddb4166825aff7619f23648&url=https%3a%2f%2ftechcrunch.com%2f2025%2f04%2f03%2fdevin-the-viral-coding-ai-agent-gets-a-new-pay-as-you-go-plan%2f&c=9194240115705097854&mkt=en-us)
+- [Devin, the viral coding AI agent, gets a new pay-as-you-go plan](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca0900444bba2278174ebb59bfa&url=https%3a%2f%2ftechcrunch.com%2f2025%2f04%2f03%2fdevin-the-viral-coding-ai-agent-gets-a-new-pay-as-you-go-plan%2f&c=9194240115705097854&mkt=en-us)
   - Source/date: www.bing.com / 2025-04-03
-- [Cognition’s Scott Wu says AI coding agents shouldn’t replace humans](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8760ddb4166825aff7619f23648&url=https%3a%2f%2ftechcrunch.com%2f2026%2f05%2f29%2fcognitions-scott-wu-says-ai-coding-agents-shouldnt-replace-humans%2f&c=17784628232026715874&mkt=en-us)
+- [Cognition’s Scott Wu says AI coding agents shouldn’t replace humans](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca0900444bba2278174ebb59bfa&url=https%3a%2f%2ftechcrunch.com%2f2026%2f05%2f29%2fcognitions-scott-wu-says-ai-coding-agents-shouldnt-replace-humans%2f&c=17784628232026715874&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-29
 
 ### #49 Tabnine (monitor)
@@ -227,11 +129,11 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Coding assistant
 - Top score: 64
 - New signals: 3
-- [How Tabnine delivers faster, safer AI-generated code at scale](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb878fc3e40698498ea58e14ddc4d&url=https%3a%2f%2fwww.cio.com%2fvideo%2f4116798%2fhow-tabnine-delivers-faster-safer-ai-generated-code-at-scale.html&c=8135048327102881186&mkt=en-us)
+- [How Tabnine delivers faster, safer AI-generated code at scale](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca21a404e64a5be68d8c92e284d&url=https%3a%2f%2fwww.cio.com%2fvideo%2f4116798%2fhow-tabnine-delivers-faster-safer-ai-generated-code-at-scale.html&c=8135048327102881186&mkt=en-us)
   - Source/date: www.bing.com / 2026-01-13
-- [Tabnine raises $15.5M for AI that autocompletes code](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb878fc3e40698498ea58e14ddc4d&url=https%3a%2f%2ftechcrunch.com%2f2022%2f06%2f15%2ftabnine-raises-15-5m-for-ai-that-autocompletes-code%2f&c=14359371821760366792&mkt=en-us)
+- [Tabnine raises $15.5M for AI that autocompletes code](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca21a404e64a5be68d8c92e284d&url=https%3a%2f%2ftechcrunch.com%2f2022%2f06%2f15%2ftabnine-raises-15-5m-for-ai-that-autocompletes-code%2f&c=14359371821760366792&mkt=en-us)
   - Source/date: www.bing.com / 2022-06-15
-- [Review: Tabnine AI coding assistant flexes its models](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb878fc3e40698498ea58e14ddc4d&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f3484857%2freview-tabnine-ai-coding-assistant-flexes-its-models.html&c=14486693214810819951&mkt=en-us)
+- [Review: Tabnine AI coding assistant flexes its models](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca21a404e64a5be68d8c92e284d&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f3484857%2freview-tabnine-ai-coding-assistant-flexes-its-models.html&c=14486693214810819951&mkt=en-us)
   - Source/date: www.bing.com / 2024-08-11
 
 ### #51 CodeRabbit (monitor)
@@ -239,9 +141,9 @@ Generated: 2026-06-27T11:47:42Z
 - Type: AI code review
 - Top score: 56
 - New signals: 2
-- [CodeRabbit’s “State of AI vs Human Code Generation” Report Finds That AI-Written Code Produces ~ 1.7x More Issues Than Human Code](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87957c04b119c758752fe4494da&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20251217666881%2fen%2fCodeRabbits-State-of-AI-vs-Human-Code-Generation-Report-Finds-That-AI-Written-Code-Produces-1.7x-More-Issues-Than-Human-Code&c=14817849666242406081&mkt=en-us)
+- [CodeRabbit’s “State of AI vs Human Code Generation” Report Finds That AI-Written Code Produces ~ 1.7x More Issues Than Human Code](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca4fa324ed386af0adef69b4fea&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20251217666881%2fen%2fCodeRabbits-State-of-AI-vs-Human-Code-Generation-Report-Finds-That-AI-Written-Code-Produces-1.7x-More-Issues-Than-Human-Code&c=14817849666242406081&mkt=en-us)
   - Source/date: www.bing.com / 2025-12-17
-- [How CodeRabbit brings AI to code reviews](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87957c04b119c758752fe4494da&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f4025088%2fhow-coderabbit-brings-ai-to-code-reviews.html&c=7117434474152012310&mkt=en-us)
+- [How CodeRabbit brings AI to code reviews](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca4fa324ed386af0adef69b4fea&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f4025088%2fhow-coderabbit-brings-ai-to-code-reviews.html&c=7117434474152012310&mkt=en-us)
   - Source/date: www.bing.com / 2025-07-20
 
 ### #54 Blackbox AI (monitor)
@@ -249,201 +151,125 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Coding assistant
 - Top score: 56
 - New signals: 1
-- [BLACKBOX AI Launches 2025 Black Friday Deal: 20% Off Annual Plans and a New Era of Human-Like Coding Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87b1a6c4b9798a0868574c699e9&url=https%3a%2f%2fwww.msn.com%2fen-gb%2flifestyle%2fshopping%2fblackbox-ai-launches-2025-black-friday-deal-20-off-annual-plans-and-a-new-era-of-human-like-coding-agents%2far-AA1PzcwX&c=8513536433288452544&mkt=en-us)
+- [BLACKBOX AI Launches 2025 Black Friday Deal: 20% Off Annual Plans and a New Era of Human-Like Coding Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca62bc24eb8943be000fc6a64a8&url=https%3a%2f%2fwww.msn.com%2fen-gb%2flifestyle%2fshopping%2fblackbox-ai-launches-2025-black-friday-deal-20-off-annual-plans-and-a-new-era-of-human-like-coding-agents%2far-AA1PzcwX&c=8513536433288452544&mkt=en-us)
   - Source/date: www.bing.com / 2025-10-31
 
 ### #61 GitHub (monitor)
 
 - Type: Developer collaboration platform
-- Top score: 72
+- Top score: 68
 - New signals: 5
-- [GitHub Copilot users get a rude awakening as new AI pricing goes into effect](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87e2f894514ab52a6ebdf4cca76&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fsoftware%2fgithub-copilot-users-get-a-rude-awakening-as-new-ai-pricing-goes-into-effect%2far-AA24IubC&c=326341807516764269&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-03
-- [GitHub Copilot Desktop App Targets Parallel Agentic Workflows](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87e2f894514ab52a6ebdf4cca76&url=https%3a%2f%2fwww.infoq.com%2fnews%2f2026%2f06%2fgithub-copilot-app%2f&c=468241727728537654&mkt=en-us)
+- [GitHub Copilot Desktop App Targets Parallel Agentic Workflows](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caa5d814496bd2e34ae6504e014&url=https%3a%2f%2fwww.infoq.com%2fnews%2f2026%2f06%2fgithub-copilot-app%2f&c=468241727728537654&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-17
-- [The AI coding craze gave GitHub its best month ever, executive tells employees](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87e2f894514ab52a6ebdf4cca76&url=https%3a%2f%2fwww.businessinsider.com%2fgithub-best-month-ever-internal-meeting-2026-6&c=3656215846426969322&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
+- [GitHub Copilot's New Pricing Shock: Some Developers Say Their AI Coding Bills Jumped 25x Overnight](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caa5d814496bd2e34ae6504e014&url=https%3a%2f%2fmemeburn.com%2fgithub-copilots-new-pricing-shock-some-developers-say-their-ai-coding-bills-jumped-25x-overnight%2f&c=1358429804952125687&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-03
+- [VS Code 1.125 Adds Copilot Spend Meter After Billing Shock](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caa5d814496bd2e34ae6504e014&url=https%3a%2f%2fvisualstudiomagazine.com%2farticles%2f2026%2f06%2f22%2fvs-code-1125-adds-copilot-spend-meter-after-billing-shock.aspx&c=8159150583913292786&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-22
 
 ### #62 NotebookLM (monitor)
 
 - Type: Research and study assistant
 - Top score: 68
 - New signals: 5
-- [NotebookLM’s Gemini 3.5 upgrade adds a cloud computer and help finding sources](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87f27a244139e467f4cf5be0703&url=https%3a%2f%2fwww.theverge.com%2ftech%2f944325%2fgoogle-notebooklm-ai-gemini-update&c=13532444349741131705&mkt=en-us)
+- [NotebookLM’s Gemini 3.5 upgrade adds a cloud computer and help finding sources](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caaf5a743e2b44e896f76bed911&url=https%3a%2f%2fwww.theverge.com%2ftech%2f944325%2fgoogle-notebooklm-ai-gemini-update&c=13532444349741131705&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-08
-- [Google’s NotebookLM Now Speaks Over 50 Languages, Enabling Global Content](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87f27a244139e467f4cf5be0703&url=https%3a%2f%2fwww.forbes.com%2fsites%2frogerdooley%2f2025%2f04%2f29%2fgoogles-notebooklm-now-speaks-50-languages-enabling-global-content%2f&c=3394250317750020331&mkt=en-us)
-  - Source/date: www.bing.com / 2025-04-29
-- [NotebookLM is one of Google’s best products, and it just got a cool upgrade](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb87f27a244139e467f4cf5be0703&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fnotebooklm-is-one-of-google-s-best-products-and-it-just-got-a-cool-upgrade%2far-AA26B1Py&c=16333067419038063842&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-26
-
-### #69 Glean (monitor)
-
-- Type: Enterprise search and knowledge assistant
-- Top score: 60
-- New signals: 5
-- [Glean introduces Enterprise Graph, new personalization features for AI assistant](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8839b744f9e9491b2c3dc24b756&url=https%3a%2f%2fsiliconangle.com%2f2025%2f09%2f25%2fglean-introduces-enterprise-graph-new-personalization-features-glean-assistant%2f&c=18075233953947838131&mkt=en-us)
-  - Source/date: www.bing.com / 2025-09-25
-- [Glean Raises $150M Series F at $7.2B Valuation to Accelerate Enterprise AI Agent Innovation Globally](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8839b744f9e9491b2c3dc24b756&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20250610090029%2fen%2fGlean-Raises-%24150M-Series-F-at-%247.2B-Valuation-to-Accelerate-Enterprise-AI-Agent-Innovation-Globally&c=13935975920310328072&mkt=en-us)
-  - Source/date: www.bing.com / 2025-06-10
-- [Glean Integrates with Microsoft Agent 365 to Deliver Enterprise-Ready AI Where Microsoft 365 Users Work](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8839b744f9e9491b2c3dc24b756&url=https%3a%2f%2ffinance.yahoo.com%2fnews%2fglean-integrates-microsoft-agent-365-163100331.html&c=10379580879528888065&mkt=en-us)
-  - Source/date: www.bing.com / 2025-11-17
+- [NotebookLM Is Getting Google's Latest Gemini AI Model](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caaf5a743e2b44e896f76bed911&url=https%3a%2f%2fwww.cnet.com%2ftech%2fservices-and-software%2fnotebooklm-big-upgrade-better-research%2f&c=4231677630155684252&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-08
+- [Why Google’s New NotebookLM 2.0 Update is a Massive Game Changer](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caaf5a743e2b44e896f76bed911&url=https%3a%2f%2fwww.geeky-gadgets.com%2fnotebooklm-2026-new-features%2f&c=18026071272925036714&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-18
 
 ### #71 Sana (monitor)
 
 - Type: Enterprise knowledge and learning platform
 - Top score: 60
 - New signals: 5
-- [Workday launches Sana AI agent to automate HR and finance tasks across enterprise systems](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88445614a5db67ee62ee2b0059f&url=https%3a%2f%2fwww.ciol.com%2ftech-buzz%2fworkday-sana-ai-agent-hr-finance-launch-11224809&c=1812818816099287946&mkt=en-us)
+- [Workday launches Sana AI agent to automate HR and finance tasks across enterprise systems](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb045564bfeabff86f63b3808d7&url=https%3a%2f%2fwww.ciol.com%2ftech-buzz%2fworkday-sana-ai-agent-hr-finance-launch-11224809&c=1812818816099287946&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-18
-- [Workday Announces Sana for IT Service Management and New Travel Agent](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88445614a5db67ee62ee2b0059f&url=https%3a%2f%2fwww.morningstar.com%2fnews%2fpr-newswire%2f20260521la65072%2fworkday-announces-sana-for-it-service-management-and-new-travel-agent&c=1031105295173375490&mkt=en-us)
+- [Workday Announces Sana for IT Service Management and New Travel Agent](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb045564bfeabff86f63b3808d7&url=https%3a%2f%2fwww.morningstar.com%2fnews%2fpr-newswire%2f20260521la65072%2fworkday-announces-sana-for-it-service-management-and-new-travel-agent&c=1031105295173375490&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-20
-- [Workday to acquire Swedish AI company Sana for $1.1bn](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88445614a5db67ee62ee2b0059f&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fcompanies%2fworkday-to-acquire-swedish-ai-company-sana-for-11bn%2far-AA1MKBLr&c=2417358552695913341&mkt=en-us)
+- [Workday to acquire Swedish AI company Sana for $1.1bn](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb045564bfeabff86f63b3808d7&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fcompanies%2fworkday-to-acquire-swedish-ai-company-sana-for-11bn%2far-AA1MKBLr&c=2417358552695913341&mkt=en-us)
   - Source/date: www.bing.com / 2025-09-17
-
-### #78 Onyx (monitor)
-
-- Type: Open-source workplace search
-- Top score: 76
-- New signals: 2
-- [Onyx Security Launches with $40M in Funding to Build the Secure AI Control Plane for the Agentic Era](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb888e38d4b159a65d1e51301f464&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260311837993%2fen%2fOnyx-Security-Launches-with-%252440M-in-Funding-to-Build-the-Secure-AI-Control-Plane-for-the-Agentic-Era&c=7217423930525780804&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-11
-- [As AI agents spread, Onyx raises $40 million to guard them](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb888e38d4b159a65d1e51301f464&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fother%2fas-ai-agents-spread-onyx-raises-40-million-to-guard-them%2far-AA1Yt7h6&c=12325951893348373178&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-12
 
 ### #80 Exa (monitor)
 
 - Type: Web search API
 - Top score: 56
-- New signals: 5
-- [Everpure’s Evergreen One for AI brings Exa flash and GPU-based service-level agreements](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8897d03466f9124ad6277dcd53f&url=https%3a%2f%2fwww.computerweekly.com%2fnews%2f366640415%2fEverpures-Evergreen-One-for-AI-brings-Exa-flash-and-GPU-based-service-level-agreements&c=8111168848136219698&mkt=en-us)
+- New signals: 4
+- [Everpure’s Evergreen One for AI brings Exa flash and GPU-based service-level agreements](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb57efe43a085c4e37409b8d1f6&url=https%3a%2f%2fwww.computerweekly.com%2fnews%2f366640415%2fEverpures-Evergreen-One-for-AI-brings-Exa-flash-and-GPU-based-service-level-agreements&c=8111168848136219698&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-16
-- [Pure Storage Introduces FlashBlade//EXA For AI And HPC](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8897d03466f9124ad6277dcd53f&url=https%3a%2f%2fwww.forbes.com%2fsites%2fmoorinsights%2f2025%2f03%2f19%2fpure-storage-introduces-flashbladeexa-for-ai-and-hpc%2f&c=8024750487701321275&mkt=en-us)
+- [Pure Storage Introduces FlashBlade//EXA For AI And HPC](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb57efe43a085c4e37409b8d1f6&url=https%3a%2f%2fwww.forbes.com%2fsites%2fmoorinsights%2f2025%2f03%2f19%2fpure-storage-introduces-flashbladeexa-for-ai-and-hpc%2f&c=8024750487701321275&mkt=en-us)
   - Source/date: www.bing.com / 2025-03-19
-- [Exa raises $17M from Lightspeed, Nvidia, Y Combinator to build a Google for AIs](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8897d03466f9124ad6277dcd53f&url=https%3a%2f%2ftechcrunch.com%2f2024%2f07%2f16%2fexa-raises-17m-lightspeed-nvidia-ycombinator-google-ai-models%2f&c=14154843633682031500&mkt=en-us)
+- [Exa raises $17M from Lightspeed, Nvidia, Y Combinator to build a Google for AIs](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb57efe43a085c4e37409b8d1f6&url=https%3a%2f%2ftechcrunch.com%2f2024%2f07%2f16%2fexa-raises-17m-lightspeed-nvidia-ycombinator-google-ai-models%2f&c=14154843633682031500&mkt=en-us)
   - Source/date: www.bing.com / 2024-07-16
-
-### #81 LlamaIndex (monitor)
-
-- Type: RAG framework
-- Top score: 64
-- New signals: 3
-- [LlamaIndex launches a cloud service for building unstructured data agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb889d523499d8ddeea0d91c92da9&url=https%3a%2f%2ftechcrunch.com%2f2025%2f03%2f04%2fllamaindex-launches-a-cloud-service-for-building-unstructed-data-agents%2f&c=14665741936206421505&mkt=en-us)
-  - Source/date: www.bing.com / 2025-03-04
-- [LlamaIndex adds private data to large language models](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb889d523499d8ddeea0d91c92da9&url=https%3a%2f%2ftechcrunch.com%2f2023%2f06%2f06%2fllamaindex-adds-private-data-to-large-language-models%2f&c=13081216251226235761&mkt=en-us)
-  - Source/date: www.bing.com / 2023-06-06
-- [The AI scaffolding layer is collapsing. LlamaIndex's CEO explains what survives.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb889d523499d8ddeea0d91c92da9&url=https%3a%2f%2fventurebeat.com%2finfrastructure%2fthe-ai-scaffolding-layer-is-collapsing-llamaindexs-ceo-explains-what-survives&c=3692983428037496717&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-01
 
 ### #82 LangChain (monitor)
 
 - Type: AI app framework
 - Top score: 68
 - New signals: 4
-- [Critical ‘LangGrinch’ vulnerability in langchain-core puts AI agent secrets at risk](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88ad05d44c78bc4b320e183a8c8&url=https%3a%2f%2fsiliconangle.com%2f2025%2f12%2f25%2fcritical-langgrinch-vulnerability-langchain-core-puts-ai-agent-secrets-risk%2f&c=7453105344569808297&mkt=en-us)
+- [Critical ‘LangGrinch’ vulnerability in langchain-core puts AI agent secrets at risk](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb674904ba39b0ea02e1e004383&url=https%3a%2f%2fsiliconangle.com%2f2025%2f12%2f25%2fcritical-langgrinch-vulnerability-langchain-core-puts-ai-agent-secrets-risk%2f&c=7453105344569808297&mkt=en-us)
   - Source/date: www.bing.com / 2025-12-25
-- [7,000 Langflow servers are under attack. LangGraph and LangChain have the same holes](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88ad05d44c78bc4b320e183a8c8&url=https%3a%2f%2fventurebeat.com%2fsecurity%2f7000-langflow-servers-under-attack-langgraph-langchain-same-holes&c=644108720710092787&mkt=en-us)
+- [7,000 Langflow servers are under attack. LangGraph and LangChain have the same holes](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb674904ba39b0ea02e1e004383&url=https%3a%2f%2fventurebeat.com%2fsecurity%2f7000-langflow-servers-under-attack-langgraph-langchain-same-holes&c=644108720710092787&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-19
-- [A brief guide to LangChain for software developers](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88ad05d44c78bc4b320e183a8c8&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f2338940%2fa-brief-guide-to-langchain-for-software-developers.html&c=6255166392024440674&mkt=en-us)
+- [A brief guide to LangChain for software developers](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb674904ba39b0ea02e1e004383&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f2338940%2fa-brief-guide-to-langchain-for-software-developers.html&c=6255166392024440674&mkt=en-us)
   - Source/date: www.bing.com / 2023-08-27
-
-### #84 Weaviate (monitor)
-
-- Type: Vector database
-- Top score: 56
-- New signals: 1
-- [Weaviate Makes Engram Generally Available, Giving AI Agents Production-Grade Memory](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb88bed994e0c92c005c4aa552e0f&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f15%2f10399538.htm&c=15773923385019150040&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-15
-
-### #124 Dataiku (monitor)
-
-- Type: Enterprise AI platform
-- Top score: 64
-- New signals: 1
-- [Dataiku Announces Cobuild General Availability, the AI Building Agent That Closes the Build-Govern Gap](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a0e48c4e9b864d9d03bd37c8f2&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2fdataiku-announces-cobuild-general-availability-071100534.html&c=15439997762660609752&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-16
 
 ### #128 Adobe Firefly (monitor)
 
 - Type: Creative generation platform
-- Top score: 60
+- Top score: 56
 - New signals: 5
-- [Adobe Firefly AI assistant lets users edit photos, videos, and designs with prompts](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a25cf0490281083082438a9f87&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fsoftware%2fadobe-firefly-ai-assistant-lets-users-edit-photos-videos-and-designs-with-prompts%2far-AA21X2fx&c=7393020614156980805&mkt=en-us)
-  - Source/date: www.bing.com / 2026-04-28
-- [Adobe Firefly Review : How Video AI is Changing the Game for Creators](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a25cf0490281083082438a9f87&url=https%3a%2f%2fwww.geeky-gadgets.com%2fadobe-firefly-video-ai-released%2f&c=13146414417065470077&mkt=en-us)
+- [Adobe Firefly AI is now live publicly, hoping you’ll talk to an AI and get work done](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd3ffeb43d3838389dfa0e62f20&url=https%3a%2f%2fwww.digitaltrends.com%2fcomputing%2fadobe-firefly-ai-is-now-live-publicly-hoping-youll-take-to-an-ai-and-get-work-done%2f&c=9242238468910170302&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-26
+- [Adobe Firefly Review : How Video AI is Changing the Game for Creators](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd3ffeb43d3838389dfa0e62f20&url=https%3a%2f%2fwww.geeky-gadgets.com%2fadobe-firefly-video-ai-released%2f&c=13146414417065470077&mkt=en-us)
   - Source/date: www.bing.com / 2025-02-24
-- [Adobe Firefly’s video editor can now automatically create a first draft from footage](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a25cf0490281083082438a9f87&url=https%3a%2f%2ftechcrunch.com%2f2026%2f02%2f25%2fadobe-fireflys-video-editor-can-now-automatically-create-a-first-draft-from-footage%2f&c=12443372683710259588&mkt=en-us)
+- [Adobe Firefly’s video editor can now automatically create a first draft from footage](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd3ffeb43d3838389dfa0e62f20&url=https%3a%2f%2ftechcrunch.com%2f2026%2f02%2f25%2fadobe-fireflys-video-editor-can-now-automatically-create-a-first-draft-from-footage%2f&c=12443372683710259588&mkt=en-us)
   - Source/date: www.bing.com / 2026-02-25
-
-### #132 ChatGPT Images (monitor)
-
-- Type: Image generation
-- Top score: 72
-- New signals: 5
-- [OpenAI supercharges ChatGPT images — From photo edits to full reimaginings, here’s what the new GPT Image 1.5 can do](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a4cd3d48c78a91dd6f8193e149&url=https%3a%2f%2fwww.livemint.com%2ftechnology%2ftech-news%2fopenai-supercharges-chatgpt-images-from-photo-edits-to-full-reimaginings-here-s-what-the-new-gpt-image-1-5-can-do-11765915143183.html&c=15815844677626258811&mkt=en-us)
-  - Source/date: www.bing.com / 2025-12-16
-- [ChatGPT Images 2: Why OpenAI Built a New Image Model After Killing Sora](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a4cd3d48c78a91dd6f8193e149&url=https%3a%2f%2fwww.cnet.com%2ftech%2fservices-and-software%2fchatgpt-images-2-release-openai-news%2f&c=9783114126442685889&mkt=en-us)
-  - Source/date: www.bing.com / 2026-04-21
-- [ChatGPT Images 2.0 is here, and it’s way more than an upgrade](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a4cd3d48c78a91dd6f8193e149&url=https%3a%2f%2fwww.digitaltrends.com%2fcool-tech%2fchatgpt-images-2-0-is-here-and-its-way-more-than-an-upgrade%2f&c=14898578543378877102&mkt=en-us)
-  - Source/date: www.bing.com / 2026-04-20
-
-### #135 Ideogram (monitor)
-
-- Type: Image/text generation
-- Top score: 68
-- New signals: 3
-- [Hands-on with Ideogram 2.0: The AI that makes text look incredible](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a641d144e9abcc9c74671acee4&url=https%3a%2f%2fventurebeat.com%2fai%2fhands-on-with-ideogram-2-0-the-ai-that-makes-text-look-incredible&c=52389337800970626&mkt=en-us)
-  - Source/date: www.bing.com / 2024-08-20
-- [Ideogram AI image generator review](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a641d144e9abcc9c74671acee4&url=https%3a%2f%2fwww.techradar.com%2fpro%2fsoftware-services%2fideogram-ai-image-generator-review&c=2503021099311833249&mkt=en-us)
-  - Source/date: www.bing.com / 2024-07-21
-- [What is Ideogram: Get creative with typography using this AI image generator](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8a641d144e9abcc9c74671acee4&url=https%3a%2f%2fwww.techradar.com%2fcomputing%2fartificial-intelligence%2fwhat-is-ideogram-get-creative-with-typography-using-this-ai-image-generator&c=16502362191954205024&mkt=en-us)
-  - Source/date: www.bing.com / 2025-03-20
 
 ### #146 Gamma (monitor)
 
 - Type: Presentation generation
 - Top score: 56
-- New signals: 3
-- [Gamma Launches Gamma Imagine to Bring AI-Native Design to the Masses](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ac134e4fb78632cd89f7374720&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260317085752%2fen%2fGamma-Launches-Gamma-Imagine-to-Bring-AI-Native-Design-to-the-Masses&c=3094223619947819824&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-17
-- [Gamma adds AI image-generation tools in bid to take on Canva and Adobe](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ac134e4fb78632cd89f7374720&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f17%2fgamma-adds-ai-image-generation-tools-in-bid-to-take-on-canva-and-adobe%2f&c=4820373166764516265&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-17
-- [Gamma Surpasses $100M ARR, Raises at $2.1B Valuation as It Replaces PowerPoint for the AI Era](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ac134e4fb78632cd89f7374720&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20251110805751%2fen%2fGamma-Surpasses-%2524100M-ARR-Raises-at-%25242.1B-Valuation-as-It-Replaces-PowerPoint-for-the-AI-Era&c=4356263887085323354&mkt=en-us)
-  - Source/date: www.bing.com / 2025-11-10
-
-### #147 Runway (monitor)
-
-- Type: Video generation/editing
-- Top score: 60
 - New signals: 5
-- [Runway rolls out new AI video model that beats Google, OpenAI in key benchmark](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ac507a4ee3a4241692b8c7bfae&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f12%2f01%2frunway-gen-4-5-video-model-google-open-ai.html&c=1176758907038170733&mkt=en-us)
-  - Source/date: www.bing.com / 2025-12-01
-- [Runway’s new AI image generator Frames is here, and it looks fittingly cinematic](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ac507a4ee3a4241692b8c7bfae&url=https%3a%2f%2fventurebeat.com%2fai%2frunways-new-ai-image-generator-frames-is-here-and-it-looks-fittingly-cinematic%2f&c=8616863538969294270&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-17
-- [Runway says its latest AI video model can actually generate consistent scenes and people](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ac507a4ee3a4241692b8c7bfae&url=https%3a%2f%2fwww.theverge.com%2fnews%2f640821%2frunway-gen-4-artificial-intelligence-video-generator-filmmaking&c=891412426197027029&mkt=en-us)
-  - Source/date: www.bing.com / 2025-04-01
+- [Gamma Launches Gamma Imagine to Bring AI-Native Design to the Masses](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdea5644e09a3b2f38e17a41864&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260317085752%2fen%2fGamma-Launches-Gamma-Imagine-to-Bring-AI-Native-Design-to-the-Masses&c=3094223619947819824&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-17
+- [Gamma adds AI image-generation tools in bid to take on Canva and Adobe](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdea5644e09a3b2f38e17a41864&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f17%2fgamma-adds-ai-image-generation-tools-in-bid-to-take-on-canva-and-adobe%2f&c=4820373166764516265&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-17
+- [Gamma Surpasses $100M ARR, Raises at $2.1B Valuation as It Replaces PowerPoint for the AI Era](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdea5644e09a3b2f38e17a41864&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20251110805751%2fen%2fGamma-Surpasses-%2524100M-ARR-Raises-at-%25242.1B-Valuation-as-It-Replaces-PowerPoint-for-the-AI-Era&c=4356263887085323354&mkt=en-us)
+  - Source/date: www.bing.com / 2025-11-10
 
 ### #148 Sora (monitor)
 
 - Type: Video generation
 - Top score: 64
 - New signals: 5
-- [Alibaba's AI video model rises to No. 2 in global rankings, as OpenAI's Sora and ByteDance's Seedance fall away](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8adbecb40f18a356bee0dd707f1&url=https%3a%2f%2fventurebeat.com%2ftechnology%2falibabas-ai-video-model-rises-to-no-2-in-global-rankings-as-openais-sora-and-bytedances-seedance-fall-away&c=12663192111633983489&mkt=en-us)
+- [Alibaba's AI video model rises to No. 2 in global rankings, as OpenAI's Sora and ByteDance's Seedance fall away](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdfd55640b481d618973f14564b&url=https%3a%2f%2fventurebeat.com%2ftechnology%2falibabas-ai-video-model-rises-to-no-2-in-global-rankings-as-openais-sora-and-bytedances-seedance-fall-away&c=12663192111633983489&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-22
-- [OpenAI shuts down Sora AI video app months after launch as Disney deal falls apart](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8adbecb40f18a356bee0dd707f1&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fopenai-shuts-down-sora-ai-video-app-months-after-launch-as-disney-deal-falls-apart%2far-AA1ZrQa8&c=18338992055654768766&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-26
-- [OpenAI's Sora decision is all about AI compute](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8adbecb40f18a356bee0dd707f1&url=https%3a%2f%2fwww.businessinsider.com%2fopenai-kills-sora-app-ai-compute-crunch-forces-hard-choices-2026-3&c=4862744745239821497&mkt=en-us)
+- [OpenAI's Sora decision is all about AI compute](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdfd55640b481d618973f14564b&url=https%3a%2f%2fwww.businessinsider.com%2fopenai-kills-sora-app-ai-compute-crunch-forces-hard-choices-2026-3&c=4862744745239821497&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-24
+- [OpenAI killed the Sora AI video generator and you’re probably guessing the “why” wrong](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdfd55640b481d618973f14564b&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2fopenai-killed-sora-ai-video-091159297.html&c=706654651189134204&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-01
+
+### #151 Kling (monitor)
+
+- Type: Video generation
+- Top score: 60
+- New signals: 2
+- [Kling AI Launches 3.0 Model, Ushering in an Era Where Everyone Can Be a Director](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce1c4f347d2ad17cc9b06608f79&url=https%3a%2f%2fwww.manilatimes.net%2f2026%2f06%2f12%2ftmt-newswire%2fplentisoft%2fkling-ai-launches-30-model-ushering-in-an-era-where-everyone-can-be-a-director%2f2364248&c=9428191310213261011&mkt=en-us)
+  - Source/date: www.bing.com / 2026-02-05
+- [I tested out a buzzy new text-to-video AI model from China](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce1c4f347d2ad17cc9b06608f79&url=https%3a%2f%2fwww.technologyreview.com%2f2024%2f06%2f19%2f1094027%2fkling-kuaishou-video-ai-china%2f&c=8806948514188553289&mkt=en-us)
+  - Source/date: www.bing.com / 2024-06-18
 
 ### #153 Google Veo (monitor)
 
 - Type: Video generation
 - Top score: 72
 - New signals: 5
-- [Google Veo 3 AI video generator now in 71 new countries, Check India release timeline and availability](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b0c82e494980aaa2f93b5f0fa8&url=https%3a%2f%2fwww.financialexpress.com%2flife%2ftechnology-google-veo-3-ai-video-generator-now-in-71-new-countries-check-india-release-timeline-and-availability-3858627%2f&c=17888331538667364634&mkt=en-us)
+- [Google Veo 3 AI video generator now in 71 new countries, Check India release timeline and availability](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce3b89c4fb9a9127b07684907f1&url=https%3a%2f%2fwww.financialexpress.com%2flife%2ftechnology-google-veo-3-ai-video-generator-now-in-71-new-countries-check-india-release-timeline-and-availability-3858627%2f&c=17888331538667364634&mkt=en-us)
   - Source/date: www.bing.com / 2025-05-27
-- [Google Veo 3.1 will generate social-ready vertical videos in Gemini](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b0c82e494980aaa2f93b5f0fa8&url=https%3a%2f%2fmashable.com%2farticle%2fgoogle-veo-31-social-videos-gemini&c=15203633481820310819&mkt=en-us)
+- [Google Veo 3.1 will generate social-ready vertical videos in Gemini](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce3b89c4fb9a9127b07684907f1&url=https%3a%2f%2fmashable.com%2farticle%2fgoogle-veo-31-social-videos-gemini&c=15203633481820310819&mkt=en-us)
   - Source/date: www.bing.com / 2026-01-13
-- [Google Veo, a serious swing at AI-generated video, debuts at Google I/O 2024](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b0c82e494980aaa2f93b5f0fa8&url=https%3a%2f%2ftechcrunch.com%2f2024%2f05%2f14%2fgoogle-veo-a-serious-swing-at-ai-generated-video-debuts-at-google-io-2024%2f&c=6133047988080042573&mkt=en-us)
+- [Google Veo, a serious swing at AI-generated video, debuts at Google I/O 2024](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce3b89c4fb9a9127b07684907f1&url=https%3a%2f%2ftechcrunch.com%2f2024%2f05%2f14%2fgoogle-veo-a-serious-swing-at-ai-generated-video-debuts-at-google-io-2024%2f&c=6133047988080042573&mkt=en-us)
   - Source/date: www.bing.com / 2024-05-14
 
 ### #159 ElevenLabs (monitor)
@@ -451,45 +277,21 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Voice generation
 - Top score: 76
 - New signals: 5
-- [ElevenLabs’ new music-generation model can switch genres mid-track](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b398d842b8a9a275b22b636128&url=https%3a%2f%2ftechcrunch.com%2f2026%2f05%2f27%2felevenlabss-new-music-generation-model-can-switch-genres-mid-track%2f&c=7588325299729908937&mkt=en-us)
+- [ElevenLabs’ new music-generation model can switch genres mid-track](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce6e6a04182a57e1fd0c7bbeea8&url=https%3a%2f%2ftechcrunch.com%2f2026%2f05%2f27%2felevenlabss-new-music-generation-model-can-switch-genres-mid-track%2f&c=7588325299729908937&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-28
-- [ElevenLabs Launches AI Music Model, Signs Licenses With Merlin & Kobalt: Here’s How It Will Work](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b398d842b8a9a275b22b636128&url=https%3a%2f%2fwww.billboard.com%2fpro%2felevenlabs-ai-music-model-merlin-kobalt-licenses-details%2f&c=12111421586251031777&mkt=en-us)
-  - Source/date: www.bing.com / 2025-08-04
-- [Why Spotify And ElevenLabs’ AI Tool Is More Than A Major Update For Audiobooks](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b398d842b8a9a275b22b636128&url=https%3a%2f%2fwww.forbes.com%2fsites%2fgabrielalinzainescu%2f2026%2f05%2f26%2fspotifys-elevenlabs-play-isnt-really-about-audiobooks-its-about-owning-the-production-layer%2f&c=15575570382520675815&mkt=en-us)
+- [Why Spotify And ElevenLabs’ AI Tool Is More Than A Major Update For Audiobooks](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce6e6a04182a57e1fd0c7bbeea8&url=https%3a%2f%2fwww.forbes.com%2fsites%2fgabrielalinzainescu%2f2026%2f05%2f26%2fspotifys-elevenlabs-play-isnt-really-about-audiobooks-its-about-owning-the-production-layer%2f&c=15575570382520675815&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-28
-
-### #163 Speechify (monitor)
-
-- Type: Text-to-speech
-- Top score: 56
-- New signals: 5
-- [Text-to-speech app Speechify launches Gmail integration and voice cloning](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b5990a48c5b77d23889212efeb&url=https%3a%2f%2ftechcrunch.com%2f2024%2f02%2f27%2ftext-to-speech-app-speechify-launches-gmail-integration-and-voice-cloning%2f&c=10772894842957862166&mkt=en-us)
-  - Source/date: www.bing.com / 2024-02-27
-- [Speechify’s Windows app uses local models for transcription and dictation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b5990a48c5b77d23889212efeb&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f31%2fspeechifys-windows-app-uses-local-models-for-transcription-and-dictation%2f&c=5022596047622569249&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-31
-- [New Speechify Mac app lets you write 5 times faster by using your voice](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b5990a48c5b77d23889212efeb&url=https%3a%2f%2f9to5mac.com%2f2025%2f12%2f16%2fspeechify-now-lets-you-write-5-times-faster-on-your-mac-by-using-your-voice%2f&c=12120532854705999974&mkt=en-us)
-  - Source/date: www.bing.com / 2025-12-16
-
-### #169 Gong (monitor)
-
-- Type: Revenue intelligence
-- Top score: 60
-- New signals: 5
-- [Gong launches ‘Mission Andromeda’ with AI sales coaching, chatbot and open MCP connections to rivals](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b88af043e487df190a29785a5f&url=https%3a%2f%2fventurebeat.com%2ftechnology%2fgong-launches-mission-andromeda-with-ai-sales-coaching-chatbot-and-open-mcp&c=12556186074628928417&mkt=en-us)
-  - Source/date: www.bing.com / 2026-02-25
-- [Frank Gong Reports Adoption Milestone for Two Open-Source Figma Community Utilities and International Award Recognition](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b88af043e487df190a29785a5f&url=https%3a%2f%2fwww.usatoday.com%2fpress-release%2fstory%2f34841%2ffrank-gong-reports-adoption-milestone-for-two-open-source-figma-community-utilities-and-international-award-recognition%2f&c=485174915515175754&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-16
-- [Interaction Designer Tianci Gong: Developer of Widely Used Figma Plugins and Multi-Awarded AI Product](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8b88af043e487df190a29785a5f&url=https%3a%2f%2fwww.usatoday.com%2fpress-release%2fstory%2f34919%2finteraction-designer-tianci-gong-developer-of-widely-used-figma-plugins-and-multi-awarded-ai-product%2f&c=18018678763515163318&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-17
+- [ElevenLabs' new AI voice assistant can automate your favorite tasks - and you can try it for free](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce6e6a04182a57e1fd0c7bbeea8&url=https%3a%2f%2fwww.zdnet.com%2farticle%2felevenlabs-new-ai-voice-assistant-can-take-action-for-you-and-you-can-try-it-for-free%2f&c=16344538342537570543&mkt=en-us)
+  - Source/date: www.bing.com / 2025-06-24
 
 ### #181 Forethought (monitor)
 
 - Type: Customer support AI
 - Top score: 60
 - New signals: 2
-- [Zendesk Acquires Forethought for Self-Learning AI Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8be6bf74ea08535ab6610de07e8&url=https%3a%2f%2fwww.cmswire.com%2fcustomer-experience%2fzendesk-acquires-forethought-for-self-learning-ai-agents%2f&c=10060231194211023559&mkt=en-us)
+- [Zendesk Acquires Forethought for Self-Learning AI Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cf4422f40129c9dc2db9bda9979&url=https%3a%2f%2fwww.cmswire.com%2fcustomer-experience%2fzendesk-acquires-forethought-for-self-learning-ai-agents%2f&c=10060231194211023559&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-10
-- [Zendesk acquires agentic customer service startup Forethought](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8be6bf74ea08535ab6610de07e8&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f11%2fzendesk-acquires-agentic-customer-service-startup-forethought%2f&c=18312523581760280810&mkt=en-us)
+- [Zendesk acquires agentic customer service startup Forethought](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cf4422f40129c9dc2db9bda9979&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f11%2fzendesk-acquires-agentic-customer-service-startup-forethought%2f&c=18312523581760280810&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-11
 
 ### #183 ServiceNow Now Assist (monitor)
@@ -497,131 +299,43 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Enterprise service AI
 - Top score: 60
 - New signals: 1
-- [ServiceNow and Microsoft expand strategic alliance, combining generative AI capabilities to enhance choice and flexibility](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8bf54db4cd798ccc170b5cceb23&url=https%3a%2f%2fnews.microsoft.com%2fsource%2f2024%2f05%2f08%2fservicenow-and-microsoft-expand-strategic-alliance-combining-generative-ai-capabilities-to-enhance-choice-and-flexibility%2f&c=15087082383163445650&mkt=en-us)
+- [ServiceNow and Microsoft expand strategic alliance, combining generative AI capabilities to enhance choice and flexibility](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cf57a8749a4ac19bf267734196b&url=https%3a%2f%2fnews.microsoft.com%2fsource%2f2024%2f05%2f08%2fservicenow-and-microsoft-expand-strategic-alliance-combining-generative-ai-capabilities-to-enhance-choice-and-flexibility%2f&c=15087082383163445650&mkt=en-us)
   - Source/date: www.bing.com / 2024-05-07
-
-### #194 n8n (monitor)
-
-- Type: Workflow automation
-- Top score: 60
-- New signals: 4
-- [Language tech specialist Straker adds n8n AI platform integration](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c50ce742d095a12d28fe924048&url=https%3a%2f%2fwww.msn.com%2fen-au%2fmoney%2fmarkets%2flanguage-tech-specialist-straker-adds-n8n-ai-platform-integration%2far-AA1G2f5x&c=7567262371266104116&mkt=en-us)
-  - Source/date: www.bing.com / 2025-06-03
-- [Fair-code pioneer n8n raises $60M for AI-powered workflow automation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c50ce742d095a12d28fe924048&url=https%3a%2f%2ftechcrunch.com%2f2025%2f03%2f24%2ffair-code-pioneer-n8n-raises-60m-for-ai-powered-workflow-automation%2f&c=4514607218642551768&mkt=en-us)
-  - Source/date: www.bing.com / 2025-03-24
-- [Build a Data Analyst AI in n8n : Automate Your Data Analysis](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c50ce742d095a12d28fe924048&url=https%3a%2f%2fwww.geeky-gadgets.com%2fai-agent-for-data-analysts%2f&c=16271810320794078678&mkt=en-us)
-  - Source/date: www.bing.com / 2025-08-13
-
-### #195 Microsoft Copilot Studio (monitor)
-
-- Type: Agent/workflow builder
-- Top score: 64
-- New signals: 2
-- [Hands On: Getting Started with Microsoft Copilot Studio Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c6531b482b9f179f52b4ce33cc&url=https%3a%2f%2fvirtualizationreview.com%2farticles%2f2026%2f03%2f26%2fhands-on-getting-started-with-microsoft-copilot-studio-agents.aspx&c=1102865417629034353&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-25
-- [Microsoft Copilot Studio extension for VS Code now publicly available](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c6531b482b9f179f52b4ce33cc&url=https%3a%2f%2fwww.bleepingcomputer.com%2fnews%2fmicrosoft%2fmicrosoft-copilot-studio-extension-for-vs-code-now-publicly-available%2f&c=14693554712414404890&mkt=en-us)
-  - Source/date: www.bing.com / 2026-01-15
 
 ### #197 Salesforce Agentforce (monitor)
 
 - Type: Enterprise agent platform
 - Top score: 60
 - New signals: 5
-- [Salesforce Agentforce: What you need to know](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c7581b4f1690c5238221235dfb&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fsalesforce-agentforce-what-you-need-to-know%2far-AA1x7B5u&c=15880832650909692324&mkt=en-us)
+- [Salesforce Agentforce: What you need to know](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cfd72a44931b091dd9bca0554cc&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fsalesforce-agentforce-what-you-need-to-know%2far-AA1x7B5u&c=15880832650909692324&mkt=en-us)
   - Source/date: www.bing.com / 2025-10-06
-- [Salesforce Agentforce: A Comprehensive Enterprise Cheat Sheet and Review](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c7581b4f1690c5238221235dfb&url=https%3a%2f%2fwww.eweek.com%2fnews%2fsalesforce-agentforce-360-guide%2f&c=1865817976206617621&mkt=en-us)
+- [Salesforce Agentforce: A Comprehensive Enterprise Cheat Sheet and Review](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cfd72a44931b091dd9bca0554cc&url=https%3a%2f%2fwww.eweek.com%2fnews%2fsalesforce-agentforce-360-guide%2f&c=1865817976206617621&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-26
-- [Salesforce Agentforce Contact Center Review: Strengths, Gaps and How It Compares to Rivals](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8c7581b4f1690c5238221235dfb&url=https%3a%2f%2fwww.cmswire.com%2fcontact-center%2fsalesforce-agentforce-contact-center-review-strengths-gaps-and-how-it-compares-to-rivals%2f&c=3367602040049854649&mkt=en-us)
+- [Salesforce Agentforce Contact Center Review: Strengths, Gaps and How It Compares to Rivals](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cfd72a44931b091dd9bca0554cc&url=https%3a%2f%2fwww.cmswire.com%2fcontact-center%2fsalesforce-agentforce-contact-center-review-strengths-gaps-and-how-it-compares-to-rivals%2f&c=3367602040049854649&mkt=en-us)
   - Source/date: www.bing.com / 2026-04-16
-
-### #203 CrewAI (monitor)
-
-- Type: Agent framework
-- Top score: 56
-- New signals: 1
-- [Agentic AI startup CrewAI closes $18M funding round](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8ca1a4f416a992f4613b45faeb2&url=https%3a%2f%2fsiliconangle.com%2f2024%2f10%2f22%2fagentic-ai-startup-crewai-closes-18m-funding-round%2f&c=3883294218512505652&mkt=en-us)
-  - Source/date: www.bing.com / 2024-10-22
-
-### #207 Manus (monitor)
-
-- Type: General agent
-- Top score: 68
-- New signals: 5
-- [Meta's Manus launches desktop app to bring its AI agent onto personal devices amid OpenClaw craze](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8cce8984885b6cdf511fbfb4f1e&url=https%3a%2f%2fwww.cnbc.com%2f2026%2f03%2f18%2fmetas-manus-launches-desktop-app-to-bring-its-ai-agent-onto-personal-devices.html&c=3213877021243607627&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-17
-- [Meta’s Manus AI agent arrives on your desktop to take on OpenClaw](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8cce8984885b6cdf511fbfb4f1e&url=https%3a%2f%2fthenextweb.com%2fnews%2fmeta-manus-my-computer-desktop-ai-agent&c=16691204143501473213&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-18
-- [Manus launches paid subscription plans and a mobile app](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8cce8984885b6cdf511fbfb4f1e&url=https%3a%2f%2ftechcrunch.com%2f2025%2f03%2f31%2fmanus-launches-paid-subscription-plans-and-a-mobile-app%2f&c=14332945430144530514&mkt=en-us)
-  - Source/date: www.bing.com / 2025-03-31
-
-### #213 Google Vertex AI (monitor)
-
-- Type: Cloud AI platform
-- Top score: 72
-- New signals: 2
-- [Cohere just launched 'North,' its biggest AI bet yet for privacy-focused enterprises](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8cf80d74a019b7d48ea13d741a0&url=https%3a%2f%2fventurebeat.com%2fai%2fcohere-launches-north-to-redefine-enterprise-ai-with-security-and-customization-at-its-core&c=16719835012914060142&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-08
-- [Google Vertex AI SDK Flaw Let Attackers Hijack Model Uploads via Bucket Squatting](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8cf80d74a019b7d48ea13d741a0&url=https%3a%2f%2fthehackernews.com%2f2026%2f06%2fgoogle-vertex-ai-sdk-flaw-let-attackers.html&c=17775133791442864958&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-05
-
-### #214 Azure AI Foundry (monitor)
-
-- Type: Cloud AI platform
-- Top score: 72
-- New signals: 5
-- [Azure AI Foundry Gets ChatGPT-5, Previews Browser Automation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d0305d4ebc9411afc6c2846159&url=https%3a%2f%2fvisualstudiomagazine.com%2farticles%2f2025%2f09%2f08%2fazure-ai-foundry-gets-chatgpt-5-previews-browser-automation.aspx&c=474733751093277016&mkt=en-us)
-  - Source/date: www.bing.com / 2025-09-07
-- [Azure AI Foundry Agent Service Gains Model Context Protocol Support in Preview](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d0305d4ebc9411afc6c2846159&url=https%3a%2f%2fwww.infoq.com%2fnews%2f2025%2f07%2fazure-foundry-mcp-agents%2f&c=3971021037663911713&mkt=en-us)
-  - Source/date: www.bing.com / 2025-07-06
-- [Microsoft brings DeepSeek R1 to Azure AI Foundry and GitHub](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d0305d4ebc9411afc6c2846159&url=https%3a%2f%2fwww.neowin.net%2fnews%2fmicrosoft-brings-deepseek-r1-to-azure-ai-foundry-and-github%2f&c=2562640295399479073&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-29
 
 ### #215 Amazon Bedrock (monitor)
 
 - Type: Cloud AI platform
 - Top score: 76
 - New signals: 5
-- [Rubrik Announces Upcoming Integration with Amazon Bedrock AgentCore to Secure AI Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d162084cd99b7413f43d32a95f&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2frubrik-announces-upcoming-integration-amazon-160000191.html&c=12109711347563073449&mkt=en-us)
+- [Rubrik Announces Upcoming Integration with Amazon Bedrock AgentCore to Secure AI Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0809cb4e80a07329343626d4aa&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2frubrik-announces-upcoming-integration-amazon-160000191.html&c=12109711347563073449&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-17
-- [AWS accelerates AI agent development in Amazon Bedrock AgentCore](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d162084cd99b7413f43d32a95f&url=https%3a%2f%2fsiliconangle.com%2f2026%2f04%2f22%2faws-accelerates-ai-agent-development-amazon-bedrock-agentcore%2f&c=7474425716668555647&mkt=en-us)
+- [AWS accelerates AI agent development in Amazon Bedrock AgentCore](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0809cb4e80a07329343626d4aa&url=https%3a%2f%2fsiliconangle.com%2f2026%2f04%2f22%2faws-accelerates-ai-agent-development-amazon-bedrock-agentcore%2f&c=7474425716668555647&mkt=en-us)
   - Source/date: www.bing.com / 2026-04-22
-- [Amazon’s new AI wallet: AWS, Coinbase, and Stripe build payment rails for bots](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d162084cd99b7413f43d32a95f&url=https%3a%2f%2fwww.coindesk.com%2fbusiness%2f2026%2f05%2f07%2famazon-rolls-out-ai-agent-stablecoin-payments-platform-with-coinbase-and-stripe&c=17911780204235547667&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-07
-
-### #216 Cohere (monitor)
-
-- Type: Model/API platform
-- Top score: 72
-- New signals: 5
-- [Cohere just launched 'North,' its biggest AI bet yet for privacy-focused enterprises](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d1857b4017ac36935aef33bae1&url=https%3a%2f%2fventurebeat.com%2fai%2fcohere-launches-north-to-redefine-enterprise-ai-with-security-and-customization-at-its-core&c=16719835012914060142&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-08
-- [Cohere and Aleph Alpha announce merger in Berlin, creating a $20 billion transatlantic AI company](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d1857b4017ac36935aef33bae1&url=https%3a%2f%2fthenextweb.com%2fnews%2fcohere-aleph-alpha-merger-20-billion&c=3494634274916417163&mkt=en-us)
-  - Source/date: www.bing.com / 2026-04-24
-- [Cohere cracks lossless quantization and native citations with first full Apache 2.0 licensed open model Command A+](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d1857b4017ac36935aef33bae1&url=https%3a%2f%2fventurebeat.com%2ftechnology%2fcohere-cracks-lossless-quantization-and-native-citations-with-first-full-apache-2-0-licensed-open-model-command-a&c=10891426315049459670&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-20
-
-### #223 Hugging Face (monitor)
-
-- Type: Model hub/platform
-- Top score: 60
-- New signals: 5
-- [Hugging Face unveils two new humanoid robots](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d5223d498f9afc50da7f9ab7fe&url=https%3a%2f%2ftechcrunch.com%2f2025%2f05%2f29%2fhugging-face-unveils-two-new-humanoid-robots%2f&c=12972610173000551742&mkt=en-us)
-  - Source/date: www.bing.com / 2025-05-29
-- [Qualcomm and Hugging Face Expand Relationship to Advance Open, Developer-Driven AI from Device to Cloud](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d5223d498f9afc50da7f9ab7fe&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f24%2f10405544.htm&c=4378643259766650721&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-24
-- [Hugging Face, the GitHub of AI, hosted code that backdoored user devices](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d5223d498f9afc50da7f9ab7fe&url=https%3a%2f%2farstechnica.com%2fsecurity%2f2024%2f03%2fhugging-face-the-github-of-ai-hosted-code-that-backdoored-user-devices%2f&c=11973122702997415299&mkt=en-us)
-  - Source/date: www.bing.com / 2024-03-01
+- [SentinelOne Announces AI Security Integration with Amazon Bedrock AgentCore to Deliver Runtime Guardrails for AI Agents](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0809cb4e80a07329343626d4aa&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2fsentinelone-announces-ai-security-integration-160000435.html&c=7511712726131937123&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-17
 
 ### #225 OpenRouter (monitor)
 
 - Type: Model routing API
 - Top score: 56
 - New signals: 5
-- [OpenRouter's Fusion Promises Claude Fable-Level AI for Cheap—Right as Fable 5 Goes Dark](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d60a2c4489af6df5cc676297b8&url=https%3a%2f%2fdecrypt.co%2f371711%2fopenrouter-fusion-claude-fable-level-ai-cheap&c=3263914444599230540&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-20
-- [OpenRouter more than doubles valuation to $1.3B in a year](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d60a2c4489af6df5cc676297b8&url=https%3a%2f%2ftechcrunch.com%2f2026%2f05%2f26%2fopenrouter-more-than-doubles-valuation-to-1-3b-in-a-year%2f&c=16197996978459747488&mkt=en-us)
+- [OpenRouter more than doubles valuation to $1.3B in a year](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0e02c74431bfb5da7dfd6d60df&url=https%3a%2f%2ftechcrunch.com%2f2026%2f05%2f26%2fopenrouter-more-than-doubles-valuation-to-1-3b-in-a-year%2f&c=16197996978459747488&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-26
-- [OpenRouter Raises $113 Million CapitalG-led Series B as Weekly Volume Explodes to 25T Tokens](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d60a2c4489af6df5cc676297b8&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260526953416%2fen%2fOpenRouter-Raises-%2524113-Million-CapitalG-led-Series-B-as-Weekly-Volume-Explodes-to-25T-Tokens&c=317270358345417075&mkt=en-us)
+- [OpenRouter's Fusion Promises Claude Fable-Level AI for Cheap—Right as Fable 5 Goes Dark](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0e02c74431bfb5da7dfd6d60df&url=https%3a%2f%2fdecrypt.co%2f371711%2fopenrouter-fusion-claude-fable-level-ai-cheap&c=3263914444599230540&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-20
+- [OpenRouter Raises $113 Million CapitalG-led Series B as Weekly Volume Explodes to 25T Tokens](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0e02c74431bfb5da7dfd6d60df&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260526953416%2fen%2fOpenRouter-Raises-%2524113-Million-CapitalG-led-Series-B-as-Weekly-Volume-Explodes-to-25T-Tokens&c=317270358345417075&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-26
 
 ### #230 AI21 Labs (monitor)
@@ -629,9 +343,9 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Model/API platform
 - Top score: 56
 - New signals: 2
-- [AI21 Labs’ new AI model can handle more context than most](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d8802e404096ac96c5a2219007&url=https%3a%2f%2ftechcrunch.com%2f2024%2f03%2f28%2fai21-labs-new-text-generating-ai-model-is-more-efficient-than-most%2f&c=1471040704198964175&mkt=en-us)
+- [AI21 Labs’ new AI model can handle more context than most](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1139a849379cc4817f5893cd0f&url=https%3a%2f%2ftechcrunch.com%2f2024%2f03%2f28%2fai21-labs-new-text-generating-ai-model-is-more-efficient-than-most%2f&c=1471040704198964175&mkt=en-us)
   - Source/date: www.bing.com / 2024-03-28
-- [Generative AI startup AI21 Labs lands $155M at a $1.4B valuation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d8802e404096ac96c5a2219007&url=https%3a%2f%2ftechcrunch.com%2f2023%2f08%2f30%2fgenerative-ai-startup-ai21-labs-lands-155m-at-a-1-4b-valuation%2f&c=8415991124631721429&mkt=en-us)
+- [Generative AI startup AI21 Labs lands $155M at a $1.4B valuation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1139a849379cc4817f5893cd0f&url=https%3a%2f%2ftechcrunch.com%2f2023%2f08%2f30%2fgenerative-ai-startup-ai21-labs-lands-155m-at-a-1-4b-valuation%2f&c=8415991124631721429&mkt=en-us)
   - Source/date: www.bing.com / 2023-08-30
 
 ### #231 Harvey (monitor)
@@ -639,101 +353,55 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Legal AI
 - Top score: 64
 - New signals: 5
-- [Legal AI startup Harvey valued at $11 billion in funding round, as VCs spread bets beyond model companies](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d9e9944e88b319a61cf34fff8d&url=https%3a%2f%2fwww.cnbc.com%2f2026%2f03%2f25%2flegal-ai-startup-harvey-raises-200-million-at-11-billion-valuation.html&c=18387495016546538183&mkt=en-us)
+- [Legal AI startup Harvey valued at $11 billion in funding round, as VCs spread bets beyond model companies](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d11ab0f4f4b8a175965d65bbe5c&url=https%3a%2f%2fwww.cnbc.com%2f2026%2f03%2f25%2flegal-ai-startup-harvey-raises-200-million-at-11-billion-valuation.html&c=18387495016546538183&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-25
-- [Harvey's CEO says AI agents are picking up more work that human lawyers used to do](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d9e9944e88b319a61cf34fff8d&url=https%3a%2f%2fwww.businessinsider.com%2fharvey-ceo-ai-agents-transforming-legal-industry-dynamics-2026-5&c=16620256685170483855&mkt=en-us)
+- [Harvey's CEO says AI agents are picking up more work that human lawyers used to do](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d11ab0f4f4b8a175965d65bbe5c&url=https%3a%2f%2fwww.businessinsider.com%2fharvey-ceo-ai-agents-transforming-legal-industry-dynamics-2026-5&c=16620256685170483855&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-05
-- [Harvey confirms $11B valuation: Sequoia triples down](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8d9e9944e88b319a61cf34fff8d&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f25%2fharvey-confirms-11b-valuation-sequoia-triples-down%2f&c=9069625196735077723&mkt=en-us)
+- [Harvey confirms $11B valuation: Sequoia triples down](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d11ab0f4f4b8a175965d65bbe5c&url=https%3a%2f%2ftechcrunch.com%2f2026%2f03%2f25%2fharvey-confirms-11b-valuation-sequoia-triples-down%2f&c=9069625196735077723&mkt=en-us)
   - Source/date: www.bing.com / 2026-03-25
-
-### #232 CoCounsel (monitor)
-
-- Type: Legal AI
-- Top score: 68
-- New signals: 1
-- [Thomson Reuters Announces New Features, Early Access to Next Gen of CoCounsel Legal](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8daa09c4618bf9561b5d151d3dd&url=https%3a%2f%2fwww.law.com%2flegaltechnews%2f2026%2f06%2f22%2fthomson-reuters-announces-new-features-early-access-to-next-gen-of-cocounsel-legal-%2f&c=11980991144487253295&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-22
-
-### #236 Abridge (monitor)
-
-- Type: Healthcare documentation AI
-- Top score: 56
-- New signals: 5
-- [47. Abridge](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8dc25c344cbb13ea401ad00b7df&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f06%2f10%2fabridge-cnbc-disruptor-50.html&c=18260280205076138056&mkt=en-us)
-  - Source/date: www.bing.com / 2025-06-10
-- [$5.3 billion Abridge is eyeing acquisitions. Here's what the healthcare AI startup is looking for.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8dc25c344cbb13ea401ad00b7df&url=https%3a%2f%2fwww.businessinsider.com%2fabridge-wants-to-buy-healthcare-ai-startups-2025-8&c=2075580397733441280&mkt=en-us)
-  - Source/date: www.bing.com / 2025-08-14
-- [Abridge Expands Nursing AI Platform to 250+ Health Systems](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8dc25c344cbb13ea401ad00b7df&url=https%3a%2f%2fwww.newsweek.com%2fai-nurses-health-care-abridge-access-health-11921461&c=11844563281906304498&mkt=en-us)
-  - Source/date: www.bing.com / 2026-05-06
-
-### #241 AlphaSense (monitor)
-
-- Type: Market intelligence AI
-- Top score: 56
-- New signals: 5
-- [AlphaSense Raises $350M as Enterprises Shift to AI-Driven Research and Decision-Making Workflows](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8df996d4b9aa767429618cdf842&url=https%3a%2f%2fwww.alleywatch.com%2f2026%2f06%2falphasense-ai-market-intelligence-enterprise-platform-samantha-greenberg%2f&c=2122985051291538424&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-19
-- [AlphaSense Introduces SuperAnalyst: The Always-On AI Agent for Decision-Grade Intelligence](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8df996d4b9aa767429618cdf842&url=https%3a%2f%2fmarkets.businessinsider.com%2fnews%2fstocks%2falphasense-introduces-superanalyst-the-always-on-ai-agent-for-decision-grade-intelligence-1036221226&c=13814029299669766340&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-03
-- [8. AlphaSense](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8df996d4b9aa767429618cdf842&url=https%3a%2f%2fwww.cnbc.com%2f2025%2f06%2f10%2falphasense-cnbc-disruptor-50.html&c=17681783647123019342&mkt=en-us)
-  - Source/date: www.bing.com / 2025-06-10
-
-### #245 Microsoft Security Copilot (monitor)
-
-- Type: Security AI
-- Top score: 64
-- New signals: 3
-- [Microsoft Security Copilot is a new GPT-4 AI assistant for cybersecurity](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e1eea9454e80f604c1479396ec&url=https%3a%2f%2fwww.theverge.com%2f2023%2f3%2f28%2f23659711%2fmicrosoft-security-copilot-gpt-4-ai-tool-features&c=10821469800701837983&mkt=en-us)
-  - Source/date: www.bing.com / 2023-03-28
-- [Introducing Microsoft Security Copilot: Empowering defenders at the speed of AI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e1eea9454e80f604c1479396ec&url=https%3a%2f%2fnews.microsoft.com%2fai-security-2023%2f&c=8437234752787067349&mkt=en-us)
-  - Source/date: www.bing.com / 2023-03-28
-- [With Security Copilot, Microsoft brings the power of AI to cyberdefense](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e1eea9454e80f604c1479396ec&url=https%3a%2f%2fnews.microsoft.com%2fsource%2f2023%2f03%2f28%2fwith-security-copilot-microsoft-brings-the-power-of-ai-to-cyberdefense%2f&c=3687063417942100689&mkt=en-us)
-  - Source/date: www.bing.com / 2023-03-27
 
 ### #248 Darktrace (monitor)
 
 - Type: Cybersecurity AI
 - Top score: 60
-- New signals: 4
-- [Darktrace Acquires Mira Security](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e24d8c4aee9dfe48e41573d63f&url=https%3a%2f%2fwww.darkreading.com%2fcybersecurity-operations%2fdarktrace-acquires-mira-security&c=5684410223587039249&mkt=en-us)
+- New signals: 3
+- [Darktrace Acquires Mira Security](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1b97a6468491e3609e4fe85937&url=https%3a%2f%2fwww.darkreading.com%2fcybersecurity-operations%2fdarktrace-acquires-mira-security&c=5684410223587039249&mkt=en-us)
   - Source/date: www.bing.com / 2025-08-03
-- [Darktrace expands ActiveAI Security Platform with NEXT agent and major network security enhancements](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e24d8c4aee9dfe48e41573d63f&url=https%3a%2f%2fsiliconangle.com%2f2025%2f10%2f23%2fdarktrace-expands-activeai-security-platform-next-agent-major-network-security-enhancements%2f&c=8623464472934695770&mkt=en-us)
+- [Darktrace expands ActiveAI Security Platform with NEXT agent and major network security enhancements](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1b97a6468491e3609e4fe85937&url=https%3a%2f%2fsiliconangle.com%2f2025%2f10%2f23%2fdarktrace-expands-activeai-security-platform-next-agent-major-network-security-enhancements%2f&c=8623464472934695770&mkt=en-us)
   - Source/date: www.bing.com / 2025-10-23
-- [Darktrace Joins the OpenAI Daybreak Cyber Partner Program to Explore Defensive AI Integrations](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e24d8c4aee9dfe48e41573d63f&url=https%3a%2f%2fmarkets.businessinsider.com%2fnews%2fstocks%2fdarktrace-joins-the-openai-daybreak-cyber-partner-program-to-explore-defensive-ai-integrations-1036266253&c=5628061362587963238&mkt=en-us)
+- [Darktrace Joins the OpenAI Daybreak Cyber Partner Program to Explore Defensive AI Integrations](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1b97a6468491e3609e4fe85937&url=https%3a%2f%2fmarkets.businessinsider.com%2fnews%2fstocks%2fdarktrace-joins-the-openai-daybreak-cyber-partner-program-to-explore-defensive-ai-integrations-1036266253&c=5628061362587963238&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-22
 
 ### #253 HireVue (monitor)
 
 - Type: HR, recruiting, and talent intelligence
 - Top score: 56
-- New signals: 3
-- [Hirevue AI Interviewer Sets New Enterprise Standard Grounded in Validated Hiring Science](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e5c32e423281a81b4b09a7dd76&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2fhirevue-ai-interviewer-sets-enterprise-110000301.html&c=10759313937696618922&mkt=en-us)
+- New signals: 2
+- [Hirevue AI Interviewer Sets New Enterprise Standard Grounded in Validated Hiring Science](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1fd9e741c1a95192d399cfaf9c&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2fhirevue-ai-interviewer-sets-enterprise-110000301.html&c=10759313937696618922&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-18
-- [HireVue Executives Talk ‘Resetting’ The Conversation On Hiring And How The Company Is Making The Job Market More Inclusive For All](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e5c32e423281a81b4b09a7dd76&url=https%3a%2f%2fwww.forbes.com%2fsites%2fstevenaquino%2f2023%2f10%2f24%2fhirevue-executives-talk-resetting-the-conversation-on-hiring-and-how-the-company-is-making-the-job-market-more-inclusive-for-all%2f&c=11163274502440945485&mkt=en-us)
+- [HireVue Executives Talk ‘Resetting’ The Conversation On Hiring And How The Company Is Making The Job Market More Inclusive For All](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1fd9e741c1a95192d399cfaf9c&url=https%3a%2f%2fwww.forbes.com%2fsites%2fstevenaquino%2f2023%2f10%2f24%2fhirevue-executives-talk-resetting-the-conversation-on-hiring-and-how-the-company-is-making-the-job-market-more-inclusive-for-all%2f&c=11163274502440945485&mkt=en-us)
   - Source/date: www.bing.com / 2023-10-24
-- [Anthony Reynolds Succeeds Kevin Parker as CEO at HireVue](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8e5c32e423281a81b4b09a7dd76&url=https%3a%2f%2ffinance.yahoo.com%2fnews%2fanthony-reynolds-succeeds-kevin-parker-130000178.html&c=115706107185643853&mkt=en-us)
-  - Source/date: www.bing.com / 2022-01-31
 
 ### #277 MagicSchool AI (monitor)
 
 - Type: Education, tutoring, and classroom AI
 - Top score: 56
 - New signals: 2
-- [MagicSchool AI Launches 'Teachers Are Magic' Nationwide Campaign Featuring Real Teachers](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8f2d4a2459f900135b173a72742&url=https%3a%2f%2fwww.reuters.com%2fpress-releases%2fmagicschool-ai-teachers-are-magic-campaign-2025-08-07%2f&c=1114050878322838536&mkt=en-us)
+- [MagicSchool AI Launches 'Teachers Are Magic' Nationwide Campaign Featuring Real Teachers](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d2dcc6d43238bcfd9f7a03d91b1&url=https%3a%2f%2fwww.reuters.com%2fpress-releases%2fmagicschool-ai-teachers-are-magic-campaign-2025-08-07%2f&c=1114050878322838536&mkt=en-us)
   - Source/date: www.bing.com / 2025-08-07
-- [MagicSchool AI Raises $15 Million to Fight Teacher Burnout and Prepare Students for the AI Future](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8f2d4a2459f900135b173a72742&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20240627356064%2fen%2fMagicSchool-AI-Raises-%252415-Million-to-Fight-Teacher-Burnout-and-Prepare-Students-for-the-AI-Future&c=7768303925808743860&mkt=en-us)
+- [MagicSchool AI Raises $15 Million to Fight Teacher Burnout and Prepare Students for the AI Future](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d2dcc6d43238bcfd9f7a03d91b1&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20240627356064%2fen%2fMagicSchool-AI-Raises-%252415-Million-to-Fight-Teacher-Burnout-and-Prepare-Students-for-the-AI-Future&c=7768303925808743860&mkt=en-us)
   - Source/date: www.bing.com / 2024-06-27
 
 ### #335 BlackLine (monitor)
 
 - Type: Finance, accounting, FP&A, procurement, and tax AI
-- Top score: 60
+- Top score: 56
 - New signals: 5
-- [BlackLine launches Verity AI to create a trusted digital workforce for finance](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb91000074c51a514225f424603ba&url=https%3a%2f%2fsiliconangle.com%2f2025%2f09%2f09%2fblackline-launches-verity-ai-create-trusted-digital-workforce-finance%2f&c=1638373314267358000&mkt=en-us)
-  - Source/date: www.bing.com / 2025-09-09
-- [BlackLine® Expands Agentic Financial Operations Platform; Establishing the Trust Infrastructure for AI-Powered Finance](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb91000074c51a514225f424603ba&url=https%3a%2f%2fmarkets.businessinsider.com%2fnews%2fstocks%2fblackline-expands-agentic-financial-operations-platform-establishing-the-trust-infrastructure-for-ai-powered-finance-1036274669&c=4020820130306568321&mkt=en-us)
+- [BlackLine® Expands Agentic Financial Operations Platform; Establishing the Trust Infrastructure for AI-Powered Finance](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d51eda3402d8df070dac464e14b&url=https%3a%2f%2fmarkets.businessinsider.com%2fnews%2fstocks%2fblackline-expands-agentic-financial-operations-platform-establishing-the-trust-infrastructure-for-ai-powered-finance-1036274669&c=4020820130306568321&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-25
-- [BlackLine: Hopes For A Turnaround Are Fading (Downgrade)](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb91000074c51a514225f424603ba&url=https%3a%2f%2fseekingalpha.com%2farticle%2f4855412-blackline-hopes-for-a-turnaround-are-fading-downgrade&c=3331392707292688080&mkt=en-us)
+- [BlackLine Announces Date for First Quarter 2026 Earnings Release and Conference Call](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d51eda3402d8df070dac464e14b&url=https%3a%2f%2ffinance.yahoo.com%2fmarkets%2fstocks%2farticles%2fblackline-announces-date-first-quarter-201500748.html&c=1083048076842877605&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-20
+- [BlackLine: Hopes For A Turnaround Are Fading (Downgrade)](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d51eda3402d8df070dac464e14b&url=https%3a%2f%2fseekingalpha.com%2farticle%2f4855412-blackline-hopes-for-a-turnaround-are-fading-downgrade&c=3331392707292688080&mkt=en-us)
   - Source/date: www.bing.com / 2025-12-23
 
 ### #363 Chronosphere (monitor)
@@ -741,81 +409,23 @@ Generated: 2026-06-27T11:47:42Z
 - Type: AIOps, observability, and incident response
 - Top score: 60
 - New signals: 1
-- [Chronosphere takes on Datadog with AI that explains itself, not just outages](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb91f72d24b8d9b2bcb4dff199812&url=https%3a%2f%2fventurebeat.com%2fai%2fchronosphere-takes-on-datadog-with-ai-that-explains-itself-not-just-outages&c=1933361390632309628&mkt=en-us)
+- [Chronosphere takes on Datadog with AI that explains itself, not just outages](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d62b24a48608f3b5fc468085d7f&url=https%3a%2f%2fventurebeat.com%2fai%2fchronosphere-takes-on-datadog-with-ai-that-explains-itself-not-just-outages&c=1933361390632309628&mkt=en-us)
   - Source/date: www.bing.com / 2025-11-09
-
-### #377 Holistic AI (monitor)
-
-- Type: AI governance, model risk, privacy, and compliance
-- Top score: 68
-- New signals: 2
-- [Announcing Holistic AI Tracker 2.0, a Real-Time Knowledge Hub for AI Governance, Regulatory, and Compliance Activity Worldwide](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb926266e43d5807f738b48908908&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20241119163732%2fen%2fAnnouncing-Holistic-AI-Tracker-2.0-a-Real-Time-Knowledge-Hub-for-AI-Governance-Regulatory-and-Compliance-Activity-Worldwide&c=17760117683018217925&mkt=en-us)
-  - Source/date: www.bing.com / 2024-11-19
-- [Holistic AI adoption: the key to unlocking enterprise value](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb926266e43d5807f738b48908908&url=https%3a%2f%2fwww.techradar.com%2fpro%2fholistic-ai-adoption-the-key-to-unlocking-enterprise-value&c=16789728147932143074&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-11
 
 ### #388 Protect AI (monitor)
 
 - Type: AI governance, model risk, privacy, and compliance
 - Top score: 64
 - New signals: 1
-- [Protect AI Acquires huntr; Launches World’s First Artificial Intelligence and Machine Learning Bug Bounty Platform](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb92cad6040588021720e136491dd&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20230808746694%2fen%2fProtect-AI-Acquires-huntr-Launches-World%25E2%2580%2599s-First-Artificial-Intelligence-and-Machine-Learning-Bug-Bounty-Platform%2f&c=14135361425203547584&mkt=en-us)
+- [Protect AI Acquires huntr; Launches World’s First Artificial Intelligence and Machine Learning Bug Bounty Platform](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d72db104e38b8b122add8d84a4c&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20230808746694%2fen%2fProtect-AI-Acquires-huntr-Launches-World%25E2%2580%2599s-First-Artificial-Intelligence-and-Machine-Learning-Bug-Bounty-Platform%2f&c=14135361425203547584&mkt=en-us)
   - Source/date: www.bing.com / 2023-08-08
-
-### #428 Blue Yonder (monitor)
-
-- Type: Manufacturing, supply chain, logistics, and industrial AI
-- Top score: 56
-- New signals: 5
-- [Blue Yonder announces acquisition of flexis AG](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb941257c407082ddf66b657359e3&url=https%3a%2f%2fwww.logisticsmgmt.com%2farticle%2fblue_yonder_announces_acquisition_of_flexis_ag&c=7860401254843856815&mkt=en-us)
-  - Source/date: www.bing.com / 2024-02-12
-- [ICON 2025 - Blue Yonder CEO Duncan Angove says, "It's all come to a head." Inside the three-year journey to agentic AI for supply chain](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb941257c407082ddf66b657359e3&url=https%3a%2f%2fdiginomica.com%2fblue-yonder-ceo-duncan-angove-journey-agentic-ai-supply-chain&c=12376919093034242159&mkt=en-us)
-  - Source/date: www.bing.com / 2025-05-04
-- [Blue Yonder Expands Agentic AI and Mobile Experiences for Industry-Specific Supply Chain Execution](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb941257c407082ddf66b657359e3&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260311026920%2fen%2fBlue-Yonder-Expands-Agentic-AI-and-Mobile-Experiences-for-Industry-Specific-Supply-Chain-Execution&c=9117283869327895518&mkt=en-us)
-  - Source/date: www.bing.com / 2026-03-11
-
-### #444 Sight Machine (monitor)
-
-- Type: Manufacturing, supply chain, logistics, and industrial AI
-- Top score: 68
-- New signals: 2
-- [Sight Machine Launches Agentic Manufacturing Platform That Understands Your Plant - and Improves It, Every Run](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb94a126d4b81a38e2518947f9eba&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2fsight-machine-launches-agentic-manufacturing-110800483.html&c=9889692221823279514&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-10
-- [Sight Machine Announces Industrial AI Agents, Expanded Integration with Microsoft Fabric, Additional Investment](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb94a126d4b81a38e2518947f9eba&url=https%3a%2f%2ffinance.yahoo.com%2fnews%2fsight-machine-announces-industrial-ai-092100206.html&c=4663295213162086690&mkt=en-us)
-  - Source/date: www.bing.com / 2025-09-15
 
 ### #453 NVIDIA BioNeMo (monitor)
 
 - Type: Scientific, biotech, lab, and clinical AI
 - Top score: 64
-- New signals: 2
-- [Biolevate To Advance AI-Native Drug Discovery Workflows With NVIDIA BioNeMo Agent Toolkit](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb94e5c134f468fa81e831595e249&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f25%2f10405959.htm&c=15448196534777831321&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-25
-- [NVIDIA Announces BioNeMo Agent Toolkit — Tools for Agents to Accelerate Scientific Discovery](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb94e5c134f468fa81e831595e249&url=https%3a%2f%2ffinance.yahoo.com%2ftechnology%2fai%2farticles%2fnvidia-announces-bionemo-agent-toolkit-130000616.html&c=6336127964939721654&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-23
-
-### #471 Paige (monitor)
-
-- Type: Scientific, biotech, lab, and clinical AI
-- Top score: 56
-- New signals: 3
-- [Tempus Announces the Acquisition of Paige](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb95836d14925aad09535ef5ecc9e&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20250822422844%2fen%2fTempus-Announces-the-Acquisition-of-Paige&c=9158990190104298379&mkt=en-us)
-  - Source/date: www.bing.com / 2025-08-22
-- [Microsoft and Paige are building the world's largest AI model for detecting cancer](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb95836d14925aad09535ef5ecc9e&url=https%3a%2f%2fwww.cnbc.com%2f2023%2f09%2f07%2fmicrosoft-paige-building-worlds-largest-ai-model-to-detect-cancer.html&c=11003215407257754914&mkt=en-us)
-  - Source/date: www.bing.com / 2023-09-07
-- [Paige Receives First Ever FDA Approval for AI Product in Digital Pathology](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb95836d14925aad09535ef5ecc9e&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20210922005369%2fen%2fPaige-Receives-First-Ever-FDA-Approval-for-AI-Product-in-Digital-Pathology&c=12097402558615332462&mkt=en-us)
-  - Source/date: www.bing.com / 2021-09-22
-
-### #493 PLAUD Note (monitor)
-
-- Type: Personal productivity, notes, email, calendar, and knowledge AI
-- Top score: 56
-- New signals: 5
-- [Plaud launches a new AI hardware notetaker, the $179 Note Pro](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb9636f194f62af577f14b5a70e20&url=https%3a%2f%2ftechcrunch.com%2f2025%2f08%2f27%2fplaud-launches-a-new-ai-hardware-notetaker-the-179-note-pro%2f&c=15451172917705808341&mkt=en-us)
-  - Source/date: www.bing.com / 2025-08-27
-- [The New Plaud Note Pro Is An Advanced AI Note Taker Designed For Meetings, Calls Or Dreams](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb9636f194f62af577f14b5a70e20&url=https%3a%2f%2fwww.forbes.com%2fsites%2fmarksparrow%2f2025%2f08%2f27%2fthe-new-plaud-note-pro-is-an-advanced-ai-note-taker-designed-for-meetings-calls-or-dreams%2f&c=8084764326050156140&mkt=en-us)
-  - Source/date: www.bing.com / 2025-08-27
-- [Plaud Note Pro is the AI meeting gadget I didn’t know I wanted](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb9636f194f62af577f14b5a70e20&url=https%3a%2f%2fwww.msn.com%2fen-us%2flifestyle%2fshopping%2fplaud-note-pro-is-the-ai-meeting-gadget-i-didn-t-know-i-wanted%2far-AA26wTO4&c=7071544859095327960&mkt=en-us)
+- New signals: 1
+- [Biolevate To Advance AI-Native Drug Discovery Workflows With NVIDIA BioNeMo Agent Toolkit](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d98a3bf49d79e056b7c478f73a3&url=https%3a%2f%2fwww.tmcnet.com%2fusubmit%2f2026%2f06%2f25%2f10405959.htm&c=15448196534777831321&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-25
 
 ### #494 Wispr Flow (monitor)
@@ -823,23 +433,23 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Personal productivity, notes, email, calendar, and knowledge AI
 - Top score: 60
 - New signals: 5
-- [Wispr Flow launches an Android app for AI-powered dictation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb964dd50494f9c051e8c9d038548&url=https%3a%2f%2ftechcrunch.com%2f2026%2f02%2f23%2fwispr-flow-launches-an-android-app-for-ai-powered-dictation%2f&c=14755757671946832545&mkt=en-us)
-  - Source/date: www.bing.com / 2026-02-23
-- [Wispr Flow accelerates India push with Hinglish AI rollout](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb964dd50494f9c051e8c9d038548&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2fother%2fwispr-flow-accelerates-india-push-with-hinglish-ai-rollout%2fgm-GM0A434976&c=10713573318799396275&mkt=en-us)
+- [Wispr Flow accelerates India push with Hinglish AI rollout](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410db1ffe640d181304100d4b58ff4&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2fother%2fwispr-flow-accelerates-india-push-with-hinglish-ai-rollout%2fgm-GM0A434976&c=10713573318799396275&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-09
-- [Wispr Flow Dictation App Is Now Available For Windows Users](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb964dd50494f9c051e8c9d038548&url=https%3a%2f%2fwww.forbes.com%2fsites%2fmarksparrow%2f2025%2f03%2f12%2fwispr-flow-dictation-app-is-now-available-for-windows-users%2f&c=17590447894612874290&mkt=en-us)
+- [Wispr Flow Dictation App Is Now Available For Windows Users](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410db1ffe640d181304100d4b58ff4&url=https%3a%2f%2fwww.forbes.com%2fsites%2fmarksparrow%2f2025%2f03%2f12%2fwispr-flow-dictation-app-is-now-available-for-windows-users%2f&c=17590447894612874290&mkt=en-us)
   - Source/date: www.bing.com / 2025-03-12
+- [Wispr Raises $12M and Launches Wispr Flow to Replace Keyboards With Voice](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410db1ffe640d181304100d4b58ff4&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20240930079034%2fen%2fWispr-Raises-%2412M-and-Launches-Wispr-Flow-to-Replace-Keyboards-With-Voice&c=8357733284236567249&mkt=en-us)
+  - Source/date: www.bing.com / 2024-09-30
 
 ### #3 Google Gemini (new_low_confidence_signal)
 
 - Type: General AI assistant
 - Top score: 52
 - New signals: 5
-- [Use Google Gemini and ChatGPT to Organize Your Life With Scheduled Actions](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85f247d414ab6e40f83bd937a6a&url=https%3a%2f%2fwww.wired.com%2fstory%2fgoogle-gemini-and-chatgpt-scheduled-actions%2f&c=7561391034691674652&mkt=en-us)
-  - Source/date: www.bing.com / 2025-11-15
-- [Google Gemini AI assistant finally arrives on Android Automotive to take the wheel](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85f247d414ab6e40f83bd937a6a&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fsoftware%2fgoogle-gemini-ai-assistant-finally-arrives-on-android-automotive-to-take-the-wheel%2far-AA26DRiV&c=735710690367220238&mkt=en-us)
+- [What is Google Gemini?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8640b44791bb12d09da450df25&url=https%3a%2f%2fwww.androidpolice.com%2fgoogle-gemini-guide%2f&c=2710655319945346023&mkt=en-us)
+  - Source/date: www.bing.com / 2024-09-01
+- [Google Gemini AI assistant finally arrives on Android Automotive to take the wheel](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8640b44791bb12d09da450df25&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2ftechnology%2fgoogle-gemini-ai-assistant-finally-arrives-on-android-automotive-to-take-the-wheel%2far-AA26DRiV&c=8264230809485928817&mkt=en-us)
   - Source/date: www.bing.com / 2026-06-26
-- [How to use Google’s Gemini AI app on your Android phone or iPhone](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb85f247d414ab6e40f83bd937a6a&url=https%3a%2f%2fwww.digitaltrends.com%2fphones%2fhow-to-use-google-gemini-ai-app-on-your-android-phone%2f&c=17443524620327732785&mkt=en-us)
+- [How to use Google’s Gemini AI app on your Android phone or iPhone](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8640b44791bb12d09da450df25&url=https%3a%2f%2fwww.digitaltrends.com%2fphones%2fhow-to-use-google-gemini-ai-app-on-your-android-phone%2f&c=17443524620327732785&mkt=en-us)
   - Source/date: www.bing.com / 2024-08-30
 
 ### #9 Poe (new_low_confidence_signal)
@@ -847,57 +457,490 @@ Generated: 2026-06-27T11:47:42Z
 - Type: Multi-model assistant
 - Top score: 52
 - New signals: 5
-- [Poe’s AI chatbot app now lets you make your own bots using prompts](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8632f2f4901bc08ac33e8a41161&url=https%3a%2f%2ftechcrunch.com%2f2023%2f04%2f10%2fpoes-ai-chatbot-app-now-lets-you-make-your-bots-using-prompts%2f&c=4603984398614577797&mkt=en-us)
+- [Poe’s AI chatbot app now lets you make your own bots using prompts](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8957a0496db4e40c156e9b24ee&url=https%3a%2f%2ftechcrunch.com%2f2023%2f04%2f10%2fpoes-ai-chatbot-app-now-lets-you-make-your-bots-using-prompts%2f&c=4603984398614577797&mkt=en-us)
   - Source/date: www.bing.com / 2023-04-10
-- [Poe’s new desktop app lets you use all the AI chatbots in one place](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8632f2f4901bc08ac33e8a41161&url=https%3a%2f%2fwww.theverge.com%2f2023%2f8%2f28%2f23849161%2fpoe-ai-chatbot-platform-mac-app-llama-2-enterprise-tier&c=177156873285476445&mkt=en-us)
+- [Poe’s new desktop app lets you use all the AI chatbots in one place](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8957a0496db4e40c156e9b24ee&url=https%3a%2f%2fwww.theverge.com%2f2023%2f8%2f28%2f23849161%2fpoe-ai-chatbot-platform-mac-app-llama-2-enterprise-tier&c=177156873285476445&mkt=en-us)
   - Source/date: www.bing.com / 2023-08-28
-- [Can't Decide Which AI Chatbot Is Best? Poe Says Use Them All](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb8632f2f4901bc08ac33e8a41161&url=https%3a%2f%2fwww.cnet.com%2ftech%2fservices-and-software%2fcant-decide-which-ai-chatbot-is-best-poe-says-use-them-all%2f&c=8987622773668558142&mkt=en-us)
+- [Can't Decide Which AI Chatbot Is Best? Poe Says Use Them All](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c8957a0496db4e40c156e9b24ee&url=https%3a%2f%2fwww.cnet.com%2ftech%2fservices-and-software%2fcant-decide-which-ai-chatbot-is-best-poe-says-use-them-all%2f&c=8987622773668558142&mkt=en-us)
   - Source/date: www.bing.com / 2024-06-27
-
-### #16 Qwen Chat (new_low_confidence_signal)
-
-- Type: General AI assistant
-- Top score: 44
-- New signals: 1
-- [Qwen Chat : Free AI Assistant for Developers and Researchers](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86622184971b09c67127cdfb46d&url=https%3a%2f%2fwww.geeky-gadgets.com%2fqwen-chat-features-overview-guide%2f&c=1711371585127933807&mkt=en-us)
-  - Source/date: www.bing.com / 2025-01-12
 
 ### #23 Notion AI (new_low_confidence_signal)
 
 - Type: Workspace/document assistant
 - Top score: 52
 - New signals: 4
-- [Notion AI can transcribe conversations and write reports, but it'll cost you](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86abe60431bbbe4cfb1ba16252e&url=https%3a%2f%2fwww.engadget.com%2fai%2fnotion-ai-can-transcribe-conversations-and-write-reports-but-itll-cost-you-130018464.html&c=1372537151452826717&mkt=en-us)
+- [Notion AI can transcribe conversations and write reports, but it'll cost you](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9236d14d87bc03d76f1b58f6a5&url=https%3a%2f%2fwww.engadget.com%2fai%2fnotion-ai-can-transcribe-conversations-and-write-reports-but-itll-cost-you-130018464.html&c=1372537151452826717&mkt=en-us)
   - Source/date: www.bing.com / 2025-05-13
-- [How To Use Notion AI For Next-Level Note-Taking](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86abe60431bbbe4cfb1ba16252e&url=https%3a%2f%2fwww.slashgear.com%2f1304573%2fnotion-ai-note-taking%2f&c=5821163605290416433&mkt=en-us)
+- [What is Notion AI: Everything we know about this project management tool](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9236d14d87bc03d76f1b58f6a5&url=https%3a%2f%2fwww.techradar.com%2fcomputing%2fartificial-intelligence%2fwhat-is-notion-ai-everything-we-know-about-this-project-management-tool&c=13451740278984103952&mkt=en-us)
+  - Source/date: www.bing.com / 2025-03-17
+- [How To Use Notion AI For Next-Level Note-Taking](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9236d14d87bc03d76f1b58f6a5&url=https%3a%2f%2fwww.slashgear.com%2f1304573%2fnotion-ai-note-taking%2f&c=5821163605290416433&mkt=en-us)
   - Source/date: www.bing.com / 2023-06-04
-- [Notion AI looked smart until I tried NotebookLM for grounded research and Claude Projects for action](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86abe60431bbbe4cfb1ba16252e&url=https%3a%2f%2fwww.msn.com%2fen-us%2ftechnology%2fartificial-intelligence%2fnotion-ai-looked-smart-until-i-tried-notebooklm-for-grounded-research-and-claude-projects-for-action%2far-AA24XhuJ&c=5961011264924234616&mkt=en-us)
-  - Source/date: www.bing.com / 2026-06-05
 
 ### #24 Grammarly (new_low_confidence_signal)
 
 - Type: Writing assistant
 - Top score: 52
 - New signals: 5
-- [Grammarly’s Generative AI Feature Will Soon Be Able To Write, Interpret And Edit Text](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86bdc4745148c530d0e0a95c4af&url=https%3a%2f%2fwww.forbes.com%2fsites%2frashishrivastava%2f2023%2f03%2f09%2fgrammarlys-generative-ai-feature-will-soon-be-able-to-write-interpret-and-edit-text%2f&c=5384633431048713810&mkt=en-us)
+- [Grammarly’s Generative AI Feature Will Soon Be Able To Write, Interpret And Edit Text](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c93bdb14139b4c887b85e636d69&url=https%3a%2f%2fwww.forbes.com%2fsites%2frashishrivastava%2f2023%2f03%2f09%2fgrammarlys-generative-ai-feature-will-soon-be-able-to-write-interpret-and-edit-text%2f&c=5384633431048713810&mkt=en-us)
   - Source/date: www.bing.com / 2023-03-09
-- [Grammarly Review: An AI Editing Gem With Flaws](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86bdc4745148c530d0e0a95c4af&url=https%3a%2f%2fwww.cnet.com%2ftech%2fservices-and-software%2fgrammarly-ai-review%2f&c=17671145823168452104&mkt=en-us)
+- [Grammarly Review: An AI Editing Gem With Flaws](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c93bdb14139b4c887b85e636d69&url=https%3a%2f%2fwww.cnet.com%2ftech%2fservices-and-software%2fgrammarly-ai-review%2f&c=17671145823168452104&mkt=en-us)
   - Source/date: www.bing.com / 2024-04-02
-- [Grammarly raises $200M at a $13B valuation to make you an even better writer using AI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86bdc4745148c530d0e0a95c4af&url=https%3a%2f%2ftechcrunch.com%2f2021%2f11%2f17%2fgrammarly-raises-200m-at-a-13b-valuation-to-make-you-an-even-better-writer-through-ai%2f&c=15245176656390223541&mkt=en-us)
-  - Source/date: www.bing.com / 2021-11-16
+- [Grammarly Is Facing a Class Action Lawsuit Over Its AI ‘Expert Review’ Feature](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c93bdb14139b4c887b85e636d69&url=https%3a%2f%2fwww.wired.com%2fstory%2fgrammarly-is-facing-a-class-action-lawsuit-over-its-ai-expert-review-feature%2f&c=15914419908679160744&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-11
 
 ### #25 QuillBot (new_low_confidence_signal)
 
 - Type: Writing and paraphrasing assistant
 - Top score: 44
 - New signals: 1
-- [From Blank Page to AO3 Ready: Google Docs and QuillBot Are Rewriting Fanfic in 2026](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86bbcbc470abec188ece1b0361f&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2fother%2ffrom-blank-page-to-ao3-ready-google-docs-and-quillbot-are-rewriting-fanfic-in-2026%2fgm-GMA2ACCE5F&c=15340106561948723457&mkt=en-us)
+- [From Blank Page to AO3 Ready: Google Docs and QuillBot Are Rewriting Fanfic in 2026](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c931c034bce81d0b98f92bf0800&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2fother%2ffrom-blank-page-to-ao3-ready-google-docs-and-quillbot-are-rewriting-fanfic-in-2026%2fgm-GMA2ACCE5F&c=15340106561948723457&mkt=en-us)
   - Source/date: www.bing.com / 2026-05-09
 
-### #27 Jasper (new_low_confidence_signal)
+### #35 Zoom AI Companion (new_low_confidence_signal)
 
-- Type: Marketing writing platform
+- Type: Meeting and collaboration assistant
+- Top score: 44
+- New signals: 1
+- [Zoom AI Companion 3.0 Transforms Meetings into Automated Actions Across Platforms](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9aaf604b3f866d80acb64997cb&url=https%3a%2f%2fwww.msn.com%2fen-us%2fnews%2fother%2fzoom-ai-companion-30-transforms-meetings-into-automated-actions-across-platforms%2fgm-GMAC2C02BE&c=7884499400563009799&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-09
+
+### #38 Windsurf (new_low_confidence_signal)
+
+- Type: AI code editor
+- Top score: 48
+- New signals: 5
+- [Windsurf says Anthropic is limiting its direct access to Claude AI models](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9bfb4d4951b7c23631b352fc08&url=https%3a%2f%2ftechcrunch.com%2f2025%2f06%2f03%2fwindsurf-says-anthropic-is-limiting-its-direct-access-to-claude-ai-models%2f&c=13719654483532777824&mkt=en-us)
+  - Source/date: www.bing.com / 2025-06-02
+- [Windsurf's CEO is headed to Google DeepMind — not to OpenAI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9bfb4d4951b7c23631b352fc08&url=https%3a%2f%2fwww.msn.com%2fen-us%2fmoney%2fother%2fwindsurfs-ceo-is-headed-to-google-deepmind-not-to-openai%2far-AA1IrpZS&c=15732760116757259822&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-12
+- [Windsurf slashes prices as competition with Cursor heats up](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9bfb4d4951b7c23631b352fc08&url=https%3a%2f%2ftechcrunch.com%2f2025%2f04%2f23%2fwindsurf-slashes-prices-as-competition-with-cursor-heats-up%2f&c=6976654751951984454&mkt=en-us)
+  - Source/date: www.bing.com / 2025-04-23
+
+### #41 Replit Agent (new_low_confidence_signal)
+
+- Type: App builder/coding agent
 - Top score: 52
 - New signals: 1
-- [AI content platform Jasper raises $125M at a $1.5B valuation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a3fb86cdb484a60a1bb8eada50dfc60&url=https%3a%2f%2ftechcrunch.com%2f2022%2f10%2f18%2fai-content-platform-jasper-raises-125m-at-a-1-7b-valuation%2f&c=4677449849498284625&mkt=en-us)
-  - Source/date: www.bing.com / 2022-10-18
+- [Replit Agent V2 and LangChain : Say Goodbye to Repetitive Coding Tasks](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9d40b44e648f671011097ab00d&url=https%3a%2f%2fwww.geeky-gadgets.com%2freplit-agent-v2%2f&c=219000057427527623&mkt=en-us)
+  - Source/date: www.bing.com / 2025-06-12
+
+### #43 Lovable (new_low_confidence_signal)
+
+- Type: App builder
+- Top score: 52
+- New signals: 5
+- [Lovable's security stumble shows one big risk in using AI to code](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9fdfb447b5bf08967bbd430c88&url=https%3a%2f%2fwww.businessinsider.com%2flovable-security-access-vibe-coding-projects-risk-2026-4&c=14447871085875288723&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-21
+- [Vibe coding platform Lovable now available for iPhone](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9fdfb447b5bf08967bbd430c88&url=https%3a%2f%2f9to5mac.com%2f2026%2f04%2f28%2fvibe-coding-platform-lovable-now-available-for-iphone%2f&c=98890573260715440&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-28
+- [AI Coding Startup Lovable In Talks To Raise Funding At A $12 Billion Valuation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410c9fdfb447b5bf08967bbd430c88&url=https%3a%2f%2fwww.forbes.com%2fsites%2frashishrivastava%2f2026%2f06%2f05%2fai-coding-startup-lovable-in-talks-to-raise-funding-at-a-12-billion-valuation%2f&c=1774160440672000884&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-05
+
+### #47 Amazon Q Developer (new_low_confidence_signal)
+
+- Type: Coding and cloud assistant
+- Top score: 48
+- New signals: 3
+- [Amazon Q Business and Amazon Q Developer Now Generally Available](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca18c874cdf9a808818dabab62d&url=https%3a%2f%2fwww.infoq.com%2fnews%2f2024%2f05%2famazon-q-developer-business%2f&c=393649421397237267&mkt=en-us)
+  - Source/date: www.bing.com / 2024-05-10
+- [AWS Extends Agentic AI Capabilities In Amazon Q Developer](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca18c874cdf9a808818dabab62d&url=https%3a%2f%2fwww.forbes.com%2fsites%2fadrianbridgwater%2f2024%2f12%2f03%2faws-extends-agentic-ai-capabilities-in-amazon-q-developer%2f&c=1710962167865639251&mkt=en-us)
+  - Source/date: www.bing.com / 2024-12-03
+- [Amazon Q Developer review: Code completions, code chat, and AWS skills](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca18c874cdf9a808818dabab62d&url=https%3a%2f%2fwww.infoworld.com%2farticle%2f2337694%2famazon-q-developer-review-code-completions-code-chat-and-aws-skills.html&c=2094873633696074890&mkt=en-us)
+  - Source/date: www.bing.com / 2024-06-23
+
+### #48 JetBrains AI Assistant (new_low_confidence_signal)
+
+- Type: IDE assistant
+- Top score: 44
+- New signals: 1
+- [JetBrains AI Assistant lands on Visual Studio Code as an extension](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ca22fbd4da1b095f2874fd9ce62&url=https%3a%2f%2fwww.neowin.net%2fnews%2fjetbrains-ai-assistant-lands-on-visual-studio-code-as-an-extension%2f&c=7084846257176074529&mkt=en-us)
+  - Source/date: www.bing.com / 2025-05-19
+
+### #63 Elicit (new_low_confidence_signal)
+
+- Type: Research assistant
+- Top score: 40
+- New signals: 1
+- [Elicit is building a tool to automate scientific literature review](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410caba39248ccaafede9d5263c835&url=https%3a%2f%2ftechcrunch.com%2f2023%2f09%2f25%2felicit-is-building-a-tool-to-automate-scientific-literature-review%2f&c=10593003467147100989&mkt=en-us)
+  - Source/date: www.bing.com / 2023-09-25
+
+### #64 Consensus (new_low_confidence_signal)
+
+- Type: Research answer engine
+- Top score: 52
+- New signals: 1
+- [AI-powered agents dominate the EasyA x Consensus Hong Kong hackathon](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cac71864129ab10b17258799576&url=https%3a%2f%2fwww.coindesk.com%2ftech%2f2026%2f02%2f12%2fai-powered-agents-dominate-the-easya-x-consensus-hong-kong-hackathon&c=16979623066342598628&mkt=en-us)
+  - Source/date: www.bing.com / 2026-02-11
+
+### #72 Guru (new_low_confidence_signal)
+
+- Type: Knowledge management AI
+- Top score: 52
+- New signals: 3
+- [Boomi and Guru Partner to Deliver AI-Powered Enterprise Knowledge Enriched by Real-Time Data Activation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb0efe348b38e155385f1a7571b&url=https%3a%2f%2fwww.morningstar.com%2fnews%2fbusiness-wire%2f20260514440755%2fboomi-and-guru-partner-to-deliver-ai-powered-enterprise-knowledge-enriched-by-real-time-data-activation&c=14409103170422184411&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-14
+- [Boomi and Guru Partner to Deliver AI-Powered Enterprise Knowledge Enriched by Real-Time Data Activation](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb0efe348b38e155385f1a7571b&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260514440755%2fen%2fBoomi-and-Guru-Partner-to-Deliver-AI-Powered-Enterprise-Knowledge-Enriched-by-Real-Time-Data-Activation&c=912101139878447951&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-14
+- [Knowledge discovery and collaboration meet agentic AI with Fluid Topics and Guru](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cb0efe348b38e155385f1a7571b&url=https%3a%2f%2fwww.kmworld.com%2fArticles%2fReadArticle.aspx%3fArticleID%3d175455&c=1413586696688877397&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-24
+
+### #88 Chroma (new_low_confidence_signal)
+
+- Type: Vector database
+- Top score: 40
+- New signals: 1
+- [What is chroma subsampling?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cba334c44d4bf92f9f3150aebab&url=https%3a%2f%2fwww.digitaltrends.com%2fcomputing%2fwhat-is-chroma-subsampling%2f&c=14098515272397288318&mkt=en-us)
+  - Source/date: www.bing.com / 2023-10-10
+
+### #102 LanceDB (new_low_confidence_signal)
+
+- Type: Vector database
+- Top score: 48
+- New signals: 1
+- [LanceDB, which counts Midjourney as a customer, is building databases for multimodal AI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cc2721c4b94a0912303c22d1c7e&url=https%3a%2f%2ftechcrunch.com%2f2024%2f05%2f15%2flancedb-which-counts-midjourney-as-a-customer-is-building-databases-for-multimodal-ai%2f&c=14179614574267238254&mkt=en-us)
+  - Source/date: www.bing.com / 2024-05-15
+
+### #104 Vespa (new_low_confidence_signal)
+
+- Type: Search and recommendation engine
+- Top score: 52
+- New signals: 1
+- [Yahoo spin-out Vespa lands $31M investment from Blossom](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cc404a543aa9c2550f7470e5289&url=https%3a%2f%2ftechcrunch.com%2f2023%2f11%2f01%2fyahoo-spin-out-vespa-lands-31m-investment-from-blossom%2f&c=8200050284366048560&mkt=en-us)
+  - Source/date: www.bing.com / 2023-11-01
+
+### #119 Julius AI (new_low_confidence_signal)
+
+- Type: Data analysis assistant
+- Top score: 44
+- New signals: 1
+- [How to use Julius AI for data analysis and computations in seconds](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ccd41e54d4990d2609c79f5c010&url=https%3a%2f%2fwww.geeky-gadgets.com%2fdata-analysis-with-julius-ai%2f&c=8594064245546111954&mkt=en-us)
+  - Source/date: www.bing.com / 2024-06-25
+
+### #124 Dataiku (new_low_confidence_signal)
+
+- Type: Enterprise AI platform
+- Top score: 48
+- New signals: 2
+- [Dataiku Named a Leader for 5th Consecutive Time in the 2026 Gartner® Magic Quadrant™ for AI Platforms for Data Science and ML](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd08cc84ec09f58d0dda15a07c2&url=https%3a%2f%2fwww.morningstar.com%2fnews%2fbusiness-wire%2f20260618581532%2fdataiku-named-a-leader-for-5th-consecutive-time-in-the-2026-gartner-magic-quadrant-for-ai-platforms-for-data-science-and-ml&c=1526624776841924903&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-21
+- [Dataiku Named 2026 Snowflake Product Partner of the Year - AI Platform](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd08cc84ec09f58d0dda15a07c2&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2fdataiku-named-2026-snowflake-product-190000367.html&c=17732882806207690626&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-01
+
+### #134 Leonardo AI (new_low_confidence_signal)
+
+- Type: Image/design generation
+- Top score: 52
+- New signals: 3
+- [How to create consistent characters in Leonardo AI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd6946f483099edcb920a32f1dd&url=https%3a%2f%2fwww.geeky-gadgets.com%2fconsistent-characters-leonardo-ai%2f&c=15825278708398445177&mkt=en-us)
+  - Source/date: www.bing.com / 2024-05-28
+- [How to create consistent characters with Leonardo AI](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd6946f483099edcb920a32f1dd&url=https%3a%2f%2fwww.thewindowsclub.com%2fcreate-consistent-characters-with-leonardo-ai&c=7653784461997689653&mkt=en-us)
+  - Source/date: www.bing.com / 2025-05-03
+- [How to create Talking Avatar in Leonardo AI?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd6946f483099edcb920a32f1dd&url=https%3a%2f%2fwww.thewindowsclub.com%2fhow-to-create-talking-avatar-in-leonardo-ai&c=15752489774915500138&mkt=en-us)
+  - Source/date: www.bing.com / 2024-08-10
+
+### #138 Recraft (new_low_confidence_signal)
+
+- Type: Brand/design generation
+- Top score: 44
+- New signals: 1
+- [Recraft Raises $30M Series B to Bring Creative Quality and Brand Control to Generative AI Design](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cd900c549b89fafe5eaa3646403&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20250430996607%2fen%2fRecraft-Raises-%252430M-Series-B-to-Bring-Creative-Quality-and-Brand-Control-to-Generative-AI-Design&c=17821447201937856395&mkt=en-us)
+  - Source/date: www.bing.com / 2025-05-05
+
+### #143 Magnific (new_low_confidence_signal)
+
+- Type: Image upscaling/enhancement
+- Top score: 48
+- New signals: 1
+- [Freepik rebrands as Magnific: a bootstrapped, profitable $230M ARR AI creative platform](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdc4746483ab25cbf4e3f96f12e&url=https%3a%2f%2fthenextweb.com%2fnews%2ffreepik-rebrands-as-magnific&c=16147642492954620964&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-28
+
+### #145 Microsoft Designer (new_low_confidence_signal)
+
+- Type: Design generation
+- Top score: 48
+- New signals: 5
+- [Microsoft Designer: How to use the generative AI graphic design app](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdd3afe49ceb00a9015ca74cc70&url=https%3a%2f%2fwww.androidpolice.com%2fmicrosoft-designer-guide%2f&c=8757575263377929554&mkt=en-us)
+  - Source/date: www.bing.com / 2024-01-07
+- [How to use Microsoft Designer: Beginners Tutorial](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdd3afe49ceb00a9015ca74cc70&url=https%3a%2f%2fwww.thewindowsclub.com%2fhow-to-use-microsoft-designer&c=3487406391954178771&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-05
+- [Microsoft Designer’s superb, free AI art tools open to everyone](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cdd3afe49ceb00a9015ca74cc70&url=https%3a%2f%2fwww.pcworld.com%2farticle%2f1799866%2fmicrosoft-designers-superb-ai-art-tools-open-to-everyone.html&c=421729286135985543&mkt=en-us)
+  - Source/date: www.bing.com / 2023-04-29
+
+### #152 Hailuo AI (new_low_confidence_signal)
+
+- Type: Video generation
+- Top score: 44
+- New signals: 1
+- [What Exactly Is Minimax's Hailuo AI & Is It Safe To Use?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce253314815be3be5bd78b07717&url=https%3a%2f%2fwww.slashgear.com%2f1710787%2fabout-minimax-ai-is-it-safe%2f&c=17442130124597833954&mkt=en-us)
+  - Source/date: www.bing.com / 2024-11-14
+
+### #154 Synthesia (new_low_confidence_signal)
+
+- Type: AI video avatars
+- Top score: 48
+- New signals: 5
+- [An AI startup made a hyperrealistic deepfake of me that’s so good it’s scary](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce3c8ed49589cd2f3323511df83&url=https%3a%2f%2fwww.technologyreview.com%2f2024%2f04%2f25%2f1091772%2fnew-generative-ai-avatar-deepfake-synthesia%2f&c=4351786663670663769&mkt=en-us)
+  - Source/date: www.bing.com / 2024-04-24
+- [AI Video Startup Synthesia Valued At $4 Billion In New $200 Million Raise](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce3c8ed49589cd2f3323511df83&url=https%3a%2f%2fwww.forbes.com%2fsites%2frashishrivastava%2f2025%2f10%2f29%2fai-video-startup-synthesia-valued-at-4-billion-in-new-200-million-raise%2f&c=9619969526132212441&mkt=en-us)
+  - Source/date: www.bing.com / 2025-10-29
+- [Synthesia’s AI clones are more expressive than ever. Soon they’ll be able to talk back.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce3c8ed49589cd2f3323511df83&url=https%3a%2f%2fwww.technologyreview.com%2f2025%2f09%2f04%2f1123054%2fsynthesias-ai-clones-are-more-expressive-than-ever-soon-theyll-be-able-to-talk-back%2f&c=1904350025200334671&mkt=en-us)
+  - Source/date: www.bing.com / 2025-09-03
+
+### #161 Udio (new_low_confidence_signal)
+
+- Type: Music generation
+- Top score: 52
+- New signals: 5
+- [Struggling to finish a song? This AI music generator could finish it for you](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce73fc34e25af0b55556c1a7f68&url=https%3a%2f%2fwww.musicradar.com%2fnews%2fudio-ai-ideas-songs&c=14177936406300759660&mkt=en-us)
+  - Source/date: www.bing.com / 2024-06-20
+- [What Suno And Udio’s AI Licensing Deals With Music Majors Could Mean For Creators Rights](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce73fc34e25af0b55556c1a7f68&url=https%3a%2f%2fwww.forbes.com%2fsites%2fvirginieberger%2f2025%2f06%2f06%2fwhat-suno-and-udios-ai-licensing-deals-with-music-majors-could-mean-for-creators-rights%2f&c=5398377395739788374&mkt=en-us)
+  - Source/date: www.bing.com / 2025-06-06
+- [AI’s Most Ambitious Music Generators Accused of ‘Massive’ Infringement In New Lawsuit](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ce73fc34e25af0b55556c1a7f68&url=https%3a%2f%2fwww.rollingstone.com%2fmusic%2fmusic-news%2frecord-labels-sue-music-generators-suno-and-udio-1235042056%2f&c=8223338284767278701&mkt=en-us)
+  - Source/date: www.bing.com / 2024-06-23
+
+### #170 Clari (new_low_confidence_signal)
+
+- Type: Revenue forecasting
+- Top score: 40
+- New signals: 1
+- [Clari Named a Strong Performer in Conversation Intelligence by Independent Research Firm](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410ced23f74e0cbe636ad951bc169e&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20231031027374%2fen%2fClari-Named-a-Strong-Performer-in-Conversation-Intelligence-by-Independent-Research-Firm&c=4072185899810629730&mkt=en-us)
+  - Source/date: www.bing.com / 2023-10-30
+
+### #176 Drift (new_low_confidence_signal)
+
+- Type: Conversational marketing
+- Top score: 40
+- New signals: 1
+- [Zscaler data breach exposes customer info after Salesloft Drift compromise](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cf0dbe543c58f112859ed977524&url=https%3a%2f%2fwww.bleepingcomputer.com%2fnews%2fsecurity%2fzscaler-data-breach-exposes-customer-info-after-salesloft-drift-compromise%2f&c=2755050380562669145&mkt=en-us)
+  - Source/date: www.bing.com / 2025-09-01
+
+### #180 Ada (new_low_confidence_signal)
+
+- Type: Customer support automation
+- Top score: 52
+- New signals: 1
+- [Read AI launches an email-based ‘digital twin’ to help you with schedules and answers](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cf38d45434e904bac633df2131c&url=https%3a%2f%2ftechcrunch.com%2f2026%2f02%2f26%2fread-ai-launches-an-email-based-digital-twin-to-help-you-with-schedules-and-answers%2f&c=8256080498786328552&mkt=en-us)
+  - Source/date: www.bing.com / 2026-02-26
+
+### #191 Clay (new_low_confidence_signal)
+
+- Type: GTM data automation
+- Top score: 48
+- New signals: 3
+- [Personal CRM app Clay adds an AI helper to help you navigate your relationships](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cfa17c94ed39ff2f53683becd95&url=https%3a%2f%2ftechcrunch.com%2f2023%2f05%2f16%2fpersonal-crm-app-clay-introduces-an-ai-helper-to-help-you-navigate-your-relationships%2f&c=11959602706951029366&mkt=en-us)
+  - Source/date: www.bing.com / 2023-05-16
+- [Clay, A Secret Weapon For Anthropic And OpenAI, Boosts Valuation To $1.3 Billion](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cfa17c94ed39ff2f53683becd95&url=https%3a%2f%2fwww.forbes.com%2fsites%2falexkonrad%2f2025%2f01%2f21%2fclay-ai-growth-software-one-billion-valuation%2f&c=17965249096837577821&mkt=en-us)
+  - Source/date: www.bing.com / 2025-01-22
+- [How Clay and Octave are quietly killing off traditional sales jobs](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cfa17c94ed39ff2f53683becd95&url=https%3a%2f%2fventurebeat.com%2fai%2fhow-clay-and-octave-are-quietly-killing-off-traditional-sales-jobs&c=5470072537564718488&mkt=en-us)
+  - Source/date: www.bing.com / 2025-09-03
+
+### #200 Workato (new_low_confidence_signal)
+
+- Type: Integration automation AI
+- Top score: 44
+- New signals: 1
+- [Workato Named a Leader in the 2026 Gartner® Magic Quadrant™ for iPaaS for the 8th Consecutive Time](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410cffbd5042bd8943e34c62bbfbbd&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260318294684%2fen%2fWorkato-Named-a-Leader-in-the-2026-Gartner-Magic-Quadrant-for-iPaaS-for-the-8th-Consecutive-Time&c=15733911687942401601&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-18
+
+### #205 Dust (new_low_confidence_signal)
+
+- Type: Enterprise AI assistants
+- Top score: 52
+- New signals: 3
+- [This AI Agent Is Quietly Leaving OpenClaw in the Dust](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d02a5464c5c95d7562f428ac0f2&url=https%3a%2f%2fwww.eweek.com%2fnews%2fhermes-agent-self-improving-ai-tools%2f&c=1810730111766550163&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-10
+- [Dust grabs another $16M for its enterprise AI assistants connected to internal data](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d02a5464c5c95d7562f428ac0f2&url=https%3a%2f%2ftechcrunch.com%2f2024%2f06%2f27%2fdust-grabs-another-16-million-for-its-enterprise-ai-assistants-connected-to-internal-data%2f&c=12985131762023974334&mkt=en-us)
+  - Source/date: www.bing.com / 2024-06-27
+- [Dust raises $40M to make AI multiplayer inside the enterprise](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d02a5464c5c95d7562f428ac0f2&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2fdust-raises-40m-ai-multiplayer-133000633.html&c=17449373168696372019&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-17
+
+### #220 Together AI (new_low_confidence_signal)
+
+- Type: Model hosting/API platform
+- Top score: 52
+- New signals: 5
+- [AI cloud company Together AI, which rents out Nvidia chips, pursues $1B in fresh funding: report](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0b73ee4bfab37841c20d6d75df&url=https%3a%2f%2fseekingalpha.com%2fnews%2f4561649-ai-cloud-company-together-ai-which-rents-out-nvidia-chips-pursues-1b-in-fresh-funding-report&c=9158922780025594987&mkt=en-us)
+  - Source/date: www.bing.com / 2026-03-05
+- [Together AI notches $3.3 billion valuation after General Catalyst-led fundraising](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0b73ee4bfab37841c20d6d75df&url=https%3a%2f%2fwww.reuters.com%2ftechnology%2fartificial-intelligence%2ftogether-ai-notches-33-billion-valuation-after-latest-fundraising-2025-02-20%2f&c=1866852257561472294&mkt=en-us)
+  - Source/date: www.bing.com / 2025-02-20
+- [Rumble Signs Agreement with Together AI to Deploy NVIDIA Blackwell-Powered AI Compute as a Service](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0b73ee4bfab37841c20d6d75df&url=https%3a%2f%2fmarkets.businessinsider.com%2fnews%2fstocks%2frumble-signs-agreement-with-together-ai-to-deploy-nvidia-blackwell-powered-ai-compute-as-a-service-1036226277&c=13697009489754096004&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-04
+
+### #221 Fireworks AI (new_low_confidence_signal)
+
+- Type: Model serving/API platform
+- Top score: 48
+- New signals: 1
+- [Fireworks AI Raises $250M Series C to Lead the AI Inference Market](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d0b32b1436fa1616a312847493b&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20251028604819%2fen%2fFireworks-AI-Raises-%2524250M-Series-C-to-Lead-the-AI-Inference-Market&c=16827970091564782025&mkt=en-us)
+  - Source/date: www.bing.com / 2025-10-28
+
+### #233 Lexis+ AI (new_low_confidence_signal)
+
+- Type: Legal research AI
+- Top score: 48
+- New signals: 1
+- [LexisNexis to Offer Free Lexis+ AI Access to Law Students in 2024](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1340fc443c8b45af578477408e&url=https%3a%2f%2fwww.law.com%2flegaltechnews%2f2023%2f12%2f20%2flexisnexis-to-offer-free-lexis-ai-access-to-law-students-in-2024%2f&c=12462651299183495042&mkt=en-us)
+  - Source/date: www.bing.com / 2023-12-20
+
+### #237 Nabla (new_low_confidence_signal)
+
+- Type: Healthcare documentation AI
+- Top score: 44
+- New signals: 2
+- [Health AI Startup Nabla Was Built On GPT-4. Now, It’s Abandoning OpenAI For Open Source.](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d15d8c34378a2cb9be3fdb35baa&url=https%3a%2f%2fwww.forbes.com%2fsites%2fkatiejennings%2f2024%2f01%2f05%2fhealth-ai-startup-nabla-was-built-on-gpt-4-now-its-abandoning-openai-for-open-source%2f&c=1447769521624421480&mkt=en-us)
+  - Source/date: www.bing.com / 2024-01-05
+- [Nabla raises another $24 million for its AI assistant for doctors that automatically writes clinical notes](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d15d8c34378a2cb9be3fdb35baa&url=https%3a%2f%2ftechcrunch.com%2f2024%2f01%2f05%2fnabla-raises-another-24-million-for-its-ai-assistant-for-doctors%2f&c=8878897520576917811&mkt=en-us)
+  - Source/date: www.bing.com / 2024-01-05
+
+### #239 Ambience Healthcare (new_low_confidence_signal)
+
+- Type: Healthcare documentation AI
+- Top score: 52
+- New signals: 5
+- [Ambience Healthcare Launches Chart Chat for Nursing, the First EHR-Integrated Conversational AI Tool for Inpatient Nursing](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d16d9c74819a7e7504951a09d07&url=https%3a%2f%2fwww.businesswire.com%2fnews%2fhome%2f20260401886689%2fen%2fAmbience-Healthcare-Launches-Chart-Chat-for-Nursing-the-First-EHR-Integrated-Conversational-AI-Tool-for-Inpatient-Nursing&c=9878889730255241114&mkt=en-us)
+  - Source/date: www.bing.com / 2026-04-01
+- [Here's the exclusive pitch deck Ambience Healthcare used to raise $243 million as the AI scribing gold rush hits new highs](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d16d9c74819a7e7504951a09d07&url=https%3a%2f%2fwww.businessinsider.com%2fambience-healthcare-used-this-pitch-deck-to-raise-243-million-2025-8&c=11360086790992191948&mkt=en-us)
+  - Source/date: www.bing.com / 2025-08-18
+- [Ambience Healthcare Introduces Nursing Suite to Extend System of Intelligence Across Inpatient Nursing](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d16d9c74819a7e7504951a09d07&url=https%3a%2f%2fwww.morningstar.com%2fnews%2fbusiness-wire%2f20260623636774%2fambience-healthcare-introduces-nursing-suite-to-extend-system-of-intelligence-across-inpatient-nursing&c=7200410856300307390&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-23
+
+### #249 Vectra AI (new_low_confidence_signal)
+
+- Type: Cybersecurity AI
+- Top score: 48
+- New signals: 2
+- [Vectra AI Opens New Office in Bangalore, India as Next Phase of Global Expansion](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1ca0e049d797e77e110d26b4b7&url=https%3a%2f%2ffinance.yahoo.com%2fnews%2fvectra-ai-opens-office-bangalore-130000627.html&c=7880658861343264883&mkt=en-us)
+  - Source/date: www.bing.com / 2025-07-30
+- [Vectra AI Named a Leader in the 2026 Gartner® Magic Quadrant™ for Network Detection and Response](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1ca0e049d797e77e110d26b4b7&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2fvectra-ai-named-leader-2026-150000811.html&c=6541349311398279893&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-20
+
+### #251 Eightfold AI (new_low_confidence_signal)
+
+- Type: HR, recruiting, and talent intelligence
+- Top score: 48
+- New signals: 3
+- [Eightfold AI Announces Integration of Agentic Interviewing with Oracle Fusion Cloud Recruiting](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1d442e4d14b89ea6eb1a31d826&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2feightfold-ai-announces-integration-agentic-130000564.html&c=15383053950512070501&mkt=en-us)
+  - Source/date: www.bing.com / 2026-05-06
+- [Eightfold AI Announces Winners of its 2026 Pathfinder Awards](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1d442e4d14b89ea6eb1a31d826&url=https%3a%2f%2ffinance.yahoo.com%2fsectors%2ftechnology%2farticles%2feightfold-ai-announces-winners-2026-160000629.html&c=15743017345535316278&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-11
+- [Historic legal action against Indian-origin founders’ startup: Why did US job seekers sue Eightfold AI?](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1d442e4d14b89ea6eb1a31d826&url=https%3a%2f%2fwww.financialexpress.com%2fworld-news%2fus-news%2fhistoric-legal-action-against-indian-origin-founders-startup-why-did-us-job-seekers-sue-eightfold-ai%2f4117984%2f&c=8661626632625535024&mkt=en-us)
+  - Source/date: www.bing.com / 2026-01-24
+
+### #254 Paradox (new_low_confidence_signal)
+
+- Type: HR, recruiting, and talent intelligence
+- Top score: 44
+- New signals: 1
+- [AI and the Empowerment Paradox](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d1f40734dbca4186fd34ceae6ba&url=https%3a%2f%2fwww.psychologytoday.com%2fus%2fblog%2fthe-digital-self%2f202606%2fai-and-the-empowerment-paradox&c=2823583855835970925&mkt=en-us)
+  - Source/date: www.bing.com / 2026-06-07
+
+### #276 Khanmigo (new_low_confidence_signal)
+
+- Type: Education, tutoring, and classroom AI
+- Top score: 44
+- New signals: 1
+- [Sal Khan wants an AI tutor for every student](http://www.bing.com/news/apiclick.aspx?ref=FexRss&aid=&tid=6a410d2d8aec4d7cbc6b9c0c381343d8&url=https%3a%2f%2fwww.cbsnews.com%2fnews%2fhow-khanmigo-works-in-school-classrooms-60-minutes%2f&c=372950003564861217&mkt=en-us)
+  - Source/date: www.bing.com / 2024-12-08
+
+## Errors
+
+- #1 ChatGPT: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #2 Claude: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #4 Microsoft Copilot: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #5 Perplexity: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #6 Meta AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #8 DeepSeek: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #12 You.com: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #13 Phind: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #15 Doubao: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #16 Qwen Chat: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #27 Jasper: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #33 ClickUp Brain: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #37 Cursor: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #40 OpenAI Codex: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #42 Bolt.new: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #52 Continue: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #56 Augment Code: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #57 Zed AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #58 Codeium Enterprise: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #65 Scite: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #66 Semantic Scholar: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #67 ResearchRabbit: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #68 Connected Papers: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #69 Glean: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #73 Coveo: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #75 Elastic AI Search: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #78 Onyx: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #81 LlamaIndex: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #84 Weaviate: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #85 Milvus: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #86 Zilliz Cloud: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #87 Qdrant: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #92 OpenSearch Vector Engine: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #95 Vertex AI Vector Search: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #96 Amazon Bedrock Knowledge Bases: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #99 Neo4j Vector Index: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #101 SingleStore Kai: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #110 Gemini in BigQuery: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #116 Snowflake Cortex Analyst: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #121 Obviously AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #122 DataRobot: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #130 Illustrator generative AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #131 Midjourney: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #132 ChatGPT Images: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #135 Ideogram: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #136 Freepik AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #137 Krea: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #139 Photoroom: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #147 Runway: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #149 Pika: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #150 Luma Dream Machine: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #155 HeyGen: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #156 Descript: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #157 CapCut: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #158 OpusClip: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #160 Suno: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #163 Speechify: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #164 Otter.ai: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #165 Fireflies.ai: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #166 Fathom: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #167 HubSpot AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #168 Salesforce Einstein: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #169 Gong: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #171 Apollo AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #174 6sense Revenue AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #177 Intercom Fin: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #182 Sierra: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #186 Mailchimp AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #187 Klaviyo AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #189 Semrush ContentShake AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #194 n8n: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #195 Microsoft Copilot Studio: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #196 Google Agentspace: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #199 Automation Anywhere: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #201 Lindy: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #202 Relevance AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #203 CrewAI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #204 LangGraph: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #206 Gumloop: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #207 Manus: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #210 Voiceflow: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #211 OpenAI API: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #212 Anthropic Claude API: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #213 Google Vertex AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #214 Azure AI Foundry: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #216 Cohere: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #218 xAI API: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #223 Hugging Face: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #224 Replicate: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #226 Cerebras Inference: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #228 IBM watsonx: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #229 NVIDIA NIM: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #232 CoCounsel: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #234 Westlaw Precision AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #235 Ironclad AI: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #236 Abridge: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #238 Nuance DAX Copilot: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #240 Suki: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #241 AlphaSense: RSS parse failed: not well-formed (invalid token): line 1, column 41
+- #242 Bloomberg Terminal AI: RSS parse failed: not well-formed (invalid token): line 1, column 41

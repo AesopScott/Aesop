@@ -25,7 +25,7 @@
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js'),
       import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'),
-      import('/ai-academy/js/firebase-config.js')
+      import('./ai-academy/js/firebase-config.js')
     ]).then(function (mods) {
       var firebaseApp = mods[0];
       var firebaseAuth = mods[1];

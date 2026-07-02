@@ -20,8 +20,9 @@
   // Avoid double-mount if the script gets included twice.
   if (document.getElementById('topBanner')) return;
 
-  // Capture our own src at parse time (before deferred execution clears currentScript).
-  var _ownSrc = (document.currentScript || document.scripts[document.scripts.length-1]).src;
+  // Determine base directory from current page URL (handles GH Pages sub-path).
+  var _pageUrl = document.location.href;
+  var _baseDir = _pageUrl.substring(0, _pageUrl.lastIndexOf('/') + 1);
 
   /* ─── CSS ─────────────────────────────────────────────── */
   var CSS = '' +
@@ -270,7 +271,7 @@
     // Auto-inject the shared auth modal script so every page gets it.
     if (!document.querySelector('script[src*="auth-modal.js"]')) {
       var authScript = document.createElement('script');
-      authScript.src = _ownSrc.replace(/top-banner-v2.*/, 'auth-modal.js');
+      authScript.src = _baseDir + 'assets/auth-modal.js';
       authScript.defer = true;
       document.body.appendChild(authScript);
     }

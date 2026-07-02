@@ -136,6 +136,13 @@
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__track { background: #c9a05a; }' +
     '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__thumb {' +
     '  transform: translateX(12px); background: #0f1923; }' +
+    '.tb-start-btn { flex-shrink: 0; display: inline-flex; align-items: center;' +
+    '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important;' +
+    '  border: none; border-radius: 2rem; padding: 0.35rem 1rem;' +
+    '  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;' +
+    '  text-transform: uppercase; text-decoration: none; white-space: nowrap;' +
+    '  cursor: pointer; transition: background 0.15s, transform 0.15s; }' +
+    '.tb-start-btn:hover { background: var(--gold-light, #dbb87a); transform: translateY(-1px); }' +
     '[data-theme="dark"] .top-banner { background: #16293d; }' +
     '[data-theme="dark"] .tb-pills a { color: rgba(255,255,255,0.65) !important; }' +
     '[data-theme="dark"] .tb-stat-lbl { color: rgba(255,255,255,0.55); }' +
@@ -181,6 +188,9 @@
     '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
     '  <nav class="tb-pills" aria-label="Primary navigation">' +
     '    <a class="tb-brand" href="/" aria-label="AESOP AI Academy home"><img src="/favicon_512.png" width="28" height="28" alt="" aria-hidden="true" style="border-radius:4px;margin-right:0.5rem;flex-shrink:0;">AESOP<em>AI Academy</em></a>' +
+    '    <a href="/ai-academy/courses-v2.html">Courses</a>' +
+    '    <a href="/ai-academy/assessment.html">Find Your Path</a>' +
+    '    <a href="/pedagogy.html">How It Works</a>' +
     '    <a href="/about/mission.html">About</a>' +
     '    <a href="/institutional-procurement.html">For Schools</a>' +
     '  </nav>' +
@@ -211,6 +221,7 @@
     '        <div class="lang-divider"></div>' +
     '        <button class="lang-btn" data-lang="tr" title="T\u00fcrk\u00e7e"><span class="fi fi-tr"></span> TR</button>' +
     '      </div>' +
+    '      <a href="/ai-academy/assessment.html" class="tb-start-btn">Start Learning</a>' +
     '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
     '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +
     '        <span class="dark-mode-toggle__track"><span class="dark-mode-toggle__thumb"></span></span>' +

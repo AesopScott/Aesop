@@ -1,53 +1,25 @@
-﻿/* ─────────────────────────────────────────────────────────────
- * AESOP AI Academy — Shared Top Banner
- * ─────────────────────────────────────────────────────────────
- * Single source of truth for the site-wide top banner (pill
- * nav + live stats + language / dark-mode / report utilities).
- *
- * To use on a page:
- *   1. Include <link rel="stylesheet" href="/academy-theme.css"> in <head>
- *      (so CSS variables like --navy and --gold resolve)
- *   2. Include this script somewhere in <body>:
- *        <script src="/assets/top-banner.js"></script>
- *   3. That's it. The script injects its own <style>, prepends the
- *      #topBanner element to <body>, and wires up stats + lang + dismiss.
- *
- * Edit this file to change the banner on every page at once.
- * ───────────────────────────────────────────────────────────── */
-(function () {
+﻿(function () {
   'use strict';
 
-  // Avoid double-mount if the script gets included twice.
   if (document.getElementById('topBanner')) return;
 
-  // Determine base directory from current page URL (handles GH Pages sub-path).
   var _pageUrl = document.location.href;
   var _baseDir = _pageUrl.substring(0, _pageUrl.lastIndexOf('/') + 1);
 
-  /* ─── CSS ─────────────────────────────────────────────── */
   var CSS = '' +
-    /* Reserve space for the fixed banner on every page, and add scroll
-       padding so #anchor links don't land hidden underneath it. */
-    'html { scroll-padding-top: 140px; }' +
-    'body { padding-top: 118px; overflow-x: hidden; }' +
-    'body.banner-dismissed { padding-top: 0; }' +
-    /* Hide any page-local <nav class="nav"> (the old per-page top nav)
-       since the shared top banner above already provides brand, lang
-       selector, dark-mode toggle, and forums/report pills. Selector is
-       scoped to direct-child nav so it never hits in-content navs. */
+    'html { scroll-padding-top: 64px; }' +
+    'body { padding-top: 64px; overflow-x: hidden; }' +
     'body > nav.nav { display: none !important; }' +
-    /* Also hide the legacy floating #siteLangSwitch pill on pages where
-       the shared banner already provides a language selector. */
     'body > #siteLangSwitch { display: none !important; }' +
     '.top-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 9999;' +
     '  background: var(--navy-mid, #16293d); color: #fff;' +
     '  box-shadow: 0 2px 16px rgba(13,27,42,0.45);' +
     '  font-family: var(--font-sans), system-ui, sans-serif; }' +
-    '.tb-pills { display: flex; align-items: center; gap: 0;' +
+    '.tb-inner { display: flex; align-items: center;' +
     '  padding: 0 12.5%; height: 54px;' +
     '  overflow-x: auto; -webkit-overflow-scrolling: touch;' +
-    '  scrollbar-width: none; border-bottom: 1px solid rgba(201,160,90,0.20); }' +
-    '.tb-pills::-webkit-scrollbar { display: none; }' +
+    '  scrollbar-width: none; }' +
+    '.tb-inner::-webkit-scrollbar { display: none; }' +
     '.tb-brand { flex-shrink: 0; display: inline-flex; align-items: center;' +
     '  color: #fff !important; text-decoration: none;' +
     '  background: none !important; border: none !important; border-radius: 0 !important;' +
@@ -62,46 +34,21 @@
     '  color: var(--gold, #c9a05a) !important; background: none !important;' +
     '  border-color: transparent !important; outline: none; }' +
     '.tb-brand:hover { border-right-color: rgba(255,255,255,0.14) !important; }' +
-    '.tb-pills a { display: inline-flex; align-items: center; gap: 0.3rem;' +
+    '.tb-inner a { display: inline-flex; align-items: center; gap: 0.3rem;' +
     '  flex-shrink: 0; background: transparent;' +
     '  color: rgba(255,255,255,0.72) !important; padding: 0 0.9rem; height: 100%;' +
     '  text-decoration: none; font-size: 0.9rem; font-weight: 500;' +
     '  border: none; border-radius: 0;' +
     '  transition: color 0.15s, background 0.15s;' +
     '  white-space: nowrap; }' +
-    '.tb-pills a:hover, .tb-pills a:focus-visible {' +
+    '.tb-inner a:hover, .tb-inner a:focus-visible {' +
     '  color: #fff !important; background: rgba(255,255,255,0.07); outline: none; }' +
-    '.tb-pills a.is-active { color: var(--gold, #c9a05a) !important; }' +
-    '.tb-pills .ico { font-size: 0.9rem; line-height: 1; }' +
-    '.tb-pills .tb-pill-right-start { margin-left: auto; }' +
-    '.tb-stats { display: flex; align-items: center; gap: 1rem;' +
-    '  padding: 0.45rem 1.25rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }' +
-    '.tb-stats::-webkit-scrollbar { display: none; }' +
-    '.tb-live { display: inline-flex; align-items: center; gap: 0.35rem;' +
-    '  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.12em;' +
-    '  color: var(--teal, #2ba898); font-weight: 700; flex-shrink: 0; }' +
-    '.tb-live-dot { width: 7px; height: 7px; border-radius: 50%;' +
-    '  background: var(--teal, #2ba898); animation: tbPulse 1.8s infinite;' +
-    '  box-shadow: 0 0 0 0 rgba(43,168,152,0.7); }' +
-    '@keyframes tbPulse {' +
-    '  0% { box-shadow: 0 0 0 0 rgba(43,168,152,0.6); }' +
-    '  70% { box-shadow: 0 0 0 8px rgba(43,168,152,0); }' +
-    '  100% { box-shadow: 0 0 0 0 rgba(43,168,152,0); }' +
-    '}' +
-    '.tb-stat-row { display: flex; gap: 1rem; align-items: baseline;' +
-    '  flex-wrap: nowrap; flex: 0 1 auto; }' +
-    '.tb-stat { display: inline-flex; align-items: baseline; gap: 0.25rem; white-space: nowrap; flex-shrink: 0; }' +
-    '.tb-stat-num { font-family: var(--font-display), Georgia, serif;' +
-    '  font-weight: 700; font-size: 0.78rem; color: var(--gold, #c9a05a);' +
-    '  letter-spacing: -0.01em; line-height: 1; }' +
-    '.tb-stat-lbl { font-size: 0.62rem; text-transform: uppercase;' +
-    '  letter-spacing: 0.08em; color: rgba(255,255,255,0.62); }' +
-    '.tb-utilities { display: inline-flex; align-items: center; gap: 0.55rem;' +
-    '  flex-shrink: 0; margin-left: auto; }' +
+    '.tb-inner a.is-active { color: var(--gold, #c9a05a) !important; }' +
+    '.tb-spacer { margin-left: auto; }' +
     '.tb-lang { display: inline-flex; align-items: stretch;' +
     '  background: rgba(255,255,255,0.06);' +
     '  border: 1px solid rgba(255,255,255,0.12); border-radius: 2rem;' +
-    '  overflow: hidden; padding: 0; }' +
+    '  overflow: hidden; padding: 0; flex-shrink: 0; }' +
     '.tb-lang .lang-btn { background: transparent; color: #fff !important;' +
     '  border: none; padding: 0.22rem 0.4rem; font-size: 0.65rem;' +
     '  font-weight: 600; letter-spacing: 0.03em; cursor: pointer;' +
@@ -110,148 +57,64 @@
     '.tb-lang .lang-btn:hover { background: rgba(255,255,255,0.08); }' +
     '.tb-lang .lang-btn.lang-active {' +
     '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important; }' +
-    '.tb-lang .lang-flag { line-height: 1; font-size: 0.85rem; }' +
-    '.tb-lang .lang-btn .fi { display: inline-block; width: 1.1rem; height: 0.8rem; vertical-align: -1px; margin-right: 0.25rem; border-radius: 1px; background-size: cover; background-position: center; box-shadow: 0 0 0 1px rgba(255,255,255,0.12); }' +
     '.tb-lang .lang-divider { width: 1px; background: rgba(255,255,255,0.12); }' +
-    /* Report pill — sits in tb-stats row, not tb-pills. */
-    'a.tb-report { display: inline-flex; align-items: center; gap: 0.4rem;' +
-    '  flex-shrink: 0; background: rgba(239,68,68,0.12);' +
-    '  color: #fca5a5 !important; border: 1px solid rgba(239,68,68,0.3);' +
-    '  padding: 0.3rem 0.8rem; border-radius: 2rem;' +
-    '  font-size: 0.8rem; font-weight: 600;' +
-    '  text-decoration: none; white-space: nowrap;' +
-    '  transition: background 0.15s, color 0.15s, border-color 0.15s; }' +
-    'a.tb-report:hover, a.tb-report:focus-visible {' +
-    '  background: var(--red, #dc2626); color: #fff !important;' +
-    '  border-color: var(--red, #dc2626); outline: none; }' +
-    '.tb-darktoggle { flex-shrink: 0; background: rgba(255,255,255,0.06);' +
-    '  border: 1px solid rgba(255,255,255,0.12); color: #fff;' +
-    '  border-radius: 2rem; padding: 0.25rem 0.5rem;' +
-    '  display: inline-flex; align-items: center; gap: 0.35rem;' +
-    '  cursor: pointer; transition: background 0.15s; }' +
-    '.tb-darktoggle:hover { background: rgba(255,255,255,0.1); }' +
-    '.tb-darktoggle .dark-mode-toggle__icon { font-size: 0.85rem; }' +
-    '.tb-darktoggle .dark-mode-toggle__track { position: relative;' +
-    '  width: 26px; height: 14px; background: rgba(255,255,255,0.18);' +
-    '  border-radius: 2rem; border: none; display: inline-block; }' +
-    '.tb-darktoggle .dark-mode-toggle__thumb { position: absolute;' +
-    '  left: 2px; top: 2px; width: 10px; height: 10px; background: #fff;' +
-    '  border-radius: 50%; transition: transform 0.18s; }' +
-    '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__track { background: #c9a05a; }' +
-    '[data-theme="dark"] .tb-darktoggle .dark-mode-toggle__thumb {' +
-    '  transform: translateX(12px); background: #0f1923; }' +
-    '.tb-start-btn { flex-shrink: 0; display: inline-flex; align-items: center;' +
-    '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important;' +
-    '  border: none; border-radius: 2rem; padding: 0.35rem 1rem;' +
-    '  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;' +
-    '  text-transform: uppercase; text-decoration: none; white-space: nowrap;' +
-    '  cursor: pointer; transition: background 0.15s, transform 0.15s; }' +
-    '.tb-start-btn:hover { background: var(--gold-light, #dbb87a); transform: translateY(-1px); }' +
+    '.tb-lang .lang-btn .fi { display: inline-block; width: 1.1rem; height: 0.8rem; vertical-align: -1px; margin-right: 0.25rem; border-radius: 1px; background-size: cover; background-position: center; box-shadow: 0 0 0 1px rgba(255,255,255,0.12); }' +
     '[data-theme="dark"] .top-banner { background: #16293d; }' +
-    '[data-theme="dark"] .tb-pills a { color: rgba(255,255,255,0.65) !important; }' +
-    '[data-theme="dark"] .tb-stat-lbl { color: rgba(255,255,255,0.55); }' +
+    '[data-theme="dark"] .tb-inner a { color: rgba(255,255,255,0.65) !important; }' +
     '@media (max-width: 1300px) {' +
-    '  .tb-pills { padding: 0 8%; }' +
-    '  .tb-pills a { font-size: 0.84rem; padding: 0 0.75rem; }' +
+    '  .tb-inner { padding: 0 8%; }' +
+    '  .tb-inner a { font-size: 0.84rem; padding: 0 0.75rem; }' +
     '  .tb-brand { font-size: 0.95rem; }' +
-    '  .tb-stats { gap: 0.75rem; padding: 0.4rem 1rem; }' +
-    '  .tb-stat-num { font-size: 0.72rem; }' +
     '  .tb-lang .lang-btn { padding: 0.2rem 0.32rem; font-size: 0.6rem; }' +
     '}' +
     '@media (max-width: 760px) {' +
-    '  html { scroll-padding-top: 160px; }' +
-    '  body { padding-top: 140px; }' +
-    '  .tb-pills { padding: 0 1.25rem; }' +
-    '  .tb-stats { gap: 0.6rem; padding: 0.5rem 1.25rem; }' +
-    '  .tb-stat-row { gap: 0.75rem; }' +
-    '  .tb-stat-num { font-size: 0.72rem; }' +
-    '}' +
-    '@media (max-width: 520px) {' +
-    '  html { scroll-padding-top: 184px; }' +
-    '  body { padding-top: 164px; }' +
-    '  .tb-pills { padding: 0 1rem; }' +
-    '  .tb-pills a { font-size: 0.82rem; padding: 0 0.6rem; }' +
-    '  .tb-stats { flex-direction: column; align-items: flex-start; }' +
-    '}' +
-    /* Cert chip — earned state gets a gold ring + gold text */
-    '.tb-pills a#tbCertChip.cert-earned {' +
-    '  border-color: rgba(255,215,0,0.55);' +
-    '  background: rgba(255,215,0,0.1);' +
-    '  color: #ffd700 !important;' +
-    '  font-weight: 700;' +
-    '}' +
-    '.tb-pills a#tbCertChip.cert-earned:hover,' +
-    '.tb-pills a#tbCertChip.cert-earned:focus-visible {' +
-    '  background: #ffd700;' +
-    '  color: #0f1923 !important;' +
-    '  border-color: #ffd700;' +
+    '  html { scroll-padding-top: 108px; }' +
+    '  body { padding-top: 108px; }' +
+    '  .tb-inner { flex-wrap: wrap; height: auto; padding: 0.5rem 1.25rem; gap: 0.25rem; }' +
+    '  .tb-inner a { height: auto; padding: 0.4rem 0.6rem; font-size: 0.82rem; }' +
     '}';
 
-  /* ─── HTML ────────────────────────────────────────────── */
-  var _bd = _baseDir;
   var HTML = '' +
-    '<div id="topBanner" class="top-banner" role="complementary" aria-label="Quick navigation and site stats">' +
-    '  <nav class="tb-pills" aria-label="Primary navigation">' +
-    '    <a class="tb-brand" href="' + _bd + '" aria-label="AESOP AI Academy home"><img src="' + _bd + 'favicon_512.png" width="28" height="28" alt="" aria-hidden="true" style="border-radius:4px;margin-right:0.5rem;flex-shrink:0;">AESOP<em>AI Academy</em></a>' +
-    '    <a href="' + _bd + 'ai-academy/courses-v2.html">Courses</a>' +
-    '    <a href="' + _bd + 'ai-academy/assessment.html">Find Your Path</a>' +
-    '    <a href="' + _bd + 'pedagogy.html">How It Works</a>' +
-    '    <a href="' + _bd + 'about/mission.html">About</a>' +
-    '    <a href="' + _bd + 'institutional-procurement.html">For Schools</a>' +
+    '<div id="topBanner" class="top-banner">' +
+    '  <nav class="tb-inner">' +
+    '    <a class="tb-brand" href="' + _baseDir + '"><img src="' + _baseDir + 'favicon_512.png" width="28" height="28" alt="" aria-hidden="true" style="border-radius:4px;margin-right:0.5rem;flex-shrink:0;">AESOP<em>AI Academy</em></a>' +
+    '    <a href="' + _baseDir + 'ai-academy/courses-v2.html">Courses</a>' +
+    '    <a href="' + _baseDir + 'ai-academy/assessment.html">Find Your Path</a>' +
+    '    <a href="' + _baseDir + 'pedagogy.html">How It Works</a>' +
+    '    <a href="' + _baseDir + 'about/mission.html">About</a>' +
+    '    <a href="' + _baseDir + 'institutional-procurement.html">For Schools</a>' +
+    '    <span class="tb-spacer"></span>' +
+    '    <div class="tb-lang" id="langSelector">' +
+    '      <button class="lang-btn" data-lang="en" title="English"><span class="fi fi-us"></span> EN</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="es" title="Espa\u00F1ol"><span class="fi fi-mx"></span> ES</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="hi" title="\u0939\u093F\u0928\u094D\u0926\u0940"><span class="fi fi-in"></span> \u0939\u093F</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="ar" title="\u0627\u0644\u0639\u0631\u0628\u064A\u0629"><span class="fi fi-sa"></span> AR</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587"><span class="fi fi-tw"></span> TW</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="ko" title="\ud55c\uad6d\uc5b4"><span class="fi fi-kr"></span> KO</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="ur" title="\u0627\u0631\u062f\u0648"><span class="fi fi-pk"></span> UR</button>' +
+    '      <div class="lang-divider"></div>' +
+    '      <button class="lang-btn" data-lang="tr" title="T\u00fcrk\u00e7e"><span class="fi fi-tr"></span> TR</button>' +
+    '    </div>' +
     '  </nav>' +
-    '  <div class="tb-stats">' +
-    '    <span class="tb-live"><span class="tb-live-dot" aria-hidden="true"></span>Live</span>' +
-    '    <div class="tb-stat-row" id="tbStatRow">' +
-    '      <span class="tb-stat" data-stat="learners" hidden><span class="tb-stat-num" data-stat-num>\u2014</span><span class="tb-stat-lbl">Learners this week</span></span>' +
-    '      <span class="tb-stat" data-stat="courses"><span class="tb-stat-num" data-stat-num>41</span><span class="tb-stat-lbl">Courses live</span></span>' +
-    '      <span class="tb-stat" data-stat="coursesInDev"><span class="tb-stat-num" data-stat-num>42</span><span class="tb-stat-lbl">In development</span></span>' +
-    '      <span class="tb-stat" data-stat="languages"><span class="tb-stat-num" data-stat-num>8</span><span class="tb-stat-lbl">Languages</span></span>' +
-    '    </div>' +
-    '    <a href="' + _bd + 'report.html" class="tb-report" title="Report an issue"><span class="ico" aria-hidden="true">⚑</span>Report</a>' +
-    '    <div class="tb-utilities">' +
-    '      <div class="tb-lang lang-selector" id="langSelector" aria-label="Select language">' +
-    '        <button class="lang-btn" data-lang="en" title="English"><span class="fi fi-us"></span> EN</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="es" title="Espa\u00F1ol"><span class="fi fi-mx"></span> ES</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="hi" title="\u0939\u093F\u0928\u094D\u0926\u0940"><span class="fi fi-in"></span> \u0939\u093F</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="ar" title="\u0627\u0644\u0639\u0631\u0628\u064A\u0629"><span class="fi fi-sa"></span> AR</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="zh-TW" title="\u7e41\u9ad4\u4e2d\u6587"><span class="fi fi-tw"></span> TW</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="ko" title="\ud55c\uad6d\uc5b4"><span class="fi fi-kr"></span> KO</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="ur" title="\u0627\u0631\u062f\u0648"><span class="fi fi-pk"></span> UR</button>' +
-    '        <div class="lang-divider"></div>' +
-    '        <button class="lang-btn" data-lang="tr" title="T\u00fcrk\u00e7e"><span class="fi fi-tr"></span> TR</button>' +
-    '      </div>' +
-    '      <a href="' + _bd + 'ai-academy/assessment.html" class="tb-start-btn">Start Learning</a>' +
-    '      <button class="tb-darktoggle dark-mode-toggle" id="darkToggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">' +
-    '        <span class="dark-mode-toggle__icon">\u2600\uFE0F</span>' +
-    '        <span class="dark-mode-toggle__track"><span class="dark-mode-toggle__thumb"></span></span>' +
-    '        <span class="dark-mode-toggle__icon">\uD83C\uDF19</span>' +
-    '      </button>' +
-    '    </div>' +
-    '  </div>' +
     '</div>';
 
-  /* ─── INJECT flag-icons CSS (for .fi fi-xx language flags) ─── */
   if (!document.querySelector('link[href*="flag-icons"]')) {
     var flagLink = document.createElement('link');
-    flagLink.rel  = 'stylesheet';
+    flagLink.rel = 'stylesheet';
     flagLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.6/css/flag-icons.min.css';
     (document.head || document.documentElement).appendChild(flagLink);
   }
 
-  /* ─── INJECT CSS ─────────────────────────────────────── */
   var styleEl = document.createElement('style');
-  styleEl.id = 'topBannerStyles';
   styleEl.textContent = CSS;
   (document.head || document.documentElement).appendChild(styleEl);
 
-  /* ─── INJECT HTML ────────────────────────────────────── */
-  // Prefer an explicit mount point; otherwise prepend to body.
   function mount() {
     var target = document.getElementById('topBanner-mount');
     if (target) {
@@ -259,17 +122,14 @@
     } else if (document.body) {
       document.body.insertAdjacentHTML('afterbegin', HTML);
     } else {
-      // <body> not parsed yet — wait for it.
       document.addEventListener('DOMContentLoaded', mount, { once: true });
       return;
     }
-    // Measure actual banner height and set body padding precisely.
     var banner = document.getElementById('topBanner');
     if (banner) {
       var h = banner.getBoundingClientRect().height;
       if (h > 0) document.body.style.paddingTop = h + 'px';
     }
-    // Auto-inject the shared auth modal script so every page gets it.
     if (!document.querySelector('script[src*="auth-modal.js"]')) {
       var authScript = document.createElement('script');
       authScript.src = _baseDir + 'assets/auth-modal.js';
@@ -279,38 +139,10 @@
     wireBehaviors();
   }
 
-  /* ─── BEHAVIORS (stats fetch + lang selector) ─────────── */
   function wireBehaviors() {
-    // Live stats: fetch /stats.json and update ticker numbers.
-    try {
-      var cacheBust = Math.floor(Date.now() / (1000 * 60 * 5));
-      fetch(_baseDir + 'stats.json?v=' + cacheBust, { cache: 'no-store' })
-        .then(function (r) { if (!r.ok) throw new Error('stats ' + r.status); return r.json(); })
-        .then(function (stats) {
-          var row = document.getElementById('tbStatRow');
-          if (!row) return;
-          function setStat(key, value) {
-            var el = row.querySelector('[data-stat="' + key + '"]');
-            if (!el) return;
-            var num = el.querySelector('[data-stat-num]');
-            if (value === null || value === undefined) { el.hidden = true; return; }
-            if (num) num.textContent = Number(value).toLocaleString();
-            el.hidden = false;
-          }
-          setStat('learners',    stats.learnersThisWeek);
-          setStat('courses',     stats.coursesLive);
-          setStat('coursesInDev', stats.coursesInDev);
-          setStat('languages',   stats.languages);
-        })
-        .catch(function () { /* keep fallback numbers */ });
-    } catch (_) {}
-
-    // Language selector: clicking a pill navigates to the locale root.
-    // Falls back gracefully if the route doesn't exist.
     var sel = document.getElementById('langSelector');
     if (sel) {
       var path = location.pathname;
-      // Active-highlight the language matching the current URL.
       var current = 'en';
       var m = path.match(/\/ai-academy\/modules\/([a-zA-Z-]+)\//);
       if (m) current = m[1];
@@ -323,62 +155,19 @@
       });
     }
 
-    // Mark the active nav pill based on current URL pathname.
     (function () {
       var cur = location.pathname;
-      document.querySelectorAll('.tb-pills a:not(.tb-brand):not(.tb-report)').forEach(function (a) {
+      document.querySelectorAll('.tb-inner a').forEach(function (a) {
         var href = a.getAttribute('href') || '';
-        if (/^https?:\/\//.test(href)) return;       // skip external links
-        var linkPath = href.split('#')[0];            // strip hash fragment
+        if (/^https?:\/\//.test(href)) return;
+        var linkPath = href.split('#')[0];
         var isDir = linkPath.slice(-1) === '/';
-        var active = isDir
-          ? cur.indexOf(linkPath) === 0              // prefix match for /ai-news/
-          : cur === linkPath;                        // exact match for /page.html
+        var active = isDir ? cur.indexOf(linkPath) === 0 : cur === linkPath;
         if (active) a.classList.add('is-active');
       });
     })();
-
-    // Start Learning button — open auth modal if not signed in.
-    (function () {
-      var btn = document.querySelector('.tb-start-btn');
-      if (!btn) return;
-      var href = btn.getAttribute('href');
-      btn.addEventListener('click', function (e) {
-        if (typeof window.openAuthModal !== 'function') return;
-        // Check if auth state is already known (auth modal tracks this).
-        // If the modal's logged-in view is already shown, let the link work.
-        var loggedIn = document.getElementById('authView-loggedin');
-        if (loggedIn && loggedIn.style.display !== 'none') return;
-        e.preventDefault();
-        window.openAuthModal('signin', href || _baseDir + 'ai-academy/assessment.html');
-      });
-    })();
-
-    // Cert chip — update label/style based on localStorage level
-    (function initCertChip() {
-      try {
-        var CERT_NAMES   = ['','Spark','Seeker','Scholar','Analyst','Navigator','Specialist','Strategist','Visionary','Master','Architect'];
-        var CERT_EMOJIS  = ['','🌱','⚡','🔍','🎓','🧩','🛠️','🎯','🔮','🦅','👑'];
-        var CERT_PTS     = [0,0,10,25,50,80,100,150,200,250,400];
-        var CERT_FDN     = [0,1,1,1,1,1,2,2,2,3,3];
-        var fdn  = parseInt(localStorage.getItem('aesop-cert-fdn')  || '0');
-        var pts  = parseInt(localStorage.getItem('aesop-cert-mpts') || '0');
-        var level = 0;
-        for (var i = 1; i <= 10; i++) {
-          if (fdn >= CERT_FDN[i] && pts >= CERT_PTS[i]) level = i; else break;
-        }
-        var chip = document.getElementById('tbCertChip');
-        if (!chip) return;
-        if (level > 0) {
-          chip.classList.add('cert-earned');
-          chip.innerHTML = '<span class="ico" aria-hidden="true">' + CERT_EMOJIS[level] + '</span>L' + level + ' ' + CERT_NAMES[level];
-          chip.title = 'Your certification: Level ' + level + ' — ' + CERT_NAMES[level];
-        }
-      } catch (_) {}
-    })();
   }
 
-  // Run now if DOM is already interactive, else after it parses.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', mount, { once: true });
   } else {

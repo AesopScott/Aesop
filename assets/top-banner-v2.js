@@ -267,7 +267,7 @@
     // Auto-inject the shared auth modal script so every page gets it.
     if (!document.querySelector('script[src*="auth-modal.js"]')) {
       var authScript = document.createElement('script');
-      authScript.src  = '/assets/auth-modal.js';
+      authScript.src  = './assets/auth-modal.js';
       authScript.defer = true;
       document.body.appendChild(authScript);
     }

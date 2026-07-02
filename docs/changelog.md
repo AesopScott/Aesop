@@ -53,10 +53,43 @@ To revert the nav:
 git checkout HEAD~1 -- assets/top-banner-v2.js
 ```
 
-### Next Steps (Not Yet Implemented)
-- **"Save your progress — create an account" prompt**: Post-module auth prompt. Should appear when starting a lesson session. If dismissed, reappears. Eventually expand to other pages.
-- **Dedicated auth page (`/account.html`)**: Email + password + Google OAuth sign-up/sign-in flow. Triggered by "Start Learning" button.
-- **Auth modal in `top-banner-v2.js`**: Reusable sign-in/sign-up modal injectable on any page.
+## 2026-07-02 — Phase 2: Auth Modal + Account Page
+
+### Summary
+Built a reusable sign-in/sign-up modal (`assets/auth-modal.js`) that can be opened from any page, plus a dedicated account management page (`account.html`). The modal supports email/password auth and Google OAuth, and it automatically links the Firebase auth UID to the anonymous AESOP-XXXX learner ID so progress is not lost.
+
+### Files Changed
+
+| File | Action | Reason |
+|------|--------|--------|
+| `assets/auth-modal.js` | **Created** | Site-wide auth modal injector (IIFE pattern matching `top-banner-v2.js`). Supports Sign In / Create Account / Google OAuth. Exposes `window.openAuthModal(tab, redirectUrl)` and `window.closeAuthModal()`. After auth, links Firebase UID to learner ID via `learners/{learnerId}.accountUid`. |
+| `account.html` | **Created** | Dedicated account management page — full-page auth (sign in / create / Google OAuth) when logged out, profile view (email, learner ID, meta, sign out) when logged in. Links to `/theladder/authenticate.html` for certification identity settings. |
+| `assets/top-banner-v2.js` | **Modified** | Auto-injects `<script src="/assets/auth-modal.js">` after banner mount. Start Learning button now opens auth modal (with redirect to assessment after sign-in) instead of linking directly. |
+
+### Auth Flow
+
+1. **Anonymous browsing** — works as before (AESOP-XXXX learner ID in localStorage)
+2. **User clicks "Start Learning"** — auth modal opens. If already signed in, goes straight to assessment.
+3. **Sign In / Create Account / Google OAuth** — all three paths work within the modal
+4. **After auth** — modal closes, user is redirected to the original destination (e.g., assessment page)
+5. **Progress linking** — `learners/{learnerId}` doc gets `accountUid` + `accountEmail` fields merged in (same pattern as `ladder-core.js::saveAccountProfile`)
+6. **Subsequent visits** — auth state persists via Firebase, profile view shows linked learner ID and email
+
+### Implementation Details
+
+- Uses Firebase SDK v10.12.0 (matching existing codebase) via dynamic `import()` so the script works as a plain `<script>` tag (no `type="module"` needed)
+- Modal follows the `.auth-overlay` pattern (backdrop-filter blur, centered card, z-index above top banner)
+- Tabbed interface (Sign In / Create Account) within the same overlay
+- Google OAuth via `signInWithPopup` + `GoogleAuthProvider`
+- Start Learning button: checks `window.openAuthModal` availability — falls back gracefully if auth-modal.js hasn't loaded yet
+
+### Recovery Instructions
+```bash
+# Revert nav + auth wiring
+git checkout HEAD~1 -- assets/top-banner-v2.js
+# Remove new files
+git rm assets/auth-modal.js account.html
+```
 
 ---
 

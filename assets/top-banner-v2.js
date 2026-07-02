@@ -264,6 +264,13 @@
       var h = banner.getBoundingClientRect().height;
       if (h > 0) document.body.style.paddingTop = h + 'px';
     }
+    // Auto-inject the shared auth modal script so every page gets it.
+    if (!document.querySelector('script[src*="auth-modal.js"]')) {
+      var authScript = document.createElement('script');
+      authScript.src  = '/assets/auth-modal.js';
+      authScript.defer = true;
+      document.body.appendChild(authScript);
+    }
     wireBehaviors();
   }
 
@@ -323,6 +330,22 @@
           ? cur.indexOf(linkPath) === 0              // prefix match for /ai-news/
           : cur === linkPath;                        // exact match for /page.html
         if (active) a.classList.add('is-active');
+      });
+    })();
+
+    // Start Learning button — open auth modal if not signed in.
+    (function () {
+      var btn = document.querySelector('.tb-start-btn');
+      if (!btn) return;
+      var href = btn.getAttribute('href');
+      btn.addEventListener('click', function (e) {
+        if (typeof window.openAuthModal !== 'function') return;
+        // Check if auth state is already known (auth modal tracks this).
+        // If the modal's logged-in view is already shown, let the link work.
+        var loggedIn = document.getElementById('authView-loggedin');
+        if (loggedIn && loggedIn.style.display !== 'none') return;
+        e.preventDefault();
+        window.openAuthModal('signin', href || '/ai-academy/assessment.html');
       });
     })();
 

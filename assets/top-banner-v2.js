@@ -267,7 +267,9 @@
     // Auto-inject the shared auth modal script so every page gets it.
     if (!document.querySelector('script[src*="auth-modal.js"]')) {
       var authScript = document.createElement('script');
-      authScript.src  = './assets/auth-modal.js';
+      // Derive path from where THIS script loaded (handles sub-path deploy).
+      var thisSrc = (document.currentScript || document.scripts[document.scripts.length-1]).src;
+      authScript.src = thisSrc.replace(/top-banner-v2.*/, 'auth-modal.js');
       authScript.defer = true;
       document.body.appendChild(authScript);
     }

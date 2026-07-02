@@ -124,4 +124,51 @@ Added a discreet post-module prompt on lesson/module pages that invites anonymou
 
 ---
 
+## 2026-07-02 — Phase 4: Firestore Security Rules for User-Based Auth
+
+### Summary
+Tightened the `learners/{learnerId}` Firestore rules from wide open (`allow read, write: if true`) to tiered ownership-based access now that auth is wired. Signed-in users own docs matching their `accountUid`; anonymous learners can still read/write unbound docs. Once a learner links their account, path-based anonymous access is locked out.
+
+### Files Changed
+
+| File | Action | Reason |
+|------|--------|--------|
+| `firestore.rules` | **Modified** | `learners/{learnerId}`: tightened from `if true` to tiered rules using `ownsLearner()` + `isSignedIn()` checks. Updated file header and comments to reflect deployed (non-draft) status. |
+
+### Rule Changes
+
+Before:
+```javascript
+match /learners/{learnerId} {
+  allow read, write: if true;      // wide open
+  allow delete: if isAdmin();
+}
+```
+
+After:
+```javascript
+match /learners/{learnerId} {
+  allow create: if ownsLearner(learnerId, null);
+  allow read:   if isAdmin()
+                || (isSignedIn() && resource.data.accountUid == request.auth.uid)
+                || (!isSignedIn() && (resource.data.accountUid == null || resource.data.accountUid == ''));
+  allow update: if isAdmin()
+                || (isSignedIn() && resource.data.accountUid == request.auth.uid)
+                || (resource.data.accountUid == null || resource.data.accountUid == '');
+  allow delete: if isAdmin();
+}
+```
+
+### Identity Model
+
+| Level | Who | How | Bound After |
+|-------|-----|-----|-------------|
+| 1 — Anonymous | Unauthenticated user | Path-based `learnerId` in URL | Always (default) |
+| 2 — Signed-in | Firebase user | `request.auth.uid` matches `doc.accountUid` | After auth-modal.js links account |
+| 3 — Admin | Custom claim `admin == true` | All access | Out-of-band |
+
+Once a learner creates an account, the client merges `{accountUid, accountEmail}` into their existing `learners/{learnerId}` doc. After that, only the bound account or admin can access the doc — anonymous path-based access is locked out.
+
+---
+
 *For questions, contact the build agent that made these changes.*

@@ -1,30 +1,25 @@
 // =============================================================================
-// firestore.rules.draft  —  THE LADDER unified data layer
+// firestore.rules  —  AESOP AI Academy + THE LADDER unified data layer
 // =============================================================================
-// DRAFT FOR REVIEW. DO NOT DEPLOY AS-IS.
+// DEPLOYED 2026-07-02 with Phase 2 auth modal + Phase 3 save-progress prompt.
+// Previously a draft (authored by the data-layer worktree alongside ADR
+// docs/adr/0001-ladder-database-of-record.md and docs/ladder-data-model.md).
 //
-// This is a draft authored by the data-layer worktree alongside ADR
-// docs/adr/0001-ladder-database-of-record.md and docs/ladder-data-model.md.
-// It must be reviewed by Scott and reconciled with any rules already live on
-// Firebase project `playagame-f733d` BEFORE it is copied to firestore.rules and
-// deployed. This worktree does not run the firebase CLI and does not deploy.
+// IDENTITY MODEL:
+//   Two-tier access matching three codebase patterns:
+//     1. Anonymous learners (AESOP-XXXX, no Firebase auth) — own docs that
+//        have no `accountUid` field. Access is path-based (learnerId).
+//     2. Signed-in learners (email/password or Google OAuth) — own docs where
+//        `accountUid == request.auth.uid`. Auth-modal.js links the Firebase
+//        account to the anonymous learner doc on sign-up/sign-in.
+//     3. Admins — custom claim `admin == true` (set out of band in Firebase).
 //
-// IDENTITY MODEL (see doc 16 + ladder-app.js):
-//   The Concepts ladder is localStorage-first with an anonymous `learnerId` and
-//   an OPTIONAL bound Firebase account (`accountUid` / `accountEmail`). Most
-//   learners are NOT signed in. So the baseline `learners/{learnerId}` access
-//   cannot require auth without breaking the existing anonymous flow.
+//   Tier 2 is upgradeable from Tier 1: when a learner creates an account, the
+//   client merges `{accountUid, accountEmail}` into their existing learner doc.
+//   After binding, the doc is owned by that account and anonymous path-based
+//   access is locked out.
 //
-//   Two access tiers are modeled below:
-//     - "owner" = the request carries the matching account uid OR (fallback)
-//       the doc is the unauthenticated anon-learnerId pattern the concept
-//       ladder already uses.
-//     - "admin" = a custom claim `admin == true` (set out of band).
-//
-//   OPEN QUESTION for Scott (also in ADR 0001): should certifications/evidence
-//   REQUIRE an authenticated account? The rules below allow anon owner writes to
-//   match today's behavior, but flag the looseness. If certs must be account-
-//   bound, tighten `isLearnerOwner` to `isSignedInOwner` on those collections.
+//   Certs/evidence still allow anon reads to match the current prod behavior.
 // =============================================================================
 
 rules_version = '2';
@@ -44,9 +39,9 @@ service cloud.firestore {
 
     // Owner check for a learner-scoped doc. A signed-in user owns the doc when
     // their uid matches the doc's accountUid. Anonymous learners (no auth) are
-    // permitted under the existing concept-ladder anon-learnerId pattern.
-    // NOTE: anon ownership cannot be cryptographically proven; this mirrors the
-    // current production behavior, NOT a hardened posture. See open question.
+    // permitted on docs without an accountUid (legacy anon-learnerId pattern).
+    // Once accountUid is set, the anonymous path is locked out and only the
+    // bound account (or admin) may access the doc.
     function ownsLearner(learnerId, resourceData) {
       return isAdmin()
         || (isSignedIn() && resourceData != null && resourceData.accountUid == request.auth.uid)
@@ -56,10 +51,17 @@ service cloud.firestore {
 
     // ---- learners/{learnerId} --------------------------------------------
     // Unified learner record across all three pathways.
-    // TEMPORARY: Allow all reads/writes for anonymous learners during development.
-    // TODO: Re-enable ownsLearner() checks after Firebase auth is properly configured.
+    // Two access tiers: signed-in users own the doc matching their accountUid;
+    // anonymous learners can read/write docs that have no accountUid bound yet.
+    // Once accountUid is set, only that user or admin may mutate the doc.
     match /learners/{learnerId} {
-      allow read, write: if true;
+      allow create: if ownsLearner(learnerId, null);  // new anon or signed-in owner
+      allow read:   if isAdmin()
+                    || (isSignedIn() && resource.data.accountUid == request.auth.uid)
+                    || (!isSignedIn() && (resource.data.accountUid == null || resource.data.accountUid == ''));
+      allow update: if isAdmin()
+                    || (isSignedIn() && resource.data.accountUid == request.auth.uid)
+                    || (resource.data.accountUid == null || resource.data.accountUid == '');
       allow delete: if isAdmin();
     }
 

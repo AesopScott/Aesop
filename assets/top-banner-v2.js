@@ -45,6 +45,14 @@
     '  color: #fff !important; background: rgba(255,255,255,0.07); outline: none; }' +
     '.tb-inner a.is-active { color: var(--gold, #c9a05a) !important; }' +
     '.tb-spacer { margin-left: auto; }' +
+    '.tb-start-btn { flex-shrink: 0; display: inline-flex; align-items: center;' +
+    '  background: var(--gold, #c9a05a); color: var(--navy, #0f1923) !important;' +
+    '  border: none; border-radius: 2rem; padding: 0.35rem 1rem;' +
+    '  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em;' +
+    '  text-transform: uppercase; text-decoration: none; white-space: nowrap;' +
+    '  cursor: pointer; margin-right: 0.5rem;' +
+    '  transition: background 0.15s, transform 0.15s; }' +
+    '.tb-start-btn:hover { background: var(--gold-light, #dbb87a); transform: translateY(-1px); }' +
     '.tb-lang { display: inline-flex; align-items: stretch;' +
     '  background: rgba(255,255,255,0.06);' +
     '  border: 1px solid rgba(255,255,255,0.12); border-radius: 2rem;' +
@@ -84,6 +92,7 @@
     '    <a href="' + _baseDir + 'about/mission.html">About</a>' +
     '    <a href="' + _baseDir + 'institutional-procurement.html">For Schools</a>' +
     '    <span class="tb-spacer"></span>' +
+    '    <a href="' + _baseDir + 'ai-academy/assessment.html" class="tb-start-btn" id="tbStartBtn">Start Learning</a>' +
     '    <div class="tb-lang" id="langSelector">' +
     '      <button class="lang-btn" data-lang="en" title="English"><span class="fi fi-us"></span> EN</button>' +
     '      <div class="lang-divider"></div>' +
@@ -166,6 +175,17 @@
         if (active) a.classList.add('is-active');
       });
     })();
+
+    var startBtn = document.getElementById('tbStartBtn');
+    if (startBtn) {
+      startBtn.addEventListener('click', function (e) {
+        if (typeof window.openAuthModal !== 'function') return;
+        var loggedIn = document.getElementById('authView-loggedin');
+        if (loggedIn && loggedIn.style.display !== 'none') return;
+        e.preventDefault();
+        window.openAuthModal('signup', startBtn.getAttribute('href'));
+      });
+    }
   }
 
   if (document.readyState === 'loading') {

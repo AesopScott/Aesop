@@ -1,11 +1,11 @@
 # AESOP Anthropic Usage Report
 
-**Report date:** 2026-07-01 (covering yesterday: 2026-06-30)
-**Month-to-date cost:** $5.22 (2026-06)
+**Report date:** 2026-07-03 (covering yesterday: 2026-07-02)
+**Month-to-date cost:** $0.30 (2026-07)
 
 ---
 
-## Yesterday — 2026-06-30
+## Yesterday — 2026-07-02
 
 ### Cost by routine (estimated from cadence)
 
@@ -25,27 +25,11 @@ _Costs are estimates based on routine cadence and typical token budgets.
 Actual billing may differ. Live usage data requires Anthropic to add
 secrets support to Routines._
 
-### Running totals — June 2026
+### Running totals — July 2026
 
 | Date | Daily cost | Cumulative |
 |------|-----------|-----------|
-| 2026-06-04 | $0.30 | $0.30 |
-| 2026-06-05 | $0.30 | $0.60 |
-| 2026-06-08 | $0.31 | $0.91 |
-| 2026-06-10 | $0.30 | $1.21 |
-| 2026-06-13 | $0.30 | $1.51 |
-| 2026-06-14 | $0.35 | $1.86 |
-| 2026-06-16 | $0.30 | $2.16 |
-| 2026-06-17 | $0.30 | $2.46 |
-| 2026-06-20 | $0.30 | $2.76 |
-| 2026-06-21 | $0.35 | $3.11 |
-| 2026-06-23 | $0.30 | $3.41 |
-| 2026-06-24 | $0.30 | $3.71 |
-| 2026-06-25 | $0.30 | $4.01 |
-| 2026-06-26 | $0.30 | $4.31 |
-| 2026-06-27 | $0.30 | $4.61 |
-| 2026-06-29 | $0.31 | $4.92 |
-| 2026-06-30 | $0.30 | $5.22 |
+| 2026-07-02 | $0.30 | $0.30 |
 
 ---
 

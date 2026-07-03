@@ -1,5 +1,12 @@
 # Changelog
 
+## [2026-07-02] - Cross-Device Learner ID Resolution
+
+### Added
+- **Cross-device learner ID resolution**: When a signed-in user visits any page on a new device, the system now queries Firestore by `accountUid` to find their existing `learnerId`. This prevents orphaned learner records when users sign in across multiple browsers or devices.
+- **Files modified**: `assets/auth-modal.js`, `account.html`, `theladder/ladder-core.js`, `theladder/ladder-app.js`
+- **Mechanism**: Each file's `onAuthStateChanged` handler now calls `resolveLearnerIdByAccount()` — a Firestore query on `learners` where `accountUid == user.uid` — and overwrites `localStorage` with the found `learnerId` before any account-profile save or UI render.
+
 ## [2026-07-02] - Deployment Regression & Fix
 
 ### Fixed

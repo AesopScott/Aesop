@@ -319,7 +319,11 @@ body { background: var(--cream); min-height: 100vh; }
         onAuthStateChanged: m[1].onAuthStateChanged,
         setDoc: m[2].setDoc,
         doc: m[2].doc,
-        getDoc: m[2].getDoc
+        getDoc: m[2].getDoc,
+        collection: m[2].collection,
+        query: m[2].query,
+        where: m[2].where,
+        getDocs: m[2].getDocs
       };
       return _fb;
     });
@@ -359,20 +363,41 @@ body { background: var(--cream); min-height: 100vh; }
     });
   }
 
+  function resolveLearnerIdByAccount(fb) {
+    var user = fb.auth.currentUser;
+    if (!user || !fb.db) return Promise.resolve(null);
+    var q = fb.query(fb.collection(fb.db, 'learners'), fb.where('accountUid', '==', user.uid));
+    return fb.getDocs(q).then(function (snap) {
+      if (!snap.empty) return snap.docs[0].id;
+      return null;
+    }).catch(function (err) {
+      console.warn('[ACCOUNT] Could not resolve learner ID by account:', err);
+      return null;
+    });
+  }
+
   function onAuth(user, fb) {
     if (user) {
-      show('view-profile');
-      var email = $('profileEmail');
-      if (email) email.textContent = user.email;
-      var lid = localStorage.getItem('aesop-learner-id');
-      var lidEl = $('profileLearnerId');
-      if (lidEl) lidEl.textContent = lid || '—';
-      var linkedEl = $('profileLinkedId');
-      if (linkedEl) linkedEl.textContent = lid || '—';
-      var meta = user.metadata;
-      var createdEl = $('profileCreated');
-      if (createdEl) createdEl.textContent = meta && meta.createdAt ? new Date(meta.createdAt).toLocaleDateString() : '—';
-      linkLearnerId(fb);
+      resolveLearnerIdByAccount(fb).then(function (remoteId) {
+        if (remoteId) {
+          var current = localStorage.getItem('aesop-learner-id');
+          if (remoteId !== current) {
+            localStorage.setItem('aesop-learner-id', remoteId);
+          }
+        }
+        show('view-profile');
+        var email = $('profileEmail');
+        if (email) email.textContent = user.email;
+        var lid = localStorage.getItem('aesop-learner-id');
+        var lidEl = $('profileLearnerId');
+        if (lidEl) lidEl.textContent = lid || '—';
+        var linkedEl = $('profileLinkedId');
+        if (linkedEl) linkedEl.textContent = lid || '—';
+        var meta = user.metadata;
+        var createdEl = $('profileCreated');
+        if (createdEl) createdEl.textContent = meta && meta.createdAt ? new Date(meta.createdAt).toLocaleDateString() : '—';
+        linkLearnerId(fb);
+      });
     } else {
       show('view-signin');
     }

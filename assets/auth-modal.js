@@ -47,7 +47,11 @@
         signOut: firebaseAuth.signOut,
         onAuthStateChanged: firebaseAuth.onAuthStateChanged,
         setDoc: firebaseFirestore.setDoc,
-        doc: firebaseFirestore.doc
+        doc: firebaseFirestore.doc,
+        collection: firebaseFirestore.collection,
+        query: firebaseFirestore.query,
+        where: firebaseFirestore.where,
+        getDocs: firebaseFirestore.getDocs
       };
     });
     return _firebaseCache;
@@ -436,6 +440,20 @@
     });
   }
 
+  /* ─── RESOLVE LEARNER ID BY ACCOUNT (cross-device) ───── */
+  function resolveLearnerIdByAccount(fb) {
+    var user = fb.auth.currentUser;
+    if (!user || !fb.db) return Promise.resolve(null);
+    var q = fb.query(fb.collection(fb.db, 'learners'), fb.where('accountUid', '==', user.uid));
+    return fb.getDocs(q).then(function (snap) {
+      if (!snap.empty) return snap.docs[0].id;
+      return null;
+    }).catch(function (err) {
+      console.warn('[AUTH] Could not resolve learner ID by account:', err);
+      return null;
+    });
+  }
+
   /* ─── WIRE BEHAVIORS ───────────────────────────────────── */
   function wireBehaviors() {
     if (!_modal()) return;
@@ -560,14 +578,23 @@
         if (!signinView || !createView || !loggedInView) return;
 
         if (user) {
-          signinView.style.display = 'none';
-          createView.style.display = 'none';
-          loggedInView.style.display = '';
-          var display = _get('authEmailDisplay');
-          if (display) display.textContent = user.email;
-          var learnerId = localStorage.getItem('aesop-learner-id');
-          var idDisplay = _get('authLearnerIdValue');
-          if (idDisplay && learnerId) idDisplay.textContent = learnerId;
+          // Resolve learner ID by account (cross-device recovery)
+          resolveLearnerIdByAccount(fb).then(function (remoteId) {
+            if (remoteId) {
+              var current = localStorage.getItem('aesop-learner-id');
+              if (remoteId !== current) {
+                localStorage.setItem('aesop-learner-id', remoteId);
+              }
+            }
+            signinView.style.display = 'none';
+            createView.style.display = 'none';
+            loggedInView.style.display = '';
+            var display = _get('authEmailDisplay');
+            if (display) display.textContent = user.email;
+            var learnerId = localStorage.getItem('aesop-learner-id');
+            var idDisplay = _get('authLearnerIdValue');
+            if (idDisplay && learnerId) idDisplay.textContent = learnerId;
+          });
         } else {
           signinView.style.display = '';
           createView.style.display = 'none';

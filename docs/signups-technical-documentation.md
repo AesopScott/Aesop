@@ -144,7 +144,39 @@ import(_baseDir + 'ai-academy/js/firebase-config.js')
 ```
 This works on both root (`/`) and sub-path deployments (`/repo/`).
 
-### 2.5 Firestore Security Model
+### 2.5 Cross-Device Learner ID Resolution
+
+After account creation, the `accountUid` is written into `learners/{learnerId}`. When the user signs in on a **different device**, the system must find that same `learnerId` rather than generating a new one.
+
+**Resolution flow** (added 2026-07-02):
+
+```
+User signs in on a new device
+  │
+  └── onAuthStateChanged fires
+        │
+        ├── resolveLearnerIdByAccount() queries:
+        │     query(collection(db, 'learners'), where('accountUid', '==', user.uid))
+        │
+        ├── If a doc is found:
+        │     ├── localStorage.setItem('aesop-learner-id', remoteLearnerId)
+        │     ├── state.learnerId = remoteLearnerId (ladder only)
+        │     └── All subsequent reads use the correct learner doc
+        │
+        └── If no doc found:
+              └── Normal first-time linking flow proceeds
+```
+
+**Files with the fix:**
+
+| File | Handler | Added Function |
+|------|---------|---------------|
+| `assets/auth-modal.js` | `onAuthStateChanged` (line ~556) | `resolveLearnerIdByAccount(fb)` |
+| `account.html` | `onAuth()` (line ~362) | `resolveLearnerIdByAccount(fb)` |
+| `theladder/ladder-core.js` | `initCore()` → `onAuthStateChanged` (line ~3815) | `resolveLearnerIdByAccount()` |
+| `theladder/ladder-app.js` | `init()` → `onAuthStateChanged` (line ~3864) | `resolveLearnerIdByAccount()` |
+
+### 2.7 Firestore Security Model
 
 | Identity Level | Who | Access |
 |---------------|------|--------|
@@ -163,7 +195,7 @@ After account linking, the `learners/{learnerId}` doc gets:
 ```
 Once `accountUid` is set, anonymous path-based access is locked out — only the bound account or admin can read/update.
 
-### 2.6 Appearance Points
+### 2.8 Appearance Points
 
 | Component | Appears On | Trigger |
 |-----------|-----------|---------|
@@ -172,7 +204,7 @@ Once `accountUid` is set, anonymous path-based access is locked out — only the
 | Save-progress prompt | Module pages (electives-hub.html, module-view.php + localized variants) | lessonComplete postMessage, 12s delay, localStorage change |
 | Account page | `/account.html` | Direct navigation, or "Manage Account" link in auth modal |
 
-### 2.7 Deployment
+### 2.9 Deployment
 
 - **Cloudflare Pages** auto-deploys from `AesopScott/Aesop` main branch
 - No build step — rsyncs repo to `_site/` (excluding `*.php`, `secret*`, `.git`, `.github`, `node_modules`)

@@ -8,7 +8,7 @@
 // load this module with only its own subset of elements present.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { FIREBASE_CONFIG } from '/ai-academy/js/firebase-config.js';
 import { DEFAULT_RESOURCES, LADDER_TIERS, LADDER_VERSION, LANGUAGES, LADDER_UI_TRANSLATIONS } from './ladder-data.js?v=2';
 
@@ -1782,6 +1782,18 @@ async function ensureLearnerId() {
   } catch (error) {
     console.warn('Could not create learner record immediately:', error);
   }
+}
+
+async function resolveLearnerIdByAccount() {
+  if (!state.authUser || !db) return null;
+  try {
+    const q = query(collection(db, 'learners'), where('accountUid', '==', state.authUser.uid));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].id;
+  } catch (e) {
+    console.warn('[LADDER] Could not resolve learner ID by account:', e);
+  }
+  return null;
 }
 
 async function saveAccountProfile() {
@@ -3816,6 +3828,11 @@ async function initCore(options = {}) {
     state.authReady = true;
     state.authUser = user ? { uid: user.uid, email: user.email || '' } : null;
     if (state.authUser) {
+      const remoteId = await resolveLearnerIdByAccount();
+      if (remoteId && remoteId !== state.learnerId) {
+        state.learnerId = remoteId;
+        localStorage.setItem(LS_ID, remoteId);
+      }
       await saveAccountProfile();
     }
     render();

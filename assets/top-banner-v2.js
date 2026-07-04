@@ -235,7 +235,8 @@
     var banner = document.getElementById('topBanner');
     if (banner) {
       var h = banner.getBoundingClientRect().height;
-      if (h > 0) document.body.style.paddingTop = h + 'px';
+      var isMobile = window.innerWidth <= 760;
+      if (h > 0 && !isMobile) document.body.style.paddingTop = h + 'px';
     }
     if (!document.querySelector('script[src*="auth-modal.js"]')) {
       var authScript = document.createElement('script');

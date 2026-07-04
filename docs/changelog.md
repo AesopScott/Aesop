@@ -1,5 +1,27 @@
 # Changelog
 
+## [2026-07-04] - Desktop & Mobile Layout Overhaul (Header + Hero)
+
+### Changed
+- **Desktop header** (`assets/top-banner-v2.js`):
+  - Switched from `padding: 0 12.5%` to `padding: 0 3rem` with `justify-content: space-between`
+  - Nav links wrapped in `.tb-nav-center` for clean centering
+  - Language selector replaced from button group to native `<select>` with custom styling (pill shape, SVG caret, flag-icon)
+  - Removed stats-bar spacing dependency
+- **Mobile header** (`assets/top-banner-v2.js`):
+  - Header becomes `position: static` (no sticky on mobile)
+  - All desktop nav/controls hidden via `display: none` under 760px
+  - Hamburger button opens right-side drawer with full nav, mobile Start Learning button, and flag-button language selector
+  - Drawer closes on overlay click, close button, Escape key, or nav-link click
+- **Hero section** (`academy-theme.css`):
+  - Reduced vertical padding: `5rem 2rem 4.5rem` → `3.75rem 2rem 3rem`
+  - Reduced title: `clamp(2.6rem, 6vw, 4.2rem)` → `clamp(2.2rem, 5.5vw, 3.5rem)`
+  - Reduced subtitle margin: `1.75rem` → `1.25rem`
+  - Reduced desc margin & font-size: `2.25rem` / `1rem` → `1.5rem` / `0.95rem`
+  - Reduced line-heights throughout for tighter vertical fit
+  - Updated responsive breakpoints (900px, 600px) to match new sizing
+- CTA buttons now fit above the fold on standard 1366×768 laptop screens (674px hero vs 640px available viewport)
+
 ## [2026-07-02] - Cross-Device Learner ID Resolution
 
 ### Added

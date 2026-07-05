@@ -1,18 +1,17 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-07-04 14:07 UTC
+**Generated:** 2026-07-05 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 29
+**Errors:** 1 · **Warnings:** 26
 
 ---
 
 ## Course Registry (course-registry.json)
 
 ### Errors (1)
-- 🔴 **MISSING_DIR**: `eval-benchmark` (directory `ai-academy/modules/eval-benchmark/` does not exist)
+- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-### Warnings (24)
-- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
+### Warnings (23)
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -43,26 +42,26 @@
 
 ## Electives Hub (electives-hub.html)
 
-✅ No issues found. *(Hub reads courses dynamically from `course-registry.json`; no `BASE_COURSES` block to audit.)*
+> Hub is registry-driven: `electives-hub.html` fetches `course-registry.json` at runtime and loads every entry with `status: "live"` and a valid `url`. The BASE_COURSES check (H-1/H-2) is not applicable; the effective hub course set is derived below and used for cross-reference checks (X-2/X-3).
+
+✅ No issues found.
 
 ## Cross-References
 
-### Warnings (5)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
+### Warnings (3)
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 ---
 
 ## Summary
 
 **1 error(s) require attention:**
-1. **MISSING_DIR**: `eval-benchmark` (directory `ai-academy/modules/eval-benchmark/` does not exist)
+1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 21
-- Electives hub BASE_COURSES: 0
-- Module files verified: 780
+- courses.html internal links checked: 163
+- Electives hub course set: 126 (derived from registry; hub is registry-driven)
+- Module files verified: 764

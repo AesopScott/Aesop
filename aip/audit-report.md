@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-07-08 14:09 UTC
+**Generated:** 2026-07-09 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -36,13 +36,14 @@
 - 🟡 **EXTRA_MODULES**: `ai-in-gaming-and-interactive-media` has 6 module files but registry defines 3 modules
 - 🟡 **EXTRA_MODULES**: `is-the-robot-being-fair` has 4 module files but registry defines 1 modules
 
+
 ## courses.html
 
 ✅ No issues found.
 
 ## Electives Hub (electives-hub.html)
 
-> Hub is registry-driven: `electives-hub.html` fetches `course-registry.json` at runtime and loads every entry with `status: "live"` and a valid `url`. The BASE_COURSES check (H-1/H-2) is not applicable; the effective hub course set is derived below and used for cross-reference checks (X-2/X-3).
+> Hub is registry-driven: `electives-hub.html` fetches `course-registry.json` at runtime and loads every entry with `status: "live"` and a valid `url`. The BASE_COURSES check (H-1/H-2) is not applicable; the effective hub course set is derived from the registry and used for cross-reference checks.
 
 ✅ No issues found.
 
@@ -52,6 +53,7 @@
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
+
 
 ---
 

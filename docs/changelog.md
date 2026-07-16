@@ -1,5 +1,14 @@
 # Changelog
 
+## [2026-07-16] - Unified 5-Column Footer Across All Public Pages
+
+### Changed
+- **Homepage** (`index.html`): Fixed patent number from `64/085,986` to `64/018,565` to match all other pages
+- **V2 group** (`pedagogy.html`, `pathways.html`, `about/mission.html`, `for-schools/implementation.html`): Replaced old 2-column footer with the homepage's 5-column layout (Learn, About, For Schools, Connect nav columns)
+- **Awareness page** (`awareness.html`): Replaced minimalist custom footer with standard 5-column layout
+- **Terms of Service** (`policies/terms-of-service.html`): Replaced outdated footer with standard 5-column layout
+- All pages now share identical footer structure, content, patent number, and tagline for a consistent professional appearance
+
 ## [2026-07-04] - Desktop & Mobile Layout Overhaul (Header + Hero)
 
 ### Changed

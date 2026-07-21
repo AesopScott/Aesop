@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-07-18 14:08 UTC
+**Generated:** 2026-07-21 14:08 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -51,8 +51,8 @@
 > X-2 (NOT_IN_ELECTIVES_HUB) and X-3 (COURSES_HUB_MISMATCH) checks are not applicable: the electives-hub is registry-driven, so every live registry course with a valid `url` and existing directory is automatically included.
 
 ### Warnings (3)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 ---
@@ -64,6 +64,6 @@
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 142
+- courses.html internal links checked: 143
 - Electives hub course set: 125
-- Module files verified: 764
+- Module files verified: 858

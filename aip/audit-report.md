@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-07-27 14:13 UTC
+**Generated:** 2026-07-28 14:18 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -42,15 +42,13 @@
 
 ## Electives Hub (electives-hub.html)
 
-ℹ️ Hub is registry-driven (`electives-hub-v1.1.0`, no hardcoded `BASE_COURSES`). Directory and registry cross-checks (H-1, H-2) are N/A — the hub renders whatever `course-registry.json` provides.
+✅ No issues found.
 
 ## Cross-References
 
-ℹ️ Because the hub is registry-driven, **X-2** (registry course missing from hub) and **X-3** (courses.html links a course the hub does not define) are inherently satisfied — every live registry course appears in the hub automatically. Only **X-1** (registry course missing from courses.html) is evaluated below.
-
 ### Warnings (3)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
 
 ---
@@ -60,10 +58,8 @@
 **1 error(s) require attention:**
 1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-No change from the 2026-07-26 run: same missing directory, same 23 `EXTRA_MODULES` warnings, and the same three registry courses (`ap-7`, `ar-8`, `eval-benchmark`) still lack links from `courses.html`. The `eval-benchmark` finding has now persisted for 11 consecutive daily runs (first flagged 2026-07-17) — either the directory needs to be created or the registry entry removed.
-
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 143
-- Electives hub BASE_COURSES: 0 (hub is registry-driven; renders from `course-registry.json`)
+- courses.html internal links checked: 21
+- Electives hub source-of-truth: course-registry.json (dynamic loader verified)
 - Module files verified: 764

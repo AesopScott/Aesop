@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-08-18 14:09 UTC
+**Generated:** 2026-08-20 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -70,6 +70,6 @@
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 163
+- courses.html internal links checked: 161
 - Electives hub effective course set: 126 (registry-loaded)
 - Module files verified: 764

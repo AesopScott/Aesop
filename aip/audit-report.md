@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-08-20 14:09 UTC
+**Generated:** 2026-08-21 14:10 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -52,13 +52,13 @@
 
 > 123 of 126 live registry courses are featured on courses.html; the remaining 3 are electives surfaced only via the electives-hub. This is expected: courses.html is a curated hero page, not an index.
 
-> The electives-hub is registry-driven, so X-2 and X-3 (hub vs. registry / courses.html vs. hub) are satisfied by construction and are not re-checked here. X-1 (registry vs. courses.html) is the only remaining cross-check.
-
 ### Warnings (3)
 
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
+
+> The electives-hub is registry-driven, so X-2 and X-3 (hub vs. registry / courses.html vs. hub) are satisfied by construction and are not re-checked here. X-1 (registry vs. courses.html) is the only remaining cross-check.
 
 ---
 
@@ -70,6 +70,6 @@
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 161
+- courses.html internal links checked: 143
 - Electives hub effective course set: 126 (registry-loaded)
 - Module files verified: 764

@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-08-23 14:07 UTC
+**Generated:** 2026-08-24 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -50,26 +50,23 @@
 
 ## Cross-References
 
-> 123 of 126 live registry courses are featured on courses.html; the remaining 3 are electives surfaced only via the electives-hub. This is expected: courses.html is a curated hero page, not an index.
-
-> The electives-hub is registry-driven, so X-2 and X-3 (hub vs. registry / courses.html vs. hub) are satisfied by construction and are not re-checked here. X-1 (registry vs. courses.html) is the only remaining cross-check.
+> X-2 and X-3 are moot: electives-hub reads the registry at runtime, so every non-coming-soon registry course is offered by the hub.
 
 ### Warnings (3)
 
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
 
 ---
 
 ## Summary
 
 **1 error(s) require attention:**
-
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. MISSING_DIR: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 163
-- Electives hub effective course set: 126 (registry-loaded)
+- courses.html internal links checked: 20
+- Electives hub BASE_COURSES: n/a (registry-mode hub)
 - Module files verified: 764

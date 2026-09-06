@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-09-05 14:07 UTC
+**Generated:** 2026-09-06 14:07 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 27
 
@@ -9,12 +9,10 @@
 ## Course Registry (course-registry.json)
 
 ### Errors (1)
-
-- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+- 🔴 **MISSING_DIR**: `eval-benchmark` (registry key `eval-benchmark`) — directory `ai-academy/modules/eval-benchmark/` is missing or empty
 
 ### Warnings (24)
-
-- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
+- 🟡 **EXTRA_MODULES**: `ai-in-society` has 9 module files but registry defines 8 modules
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -42,32 +40,29 @@
 ## courses.html
 
 ✅ No issues found.
-## Electives Hub (electives-hub.html)
 
-> electives-hub v1.1.0+ loads all courses from `course-registry.json` at runtime — no hardcoded `BASE_COURSES` block. H-1/H-2 checks are satisfied by definition: the hub reflects the registry.
+## Electives Hub (electives-hub.html)
 
 ✅ No issues found.
 
+> ℹ️ electives-hub.html is registry-only — it fetches `course-registry.json` at load time instead of defining a `BASE_COURSES` array, so H-1/H-2/X-2/X-3 have nothing to compare.
+
 ## Cross-References
 
-> X-2 and X-3 are moot: electives-hub reads the registry at runtime, so every non-coming-soon registry course is offered by the hub.
-
 ### Warnings (3)
-
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` (dir `ar-8`) has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` (dir `ap-7`) has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` (dir `eval-benchmark`) has no link from courses.html
 
 ---
 
 ## Summary
 
 **1 error(s) require attention:**
-
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. **MISSING_DIR** — `eval-benchmark` (registry key `eval-benchmark`) — directory `ai-academy/modules/eval-benchmark/` is missing or empty
 
 ### Stats
-- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 163
-- Electives hub BASE_COURSES: n/a (registry-mode hub)
+- Registry courses: 131 (128 live, 3 coming soon)
+- courses.html internal links checked: 21
+- Electives hub BASE_COURSES: 0 (registry-only mode)
 - Module files verified: 780

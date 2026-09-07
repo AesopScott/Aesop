@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-09-06 14:07 UTC
+**Generated:** 2026-09-07 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 27
 
@@ -37,6 +37,7 @@
 - 🟡 **EXTRA_MODULES**: `ai-in-gaming-and-interactive-media` has 6 module files but registry defines 3 modules
 - 🟡 **EXTRA_MODULES**: `is-the-robot-being-fair` has 4 module files but registry defines 1 modules
 
+
 ## courses.html
 
 ✅ No issues found.
@@ -53,6 +54,7 @@
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` (dir `ar-8`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` (dir `ap-7`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` (dir `eval-benchmark`) has no link from courses.html
+
 
 ---
 

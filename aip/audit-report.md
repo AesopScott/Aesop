@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-09-10 14:11 UTC
+**Generated:** 2026-09-11 14:10 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -8,7 +8,7 @@
 
 ## Audit Notes
 
-- ℹ️ electives-hub.html has no static `BASE_COURSES` array — it now loads courses dynamically from `course-registry.json` at runtime (filter `status === 'live'`). Checks H-1/H-2 and cross-references X-2/X-3 are moot in this layout and were skipped.
+- ℹ️ electives-hub.html has no static `BASE_COURSES` array — it loads courses dynamically from `course-registry.json` at runtime (filter `status === 'live'`). Checks H-1/H-2 and cross-references X-2/X-3 are moot in this layout and were skipped.
 
 ## Course Registry (course-registry.json)
 
@@ -51,8 +51,8 @@
 ## Cross-References
 
 ### Warnings (3)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no `?course=` link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no `?course=` link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no `?course=` link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no `?course=` link from courses.html
 
 ---
@@ -66,4 +66,4 @@
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
 - courses.html internal links checked: 21
 - Electives hub static BASE_COURSES entries: 0 (hub loads courses dynamically from registry)
-- Module files verified: 764
+- Module files verified: 858

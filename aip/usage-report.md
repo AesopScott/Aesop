@@ -1,11 +1,11 @@
 # AESOP Anthropic Usage Report
 
-**Report date:** 2026-09-12 (covering yesterday: 2026-09-11)
-**Month-to-date cost:** $1.50 (2026-09)
+**Report date:** 2026-09-13 (covering yesterday: 2026-09-12)
+**Month-to-date cost:** $1.80 (2026-09)
 
 ---
 
-## Yesterday — 2026-09-11
+## Yesterday — 2026-09-12
 
 ### Cost by routine (estimated from cadence)
 
@@ -34,6 +34,7 @@ secrets support to Routines._
 | 2026-09-04 | $0.30 | $0.90 |
 | 2026-09-08 | $0.30 | $1.20 |
 | 2026-09-11 | $0.30 | $1.50 |
+| 2026-09-12 | $0.30 | $1.80 |
 
 ---
 

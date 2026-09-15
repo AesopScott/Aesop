@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-09-14 14:08 UTC
+**Generated:** 2026-09-15 14:09 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 3 · **Warnings:** 28
+**Errors:** 1 · **Warnings:** 27
 
 ---
 
@@ -12,12 +12,11 @@
 
 ## Course Registry (course-registry.json)
 
-### Errors (3)
-- 🔴 **MISSING_DIR**: Registry course `society` references `/ai-academy/modules/society/` which does not exist or is empty
-- 🔴 **MISSING_DIR**: Registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist or is empty
+### Errors (1)
 - 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
 
-### Warnings (23)
+### Warnings (24)
+- 🟡 **EXTRA_MODULES**: `ai-in-society` has 9 module files on disk but registry defines 8 modules
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files on disk but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files on disk but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files on disk but registry defines 8 modules
@@ -52,9 +51,7 @@
 
 ## Cross-References
 
-### Warnings (5)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
+### Warnings (3)
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
@@ -63,13 +60,11 @@
 
 ## Summary
 
-**3 error(s) require attention:**
-1. **MISSING_DIR**: Registry course `society` references `/ai-academy/modules/society/` which does not exist or is empty
-2. **MISSING_DIR**: Registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist or is empty
-3. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
+**1 error(s) require attention:**
+1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
 
 ### Stats
-- Registry courses: 131 (128 live, 3 coming soon)
-- courses.html internal links checked: 143
+- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
+- courses.html internal links checked: 20
 - Electives hub BASE_COURSES: 0
-- Module files verified: 764
+- Module files verified: 780

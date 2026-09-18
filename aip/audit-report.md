@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-09-16 14:08 UTC
+**Generated:** 2026-09-18 14:08 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 27
+**Errors:** 1 · **Warnings:** 26
 
 ---
 
@@ -13,10 +13,9 @@
 ## Course Registry (course-registry.json)
 
 ### Errors (1)
-- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
+- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-### Warnings (24)
-- 🟡 **EXTRA_MODULES**: `ai-in-society` has 9 module files on disk but registry defines 8 modules
+### Warnings (23)
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files on disk but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files on disk but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files on disk but registry defines 8 modules
@@ -61,10 +60,10 @@
 ## Summary
 
 **1 error(s) require attention:**
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist or is empty
+1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
 - courses.html internal links checked: 21
 - Electives hub BASE_COURSES: 0
-- Module files verified: 780
+- Module files verified: 764

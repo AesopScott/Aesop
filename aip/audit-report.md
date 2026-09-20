@@ -1,22 +1,21 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-09-19 14:07 UTC
+**Generated:** 2026-09-20 14:19 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 27
+**Errors:** 1 · **Warnings:** 26
 
 ---
 
 ## Audit Notes
 
-- ℹ️ electives-hub.html has no static `BASE_COURSES` array — it loads courses dynamically from `course-registry.json` at runtime (filter `status === 'live'`). Checks H-1/H-2 and cross-references X-2/X-3 are moot in this layout and were skipped.
+- ℹ️ electives-hub.html has no static `BASE_COURSES` array — it loads courses dynamically from `course-registry.json` at runtime. Checks H-1/H-2 and cross-references X-2/X-3 are moot in this layout and were skipped.
 
 ## Course Registry (course-registry.json)
 
 ### Errors (1)
 - 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-### Warnings (24)
-- 🟡 **EXTRA_MODULES**: `ai-in-society` has 9 module files on disk but registry defines 8 modules
+### Warnings (23)
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files on disk but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files on disk but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files on disk but registry defines 8 modules
@@ -41,6 +40,7 @@
 - 🟡 **EXTRA_MODULES**: `ai-in-gaming-and-interactive-media` has 6 module files on disk but registry defines 3 modules
 - 🟡 **EXTRA_MODULES**: `is-the-robot-being-fair` has 4 module files on disk but registry defines 1 modules
 
+
 ## courses.html
 
 ✅ No issues found.
@@ -56,6 +56,7 @@
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
 
+
 ---
 
 ## Summary
@@ -67,4 +68,4 @@
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
 - courses.html internal links checked: 163
 - Electives hub BASE_COURSES: 0
-- Module files verified: 780
+- Module files verified: 764

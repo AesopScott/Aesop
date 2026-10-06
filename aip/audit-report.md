@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-05 14:20 UTC
+**Generated:** 2026-10-06 14:18 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -50,9 +50,9 @@ Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds i
 ## Cross-References
 
 ### Warnings (3)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 
 ---
@@ -64,6 +64,6 @@ Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds i
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 21
+- courses.html internal links checked: 20
 - Electives hub BASE_COURSES: n/a (registry-driven)
 - Module files verified: 764

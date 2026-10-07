@@ -1,14 +1,16 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-06 14:18 UTC
+**Generated:** 2026-10-07 14:19 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 26
+**Errors:** 3 · **Warnings:** 26
 
 ---
 
 ## Course Registry (course-registry.json)
 
-### Errors (1)
+### Errors (3)
+- 🔴 **MISSING_DIR**: registry course `society` references `/ai-academy/modules/society/` which does not exist
+- 🔴 **MISSING_DIR**: registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
 - 🔴 **MISSING_DIR**: registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Warnings (23)
@@ -36,7 +38,6 @@
 - 🟡 **EXTRA_MODULES**: `ai-in-gaming-and-interactive-media` has 6 module files but registry defines 3 modules
 - 🟡 **EXTRA_MODULES**: `is-the-robot-being-fair` has 4 module files but registry defines 1 modules
 
-
 ## courses.html
 
 ✅ No issues found.
@@ -50,20 +51,21 @@ Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds i
 ## Cross-References
 
 ### Warnings (3)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
-
 
 ---
 
 ## Summary
 
-**1 error(s) require attention:**
-1. MISSING_DIR: registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+**3 error(s) require attention:**
+1. MISSING_DIR: registry course `society` references `/ai-academy/modules/society/` which does not exist
+2. MISSING_DIR: registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
+3. MISSING_DIR: registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 20
+- courses.html internal links checked: 21
 - Electives hub BASE_COURSES: n/a (registry-driven)
 - Module files verified: 764

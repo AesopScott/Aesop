@@ -1,16 +1,14 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-07 14:19 UTC
+**Generated:** 2026-10-08 14:19 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 3 · **Warnings:** 26
+**Errors:** 1 · **Warnings:** 26
 
 ---
 
 ## Course Registry (course-registry.json)
 
-### Errors (3)
-- 🔴 **MISSING_DIR**: registry course `society` references `/ai-academy/modules/society/` which does not exist
-- 🔴 **MISSING_DIR**: registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
+### Errors (1)
 - 🔴 **MISSING_DIR**: registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Warnings (23)
@@ -59,13 +57,11 @@ Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds i
 
 ## Summary
 
-**3 error(s) require attention:**
-1. MISSING_DIR: registry course `society` references `/ai-academy/modules/society/` which does not exist
-2. MISSING_DIR: registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
-3. MISSING_DIR: registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+**1 error(s) require attention:**
+1. MISSING_DIR: registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 21
+- courses.html internal links checked: 20
 - Electives hub BASE_COURSES: n/a (registry-driven)
-- Module files verified: 764
+- Module files verified: 858

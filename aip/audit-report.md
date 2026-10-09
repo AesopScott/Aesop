@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-08 14:19 UTC
+**Generated:** 2026-10-09 14:21 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -42,7 +42,7 @@
 
 ## Electives Hub (electives-hub.html)
 
-Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds its course list from `course-registry.json` at runtime (see v1.1.0 header comment). Checks H-1, H-2, X-2, and X-3 are therefore not applicable; the hub stays in sync with the registry by construction.
+Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds its course list from `course-registry.json` at runtime. Checks H-1, H-2, X-2, and X-3 are therefore not applicable; the hub stays in sync with the registry by construction.
 
 ✅ No issues found.
 
@@ -62,6 +62,6 @@ Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds i
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 20
+- courses.html internal links checked: 161
 - Electives hub BASE_COURSES: n/a (registry-driven)
-- Module files verified: 858
+- Module files verified: 764

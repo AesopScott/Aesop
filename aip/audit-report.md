@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-09 14:21 UTC
+**Generated:** 2026-10-10 14:17 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -62,6 +62,6 @@ Note: `electives-hub.html` has no hardcoded `BASE_COURSES` array — it builds i
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 161
+- courses.html internal links checked: 163
 - Electives hub BASE_COURSES: n/a (registry-driven)
 - Module files verified: 764

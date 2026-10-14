@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-13 14:21 UTC
+**Generated:** 2026-10-14 14:21 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 29
 
@@ -43,31 +43,28 @@
 
 ## Electives Hub (electives-hub.html)
 
-> ℹ️ Electives hub is registry-driven: `COURSES` is populated at runtime from `course-registry.json`. `BASE_COURSES` is no longer present, so H-1/H-2 and X-2/X-3 checks are skipped — the registry entries themselves are the hub's source of truth.
+> electives-hub.html loads courses dynamically from `course-registry.json` at runtime (filtered to `status === 'live'` entries with a `url`). There is no static `BASE_COURSES` array to validate — hub ↔ registry consistency is enforced by construction.
 
 ✅ No issues found.
 
 ## Cross-References
 
-> ℹ️ X-2 (registry → electives-hub) and X-3 (courses.html → electives-hub) are skipped because the hub reads directly from `course-registry.json` at runtime.
-
 ### Warnings (5)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
 
 ---
 
 ## Summary
 
 **1 error(s) require attention:**
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. MISSING_DIR: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (128 live, 3 coming soon)
-- courses.html internal links checked: 21
-- courses.html distinct `?course=` ids: 123
-- Electives hub source: registry-driven
+- courses.html internal links checked: 163
+- Electives hub BASE_COURSES: 128 (derived live-with-url set)
 - Module files verified: 780

@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-15 14:20 UTC
+**Generated:** 2026-10-16 14:22 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 27
 
@@ -59,10 +59,10 @@
 ## Summary
 
 **1 error(s) require attention:**
-1. MISSING_DIR: Registry course eval-benchmark references /ai-academy/modules/eval-benchmark/ which does not exist
+1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 161
+- courses.html internal links checked: 163
 - Electives hub BASE_COURSES: 126 (derived live-with-url set)
 - Module files verified: 780

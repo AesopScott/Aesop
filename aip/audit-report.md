@@ -1,18 +1,19 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-16 14:22 UTC
+**Generated:** 2026-10-17 14:20 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 27
+**Errors:** 3 · **Warnings:** 26
 
 ---
 
 ## Course Registry (course-registry.json)
 
-### Errors (1)
+### Errors (3)
+- 🔴 **MISSING_DIR**: Registry course `society` references `/ai-academy/modules/society/` which does not exist
+- 🔴 **MISSING_DIR**: Registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
 - 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-### Warnings (24)
-- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
+### Warnings (23)
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -43,7 +44,7 @@
 
 ## Electives Hub (electives-hub.html)
 
-> electives-hub.html loads courses dynamically from `course-registry.json` at runtime (filtered to `status === 'live'` entries with a `url`). There is no static `BASE_COURSES` array to validate — hub ↔ registry consistency is enforced by construction.
+> electives-hub.html loads courses dynamically from `course-registry.json` at runtime (filtered to `status === 'live'` entries with a `url`). There is no static `BASE_COURSES` array to validate — hub ↔ registry consistency is enforced by construction. The static ids below come from the page's JSON-LD structured data.
 
 ✅ No issues found.
 
@@ -58,11 +59,13 @@
 
 ## Summary
 
-**1 error(s) require attention:**
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+**3 error(s) require attention:**
+1. **MISSING_DIR**: Registry course `society` references `/ai-academy/modules/society/` which does not exist
+2. **MISSING_DIR**: Registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
+3. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 163
-- Electives hub BASE_COURSES: 126 (derived live-with-url set)
-- Module files verified: 780
+- courses.html internal links checked: 21
+- Electives hub JSON-LD course entries: 109 (SEO metadata; runtime hub reads course-registry.json)
+- Module files verified: 764

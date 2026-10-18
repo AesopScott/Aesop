@@ -1,16 +1,14 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-17 14:20 UTC
+**Generated:** 2026-10-18 14:10 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 3 · **Warnings:** 26
+**Errors:** 1 · **Warnings:** 26
 
 ---
 
 ## Course Registry (course-registry.json)
 
-### Errors (3)
-- 🔴 **MISSING_DIR**: Registry course `society` references `/ai-academy/modules/society/` which does not exist
-- 🔴 **MISSING_DIR**: Registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
+### Errors (1)
 - 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Warnings (23)
@@ -44,7 +42,7 @@
 
 ## Electives Hub (electives-hub.html)
 
-> electives-hub.html loads courses dynamically from `course-registry.json` at runtime (filtered to `status === 'live'` entries with a `url`). There is no static `BASE_COURSES` array to validate — hub ↔ registry consistency is enforced by construction. The static ids below come from the page's JSON-LD structured data.
+> electives-hub.html loads courses dynamically from `course-registry.json` at runtime (filtered to `status === 'live'` entries with a `url`). There is no static `BASE_COURSES` array to validate — hub ↔ registry consistency is enforced by construction.
 
 ✅ No issues found.
 
@@ -59,13 +57,11 @@
 
 ## Summary
 
-**3 error(s) require attention:**
-1. **MISSING_DIR**: Registry course `society` references `/ai-academy/modules/society/` which does not exist
-2. **MISSING_DIR**: Registry course `ar-11` references `/ai-academy/modules/ar-11/` which does not exist
-3. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+**1 error(s) require attention:**
+1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
 - courses.html internal links checked: 21
-- Electives hub JSON-LD course entries: 109 (SEO metadata; runtime hub reads course-registry.json)
+- Electives hub: dynamic (reads course-registry.json at runtime)
 - Module files verified: 764

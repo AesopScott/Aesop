@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-23 14:12 UTC  
+**Generated:** 2026-10-24 14:09 UTC  
 **Status:** 🔴 ISSUES FOUND  
 **Errors:** 1 · **Warnings:** 26
 
@@ -9,7 +9,7 @@
 ## Course Registry (course-registry.json)
 
 ### Errors (1)
-- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` (eval-benchmark) references `/ai-academy/modules/eval-benchmark/` which does not exist
+- 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Warnings (23)
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
@@ -49,9 +49,9 @@
 ## Cross-References
 
 ### Warnings (3)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` (ar-8) has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` (ap-7) has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` (eval-benchmark) has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 ---
 
@@ -59,7 +59,7 @@
 
 **1 error(s) require attention:**
 
-1. **MISSING_DIR** — Registry course `eval-benchmark` (eval-benchmark) references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. **MISSING_DIR** — Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)

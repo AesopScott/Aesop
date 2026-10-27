@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-26 14:14 UTC
+**Generated:** 2026-10-27 14:14 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -52,8 +52,8 @@ _Note: `electives-hub.html` loads courses dynamically from `course-registry.json
 
 ### Warnings (3)
 
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 ---

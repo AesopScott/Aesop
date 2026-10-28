@@ -1,6 +1,6 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-10-27 14:14 UTC
+**Generated:** 2026-10-28 14:24 UTC
 **Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 26
 
@@ -67,6 +67,6 @@ _Note: `electives-hub.html` loads courses dynamically from `course-registry.json
 ### Stats
 
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 21
+- courses.html internal links checked: 9
 - Electives hub BASE_COURSES: 0 (hub is registry-driven; no static list)
-- Module files verified: 764
+- Module files verified: 858

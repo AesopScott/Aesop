@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-11-05 14:13 UTC
+**Generated:** 2026-11-06 14:14 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 63
+**Errors:** 1 · **Warnings:** 26
 
 ---
 
@@ -36,7 +36,6 @@
 - 🟡 **EXTRA_MODULES**: `ai-in-gaming-and-interactive-media` has 6 module files but registry defines 3 modules
 - 🟡 **EXTRA_MODULES**: `is-the-robot-being-fair` has 4 module files but registry defines 1 modules
 
-
 ## courses.html
 
 ✅ No issues found.
@@ -45,50 +44,14 @@
 
 ✅ No issues found.
 
+_Hub is registry-driven (v1.1.0+): it renders live courses from `course-registry.json` at runtime, so there are no hardcoded `BASE_COURSES` to validate. Checks H-1, H-2, X-2, and X-3 do not apply._
+
 ## Cross-References
 
-### Warnings (40)
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "claude-ai-chat" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "claude-cowork" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "claude-code" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-tutor-under-the-hood" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-lens-on-the-world" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "how-ai-actually-works" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "prompt-engineering-that-works" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-in-gaming-and-interactive-media" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-ethics-foundations" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-safety-for-everyone" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-tools-for-real-teaching" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "is-the-robot-being-fair" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "pick-the-right-ai-tool" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "wispr-flow" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "how-machines-learn" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-and-architecture" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "ai-safety-and-alignment" missing from electives-hub
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "real-or-rendered" missing from electives-hub
-- 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
-- 🟡 **NOT_IN_ELECTIVES_HUB**: registry course "eval-benchmark" missing from electives-hub
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-and-architecture" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-in-gaming-and-interactive-media" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "wispr-flow" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "prompt-engineering-that-works" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "how-ai-actually-works" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-lens-on-the-world" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-tools-for-real-teaching" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-tutor-under-the-hood" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "how-machines-learn" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "is-the-robot-being-fair" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "pick-the-right-ai-tool" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "real-or-rendered" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-ethics-foundations" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-safety-for-everyone" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "ai-safety-and-alignment" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "claude-ai-chat" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "claude-cowork" but electives-hub does not define it
-- 🟡 **COURSES_HUB_MISMATCH**: courses.html links to "claude-code" but electives-hub does not define it
-
+### Warnings (3)
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 ---
 
@@ -99,6 +62,6 @@
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal link targets: 21 unique files · 123 unique course IDs via ?course=
-- Electives hub courses: 109
-- Module files verified: 764
+- courses.html internal link targets: 21 unique files · 123 unique course IDs via `?course=`
+- Electives hub: registry-driven (no hardcoded `BASE_COURSES`)
+- Module files verified: 858

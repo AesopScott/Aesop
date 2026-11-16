@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-11-15 14:07 UTC  
+**Generated:** 2026-11-16 14:09 UTC  
 **Status:** 🔴 ISSUES FOUND  
-**Errors:** 1 · **Warnings:** 29
+**Errors:** 1 · **Warnings:** 27
 
 ---
 
@@ -49,10 +49,8 @@
 
 ## Cross-References
 
-### Warnings (5)
+### Warnings (3)
 
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `society` (dir `ai-in-society`) has no link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-11` (dir `performing-arts-and-ai`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` (dir `ar-8`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` (dir `ap-7`) has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` (dir `eval-benchmark`) has no link from courses.html
@@ -65,11 +63,11 @@
 
 - **MISSING_DIR**: `eval-benchmark` references `ai-academy/modules/eval-benchmark` which does not exist
 
-Plus **29 warning(s)** — see sections above.
+Plus **27 warning(s)** — see sections above.
 
 ### Stats
 
-- Registry courses: 131 (128 live, 3 coming soon)
+- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
 - courses.html internal `/ai-academy/` links checked: 21
 - courses.html `?course=` ids referenced: 123
 - Electives hub BASE_COURSES: 0

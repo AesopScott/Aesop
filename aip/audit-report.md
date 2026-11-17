@@ -1,7 +1,7 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-11-16 14:09 UTC  
-**Status:** 🔴 ISSUES FOUND  
+**Generated:** 2026-11-17 14:10 UTC
+**Status:** 🔴 ISSUES FOUND
 **Errors:** 1 · **Warnings:** 27
 
 ---
@@ -45,7 +45,7 @@
 
 ## Electives Hub (electives-hub.html)
 
-✅ No issues found. (This page is registry-only — no hardcoded BASE_COURSES to validate.)
+✅ No issues found. (This page is registry-driven — no hardcoded BASE_COURSES to validate.)
 
 ## Cross-References
 
@@ -61,14 +61,14 @@
 
 **1 error(s) require attention:**
 
-- **MISSING_DIR**: `eval-benchmark` references `ai-academy/modules/eval-benchmark` which does not exist
+1. **MISSING_DIR**: `eval-benchmark` references `ai-academy/modules/eval-benchmark` which does not exist
 
 Plus **27 warning(s)** — see sections above.
 
 ### Stats
 
-- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal `/ai-academy/` links checked: 21
+- Registry courses: 131 (128 live (of which 2 retired), 3 coming soon)
+- courses.html internal `/ai-academy/` links checked: 163
 - courses.html `?course=` ids referenced: 123
 - Electives hub BASE_COURSES: 0
 - Module files verified: 780

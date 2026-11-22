@@ -1,7 +1,7 @@
 # AESOP Live Link Check Report
 
-**Generated:** 2026-11-15 10:05 UTC
-**Status:** 🟡 WARNINGS — live fetch blocked at sandbox egress (17th consecutive run blocked); local proxy check still flags the same 1 candidate broken module URL
+**Generated:** 2026-11-22 10:04 UTC
+**Status:** 🟡 WARNINGS — live fetch blocked at sandbox egress (18th consecutive run blocked); local proxy check still flags the same 1 candidate broken module URL
 **URLs checked:** 911 · **404s:** 0 confirmed · **Errors:** 911 (all fetch errors) · **Redirects:** 0
 
 ---
@@ -12,11 +12,11 @@ None **confirmed** — see fetch-error notice below. Per the routine guardrail, 
 
 The **local repo proxy check** (see "Local proxy check" further down) again flagged the same URL it has flagged every prior week as a strong candidate for a live 404 — its backing file is still missing from the deployed source tree:
 
-- `https://aesopacademy.org/ai-academy/modules/eval-benchmark/eval-benchmark-m1.html` — registry lists `eval-benchmark` as `status: "live"` with `modCount: 1`, but the directory `ai-academy/modules/eval-benchmark/` still does not exist in the repo. The course tile likely links to a page that was never built. No change vs. 2026-11-08 / 2026-11-01 / 2026-10-25 / 2026-10-18 / 2026-10-11 / 2026-10-04 / 2026-09-20 / 2026-08-30 / 2026-08-23 / 2026-08-02 / 2026-07-19 / 2026-07-05 / 2026-06-28 / 2026-06-21 / 2026-06-14 — the underlying fix has not landed. Today's `aip/audit-report.md` (2026-11-14 14:08 UTC) independently flags the same `MISSING_DIR` error for `eval-benchmark`, so the finding is corroborated by a second signal. The audit also records `NOT_IN_COURSES_HTML` and `NOT_IN_ELECTIVES_HUB` warnings for `eval-benchmark`, meaning the registry entry is not actually linked from the main navigation — the tile is a stale registry entry rather than an active visitor path, so this remains a low-severity user-visible break.
+- `https://aesopacademy.org/ai-academy/modules/eval-benchmark/eval-benchmark-m1.html` — registry lists `eval-benchmark` as `status: "live"` with `modCount: 1`, but the directory `ai-academy/modules/eval-benchmark/` still does not exist in the repo. The course tile likely links to a page that was never built. No change vs. 2026-11-15 / 2026-11-08 / 2026-11-01 / 2026-10-25 / 2026-10-18 / 2026-10-11 / 2026-10-04 / 2026-09-20 / 2026-08-30 / 2026-08-23 / 2026-08-02 / 2026-07-19 / 2026-07-05 / 2026-06-28 / 2026-06-21 / 2026-06-14 — the underlying fix has not landed. Today's `aip/audit-report.md` (2026-11-21 14:07 UTC) independently flags the same `MISSING_DIR` error for `eval-benchmark`, so the finding is corroborated by a second signal. The audit still records a `NOT_IN_COURSES_HTML` warning for `eval-benchmark` (i.e. the registry entry is not actually linked from the main courses page), so this remains a low-severity user-visible break. **Small change this week:** the audit no longer emits `NOT_IN_ELECTIVES_HUB` for `eval-benchmark` — a stale reference to the broken tile has apparently been removed from `electives-hub.html` since last week, further reducing visitor exposure to the dead link.
 
 ## Other Errors (5xx / Timeout / SSL)
 
-All 911 URLs in the check list returned **fetch errors** this run, identical signature to the previous sixteen blocked runs. `web_fetch` from the routine container returns `getaddrinfo ENOTFOUND aesopacademy.org` for every request against the host — the block is at the network policy layer (DNS not resolvable from this sandbox), not at the live origin. Today's control probes:
+All 911 URLs in the check list returned **fetch errors** this run, identical signature to the previous seventeen blocked runs. `web_fetch` from the routine container returns `getaddrinfo ENOTFOUND aesopacademy.org` for every request against the host — the block is at the network policy layer (DNS not resolvable from this sandbox), not at the live origin. Today's control probes:
 
 | Host | Status |
 | --- | --- |
@@ -24,7 +24,7 @@ All 911 URLs in the check list returned **fetch errors** this run, identical sig
 | `https://www.aesopacademy.org/` | fetch error: ENOTFOUND (web_fetch) |
 | `https://aesopacademy.org/` via `curl --proxy` | CONNECT rejected (`connect_rejected` — host not allowed for this session) |
 
-Agent-proxy `/__agentproxy/status` confirms the policy denial: `recentRelayFailures` records `connect_rejected` with detail `gateway answered 403 to CONNECT (policy denial or other refusal)` for `aesopacademy.org:443`. Every non-GitHub upstream remains denied by this routine's network policy. This is the **seventeenth consecutive run** blocked the same way (see 2026-06-07, 2026-06-14, 2026-06-21, 2026-06-28, 2026-07-05, 2026-07-19, 2026-08-02, 2026-08-23, 2026-08-30, 2026-09-20, 2026-10-04, 2026-10-11, 2026-10-18, 2026-10-25, 2026-11-01, and 2026-11-08 reports). The site itself is deployed via **Cloudflare Pages** (see `.github/workflows/deploy.yml`), so the block is not the origin — it's the sandbox's egress allow-list. Recommended fix: switch this routine's environment to a more permissive network policy, or add `aesopacademy.org` (and ideally `www.aesopacademy.org`) to the egress allow-list for the current one. Reference: https://code.claude.com/docs/en/claude-code-on-the-web (network policies / environments).
+Agent-proxy failure trailer confirms the policy denial: `aesopacademy.org:443 — connect_rejected, HTTP 403 (the egress proxy refused the connection; a refusal most often means that the host is not allowed for this session…)`. Every non-GitHub upstream remains denied by this routine's network policy. This is the **eighteenth consecutive run** blocked the same way (see 2026-06-07, 2026-06-14, 2026-06-21, 2026-06-28, 2026-07-05, 2026-07-19, 2026-08-02, 2026-08-23, 2026-08-30, 2026-09-20, 2026-10-04, 2026-10-11, 2026-10-18, 2026-10-25, 2026-11-01, 2026-11-08, and 2026-11-15 reports). The site itself is deployed via **Cloudflare Pages** (see `.github/workflows/deploy.yml`), so the block is not the origin — it's the sandbox's egress allow-list. Recommended fix: switch this routine's environment to a more permissive network policy, or add `aesopacademy.org` (and ideally `www.aesopacademy.org`) to the egress allow-list for the current one. Reference: https://code.claude.com/docs/en/claude-code-on-the-web (network policies / environments).
 
 Representative fetch-error entries (pattern is identical for all 911):
 
@@ -55,7 +55,7 @@ To keep the routine's heartbeat useful while the sandbox cannot reach the live o
 **Module URLs in list:** 765
 **Candidate broken module URLs (file missing from `main`):** **1**
 
-- `ai-academy/modules/eval-benchmark/eval-benchmark-m1.html` — directory `ai-academy/modules/eval-benchmark/` not present in repo (registry says `status: "live"`, `modCount: 1`). Status unchanged vs. prior 16 reports. Corroborated by `aip/audit-report.md` (2026-11-14) `MISSING_DIR` error.
+- `ai-academy/modules/eval-benchmark/eval-benchmark-m1.html` — directory `ai-academy/modules/eval-benchmark/` not present in repo (registry says `status: "live"`, `modCount: 1`). Status unchanged vs. prior 17 reports. Corroborated by `aip/audit-report.md` (2026-11-21) `MISSING_DIR` error.
 
 All 125 other live courses have at least a directory and the expected `-m1.html`…`-mN.html` files committed.
 
@@ -65,9 +65,9 @@ All 125 other live courses have at least a directory and the expected `-m1.html`
 
 ## Summary
 
-🟡 Egress to `aesopacademy.org` blocked by routine network policy for the **17th consecutive run** — live 404s cannot be confirmed from this sandbox. The local repo proxy check (which does not depend on egress) continues to flag **1 candidate live 404**: `eval-benchmark/eval-benchmark-m1.html`, whose directory is still missing from the deployed source tree. This finding is corroborated by `aip/audit-report.md` from 2026-11-14, which flags the same `MISSING_DIR` error.
+🟡 Egress to `aesopacademy.org` blocked by routine network policy for the **18th consecutive run** — live 404s cannot be confirmed from this sandbox. The local repo proxy check (which does not depend on egress) continues to flag **1 candidate live 404**: `eval-benchmark/eval-benchmark-m1.html`, whose directory is still missing from the deployed source tree. This finding is corroborated by `aip/audit-report.md` from 2026-11-21, which flags the same `MISSING_DIR` error. Small improvement this week: the audit's `NOT_IN_ELECTIVES_HUB` warning for `eval-benchmark` has cleared, so the dead tile is no longer surfaced from the electives hub even though the underlying module is still missing.
 
-**Action for Scott:** either add `aesopacademy.org` to this routine's egress allow-list (so the checker can confirm live-site 404s directly), or decide what to do about the `eval-benchmark` registry entry — build the module, mark it `coming-soon`, or remove it. The audit report confirms the tile is not linked from `courses.html` or `electives-hub.html`, so user-facing impact is minimal.
+**Action for Scott:** either add `aesopacademy.org` to this routine's egress allow-list (so the checker can confirm live-site 404s directly), or decide what to do about the `eval-benchmark` registry entry — build the module, mark it `coming-soon`, or remove it. The audit report confirms the tile is not linked from `courses.html` (and no longer from `electives-hub.html` as of this week), so user-facing impact is minimal.
 
 ### Stats
 - Internal URLs checked: 911 (0 confirmed 200, 0 confirmed 404, 911 fetch errors, 0 redirects)

@@ -1,8 +1,8 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-11-24 14:09 UTC  
+**Generated:** 2026-11-25 14:08 UTC  
 **Status:** 🔴 ISSUES FOUND  
-**Errors:** 1 · **Warnings:** 27
+**Errors:** 1 · **Warnings:** 29
 
 ---
 
@@ -14,7 +14,7 @@
 
 ### Warnings (24)
 
-- 🟡 **EXTRA_MODULES**: `ai-in-society` has 9 module files but registry defines 8 modules
+- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -51,11 +51,13 @@ _No static `BASE_COURSES` array — courses are loaded from `course-registry.jso
 
 ## Cross-References
 
-### Warnings (3)
+### Warnings (5)
 
-- 🟡 **NOT_IN_COURSES_HTML**: Registry course `ar-8` has no `?course=` link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: Registry course `ap-7` has no `?course=` link from courses.html
-- 🟡 **NOT_IN_COURSES_HTML**: Registry course `eval-benchmark` has no `?course=` link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "society" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-11" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ar-8" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "ap-7" has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course "eval-benchmark" has no link from courses.html
 
 ---
 
@@ -63,11 +65,11 @@ _No static `BASE_COURSES` array — courses are loaded from `course-registry.jso
 
 **1 error(s) require attention:**
 
-1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
+1. MISSING_DIR: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 
-- Registry courses: 131 (126 live, 3 coming soon, 2 retired)
+- Registry courses: 131 (128 live, 3 coming soon)
 - courses.html internal links checked: 21
-- Electives hub: registry-driven (no static BASE_COURSES array)
+- Electives hub BASE_COURSES: n/a (registry-driven)
 - Module files verified: 780

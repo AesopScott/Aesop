@@ -1,20 +1,20 @@
 # AESOP Course Audit Report
 
-**Generated:** 2026-11-26 14:10 UTC
+**Generated:** 2026-11-27 14:07 UTC
 **Status:** 🔴 ISSUES FOUND
-**Errors:** 1 · **Warnings:** 26
+**Errors:** 1 · **Warnings:** 27
 
 ---
 
 ## Course Registry (course-registry.json)
 
-
 ### Errors (1)
 
 - 🔴 **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
-### Warnings (23)
+### Warnings (24)
 
+- 🟡 **EXTRA_MODULES**: `society` has 9 module files but registry defines 8 modules
 - 🟡 **EXTRA_MODULES**: `ai-and-education` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `ai-leadership` has 7 module files but registry defines 6 modules
 - 🟡 **EXTRA_MODULES**: `gpt-vs-claude-vs-gemini` has 9 module files but registry defines 8 modules
@@ -42,20 +42,17 @@
 ## courses.html
 
 ✅ No issues found.
-
 ## Electives Hub (electives-hub.html)
 
 ✅ No issues found.
-
 _Note:_ Hub is registry-driven — the live course list is built at runtime from `course-registry.json` (`status === "live"` + `url` present). No static `BASE_COURSES` block to audit; registry correctness covers it.
 
 ## Cross-References
 
-
 ### Warnings (3)
 
-- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `ap-7` has no link from courses.html
+- 🟡 **NOT_IN_COURSES_HTML**: registry course `ar-8` has no link from courses.html
 - 🟡 **NOT_IN_COURSES_HTML**: registry course `eval-benchmark` has no link from courses.html
 
 ---
@@ -63,10 +60,11 @@ _Note:_ Hub is registry-driven — the live course list is built at runtime from
 ## Summary
 
 **1 error(s) require attention:**
+
 1. **MISSING_DIR**: Registry course `eval-benchmark` references `/ai-academy/modules/eval-benchmark/` which does not exist
 
 ### Stats
 - Registry courses: 131 (126 live, 3 coming soon, 2 retired)
-- courses.html internal links checked: 143
+- courses.html internal links checked: 163
 - Electives hub BASE_COURSES: registry-driven
-- Module files verified: 764
+- Module files verified: 780
